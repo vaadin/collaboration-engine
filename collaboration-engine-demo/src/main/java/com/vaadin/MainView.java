@@ -1,45 +1,77 @@
 package com.vaadin;
 
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.PWA;
 
-/**
- * The main view contains a button and a click listener.
- */
 @Route("")
-@PWA(name = "Project Base for Vaadin", shortName = "Project Base", enableInstallPrompt = false)
 @CssImport("./styles/shared-styles.css")
-@CssImport(value = "./styles/vaadin-text-field-styles.css", themeFor = "vaadin-text-field")
 public class MainView extends VerticalLayout {
+    public static class Person {
+        private String firstName = "";
+        private String lastName = "";
+
+        public String getFirstName() {
+            return firstName;
+        }
+
+        public void setFirstName(String firstName) {
+            this.firstName = firstName;
+        }
+
+        public String getLastName() {
+            return lastName;
+        }
+
+        public void setLastName(String lastName) {
+            this.lastName = lastName;
+        }
+
+        @Override
+        public String toString() {
+            return "Person [firstName=" + firstName + ", lastName=" + lastName
+                    + "]";
+        }
+
+    }
+
+    private final TextField firstName = new TextField("First name");
+    private final TextField lastName = new TextField("Last name");
 
     public MainView() {
-        // Use TextField for standard text input
-        TextField textField = new TextField("Your name");
-
-        // Button click listeners can be defined as lambda expressions
-        GreetService greetService = new GreetService();
-        Button button = new Button("Say hello", e -> Notification
-                .show(greetService.greet(textField.getValue())));
-
-        // Theme variants give you predefined extra styles for components.
-        // Example: Primary button is more prominent look.
-        button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        // You can specify keyboard shortcuts for buttons.
-        // Example: Pressing enter in this view clicks the Button.
-        button.addClickShortcut(Key.ENTER);
-
-        // Use custom CSS classes to apply styling. This is defined in
-        // shared-styles.css.
         addClassName("centered-content");
 
-        add(textField, button);
+        TextField usernameField = new TextField("Username");
+        Button startButton = new Button("Start editing", event -> {
+            String value = usernameField.getValue();
+            if (!value.isEmpty()) {
+                showPersonEditor(value);
+            } else {
+                Notification.show("Must enter a username to collaborate");
+                usernameField.focus();
+            }
+        });
+        startButton.addClickShortcut(Key.ENTER);
+        
+        add(usernameField, startButton);
+    }
+
+    private void showPersonEditor(String username) {
+        Person person = new Person();
+
+        Binder<Person> binder = new Binder<>(Person.class);
+        binder.setBean(person);
+
+        binder.bindInstanceFields(this);
+
+        removeAll();
+        add(new Text("Editing as " + username), firstName, lastName, new Button(
+                "Submit", event -> Notification.show("Submit: " + person)));
     }
 }
