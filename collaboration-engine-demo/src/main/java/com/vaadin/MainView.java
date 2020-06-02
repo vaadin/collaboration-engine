@@ -25,8 +25,8 @@ public class MainView extends VerticalLayout {
 
         // Button click listeners can be defined as lambda expressions
         GreetService greetService = new GreetService();
-        Button button = new Button("Say hello",
-                e -> Notification.show(greetService.greet(textField.getValue())));
+        Button button = new Button("Say hello", e -> Notification
+                .show(greetService.greet(textField.getValue())));
 
         // Theme variants give you predefined extra styles for components.
         // Example: Primary button is more prominent look.
@@ -36,7 +36,8 @@ public class MainView extends VerticalLayout {
         // Example: Pressing enter in this view clicks the Button.
         button.addClickShortcut(Key.ENTER);
 
-        // Use custom CSS classes to apply styling. This is defined in shared-styles.css.
+        // Use custom CSS classes to apply styling. This is defined in
+        // shared-styles.css.
         addClassName("centered-content");
 
         add(textField, button);
