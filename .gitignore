@@ -14,10 +14,11 @@ target/
 error-screenshots
 reference-screenshots
 
+# MacOS
+.DS_Store
+
 # npm
-package*.json
-pnpm-lock.yaml
-webpack.*.js
 tsconfig.json
 types.d.ts
 node_modules/
+webpack.generated.js
