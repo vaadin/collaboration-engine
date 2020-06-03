@@ -129,6 +129,7 @@ public class MainView extends VerticalLayout {
 
     private final Binder<Person> binder = new Binder<>(Person.class);
 
+    private AvatarGroup avatarGroup = new AvatarGroup();
     private final Text statusText = new Text("");
 
     private final TextField firstName = new TextField("First name");
@@ -169,8 +170,8 @@ public class MainView extends VerticalLayout {
             Notification.show("Submit: " + person);
             showLogin();
         });
-        add(statusText, firstName, lastName, submitButton);
-        
+        add(avatarGroup, statusText, firstName, lastName, submitButton);
+
         firstName.addBlurListener(
                 event -> submitValue("firstName", firstName.getValue()));
         lastName.addBlurListener(
@@ -196,18 +197,20 @@ public class MainView extends VerticalLayout {
         Broadcaster.INSTANCE.updateState(state -> {
             HashMap<String, FieldState> newStates = new HashMap<>(
                     state.fieldStates);
-            
+
             newStates.put(fieldName, new FieldState(value));
-            
+
             return new CollaborationState(newStates, state.editors);
         });
     }
 
     @SuppressWarnings("unchecked")
     private void showState(String username, CollaborationState state) {
-        statusText.setText("Editing as " + username + ". Other editors: "
-                + state.editors.stream().filter(name -> !username.equals(name))
-                        .collect(Collectors.joining(", ")));
+        avatarGroup.setItems(
+                state.editors.stream().map(AvatarGroup.AvatarGroupItem::new)
+                        .collect(Collectors.toList()));
+
+        statusText.setText("Editing as " + username);
 
         state.fieldStates.forEach((fieldName, fieldState) -> {
             binder.getBinding(fieldName).ifPresent(binding -> {
