@@ -204,10 +204,13 @@ public class MainView extends VerticalLayout {
         firstName.addFocusListener(event -> setEditor("firstName", username));
         lastName.addFocusListener(event -> setEditor("lastName", username));
 
-        firstName.addBlurListener(event -> submitValue("firstName", username,
-                firstName.getValue()));
-        lastName.addBlurListener(event -> submitValue("lastName", username,
-                lastName.getValue()));
+        firstName.addBlurListener(event -> clearEditor("firstName", username));
+        lastName.addBlurListener(event -> clearEditor("lastName", username));
+
+        firstName.addValueChangeListener(
+                event -> submitValue("firstName", event.getValue()));
+        lastName.addValueChangeListener(
+                event -> submitValue("lastName", event.getValue()));
 
         /*
          * Tie subscription to submit button so that it's removed when detaching
@@ -232,11 +235,16 @@ public class MainView extends VerticalLayout {
         });
     }
 
-    private static void submitValue(String fieldName, String username,
-            Object value) {
+    private static void clearEditor(String fieldName, String username) {
         Broadcaster.INSTANCE.updateFieldState(fieldName, state -> {
-            return new FieldState(value, state.editors.stream()
+            return new FieldState(state.value, state.editors.stream()
                     .filter(editor -> !username.equals(editor)));
+        });
+    }
+
+    private static void submitValue(String fieldName, Object value) {
+        Broadcaster.INSTANCE.updateFieldState(fieldName, state -> {
+            return new FieldState(value, state.editors);
         });
     }
 
