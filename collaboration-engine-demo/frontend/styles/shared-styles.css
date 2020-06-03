@@ -1,5 +1,8 @@
 .centered-content {
   margin: 0 auto;
-  max-width: 250px;
+  max-width: fit-content;
 }
 
+.collaborators-avatars {
+  --lumo-primary-color: var(--lumo-contrast-80pct);
+}

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.dependency.NpmPackage;
@@ -14,7 +15,7 @@ import com.vaadin.flow.internal.JsonSerializer;
 @Tag("vcf-avatar-group")
 @NpmPackage(value = "@vaadin-component-factory/vcf-avatar-group", version = "1.0.2")
 @JsModule("@vaadin-component-factory/vcf-avatar-group/theme/lumo/vcf-avatar-group.js")
-public class AvatarGroup extends Component {
+public class AvatarGroup extends Component implements HasStyle {
 
     public static class AvatarGroupItem {
         private String name;

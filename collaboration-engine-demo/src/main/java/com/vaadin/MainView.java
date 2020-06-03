@@ -1,6 +1,7 @@
 package com.vaadin;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -13,11 +14,11 @@ import java.util.stream.Stream;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Key;
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
@@ -158,19 +159,19 @@ public class MainView extends VerticalLayout {
 
     private final Binder<Person> binder = new Binder<>(Person.class);
 
-    private AvatarGroup avatarGroup = new AvatarGroup();
-    private final Text statusText = new Text("");
+    private AvatarGroup collaboratorsAvatars = new AvatarGroup();
+    private AvatarGroup ownAvatar = new AvatarGroup();
 
     private final TextField firstName = new TextField("First name");
     private final TextField lastName = new TextField("Last name");
 
     public MainView() {
+        addClassName("centered-content");
+        collaboratorsAvatars.addClassName("collaborators-avatars");
         showLogin();
     }
 
     private void showLogin() {
-        addClassName("centered-content");
-
         TextField usernameField = new TextField("Username");
         Button startButton = new Button("Start editing", event -> {
             String value = usernameField.getValue();
@@ -199,7 +200,17 @@ public class MainView extends VerticalLayout {
             Notification.show("Submit: " + person);
             showLogin();
         });
-        add(avatarGroup, statusText, firstName, lastName, submitButton);
+
+        ownAvatar.setItems(
+                Arrays.asList(new AvatarGroup.AvatarGroupItem(username)));
+
+        HorizontalLayout avatarGroups = new HorizontalLayout(
+                collaboratorsAvatars, ownAvatar);
+        avatarGroups.setWidthFull();
+        avatarGroups.setSpacing(false);
+        avatarGroups.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
+        add(avatarGroups, firstName, lastName, submitButton);
 
         firstName.addFocusListener(event -> setEditor("firstName", username));
         lastName.addFocusListener(event -> setEditor("lastName", username));
@@ -250,11 +261,10 @@ public class MainView extends VerticalLayout {
 
     @SuppressWarnings("unchecked")
     private void showState(String username, CollaborationState state) {
-        avatarGroup.setItems(
-                state.editors.stream().map(AvatarGroup.AvatarGroupItem::new)
+        collaboratorsAvatars.setItems(
+                state.editors.stream().filter(name -> !username.equals(name))
+                        .map(AvatarGroup.AvatarGroupItem::new)
                         .collect(Collectors.toList()));
-
-        statusText.setText("Editing as " + username);
 
         state.fieldStates.forEach((fieldName, fieldState) -> {
             binder.getBinding(fieldName).ifPresent(binding -> {
@@ -268,11 +278,11 @@ public class MainView extends VerticalLayout {
 
                 if (field instanceof HasElement) {
                     HasElement component = (HasElement) field;
-                    
+
                     String effectiveEditor = fieldState.editors.stream()
                             .filter(editor -> !username.equals(editor))
                             .findFirst().orElse(null);
-                    
+
                     component.getElement().executeJs(
                             "window.setFieldState(this, $0)", effectiveEditor);
                 }
