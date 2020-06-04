@@ -125,9 +125,18 @@ public class MainView extends VerticalLayout {
         private synchronized void removeSubscriber(String name) {
             subscribers.remove(name);
 
-            updateState(state -> new CollaborationState(state.fieldStates,
-                    state.editors.stream().filter(value -> !name.equals(value)),
-                    name + " left\n" + state.activityLog));
+            updateState(state -> {
+                Map<String, FieldState> fieldStates = new HashMap<>(
+                        state.fieldStates);
+                fieldStates.replaceAll((key, fieldState) -> new FieldState(
+                        fieldState.value, fieldState.editors.stream()
+                                .filter(editor -> !name.equals(editor))));
+
+                return new CollaborationState(fieldStates,
+                        state.editors.stream()
+                                .filter(value -> !name.equals(value)),
+                        name + " left\n" + state.activityLog);
+            });
         }
 
         public synchronized void updateState(
