@@ -227,10 +227,16 @@ public class MainView extends VerticalLayout {
         firstName.addBlurListener(event -> clearEditor("firstName", username));
         lastName.addBlurListener(event -> clearEditor("lastName", username));
 
-        firstName.addValueChangeListener(
-                event -> submitValue("firstName", username, event.getValue()));
-        lastName.addValueChangeListener(
-                event -> submitValue("lastName", username, event.getValue()));
+        firstName.addValueChangeListener(event -> {
+            if (event.isFromClient()) {
+                submitValue("firstName", username, event.getValue());
+            }
+        });
+        lastName.addValueChangeListener(event -> {
+            if (event.isFromClient()) {
+                submitValue("lastName", username, event.getValue());
+            }
+        });
 
         /*
          * Tie subscription to submit button so that it's removed when detaching
