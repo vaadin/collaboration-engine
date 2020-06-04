@@ -6,3 +6,10 @@
 .collaborators-avatars {
   --lumo-primary-color: var(--lumo-contrast-80pct);
 }
+
+.log {
+  overflow: auto;
+  max-height: 200px;
+  white-space: pre;
+  font-family: monospace;
+}

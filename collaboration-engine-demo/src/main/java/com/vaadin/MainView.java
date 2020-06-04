@@ -17,6 +17,7 @@ import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -81,21 +82,24 @@ public class MainView extends VerticalLayout {
     public static class CollaborationState {
         public final Map<String, FieldState> fieldStates;
         public final List<String> editors;
+        public final String activityLog;
 
         public CollaborationState(Map<String, FieldState> fieldStates,
-                List<String> editors) {
+                List<String> editors, String activityLog) {
             this.fieldStates = Collections
                     .unmodifiableMap(new HashMap<>(fieldStates));
             this.editors = Collections
                     .unmodifiableList(new ArrayList<>(editors));
+            this.activityLog = activityLog;
         }
 
         public CollaborationState(Map<String, FieldState> fieldStates,
-                Stream<String> editors) {
+                Stream<String> editors, String activityLog) {
             this.fieldStates = Collections
                     .unmodifiableMap(new HashMap<>(fieldStates));
             this.editors = Collections
                     .unmodifiableList(editors.collect(Collectors.toList()));
+            this.activityLog = activityLog;
         }
     }
 
@@ -105,14 +109,15 @@ public class MainView extends VerticalLayout {
         private final Map<String, Consumer<CollaborationState>> subscribers = new HashMap<>();
 
         private CollaborationState state = new CollaborationState(
-                Collections.emptyMap(), Collections.emptyList());
+                Collections.emptyMap(), Collections.emptyList(), "");
 
         public synchronized Registration addSubscriber(String name,
                 Consumer<CollaborationState> subscriber) {
             subscribers.put(name, subscriber);
 
             updateState(state -> new CollaborationState(state.fieldStates,
-                    Stream.concat(state.editors.stream(), Stream.of(name))));
+                    Stream.concat(state.editors.stream(), Stream.of(name)),
+                    name + " joined\n" + state.activityLog));
 
             return () -> removeSubscriber(name);
         }
@@ -121,8 +126,8 @@ public class MainView extends VerticalLayout {
             subscribers.remove(name);
 
             updateState(state -> new CollaborationState(state.fieldStates,
-                    state.editors.stream()
-                            .filter(value -> !name.equals(value))));
+                    state.editors.stream().filter(value -> !name.equals(value)),
+                    name + " left\n" + state.activityLog));
         }
 
         public synchronized void updateState(
@@ -141,7 +146,7 @@ public class MainView extends VerticalLayout {
             });
         }
 
-        public void updateFieldState(String fieldName,
+        public void updateFieldState(String fieldName, String logMessage,
                 Function<FieldState, FieldState> updater) {
             updateState(state -> {
                 HashMap<String, FieldState> newStates = new HashMap<>(
@@ -152,7 +157,8 @@ public class MainView extends VerticalLayout {
 
                 newStates.put(fieldName, updater.apply(oldFieldState));
 
-                return new CollaborationState(newStates, state.editors);
+                return new CollaborationState(newStates, state.editors,
+                        logMessage + "\n" + state.activityLog);
             });
         }
     }
@@ -165,9 +171,12 @@ public class MainView extends VerticalLayout {
     private final TextField firstName = new TextField("First name");
     private final TextField lastName = new TextField("Last name");
 
+    private final Div log = new Div();
+
     public MainView() {
         addClassName("centered-content");
         collaboratorsAvatars.addClassName("collaborators-avatars");
+        log.setClassName("log");
         showLogin();
     }
 
@@ -210,7 +219,7 @@ public class MainView extends VerticalLayout {
         avatarGroups.setSpacing(false);
         avatarGroups.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        add(avatarGroups, firstName, lastName, submitButton);
+        add(avatarGroups, firstName, lastName, submitButton, log);
 
         firstName.addFocusListener(event -> setEditor("firstName", username));
         lastName.addFocusListener(event -> setEditor("lastName", username));
@@ -219,9 +228,9 @@ public class MainView extends VerticalLayout {
         lastName.addBlurListener(event -> clearEditor("lastName", username));
 
         firstName.addValueChangeListener(
-                event -> submitValue("firstName", event.getValue()));
+                event -> submitValue("firstName", username, event.getValue()));
         lastName.addValueChangeListener(
-                event -> submitValue("lastName", event.getValue()));
+                event -> submitValue("lastName", username, event.getValue()));
 
         /*
          * Tie subscription to submit button so that it's removed when detaching
@@ -240,21 +249,25 @@ public class MainView extends VerticalLayout {
     }
 
     private static void setEditor(String fieldName, String username) {
-        Broadcaster.INSTANCE.updateFieldState(fieldName, state -> {
+        String message = username + " started editing " + fieldName;
+        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
             return new FieldState(state.value,
                     Stream.concat(state.editors.stream(), Stream.of(username)));
         });
     }
 
     private static void clearEditor(String fieldName, String username) {
-        Broadcaster.INSTANCE.updateFieldState(fieldName, state -> {
+        String message = username + " stopped editing " + fieldName;
+        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
             return new FieldState(state.value, state.editors.stream()
                     .filter(editor -> !username.equals(editor)));
         });
     }
 
-    private static void submitValue(String fieldName, Object value) {
-        Broadcaster.INSTANCE.updateFieldState(fieldName, state -> {
+    private static void submitValue(String fieldName, String username,
+            Object value) {
+        String message = username + " changed " + fieldName + " to " + value;
+        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
             return new FieldState(value, state.editors);
         });
     }
@@ -288,5 +301,7 @@ public class MainView extends VerticalLayout {
                 }
             });
         });
+
+        log.setText(state.activityLog);
     }
 }
