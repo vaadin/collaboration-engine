@@ -172,13 +172,10 @@ public class MainView extends VerticalLayout {
         }
     }
 
-    private final Binder<Person> binder = new Binder<>(Person.class);
+    private Binder<Person> binder;
 
     private AvatarGroup collaboratorsAvatars = new AvatarGroup();
     private AvatarGroup ownAvatar = new AvatarGroup();
-
-    private final TextField firstName = new TextField("First name");
-    private final TextField lastName = new TextField("Last name");
 
     private final Div log = new Div();
 
@@ -209,9 +206,13 @@ public class MainView extends VerticalLayout {
     private void showPersonEditor(String username) {
         Person person = new Person();
 
-        binder.setBean(person);
+        TextField firstName = new TextField("First name");
+        TextField lastName = new TextField("Last name");
 
-        binder.bindInstanceFields(this);
+        binder = new Binder<>(Person.class);
+        binder.forField(firstName).bind("firstName");
+        binder.forField(lastName).bind("lastName");
+        binder.setBean(person);
 
         removeAll();
         Button submitButton = new Button("Submit", event -> {
