@@ -11,6 +11,7 @@
     <name>Collaboration Engine Parent</name>
 
     <modules>
+        <module>collaboration-engine</module>
         <module>collaboration-engine-demo</module>
         <module>collaboration-engine-buildtools</module>
     </modules>
@@ -53,6 +54,15 @@
         </pluginRepository>
     </pluginRepositories>
 
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <vaadin.version>14.2.0</vaadin.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -60,8 +70,7 @@
                 <artifactId>formatter-maven-plugin</artifactId>
                 <version>2.11.0</version>
                 <configuration>
-                    <configFile>eclipse/VaadinJavaConventions.xml
-                    </configFile>
+                    <configFile>eclipse/VaadinJavaConventions.xml</configFile>
                     <encoding>UTF-8</encoding>
                 </configuration>
                 <dependencies>
