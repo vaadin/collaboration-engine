@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 class Topic {
 
@@ -47,5 +48,16 @@ class Topic {
 
     Object getValue() {
         return value;
+    }
+
+    boolean compareAndSet(Object expected, Object update) {
+        synchronized (lock) {
+            if (Objects.equals(expected, value)) {
+                setValue(update);
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 }

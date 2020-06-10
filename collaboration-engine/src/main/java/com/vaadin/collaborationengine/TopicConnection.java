@@ -42,6 +42,21 @@ public class TopicConnection {
     }
 
     /**
+     * Atomically updates the value if the current value {@code equals} the
+     * expected value. Subscribers are notified only if the value is updated.
+     *
+     * @param expected
+     *            the expected value
+     * @param update
+     *            the value to set if the expected value is currently set
+     * @return <code>true</code> if the value was updated, <code>false</code> if
+     *         the previous value is retained
+     */
+    public boolean compareAndSet(Object expected, Object update) {
+        return topic.compareAndSet(expected, update);
+    }
+
+    /**
      * Adds a subscriber which will be notified whenever someone changes the
      * value of the collaboration topic.
      *
