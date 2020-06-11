@@ -11,10 +11,11 @@
     <name>Collaboration Engine Parent</name>
 
     <modules>
+        <!-- Only the modules that should be included in releases should be
+            here. Others should be listed down in the default profile. -->
         <module>collaboration-engine</module>
-        <module>collaboration-engine-demo</module>
-        <module>collaboration-engine-buildtools</module>
     </modules>
+
     <repositories>
         <repository>
             <id>central</id>
@@ -83,5 +84,20 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>default</id>
+            <activation>
+                <property>
+                    <name>!release</name>
+                </property>
+            </activation>
+            <modules>
+                <module>collaboration-engine-demo</module>
+                <module>collaboration-engine-buildtools</module>
+            </modules>
+        </profile>
+    </profiles>
 
 </project>
