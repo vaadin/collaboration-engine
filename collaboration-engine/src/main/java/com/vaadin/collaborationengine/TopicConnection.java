@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
+
 /**
  * API for sending and subscribing to updates between clients collaborating on
  * the same collaboration topic.
@@ -62,9 +64,11 @@ public class TopicConnection {
      *
      * @param subscriber
      *            the callback for handling topic value changes
+     * @return a handle that can be used for removing the subscription, not
+     *         <code>null</code>
      */
-    public void subscribe(SingleValueSubscriber subscriber) {
-        topic.subscribe(subscriber);
+    public Registration subscribe(SingleValueSubscriber subscriber) {
+        return topic.subscribe(subscriber);
     }
 
 }

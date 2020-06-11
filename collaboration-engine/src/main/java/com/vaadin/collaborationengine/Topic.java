@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -29,10 +31,18 @@ class Topic {
         this.id = id;
     }
 
-    void subscribe(SingleValueSubscriber subscriber) {
+    Registration subscribe(SingleValueSubscriber subscriber) {
         synchronized (lock) {
             subscribers.add(subscriber);
             subscriber.onValueChange(value);
+        }
+
+        return () -> unsubscribe(subscriber);
+    }
+
+    private void unsubscribe(SingleValueSubscriber subscriber) {
+        synchronized (lock) {
+            subscribers.remove(subscriber);
         }
     }
 
