@@ -6,11 +6,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Key;
@@ -32,6 +33,8 @@ import com.vaadin.flow.shared.Registration;
 @CssImport("./styles/shared-styles.css")
 @JsModule("./field-collaboration.js")
 public class MainView extends VerticalLayout {
+    private static final CollaborationState EMPTY_COLLABORATION_STATE = new CollaborationState(
+            Collections.emptyMap(), Collections.emptyList(), "");
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
             Collections.emptyList());
 
@@ -103,75 +106,6 @@ public class MainView extends VerticalLayout {
         }
     }
 
-    public static class Broadcaster {
-        public static final Broadcaster INSTANCE = new Broadcaster();
-
-        private final Map<String, Consumer<CollaborationState>> subscribers = new HashMap<>();
-
-        private CollaborationState state = new CollaborationState(
-                Collections.emptyMap(), Collections.emptyList(), "");
-
-        public synchronized Registration addSubscriber(String name,
-                Consumer<CollaborationState> subscriber) {
-            subscribers.put(name, subscriber);
-
-            updateState(state -> new CollaborationState(state.fieldStates,
-                    Stream.concat(state.editors.stream(), Stream.of(name)),
-                    name + " joined\n" + state.activityLog));
-
-            return () -> removeSubscriber(name);
-        }
-
-        private synchronized void removeSubscriber(String name) {
-            subscribers.remove(name);
-
-            updateState(state -> {
-                Map<String, FieldState> fieldStates = new HashMap<>(
-                        state.fieldStates);
-                fieldStates.replaceAll((key, fieldState) -> new FieldState(
-                        fieldState.value, fieldState.editors.stream()
-                                .filter(editor -> !name.equals(editor))));
-
-                return new CollaborationState(fieldStates,
-                        state.editors.stream()
-                                .filter(value -> !name.equals(value)),
-                        name + " left\n" + state.activityLog);
-            });
-        }
-
-        public synchronized void updateState(
-                Function<CollaborationState, CollaborationState> updater) {
-            // Run update logic while holding the lock
-            CollaborationState state = updater.apply(this.state);
-
-            this.state = state;
-
-            subscribers.values().forEach(subscriber -> {
-                try {
-                    subscriber.accept(state);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-        }
-
-        public void updateFieldState(String fieldName, String logMessage,
-                Function<FieldState, FieldState> updater) {
-            updateState(state -> {
-                HashMap<String, FieldState> newStates = new HashMap<>(
-                        state.fieldStates);
-
-                FieldState oldFieldState = newStates.getOrDefault(fieldName,
-                        EMPTY_FIELD_STATE);
-
-                newStates.put(fieldName, updater.apply(oldFieldState));
-
-                return new CollaborationState(newStates, state.editors,
-                        logMessage + "\n" + state.activityLog);
-            });
-        }
-    }
-
     private Binder<Person> binder;
 
     private AvatarGroup collaboratorsAvatars = new AvatarGroup();
@@ -204,6 +138,9 @@ public class MainView extends VerticalLayout {
     }
 
     private void showPersonEditor(String username) {
+        TopicConnection topic = CollaborationEngine.getInstance()
+                .openTopicConnection("form");
+
         Person person = new Person();
 
         TextField firstName = new TextField("First name");
@@ -231,20 +168,24 @@ public class MainView extends VerticalLayout {
 
         add(avatarGroups, firstName, lastName, submitButton, log);
 
-        firstName.addFocusListener(event -> setEditor("firstName", username));
-        lastName.addFocusListener(event -> setEditor("lastName", username));
+        firstName.addFocusListener(
+                event -> setEditor(topic, "firstName", username));
+        lastName.addFocusListener(
+                event -> setEditor(topic, "lastName", username));
 
-        firstName.addBlurListener(event -> clearEditor("firstName", username));
-        lastName.addBlurListener(event -> clearEditor("lastName", username));
+        firstName.addBlurListener(
+                event -> clearEditor(topic, "firstName", username));
+        lastName.addBlurListener(
+                event -> clearEditor(topic, "lastName", username));
 
         firstName.addValueChangeListener(event -> {
             if (event.isFromClient()) {
-                submitValue("firstName", username, event.getValue());
+                submitValue(topic, "firstName", username, event.getValue());
             }
         });
         lastName.addValueChangeListener(event -> {
             if (event.isFromClient()) {
-                submitValue("lastName", username, event.getValue());
+                submitValue(topic, "lastName", username, event.getValue());
             }
         });
 
@@ -253,43 +194,92 @@ public class MainView extends VerticalLayout {
          * the form
          */
         submitButton.getElement().getNode().runWhenAttached(ui -> {
-            Registration addRegistration = Broadcaster.INSTANCE.addSubscriber(
-                    username,
-                    state -> ui.access(() -> showState(username, state)));
+            Registration registration = topic.subscribe(state -> {
+                ui.access(
+                        () -> showState(username, (CollaborationState) state));
+            });
+
+            updateState(topic,
+                    state -> new CollaborationState(state.fieldStates,
+                            Stream.concat(state.editors.stream(),
+                                    Stream.of(username)),
+                            username + " joined\n" + state.activityLog));
 
             submitButton.addDetachListener(event -> {
-                addRegistration.remove();
+                registration.remove();
                 event.unregisterListener();
+
+                updateState(topic,
+                        state -> new CollaborationState(state.fieldStates,
+                                state.editors.stream().filter(
+                                        value -> !username.equals(value)),
+                                username + " left\n" + state.activityLog));
             });
         });
     }
 
-    private static void setEditor(String fieldName, String username) {
+    private static void updateState(TopicConnection topicConnection,
+            Function<CollaborationState, CollaborationState> updater) {
+        while (true) {
+            CollaborationState oldState = (CollaborationState) topicConnection
+                    .getValue();
+            CollaborationState newState = updater.apply(
+                    oldState != null ? oldState : EMPTY_COLLABORATION_STATE);
+            if (topicConnection.compareAndSet(oldState, newState)) {
+                break;
+            }
+        }
+    }
+
+    private static void updateFieldState(TopicConnection topicConnection,
+            String fieldName, String logMessage,
+            Function<FieldState, FieldState> updater) {
+        updateState(topicConnection, state -> {
+            HashMap<String, FieldState> newStates = new HashMap<>(
+                    state.fieldStates);
+
+            FieldState oldFieldState = newStates.getOrDefault(fieldName,
+                    EMPTY_FIELD_STATE);
+
+            newStates.put(fieldName, updater.apply(oldFieldState));
+
+            return new CollaborationState(newStates, state.editors,
+                    logMessage + "\n" + state.activityLog);
+        });
+    }
+
+    private static void setEditor(TopicConnection topicConnection,
+            String fieldName, String username) {
         String message = username + " started editing " + fieldName;
-        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
+        updateFieldState(topicConnection, fieldName, message, state -> {
             return new FieldState(state.value,
                     Stream.concat(state.editors.stream(), Stream.of(username)));
         });
     }
 
-    private static void clearEditor(String fieldName, String username) {
+    private static void clearEditor(TopicConnection topicConnection,
+            String fieldName, String username) {
         String message = username + " stopped editing " + fieldName;
-        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
+        updateFieldState(topicConnection, fieldName, message, state -> {
             return new FieldState(state.value, state.editors.stream()
                     .filter(editor -> !username.equals(editor)));
         });
     }
 
-    private static void submitValue(String fieldName, String username,
-            Object value) {
+    private static void submitValue(TopicConnection topicConnection,
+            String fieldName, String username, Object value) {
         String message = username + " changed " + fieldName + " to " + value;
-        Broadcaster.INSTANCE.updateFieldState(fieldName, message, state -> {
+        updateFieldState(topicConnection, fieldName, message, state -> {
             return new FieldState(value, state.editors);
         });
     }
 
     @SuppressWarnings("unchecked")
     private void showState(String username, CollaborationState state) {
+        if (state == null) {
+            state = EMPTY_COLLABORATION_STATE;
+        }
+
         collaboratorsAvatars.setItems(
                 state.editors.stream().filter(name -> !username.equals(name))
                         .map(AvatarGroup.AvatarGroupItem::new)

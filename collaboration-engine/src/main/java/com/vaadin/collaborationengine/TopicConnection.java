@@ -33,6 +33,15 @@ public class TopicConnection {
     }
 
     /**
+     * Gets the current topic value.
+     *
+     * @return the topic value
+     */
+    public Object getValue() {
+        return topic.getValue();
+    }
+
+    /**
      * Sets the value of the connected collaboration topic, notifying all
      * subscribers.
      *

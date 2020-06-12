@@ -2,12 +2,12 @@ package com.vaadin.collaborationengine;
 
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
-import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.vaadin.flow.shared.Registration;
 
 public class SingleValueSubscriptionTest {
     private static class SubscriberSpy implements SingleValueSubscriber {
@@ -54,6 +54,9 @@ public class SingleValueSubscriptionTest {
         topicConnection.setValue(value);
         topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isCalled));
+        Assert.assertEquals(
+                "The set value should be available through the getter", value,
+                topicConnection.getValue());
 
         Assert.assertTrue("Expected subscriber to be notified", isCalled.get());
     }
@@ -178,7 +181,7 @@ public class SingleValueSubscriptionTest {
         Assert.assertFalse("Operation should not have succeeded", success);
         spy.assertNoUpdate("Value should not have changed");
         Assert.assertSame("Same value should be in use", value,
-                topicConnection.getTopic().getValue());
+                topicConnection.getValue());
     }
 
 }
