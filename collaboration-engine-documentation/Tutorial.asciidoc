@@ -1,0 +1,48 @@
+---
+title: Tutorial
+order: 2
+layout: page
+---
+
+[[ce.tutorial]]
+= Tutorial
+
+This tutorial shows basic steps to setup Collaboration Engine in your Vaadin project
+and subscribe a user to a single topic.
+
+[[ce.tutorial.setup]]
+== 1. Prepare the application
+
+=== 1.1. Setting up a Vaadin project
+You can download an empty Vaadin 14 project from https://vaadin.com/start/v14
+using any technology stack.
+
+=== 1.2. Update project dependency
+In the project's pom.xml file, add vaadin-prerelease repository:
+```
+ <repository>
+    <id>vaadin-prereleases</id>
+    <url>https://maven.vaadin.com/vaadin-prereleases</url>
+    <releases>
+        <enabled>true</enabled>
+    </releases>
+    <snapshots>
+        <enabled>true</enabled>
+    </snapshots>
+</repository>
+```
+add Collaboration Engine dependency:
+```
+<dependency>
+    <groupId>com.vaadin</groupId>
+    <artifactId>collaboration-engine</artifactId>
+    <version>1.0.0.alpha1</version>
+</dependency>
+```
+
+[[ce.tutorial.add-collaborative-feature]]
+== 2. Add collaborative features
+
+== 3. Run the application
+* Run the application following its README.md file
+* Access http://localhost:8080

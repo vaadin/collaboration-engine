@@ -1,0 +1,12 @@
+---
+title: Overview
+order: 1
+layout: page
+---
+
+[[ce.overview]]
+= Overview
+
+Collaboration Engine makes it very easy to develop collaborative features,
+allowing end-users to collaborate together in web apps to increase productivity
+and achieve better results.
