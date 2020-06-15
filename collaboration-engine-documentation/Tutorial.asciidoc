@@ -13,14 +13,15 @@ and subscribe a user to a single topic.
 [[ce.tutorial.setup]]
 == 1. Prepare the application
 
-=== 1.1. Setting up a Vaadin project
-You can download an empty Vaadin 14 project from https://vaadin.com/start/v14
+=== 1.1. Set up a Vaadin project
+Download an empty Vaadin 14 project from https://vaadin.com/start/v14
 using any technology stack.
 
 === 1.2. Update project dependency
-In the project's pom.xml file, add vaadin-prerelease repository:
-```
- <repository>
+In the project's pom.xml file, add the `vaadin-prerelease` repository:
+[source, xml]
+----
+<repository>
     <id>vaadin-prereleases</id>
     <url>https://maven.vaadin.com/vaadin-prereleases</url>
     <releases>
@@ -30,19 +31,88 @@ In the project's pom.xml file, add vaadin-prerelease repository:
         <enabled>true</enabled>
     </snapshots>
 </repository>
-```
-add Collaboration Engine dependency:
-```
+----
+add Collaboration Engine as a dependency:
+[source, xml]
+----
 <dependency>
     <groupId>com.vaadin</groupId>
     <artifactId>collaboration-engine</artifactId>
     <version>1.0.0.alpha1</version>
 </dependency>
-```
+----
 
 [[ce.tutorial.add-collaborative-feature]]
 == 2. Add collaborative features
+This tutorial will build a view with a checkbox where the user can choose whether they are in a Friday mood.
 
+=== 2.1 Create a simple view
+
+First, create the view with a checkbox but not yet any collaborative functionality.
+The view is annotated with `@Push` so that updates from other users can be pushed out.
+
+[source, java]
+----
+@Push
+@Route("")
+public class TutorialView extends VerticalLayout {
+  private final Checkbox checkbox;
+
+  public TutorialView() {
+      checkbox = new Checkbox("Is it Friday?");
+      add(checkbox);
+  }
+}
+----
+=== 2.2 Define topic connection
+
+Sharing data between multiple users happens through a  `TopicConnection` instance.
+Open a connection to the `tutorial` topic and store it as an instance field that we can reference later.
+
+[source, java]
+----
+private final TopicConnection topic = CollaborationEngine.getInstance()
+        .openTopicConnection("tutorial");
+----
+=== 2.3 Pass values to the topic
+
+The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
+Update the code in the constructor to add a value change listener that updates the topic.
+
+[source, java]
+----
+checkbox.addValueChangeListener(valueChangeEvent -> {
+    topic.setValue(valueChangeEvent.getValue());
+});
+----
+
+=== 2.4 Subscribe to topic value changes
+
+The final part of the code is to subscribe to updates to the topic.
+This is done in the view's attach handler so that a UI instance is available.
+The UI instance is used with `UI.access` to ensure the user's session is locked.
+It's also necessary to use a detach listener to close the subscription when the component is detached to avoid leaking memory.
+
+[source, java]
+----
+@Override
+protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+
+    Registration registration = topic.subscribe(value -> {
+        boolean friday = Boolean.TRUE.equals(value);
+        attachEvent.getUI().access(() -> checkbox.setValue(friday));
+    });
+
+    addDetachListener(detachEvent -> {
+        detachEvent.unregisterListener();
+        registration.remove();
+    });
+}
+----
+
+[[ce.tutorial.run]]
 == 3. Run the application
-* Run the application following its README.md file
-* Access http://localhost:8080
+* Follow instructions in the application's `README.md` file to start the application.
+  The exact steps depend on the chosen tech stack.
+* Open http://localhost:8080/ in multiple browser tabs to see how a change made in one tab is automatically shown in the other tabs.
