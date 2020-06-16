@@ -13,8 +13,8 @@ and achieve better results.
 
 == Central concepts
 
-Collaboration between users is managed by collecting data into a "topic" that is shared between all users interacting with the same part of the application.
-There is a separate connection (`TopicConnection`) to the topic for each user.
+Collaboration between users is managed by collecting data into "topic" instances that are shared between all users interacting with the same part of the application.
+There is a separate connection (`TopicConnection`) to a topic for each user.
 The connection can be used to update the collaboration state and to subscribe to changes to the state.
 A topic connection can be opened through a shared `CollaborationEngine` instance.
 The default instance is available using the static method `CollaborationEngine.getInstance()`.
