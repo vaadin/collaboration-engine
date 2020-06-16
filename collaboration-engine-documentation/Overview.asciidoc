@@ -7,8 +7,8 @@ layout: page
 [[ce.overview]]
 = Overview
 
-Collaboration Engine makes it very easy to develop collaborative features,
-allowing end-users to collaborate together in web apps to increase productivity
+Collaboration Engine is a library for creating collaborative features in web apps,
+allowing end-users to collaborate together to increase productivity
 and achieve better results.
 
 == Central concepts
