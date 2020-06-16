@@ -5,19 +5,20 @@ layout: page
 ---
 
 [[ce.tutorial]]
-= Tutorial
+= Getting Started with Collaboration Engine
+:sectnums:
 
-This tutorial shows basic steps to setup Collaboration Engine in your Vaadin project
+This tutorial shows basic steps to set up Collaboration Engine in your Vaadin project
 and subscribe a user to a single topic.
 
 [[ce.tutorial.setup]]
-== 1. Prepare the application
+== Prepare the Application
 
-=== 1.1. Set up a Vaadin project
+=== Set Up a Vaadin Project
 Download an empty Vaadin 14 project from https://vaadin.com/start/v14
 using any technology stack.
 
-=== 1.2. Update project dependency
+=== Update Project Dependencies
 In the project's pom.xml file, add the `vaadin-prerelease` repository:
 [source, xml]
 ----
@@ -43,10 +44,10 @@ add Collaboration Engine as a dependency:
 ----
 
 [[ce.tutorial.add-collaborative-feature]]
-== 2. Add collaborative features
+== Add Collaborative Features
 This tutorial will build a view with a checkbox where the user can choose whether they are in a Friday mood.
 
-=== 2.1 Create a simple view
+=== Create a Simple View
 
 First, create the view with a checkbox but not yet any collaborative functionality.
 The view is annotated with `@Push` so that updates from other users can be pushed out.
@@ -64,7 +65,7 @@ public class TutorialView extends VerticalLayout {
   }
 }
 ----
-=== 2.2 Define topic connection
+=== Define Topic Connection
 
 Sharing data between multiple users happens through a  `TopicConnection` instance.
 Open a connection to the `tutorial` topic and store it as an instance field that we can reference later.
@@ -74,7 +75,7 @@ Open a connection to the `tutorial` topic and store it as an instance field that
 private final TopicConnection topic = CollaborationEngine.getInstance()
         .openTopicConnection("tutorial");
 ----
-=== 2.3 Pass values to the topic
+=== Pass Values to the Topic
 
 The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
 Update the code in the constructor to add a value change listener that updates the topic.
@@ -86,7 +87,7 @@ checkbox.addValueChangeListener(valueChangeEvent -> {
 });
 ----
 
-=== 2.4 Subscribe to topic value changes
+=== Subscribe to Topic Value Changes
 
 The final part of the code is to subscribe to updates to the topic.
 This is done in the view's attach handler so that a UI instance is available.
@@ -112,7 +113,7 @@ protected void onAttach(AttachEvent attachEvent) {
 ----
 
 [[ce.tutorial.run]]
-== 3. Run the application
+== Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
   The exact steps depend on the chosen tech stack.
 * Open http://localhost:8080/ in multiple browser tabs to see how a change made in one tab is automatically shown in the other tabs.
