@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>collaboration-engine-demo</artifactId>
-    <name>Collaboration Engine Demo</name>
+    <artifactId>collaboration-engine-integration-test</artifactId>
+    <name>Integration test for Collaboration Engine</name>
     <packaging>war</packaging>
 
     <parent>
@@ -15,14 +15,15 @@
 
     <properties>
         <failOnMissingWebXml>false</failOnMissingWebXml>
-        <drivers.downloader.phase>pre-integration-test</drivers.downloader.phase>
     </properties>
 
     <repositories>
-        <!-- Repository used by many Vaadin add-ons -->
+        <!-- The order of definitions matters. Explicitly defining central here to make sure it has the highest priority. -->
+
+        <!-- Main Maven repository -->
         <repository>
-            <id>Vaadin Directory</id>
-            <url>https://maven.vaadin.com/vaadin-addons</url>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -47,8 +48,7 @@
             <!-- Replace artifactId with vaadin-core to use only free components -->
             <artifactId>vaadin</artifactId>
             <exclusions>
-                <!-- Webjars are only needed when running in Vaadin 13 compatibility 
-                    mode -->
+                <!-- Webjars are only needed when running in Vaadin 13 compatibility mode -->
                 <exclusion>
                     <groupId>com.vaadin.webjar</groupId>
                     <artifactId>*</artifactId>
@@ -101,6 +101,14 @@
             <artifactId>vaadin-testbench</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
+        <dependency>
+            <groupId>io.github.bonigarcia</groupId>
+            <artifactId>webdrivermanager</artifactId>
+            <version>3.8.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -117,8 +125,9 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
                 <configuration>
-                    <!-- If using IntelliJ IDEA with autocompilation, this 
-                        might cause lots of unnecessary compilations in the background. -->
+                    <!-- If using IntelliJ IDEA with autocompilation, this
+                    might cause lots of unnecessary compilations in the
+                    background.-->
                     <scanIntervalSeconds>2</scanIntervalSeconds>
                     <!-- Use war output directory to get the webpack files -->
                     <webAppConfig>
@@ -127,9 +136,11 @@
                 </configuration>
             </plugin>
 
-            <!-- Take care of synchronizing java dependencies and imports 
-                in package.json and main.js files. It also creates webpack.config.js if not 
-                exists yet. -->
+            <!--
+                Take care of synchronizing java dependencies and imports in
+                package.json and main.js files.
+                It also creates webpack.config.js if not exists yet.
+            -->
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
@@ -180,6 +191,9 @@
 
         <profile>
             <id>it</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -210,8 +224,7 @@
                         </executions>
                     </plugin>
 
-                    <!-- Runs the integration tests (*IT) after the server 
-                        is started -->
+                    <!-- Runs the integration tests (*IT) after the server is started -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
@@ -227,40 +240,7 @@
                         <configuration>
                             <trimStackTrace>false</trimStackTrace>
                             <enableAssertions>true</enableAssertions>
-                            <systemPropertyVariables>
-                                <!-- Pass location of downloaded webdrivers 
-                                    to the tests -->
-                                <webdriver.chrome.driver>${webdriver.chrome.driver}</webdriver.chrome.driver>
-                            </systemPropertyVariables>
                         </configuration>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>com.lazerycode.selenium</groupId>
-                        <artifactId>driver-binary-downloader-maven-plugin</artifactId>
-                        <version>1.0.17</version>
-                        <configuration>
-                            <onlyGetDriversForHostOperatingSystem>true
-                            </onlyGetDriversForHostOperatingSystem>
-                            <rootStandaloneServerDirectory>
-                                ${project.basedir}/drivers/driver
-                            </rootStandaloneServerDirectory>
-                            <downloadedZipFileDirectory>
-                                ${project.basedir}/drivers/driver_zips
-                            </downloadedZipFileDirectory>
-                            <customRepositoryMap>
-                                ${project.basedir}/drivers.xml
-                            </customRepositoryMap>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <!-- use phase "none" to skip download step -->
-                                <phase>${drivers.downloader.phase}</phase>
-                                <goals>
-                                    <goal>selenium</goal>
-                                </goals>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

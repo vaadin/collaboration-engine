@@ -68,6 +68,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <vaadin.version>14.2.0</vaadin.version>
+        <jetty.version>9.4.28.v20200408</jetty.version>
     </properties>
 
     <distributionManagement>
@@ -143,6 +144,7 @@
             <modules>
                 <module>collaboration-engine-demo</module>
                 <module>collaboration-engine-buildtools</module>
+                <module>collaboration-engine-integration-test</module>
             </modules>
         </profile>
     </profiles>
