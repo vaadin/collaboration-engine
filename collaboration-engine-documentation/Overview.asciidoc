@@ -10,3 +10,31 @@ layout: page
 Collaboration Engine makes it very easy to develop collaborative features,
 allowing end-users to collaborate together in web apps to increase productivity
 and achieve better results.
+
+== Central concepts
+
+Collaboration between users is managed by collecting data into a "topic" that is shared between all users interacting with the same part of the application.
+There is a separate connection (`TopicConnection`) to the topic for each user.
+The connection can be used to update the collaboration state and to subscribe to changes to the state.
+A topic connection can be opened through a shared `CollaborationEngine` instance.
+The default instance is available using the static method `CollaborationEngine.getInstance()`.
+A topic is identified by a free-form string.
+
+In this initial version, a topic only has a single shared value.
+It is strongly recommended that the shared value is an immutable instance since subscribers are notified only when the shared value is replaced with another instance.
+For complex values, a compare-and-set operation is available to prevent overwriting concurrent modifications to other parts of the shared data.
+
+== Limitations
+This is an early iteration of Collaboration Engine with several limitations that will be addressed in the future.
+The most noticeable limitations include:
+
+* A topic only contains a single immutable value that can be replaced.
+  Future versions will support complex data structures (arrays and maps) with support for fine-grained updates to the topic data.
+* The application developer must explicitly use `UI.access` to update components in the UI and manually start and stop connections to avoid leaking memory.
+  Future versions will allow opening a topic connection in the context of a specific UI component.
+  It will automatically use `UI.access` to notify subscribers and close the connection when the associated component is no longer attached.
+* There is not yet any high-level API for interacting with specific types of components or implementing specific use cases.
+* Topic data is not persisted between server restarts. Applications can manually persist topic data and repopulate after a restart if necessary.
+* There is no support for collaboration between multiple nodes or pods in a cluster of application servers.
+A future version will enable running Collaboration Engine as a standalone server or a cloud deployment that can be used from multiple application servers.
+* There is only support for Vaadin views implemented using Java. Support for TypeScript views will be added later.
