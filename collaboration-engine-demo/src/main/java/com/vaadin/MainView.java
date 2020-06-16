@@ -118,6 +118,8 @@ public class MainView extends VerticalLayout {
         collaboratorsAvatars.addClassName("collaborators-avatars");
         log.setClassName("log");
         showLogin();
+
+        BeaconHandler.ensureInstalled(this);
     }
 
     private void showLogin() {
