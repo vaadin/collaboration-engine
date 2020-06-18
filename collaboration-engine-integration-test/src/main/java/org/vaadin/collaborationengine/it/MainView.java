@@ -21,17 +21,12 @@ import java.util.Objects;
 public class MainView extends VerticalLayout {
 
     TopicConnection topic = CollaborationEngine.getInstance()
-            .openTopicConnection(MainView.class.getName());
+            .openTopicConnection(this, MainView.class.getName());
 
     private Button button;
     private Span span = new Span();
 
     public MainView() {
-
-        if (topic.getValue() == null) {
-            topic.setValue(0);
-        }
-
         button = new Button("Increase", e -> {
             Thread update = new Thread(() -> {
                 Integer newState = (Integer) topic.getValue() + 1;
@@ -39,6 +34,11 @@ public class MainView extends VerticalLayout {
             });
             update.start();
         });
+
+        if (topic.getValue() == null) {
+            topic.setValue(0);
+        }
+
         add(button, span);
     }
 
@@ -46,9 +46,8 @@ public class MainView extends VerticalLayout {
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
 
-        Registration registration = topic
-                .subscribe(newValue -> attachEvent.getUI().access(
-                        () -> span.setText(Objects.toString(newValue))));
+        Registration registration = topic.subscribe(
+                newValue -> span.setText(Objects.toString(newValue)));
 
         addDetachListener(detachEvent -> {
             detachEvent.unregisterListener();

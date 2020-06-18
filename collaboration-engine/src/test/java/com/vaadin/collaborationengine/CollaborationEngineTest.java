@@ -7,10 +7,13 @@ import org.junit.Test;
 public class CollaborationEngineTest {
 
     private CollaborationEngine collaborationEngine;
+    private ConnectionContext context;
 
     @Before
     public void init() {
         collaborationEngine = CollaborationEngine.getInstance();
+        context = action -> {
+            /* no implementation */};
     }
 
     @Test
@@ -26,26 +29,31 @@ public class CollaborationEngineTest {
 
     @Test
     public void openTopicConnection_notNull() {
-        Assert.assertNotNull(collaborationEngine.openTopicConnection("foo"));
+        Assert.assertNotNull(
+                collaborationEngine.openTopicConnection(context, "foo"));
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullId_throws() {
-        collaborationEngine.openTopicConnection(null);
+        collaborationEngine.openTopicConnection(context, null);
     }
 
     @Test
     public void openTopicConnections_sameTopicId_hasSameTopic() {
         Assert.assertSame(
-                collaborationEngine.openTopicConnection("foo").getTopic(),
-                collaborationEngine.openTopicConnection("foo").getTopic());
+                collaborationEngine.openTopicConnection(context, "foo")
+                        .getTopic(),
+                collaborationEngine.openTopicConnection(context, "foo")
+                        .getTopic());
     }
 
     @Test
     public void openTopicConnections_distinctTopicIds_hasDistinctTopics() {
         Assert.assertNotSame(
-                collaborationEngine.openTopicConnection("foo").getTopic(),
-                collaborationEngine.openTopicConnection("bar").getTopic());
+                collaborationEngine.openTopicConnection(context, "foo")
+                        .getTopic(),
+                collaborationEngine.openTopicConnection(context, "bar")
+                        .getTopic());
     }
 
 }

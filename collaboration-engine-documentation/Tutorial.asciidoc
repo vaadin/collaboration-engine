@@ -90,8 +90,7 @@ checkbox.addValueChangeListener(valueChangeEvent -> {
 === Subscribe to Topic Value Changes
 
 The final part of the code is to subscribe to updates to the topic.
-This is done in the view's attach handler so that a UI instance is available.
-The UI instance is used with `UI.access` to ensure the user's session is locked.
+This is done in the view's attach handler so that the subscription is opened only when the view is actually used.
 It's also necessary to use a detach listener to close the subscription when the component is detached to avoid leaking memory.
 
 [source, java]
@@ -100,10 +99,8 @@ It's also necessary to use a detach listener to close the subscription when the 
 protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
 
-    Registration registration = topic.subscribe(value -> {
-        boolean friday = Boolean.TRUE.equals(value);
-        attachEvent.getUI().access(() -> checkbox.setValue(friday));
-    });
+    Registration registration = topic.subscribe(
+            value -> checkbox.setValue(Boolean.TRUE.equals(value)));
 
     addDetachListener(detachEvent -> {
         detachEvent.unregisterListener();
@@ -111,7 +108,6 @@ protected void onAttach(AttachEvent attachEvent) {
     });
 }
 ----
-
 [[ce.tutorial.run]]
 == Run the Application
 * Follow instructions in the application's `README.md` file to start the application.

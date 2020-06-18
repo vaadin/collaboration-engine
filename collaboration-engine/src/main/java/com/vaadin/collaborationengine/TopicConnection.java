@@ -23,9 +23,11 @@ import com.vaadin.flow.shared.Registration;
 public class TopicConnection {
 
     private final Topic topic;
+    private final ConnectionContext context;
 
-    TopicConnection(Topic topic) {
+    TopicConnection(ConnectionContext context, Topic topic) {
         this.topic = topic;
+        this.context = context;
     }
 
     Topic getTopic() {
@@ -77,7 +79,8 @@ public class TopicConnection {
      *         <code>null</code>
      */
     public Registration subscribe(SingleValueSubscriber subscriber) {
-        return topic.subscribe(subscriber);
+        return topic.subscribe(newValue -> context
+                .dispatchAction(() -> subscriber.onValueChange(newValue)));
     }
 
 }

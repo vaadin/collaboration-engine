@@ -141,7 +141,7 @@ public class MainView extends VerticalLayout {
 
     private void showPersonEditor(String username) {
         TopicConnection topic = CollaborationEngine.getInstance()
-                .openTopicConnection("form");
+                .openTopicConnection(this, "form");
 
         Person person = new Person();
 
@@ -196,10 +196,8 @@ public class MainView extends VerticalLayout {
          * the form
          */
         submitButton.getElement().getNode().runWhenAttached(ui -> {
-            Registration registration = topic.subscribe(state -> {
-                ui.access(
-                        () -> showState(username, (CollaborationState) state));
-            });
+            Registration registration = topic.subscribe(
+                    state -> showState(username, (CollaborationState) state));
 
             updateState(topic,
                     state -> new CollaborationState(state.fieldStates,

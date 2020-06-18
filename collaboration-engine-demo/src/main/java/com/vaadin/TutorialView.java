@@ -14,7 +14,7 @@ import com.vaadin.flow.shared.Registration;
 @Route("tutorial")
 public class TutorialView extends VerticalLayout {
     private final TopicConnection topic = CollaborationEngine.getInstance()
-            .openTopicConnection("tutorial");
+            .openTopicConnection(this, "tutorial");
 
     private final Checkbox checkbox;
 
@@ -32,10 +32,8 @@ public class TutorialView extends VerticalLayout {
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
 
-        Registration registration = topic.subscribe(value -> {
-            boolean friday = Boolean.TRUE.equals(value);
-            attachEvent.getUI().access(() -> checkbox.setValue(friday));
-        });
+        Registration registration = topic.subscribe(
+                value -> checkbox.setValue(Boolean.TRUE.equals(value)));
 
         addDetachListener(detachEvent -> {
             detachEvent.unregisterListener();

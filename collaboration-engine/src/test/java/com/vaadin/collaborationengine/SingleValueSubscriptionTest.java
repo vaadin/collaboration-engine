@@ -3,6 +3,7 @@ package com.vaadin.collaborationengine;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.vaadin.flow.server.Command;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,11 +40,20 @@ public class SingleValueSubscriptionTest {
 
     private CollaborationEngine collaborationEngine;
     private TopicConnection topicConnection;
+    private ConnectionContext context;
 
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
-        topicConnection = collaborationEngine.openTopicConnection("foo");
+        context = new ConnectionContext() {
+            @Override
+            public void dispatchAction(Command action) {
+                action.execute();
+            }
+        };
+
+        topicConnection = collaborationEngine.openTopicConnection(context,
+                "foo");
     }
 
     @Test
@@ -69,7 +79,7 @@ public class SingleValueSubscriptionTest {
                 .subscribe(getTestSingleValueSubscriber(value, isFirstCalled));
 
         TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection("foo");
+                .openTopicConnection(context, "foo");
         AtomicBoolean isOtherCalled = new AtomicBoolean(false);
         otherConnection
                 .subscribe(getTestSingleValueSubscriber(value, isOtherCalled));
@@ -94,7 +104,7 @@ public class SingleValueSubscriptionTest {
         isFirstCalled.set(false);
 
         TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection("foo");
+                .openTopicConnection(context, "foo");
         AtomicBoolean isOtherCalled = new AtomicBoolean(false);
         otherConnection
                 .subscribe(getTestSingleValueSubscriber(value, isOtherCalled));
@@ -109,7 +119,7 @@ public class SingleValueSubscriptionTest {
     @Test
     public void subscribeWhileNotifyingSubscribers_doesNotThrow() {
         TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection("foo");
+                .openTopicConnection(context, "foo");
         topicConnection.subscribe(val -> {
             otherConnection.subscribe(val2 -> {
             });
