@@ -73,7 +73,7 @@ Open a connection to the `tutorial` topic and store it as an instance field that
 [source, java]
 ----
 private final TopicConnection topic = CollaborationEngine.getInstance()
-        .openTopicConnection("tutorial");
+        .openTopicConnection(this, "tutorial");
 ----
 === Pass Values to the Topic
 
