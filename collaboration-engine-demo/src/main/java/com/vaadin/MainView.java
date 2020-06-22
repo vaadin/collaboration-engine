@@ -38,6 +38,9 @@ public class MainView extends VerticalLayout {
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
             Collections.emptyList());
 
+    private static final String FIRST_NAME = "firstName";
+    private static final String LAST_NAME = "lastName";
+
     public static class Person {
         private String firstName = "";
         private String lastName = "";
@@ -149,8 +152,8 @@ public class MainView extends VerticalLayout {
         TextField lastName = new TextField("Last name");
 
         binder = new Binder<>(Person.class);
-        binder.forField(firstName).bind("firstName");
-        binder.forField(lastName).bind("lastName");
+        binder.forField(firstName).bind(FIRST_NAME);
+        binder.forField(lastName).bind(LAST_NAME);
         binder.setBean(person);
 
         removeAll();
@@ -171,23 +174,23 @@ public class MainView extends VerticalLayout {
         add(avatarGroups, firstName, lastName, submitButton, log);
 
         firstName.addFocusListener(
-                event -> setEditor(topic, "firstName", username));
+                event -> setEditor(topic, FIRST_NAME, username));
         lastName.addFocusListener(
-                event -> setEditor(topic, "lastName", username));
+                event -> setEditor(topic, LAST_NAME, username));
 
         firstName.addBlurListener(
-                event -> clearEditor(topic, "firstName", username));
+                event -> clearEditor(topic, FIRST_NAME, username));
         lastName.addBlurListener(
-                event -> clearEditor(topic, "lastName", username));
+                event -> clearEditor(topic, LAST_NAME, username));
 
         firstName.addValueChangeListener(event -> {
             if (event.isFromClient()) {
-                submitValue(topic, "firstName", username, event.getValue());
+                submitValue(topic, FIRST_NAME, username, event.getValue());
             }
         });
         lastName.addValueChangeListener(event -> {
             if (event.isFromClient()) {
-                submitValue(topic, "lastName", username, event.getValue());
+                submitValue(topic, LAST_NAME, username, event.getValue());
             }
         });
 
@@ -251,27 +254,24 @@ public class MainView extends VerticalLayout {
     private static void setEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " started editing " + fieldName;
-        updateFieldState(topicConnection, fieldName, message, state -> {
-            return new FieldState(state.value,
-                    Stream.concat(state.editors.stream(), Stream.of(username)));
-        });
+        updateFieldState(topicConnection, fieldName, message,
+                state -> new FieldState(state.value, Stream
+                        .concat(state.editors.stream(), Stream.of(username))));
     }
 
     private static void clearEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " stopped editing " + fieldName;
-        updateFieldState(topicConnection, fieldName, message, state -> {
-            return new FieldState(state.value, state.editors.stream()
-                    .filter(editor -> !username.equals(editor)));
-        });
+        updateFieldState(topicConnection, fieldName, message,
+                state -> new FieldState(state.value, state.editors.stream()
+                        .filter(editor -> !username.equals(editor))));
     }
 
     private static void submitValue(TopicConnection topicConnection,
             String fieldName, String username, Object value) {
         String message = username + " changed " + fieldName + " to " + value;
-        updateFieldState(topicConnection, fieldName, message, state -> {
-            return new FieldState(value, state.editors);
-        });
+        updateFieldState(topicConnection, fieldName, message,
+                state -> new FieldState(value, state.editors));
     }
 
     @SuppressWarnings("unchecked")
@@ -285,28 +285,28 @@ public class MainView extends VerticalLayout {
                         .map(AvatarGroup.AvatarGroupItem::new)
                         .collect(Collectors.toList()));
 
-        state.fieldStates.forEach((fieldName, fieldState) -> {
-            binder.getBinding(fieldName).ifPresent(binding -> {
-                @SuppressWarnings("rawtypes")
-                HasValue field = binding.getField();
-                if (fieldState.value == null) {
-                    field.clear();
-                } else {
-                    field.setValue(fieldState.value);
-                }
+        state.fieldStates.forEach((fieldName, fieldState) -> binder
+                .getBinding(fieldName).ifPresent(binding -> {
+                    @SuppressWarnings("rawtypes")
+                    HasValue field = binding.getField();
+                    if (fieldState.value == null) {
+                        field.clear();
+                    } else {
+                        field.setValue(fieldState.value);
+                    }
 
-                if (field instanceof HasElement) {
-                    HasElement component = (HasElement) field;
+                    if (field instanceof HasElement) {
+                        HasElement component = (HasElement) field;
 
-                    String effectiveEditor = fieldState.editors.stream()
-                            .filter(editor -> !username.equals(editor))
-                            .findFirst().orElse(null);
+                        String effectiveEditor = fieldState.editors.stream()
+                                .filter(editor -> !username.equals(editor))
+                                .findFirst().orElse(null);
 
-                    component.getElement().executeJs(
-                            "window.setFieldState(this, $0)", effectiveEditor);
-                }
-            });
-        });
+                        component.getElement().executeJs(
+                                "window.setFieldState(this, $0)",
+                                effectiveEditor);
+                    }
+                }));
 
         log.setText(state.activityLog);
     }

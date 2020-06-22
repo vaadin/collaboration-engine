@@ -1,5 +1,7 @@
 package org.vaadin.collaborationengine.it;
 
+import java.util.Objects;
+
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.AttachEvent;
@@ -10,8 +12,6 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
-import java.util.Objects;
-
 /**
  * The main view contains a button and a collaborative div which shows the
  * number of clicks
@@ -20,7 +20,7 @@ import java.util.Objects;
 @Push
 public class MainView extends VerticalLayout {
 
-    TopicConnection topic = CollaborationEngine.getInstance()
+    private transient TopicConnection topic = CollaborationEngine.getInstance()
             .openTopicConnection(this, MainView.class.getName());
 
     private Button button;

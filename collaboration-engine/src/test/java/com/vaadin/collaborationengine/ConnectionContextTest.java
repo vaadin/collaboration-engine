@@ -1,9 +1,10 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.server.Command;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.vaadin.flow.server.Command;
 
 public class ConnectionContextTest {
 

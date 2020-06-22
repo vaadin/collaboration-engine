@@ -1,10 +1,11 @@
 package org.vaadin.collaborationengine.it;
 
-import com.vaadin.flow.component.button.testbench.ButtonElement;
-import com.vaadin.flow.component.html.testbench.SpanElement;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import com.vaadin.flow.component.button.testbench.ButtonElement;
+import com.vaadin.flow.component.html.testbench.SpanElement;
 
 public class MainViewIT extends AbstractViewTest {
 

@@ -12,15 +12,15 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.Objects;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.server.Command;
-
-import java.util.Objects;
 
 /**
  * A built-in implementation of {@link ConnectionContext} to dispatch an action
  * in the context of a component.
- * 
+ *
  * @author Vaadin Ltd
  */
 public class ComponentConnectionContext implements ConnectionContext {
@@ -29,7 +29,7 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     /**
      * Creates a new {@link ConnectionContext} from a component.
-     * 
+     *
      * @param component
      *            the component which holds the context to execute an action,
      *            not {@code null}

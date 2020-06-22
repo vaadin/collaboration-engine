@@ -3,11 +3,11 @@ package com.vaadin.collaborationengine;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.vaadin.flow.server.Command;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
 public class SingleValueSubscriptionTest {

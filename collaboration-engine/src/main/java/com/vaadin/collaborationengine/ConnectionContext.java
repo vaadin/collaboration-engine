@@ -23,7 +23,7 @@ public interface ConnectionContext {
 
     /**
      * Dispatches the given action.
-     * 
+     *
      * @param action
      *            the action to be executed in the context
      */

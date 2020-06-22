@@ -12,24 +12,19 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.shared.Registration;
-
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-class Topic {
+import com.vaadin.flow.shared.Registration;
 
-    private final String id;
+class Topic {
 
     private final Object lock = new Object();
 
     private Object value;
-    private final List<SingleValueSubscriber> subscribers = new ArrayList<>();
-
-    Topic(String id) {
-        this.id = id;
-    }
+    private final List<SingleValueSubscriber> subscribers = new LinkedList<>();
 
     Registration subscribe(SingleValueSubscriber subscriber) {
         synchronized (lock) {

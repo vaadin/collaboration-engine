@@ -12,11 +12,11 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.component.Component;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.vaadin.flow.component.Component;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -31,6 +31,12 @@ public class CollaborationEngine {
 
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
 
+    private Map<String, Topic> topics = new ConcurrentHashMap<>();
+
+    CollaborationEngine() {
+        // package-protected to hide from users but to be usable in unit tests
+    }
+
     /**
      * Gets the {@link CollaborationEngine} singleton.
      *
@@ -40,17 +46,11 @@ public class CollaborationEngine {
         return collaborationEngine;
     }
 
-    private Map<String, Topic> topics = new ConcurrentHashMap<>();
-
-    CollaborationEngine() {
-        // package-protected to hide from users but to be usable in unit tests
-    }
-
     /**
      * Opens a connection to the collaboration topic with the provided id based
      * on a component instance. If the topic with the provided id does not exist
      * yet, it's created on demand.
-     * 
+     *
      * @param component
      *            the component which hold UI access, not {@code null}
      * @param topicId
@@ -82,7 +82,7 @@ public class CollaborationEngine {
             String topicId) {
         Objects.requireNonNull(context, "Connection context can't be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
-        Topic topic = topics.computeIfAbsent(topicId, Topic::new);
+        Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
         return new TopicConnection(context, topic);
     }
 }

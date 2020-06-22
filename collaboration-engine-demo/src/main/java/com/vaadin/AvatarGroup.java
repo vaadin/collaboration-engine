@@ -1,5 +1,6 @@
 package com.vaadin;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,13 +18,10 @@ import com.vaadin.flow.internal.JsonSerializer;
 @JsModule("@vaadin-component-factory/vcf-avatar-group/theme/lumo/vcf-avatar-group.js")
 public class AvatarGroup extends Component implements HasStyle {
 
-    public static class AvatarGroupItem {
+    public static class AvatarGroupItem implements Serializable {
         private String name;
         private String abbr;
         private String image;
-
-        public AvatarGroupItem() {
-        }
 
         public AvatarGroupItem(String name) {
             this.name = name;
@@ -55,9 +53,6 @@ public class AvatarGroup extends Component implements HasStyle {
     }
 
     private List<AvatarGroupItem> items = new ArrayList<>();
-
-    public AvatarGroup() {
-    }
 
     public List<AvatarGroupItem> getItems() {
         return Collections.unmodifiableList(items);
