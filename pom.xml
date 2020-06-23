@@ -6,7 +6,7 @@
 
     <groupId>com.vaadin</groupId>
     <artifactId>collaboration-engine-parent</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Collaboration Engine Parent</name>
 
