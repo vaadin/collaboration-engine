@@ -1,6 +1,7 @@
 package com.vaadin;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -22,7 +23,8 @@ public class TutorialView extends VerticalLayout {
         checkbox = new Checkbox("Is it Friday?");
 
         checkbox.addValueChangeListener(valueChangeEvent -> {
-            topic.setValue(valueChangeEvent.getValue());
+            CollaborativeMap map = topic.getMap();
+            map.put("value", valueChangeEvent.getValue());
         });
 
         add(checkbox);
@@ -32,8 +34,12 @@ public class TutorialView extends VerticalLayout {
     protected void onAttach(AttachEvent attachEvent) {
         super.onAttach(attachEvent);
 
-        Registration registration = topic.subscribe(
-                value -> checkbox.setValue(Boolean.TRUE.equals(value)));
+        Registration registration = topic.getMap().subscribe(event -> {
+            if ("value".equals(event.getKey())) {
+                boolean value = Boolean.TRUE.equals(event.getNewValue());
+                checkbox.setValue(value);
+            }
+        });
 
         addDetachListener(detachEvent -> {
             detachEvent.unregisterListener();

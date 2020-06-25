@@ -39,9 +39,12 @@ add Collaboration Engine as a dependency:
 <dependency>
     <groupId>com.vaadin</groupId>
     <artifactId>collaboration-engine</artifactId>
-    <version>1.0.0.alpha2</version>
+    <version>[[version]]</version>
 </dependency>
 ----
+Consult the releases page to find the version number of the latest release, e.g. `1.0.0.alpha2`.
+The latest version of this tutorial might use functionality that is only available in the latest snapshot build, i.e. `1.0-SNAPSHOT`.
+You can use the branch selector in the GitHub UI to view the tutorial that corresponds to a specific release tag.
 
 [[ce.tutorial.add-collaborative-feature]]
 == Add Collaborative Features
@@ -79,17 +82,19 @@ private final TopicConnection topic = CollaborationEngine.getInstance()
 
 The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
 Update the code in the constructor to add a value change listener that updates the topic.
+The value is with the `value` key inside the map of topic data.
 
 [source, java]
 ----
 checkbox.addValueChangeListener(valueChangeEvent -> {
-    topic.setValue(valueChangeEvent.getValue());
+    CollaborativeMap map = topic.getMap();
+    map.put("value", valueChangeEvent.getValue());
 });
 ----
 
-=== Subscribe to Topic Value Changes
+=== Subscribe to Topic Changes
 
-The final part of the code is to subscribe to updates to the topic.
+The final part of the code is to subscribe to updates to the topic and update the checkbox if the `value` key is changed.
 This is done in the view's attach handler so that the subscription is opened only when the view is actually used.
 It's also necessary to use a detach listener to close the subscription when the component is detached to avoid leaking memory.
 
@@ -99,8 +104,12 @@ It's also necessary to use a detach listener to close the subscription when the 
 protected void onAttach(AttachEvent attachEvent) {
     super.onAttach(attachEvent);
 
-    Registration registration = topic.subscribe(
-            value -> checkbox.setValue(Boolean.TRUE.equals(value)));
+    Registration registration = topic.getMap().subscribe(event -> {
+        if ("value".equals(event.getKey())) {
+            boolean value = Boolean.TRUE.equals(event.getNewValue());
+            checkbox.setValue(value);
+        }
+    });
 
     addDetachListener(detachEvent -> {
         detachEvent.unregisterListener();

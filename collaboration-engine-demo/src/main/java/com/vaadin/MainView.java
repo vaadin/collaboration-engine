@@ -1,16 +1,16 @@
 package com.vaadin;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborativeMap;
+import com.vaadin.collaborationengine.MapChangeEvent;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
@@ -33,10 +33,9 @@ import com.vaadin.flow.shared.Registration;
 @CssImport("./styles/shared-styles.css")
 @JsModule("./field-collaboration.js")
 public class MainView extends VerticalLayout {
-    private static final CollaborationState EMPTY_COLLABORATION_STATE = new CollaborationState(
-            Collections.emptyMap(), Collections.emptyList(), "");
-    private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
-            Collections.emptyList());
+
+    private static final String EDITORS = "editors";
+    private static final String EDITORS_POSTFIX = "." + EDITORS;
 
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -65,47 +64,6 @@ public class MainView extends VerticalLayout {
         public String toString() {
             return "Person [firstName=" + firstName + ", lastName=" + lastName
                     + "]";
-        }
-    }
-
-    public static final class FieldState {
-        public final Object value;
-        public final List<String> editors;
-
-        public FieldState(Object value, List<String> editors) {
-            this.value = value;
-            this.editors = Collections
-                    .unmodifiableList(new ArrayList<>(editors));
-        }
-
-        public FieldState(Object value, Stream<String> editors) {
-            this.value = value;
-            this.editors = Collections
-                    .unmodifiableList(editors.collect(Collectors.toList()));
-        }
-    }
-
-    public static class CollaborationState {
-        public final Map<String, FieldState> fieldStates;
-        public final List<String> editors;
-        public final String activityLog;
-
-        public CollaborationState(Map<String, FieldState> fieldStates,
-                List<String> editors, String activityLog) {
-            this.fieldStates = Collections
-                    .unmodifiableMap(new HashMap<>(fieldStates));
-            this.editors = Collections
-                    .unmodifiableList(new ArrayList<>(editors));
-            this.activityLog = activityLog;
-        }
-
-        public CollaborationState(Map<String, FieldState> fieldStates,
-                Stream<String> editors, String activityLog) {
-            this.fieldStates = Collections
-                    .unmodifiableMap(new HashMap<>(fieldStates));
-            this.editors = Collections
-                    .unmodifiableList(editors.collect(Collectors.toList()));
-            this.activityLog = activityLog;
         }
     }
 
@@ -199,115 +157,127 @@ public class MainView extends VerticalLayout {
          * the form
          */
         submitButton.getElement().getNode().runWhenAttached(ui -> {
-            Registration registration = topic.subscribe(
-                    state -> showState(username, (CollaborationState) state));
+            CollaborativeMap map = topic.getMap();
+            Registration registration = map
+                    .subscribe(event -> updateState(event, username));
 
-            updateState(topic,
-                    state -> new CollaborationState(state.fieldStates,
-                            Stream.concat(state.editors.stream(),
-                                    Stream.of(username)),
-                            username + " joined\n" + state.activityLog));
+            addEditor(map, EDITORS, username);
+
+            log(map, username + " joined");
 
             submitButton.addDetachListener(event -> {
                 registration.remove();
                 event.unregisterListener();
 
-                updateState(topic,
-                        state -> new CollaborationState(state.fieldStates,
-                                state.editors.stream().filter(
-                                        value -> !username.equals(value)),
-                                username + " left\n" + state.activityLog));
+                removeEditor(map, EDITORS, username);
+                log(map, username + " left");
             });
         });
     }
 
-    private static void updateState(TopicConnection topicConnection,
-            Function<CollaborationState, CollaborationState> updater) {
-        while (true) {
-            CollaborationState oldState = (CollaborationState) topicConnection
-                    .getValue();
-            CollaborationState newState = updater.apply(
-                    oldState != null ? oldState : EMPTY_COLLABORATION_STATE);
-            if (topicConnection.compareAndSet(oldState, newState)) {
-                break;
-            }
-        }
+    private static void removeEditor(CollaborativeMap map, String key,
+            String username) {
+        MainView.<List<String>> updateState(map, key, Collections.emptyList(),
+                oldEditors -> oldEditors.stream()
+                        .filter(value -> !username.equals(value))
+                        .collect(Collectors.toList()));
     }
 
-    private static void updateFieldState(TopicConnection topicConnection,
-            String fieldName, String logMessage,
-            Function<FieldState, FieldState> updater) {
-        updateState(topicConnection, state -> {
-            HashMap<String, FieldState> newStates = new HashMap<>(
-                    state.fieldStates);
+    private static void addEditor(CollaborativeMap map, String key,
+            String username) {
+        MainView.<List<String>> updateState(map, key, Collections.emptyList(),
+                oldEditors -> Stream
+                        .concat(oldEditors.stream(), Stream.of(username))
+                        .collect(Collectors.toList()));
+    }
 
-            FieldState oldFieldState = newStates.getOrDefault(fieldName,
-                    EMPTY_FIELD_STATE);
+    private static void log(CollaborativeMap map, String message) {
+        MainView.<String> updateState(map, "activityLog", "",
+                oldLog -> message + "\n" + oldLog);
+    }
 
-            newStates.put(fieldName, updater.apply(oldFieldState));
-
-            return new CollaborationState(newStates, state.editors,
-                    logMessage + "\n" + state.activityLog);
-        });
+    private static <T> void updateState(CollaborativeMap map, String key,
+            T nullValue, Function<T, T> updater) {
+        while (true) {
+            T oldValue = (T) map.get(key);
+            T newValue = updater.apply(oldValue != null ? oldValue : nullValue);
+            if (map.replace(key, oldValue, newValue)) {
+                return;
+            }
+        }
     }
 
     private static void setEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " started editing " + fieldName;
-        updateFieldState(topicConnection, fieldName, message,
-                state -> new FieldState(state.value, Stream
-                        .concat(state.editors.stream(), Stream.of(username))));
+        addEditor(topicConnection.getMap(), fieldName + EDITORS_POSTFIX,
+                username);
+        log(topicConnection.getMap(), message);
     }
 
     private static void clearEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " stopped editing " + fieldName;
-        updateFieldState(topicConnection, fieldName, message,
-                state -> new FieldState(state.value, state.editors.stream()
-                        .filter(editor -> !username.equals(editor))));
+
+        removeEditor(topicConnection.getMap(), fieldName + EDITORS_POSTFIX,
+                username);
+        log(topicConnection.getMap(), message);
     }
 
     private static void submitValue(TopicConnection topicConnection,
             String fieldName, String username, Object value) {
         String message = username + " changed " + fieldName + " to " + value;
-        updateFieldState(topicConnection, fieldName, message,
-                state -> new FieldState(value, state.editors));
+
+        topicConnection.getMap().put(fieldName + ".value", value);
+
+        log(topicConnection.getMap(), message);
     }
 
     @SuppressWarnings("unchecked")
-    private void showState(String username, CollaborationState state) {
-        if (state == null) {
-            state = EMPTY_COLLABORATION_STATE;
+    private void updateState(MapChangeEvent event, String username) {
+        Object value = event.getNewValue();
+        String key = event.getKey();
+
+        if (EDITORS.equals(key)) {
+            List<String> editors = (List<String>) value;
+            collaboratorsAvatars.setItems(
+                    editors.stream().filter(name -> !username.equals(name))
+                            .map(AvatarGroup.AvatarGroupItem::new)
+                            .collect(Collectors.toList()));
+        } else if ("activityLog".contentEquals(key)) {
+            log.setText(Objects.toString(value, ""));
+        } else if (key.endsWith(".value")) {
+            String propertyName = key.substring(0, key.indexOf('.'));
+            binder.getBinding(propertyName).ifPresent(binding -> {
+                @SuppressWarnings("rawtypes")
+                HasValue field = binding.getField();
+
+                if (value == null) {
+                    field.clear();
+                } else {
+                    field.setValue(value);
+                }
+            });
+        } else if (key.endsWith(EDITORS_POSTFIX)) {
+            String propertyName = key.substring(0, key.indexOf('.'));
+
+            binder.getBinding(propertyName).ifPresent(binding -> {
+                HasValue<?, ?> field = binding.getField();
+                if (field instanceof HasElement) {
+                    HasElement component = (HasElement) field;
+
+                    List<String> fieldEditors = (List<String>) value;
+
+                    String effectiveEditor = fieldEditors.stream()
+                            .filter(editor -> !username.equals(editor))
+                            .findFirst().orElse(null);
+
+                    component.getElement().executeJs(
+                            "window.setFieldState(this, $0)", effectiveEditor);
+                }
+            });
+        } else {
+            throw new UnsupportedOperationException("Unknown map key: " + key);
         }
-
-        collaboratorsAvatars.setItems(
-                state.editors.stream().filter(name -> !username.equals(name))
-                        .map(AvatarGroup.AvatarGroupItem::new)
-                        .collect(Collectors.toList()));
-
-        state.fieldStates.forEach((fieldName, fieldState) -> binder
-                .getBinding(fieldName).ifPresent(binding -> {
-                    @SuppressWarnings("rawtypes")
-                    HasValue field = binding.getField();
-                    if (fieldState.value == null) {
-                        field.clear();
-                    } else {
-                        field.setValue(fieldState.value);
-                    }
-
-                    if (field instanceof HasElement) {
-                        HasElement component = (HasElement) field;
-
-                        String effectiveEditor = fieldState.editors.stream()
-                                .filter(editor -> !username.equals(editor))
-                                .findFirst().orElse(null);
-
-                        component.getElement().executeJs(
-                                "window.setFieldState(this, $0)",
-                                effectiveEditor);
-                    }
-                }));
-
-        log.setText(state.activityLog);
     }
 }

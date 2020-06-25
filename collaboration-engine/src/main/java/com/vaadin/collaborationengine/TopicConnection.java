@@ -12,6 +12,12 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
+import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -35,10 +41,94 @@ public class TopicConnection {
     }
 
     /**
+     * Gets a collaborative map that can be used to track multiple values in a
+     * single topic.
+     *
+     * @return the collaborative map, not <code>null</code>
+     */
+    public CollaborativeMap getMap() {
+        return new CollaborativeMap() {
+            @Override
+            public Registration subscribe(MapSubscriber subscriber) {
+                Objects.requireNonNull(subscriber, "Subscriber cannot be null");
+                return topic.subscribeMap((key, oldValue, newValue) -> {
+                    MapChangeEvent event = new MapChangeEvent(this, key,
+                            oldValue, newValue);
+                    context.dispatchAction(() -> subscriber.onMapChange(event));
+                });
+            }
+
+            @Override
+            public boolean replace(String key, Object expectedValue,
+                    Object newValue) {
+                Objects.requireNonNull(key, "Key cannot be null");
+                return topic.withMap((map, changeListener) -> {
+                    Object oldValue = map.get(key);
+                    if (!Objects.equals(oldValue, expectedValue)) {
+                        return Boolean.FALSE;
+                    }
+
+                    if (Objects.equals(oldValue, newValue)) {
+                        return Boolean.TRUE;
+                    }
+
+                    updateMapValue(map, changeListener, key, newValue,
+                            oldValue);
+
+                    return Boolean.TRUE;
+                }).booleanValue();
+            }
+
+            @Override
+            public void put(String key, Object value) {
+                Objects.requireNonNull(key, "Key cannot be null");
+                topic.withMap((map, changeListener) -> {
+                    Object oldValue = map.get(key);
+                    if (Objects.equals(oldValue, value)) {
+                        return null;
+                    }
+
+                    updateMapValue(map, changeListener, key, value, oldValue);
+
+                    return null;
+                });
+            }
+
+            private void updateMapValue(Map<String, Object> map,
+                    MapChangeNotifier changeNotifier, String key,
+                    Object newValue, Object oldValue) {
+                if (newValue == null) {
+                    map.remove(key);
+                } else {
+                    map.put(key, newValue);
+                }
+
+                changeNotifier.onMapChange(key, oldValue, newValue);
+            }
+
+            @Override
+            public Stream<String> getKeys() {
+                return topic.withMap((map, changeListener) -> {
+                    ArrayList<String> snapshot = new ArrayList<>(map.keySet());
+                    return snapshot.stream();
+                });
+            }
+
+            @Override
+            public Object get(String key) {
+                Objects.requireNonNull(key, "Key cannot be null");
+                return topic.withMap((map, changeListener) -> map.get(key));
+            }
+        };
+    }
+
+    /**
      * Gets the current topic value.
      *
      * @return the topic value
+     * @deprecated Store values in the map instead
      */
+    @Deprecated
     public Object getValue() {
         return topic.getValue();
     }
@@ -49,7 +139,9 @@ public class TopicConnection {
      *
      * @param value
      *            the new value to set for the topic
+     * @deprecated Store values in the map instead
      */
+    @Deprecated
     public void setValue(Object value) {
         topic.setValue(value);
     }
@@ -64,7 +156,9 @@ public class TopicConnection {
      *            the value to set if the expected value is currently set
      * @return <code>true</code> if the value was updated, <code>false</code> if
      *         the previous value is retained
+     * @deprecated Store values in the map instead
      */
+    @Deprecated
     public boolean compareAndSet(Object expected, Object update) {
         return topic.compareAndSet(expected, update);
     }
@@ -77,7 +171,9 @@ public class TopicConnection {
      *            the callback for handling topic value changes
      * @return a handle that can be used for removing the subscription, not
      *         <code>null</code>
+     * @deprecated Store values in the map instead
      */
+    @Deprecated
     public Registration subscribe(SingleValueSubscriber subscriber) {
         return topic.subscribe(newValue -> context
                 .dispatchAction(() -> subscriber.onValueChange(newValue)));
