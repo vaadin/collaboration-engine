@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Text Field highlight</title>
+  <script>
+    window.polymerSkipLoadingFontRoboto = true;
+  </script>
+</head>
+
+<body>
+  <style>
+    #test {
+      padding: 20px;
+    }
+
+    html {
+      --user-color-0: green;
+    }
+  </style>
+
+  <div id="test">
+    <vaadin-text-field></vaadin-text-field>
+  </div>
+
+  <script type="module">
+    import { FieldHighlighter } from '../../src/vaadin-field-highlighter.js';
+
+    (async() => {
+      const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
+
+      await import('@vaadin/vaadin-text-field/theme/' + theme + '/vaadin-text-field.js');
+
+      const field = document.querySelector('vaadin-text-field');
+      FieldHighlighter.addUser(field, { name: 'User', index: 0 });
+
+      // show highlight
+      field.dispatchEvent(new Event('mouseover'));
+
+      window.requestAnimationFrame(() => {
+        document.getElementById('test').dataset.ready = true;
+      });
+    })();
+  </script>
+</body>
+</html>
