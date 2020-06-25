@@ -1,0 +1,26 @@
+{
+  "name": "@vaadin/field-highlighter",
+  "version": "0.0.0",
+  "author": "Vaadin Ltd",
+  "license": "https://vaadin.com/license/cval-3.0",
+  "main": "src/vaadin-field-highlighter.js",
+  "scripts": {
+    "start": "es-dev-server --node-resolve",
+    "test": "wtr test/*.js",
+    "debug": "wtr test/*.js --watch"
+  },
+  "dependencies": {
+    "@polymer/polymer": "3.2.0",
+    "@vaadin/vaadin-themable-mixin": "^1.6.1"
+  },
+  "devDependencies": {
+    "@bundled-es-modules/chai": "^4.2.2",
+    "@open-wc/testing-helpers": "^1.8.0",
+    "@vaadin/vaadin-checkbox": "^2.3.0",
+    "@vaadin/vaadin-text-field": "^2.6.0",
+    "@web/test-runner": "^0.5.15",
+    "@web/test-runner-mocha": "^0.2.4",
+    "es-dev-server": "^1.55.0",
+    "sinon": "^9.0.0"
+  }
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+  <title>Field Highlighting Example</title>
+</head>
+
+<body>
+  <style>
+    html {
+      --user-color-0: red;
+      --user-color-1: blue;
+      --user-color-2: green;
+    }
+  </style>
+
+  <div class="container" style="margin: 20px;">
+    <vaadin-text-field label="Label"></vaadin-text-field>
+    <br>
+    <vaadin-checkbox-group label="Active user">
+      <vaadin-checkbox name="user" value="Foo">Foo</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="Bar">Bar</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="Baz">Baz</vaadin-checkbox>
+    </vaadin-checkbox-group>
+  </div>
+
+  <script type="module">
+    import '@vaadin/vaadin-checkbox/vaadin-checkbox-group.js';
+    import '@vaadin/vaadin-checkbox/vaadin-checkbox.js';
+    import '@vaadin/vaadin-text-field/vaadin-text-field.js';
+    import { FieldHighlighter } from './src/vaadin-field-highlighter.js';
+
+    const field = document.querySelector('vaadin-text-field');
+    FieldHighlighter.init(field);
+
+    const group = document.querySelector('vaadin-checkbox-group');
+
+    // Switch active user
+    group.addEventListener('change', e => {
+      Array.from(group.children).forEach((checkbox, index) => {
+        const user = { name: checkbox.value, index };
+        if (group.value.indexOf(checkbox.value) > -1) {
+          FieldHighlighter.addUser(field, user);
+        } else {
+          FieldHighlighter.removeUser(field, user);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
