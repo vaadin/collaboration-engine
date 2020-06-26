@@ -15,6 +15,7 @@ package com.vaadin.collaborationengine;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
 
 /**
@@ -25,6 +26,7 @@ import com.vaadin.flow.server.Command;
  */
 public class ComponentConnectionContext implements ConnectionContext {
 
+    private volatile UI ui;
     private final Component component;
 
     /**
@@ -40,7 +42,27 @@ public class ComponentConnectionContext implements ConnectionContext {
     }
 
     @Override
+    public void setActivationHandler(ActivationHandler handler) {
+        component.addAttachListener(event -> {
+            ui = event.getUI();
+            handler.setActive(true);
+        });
+        component.addDetachListener(event -> {
+            handler.setActive(false);
+            ui = null;
+        });
+
+        component.getUI().ifPresent(componentUI -> {
+            this.ui = componentUI;
+            handler.setActive(true);
+        });
+    }
+
+    @Override
     public void dispatchAction(Command action) {
-        component.getUI().ifPresent(ui -> ui.access(action));
+        UI localUI = this.ui;
+        if (localUI != null) {
+            localUI.access(action);
+        }
     }
 }

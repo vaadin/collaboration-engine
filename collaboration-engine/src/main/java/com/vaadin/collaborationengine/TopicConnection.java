@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
+import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -30,14 +31,33 @@ public class TopicConnection {
 
     private final Topic topic;
     private final ConnectionContext context;
+    private Registration registration;
 
-    TopicConnection(ConnectionContext context, Topic topic) {
+    TopicConnection(ConnectionContext context, Topic topic,
+            SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.context = context;
+
+        context.setActivationHandler(active -> {
+            if (active) {
+                Registration callbackRegistration = connectionActivationCallback
+                        .apply(this);
+                addRegistration(callbackRegistration);
+            } else {
+                unsubscribe();
+            }
+        });
     }
 
     Topic getTopic() {
         return topic;
+    }
+
+    private void addRegistration(Registration registration) {
+        if (registration != null) {
+            this.registration = this.registration == null ? registration
+                    : Registration.combine(this.registration, registration);
+        }
     }
 
     /**
@@ -175,8 +195,15 @@ public class TopicConnection {
      */
     @Deprecated
     public Registration subscribe(SingleValueSubscriber subscriber) {
-        return topic.subscribe(newValue -> context
+        Registration topicRegistration = topic.subscribe(newValue -> context
                 .dispatchAction(() -> subscriber.onValueChange(newValue)));
+        addRegistration(topicRegistration);
+        return topicRegistration;
+    }
+
+    private void unsubscribe() {
+        registration.remove();
+        registration = null;
     }
 
 }

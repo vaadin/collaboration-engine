@@ -22,6 +22,15 @@ import com.vaadin.flow.server.Command;
 public interface ConnectionContext {
 
     /**
+     * Sets an instance of {@link ActivationHandler} to the current context.
+     * This method should include logic for updating the activation status.
+     *
+     * @param handler
+     *            the handler for activation changes
+     */
+    void setActivationHandler(ActivationHandler handler);
+
+    /**
      * Dispatches the given action.
      *
      * @param action

@@ -39,35 +39,43 @@ public class SingleValueSubscriptionTest {
     }
 
     private CollaborationEngine collaborationEngine;
-    private TopicConnection topicConnection;
     private ConnectionContext context;
+    private TopicConnection topicConnection;
 
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
         context = new ConnectionContext() {
             @Override
+            public void setActivationHandler(ActivationHandler handler) {
+                handler.setActive(true);
+            }
+
+            @Override
             public void dispatchAction(Command action) {
                 action.execute();
             }
         };
 
-        topicConnection = collaborationEngine.openTopicConnection(context,
-                "foo");
+        collaborationEngine.openTopicConnection(context, "foo", tc -> {
+            topicConnection = tc;
+            tc.subscribe(val -> {
+            });
+            return () -> {
+            };
+        });
     }
 
     @Test
     public void subscribeTopic_subscriberReceivesCurrentValue() {
         String value = "bar";
         AtomicBoolean isCalled = new AtomicBoolean(false);
-
         topicConnection.setValue(value);
         topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isCalled));
         Assert.assertEquals(
                 "The set value should be available through the getter", value,
                 topicConnection.getValue());
-
         Assert.assertTrue("Expected subscriber to be notified", isCalled.get());
     }
 
@@ -78,10 +86,8 @@ public class SingleValueSubscriptionTest {
         topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isFirstCalled));
 
-        TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection(context, "foo");
         AtomicBoolean isOtherCalled = new AtomicBoolean(false);
-        otherConnection
+        topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isOtherCalled));
 
         topicConnection.setValue(value);
@@ -96,17 +102,14 @@ public class SingleValueSubscriptionTest {
     public void subscribeTopic_onlyNewSubscriberReceivesCurrentValue() {
         String value = "bar";
         AtomicBoolean isFirstCalled = new AtomicBoolean(false);
+
         topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isFirstCalled));
-
         topicConnection.setValue(value);
-
         isFirstCalled.set(false);
 
-        TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection(context, "foo");
         AtomicBoolean isOtherCalled = new AtomicBoolean(false);
-        otherConnection
+        topicConnection
                 .subscribe(getTestSingleValueSubscriber(value, isOtherCalled));
 
         Assert.assertFalse(
@@ -118,28 +121,11 @@ public class SingleValueSubscriptionTest {
 
     @Test
     public void subscribeWhileNotifyingSubscribers_doesNotThrow() {
-        TopicConnection otherConnection = collaborationEngine
-                .openTopicConnection(context, "foo");
         topicConnection.subscribe(val -> {
-            otherConnection.subscribe(val2 -> {
+            topicConnection.subscribe(val2 -> {
             });
         });
-        otherConnection.setValue("bar");
-    }
-
-    @Test
-    public void unsubscribeTopic_subscriberNoLongerReceiveCurrentValue() {
-        String value = "bar";
-
-        AtomicBoolean isCalled = new AtomicBoolean(false);
-        Registration registration = topicConnection
-                .subscribe(getTestSingleValueSubscriber(value, isCalled));
-
-        isCalled.set(false);
-        registration.remove();
-        topicConnection.setValue(value);
-
-        Assert.assertFalse(isCalled.get());
+        topicConnection.setValue("bar");
     }
 
     private SingleValueSubscriber getTestSingleValueSubscriber(
@@ -158,18 +144,31 @@ public class SingleValueSubscriptionTest {
     }
 
     @Test
-    public void compareAndSet_currentValuePassed_newValueSet() {
-        topicConnection.setValue(LocalDate.of(2001, 1, 1));
+    public void unsubscribeTopic_subscriberNoLongerReceiveCurrentValue() {
+        String value = "bar";
 
+        AtomicBoolean isCalled = new AtomicBoolean(false);
+        Registration registration = topicConnection
+                .subscribe(getTestSingleValueSubscriber(value, isCalled));
+
+        isCalled.set(false);
+        registration.remove();
+        topicConnection.setValue(value);
+
+        Assert.assertFalse(isCalled.get());
+    }
+
+    @Test
+    public void compareAndSet_currentValuePassed_newValueSet() {
         SubscriberSpy spy = new SubscriberSpy();
+
+        topicConnection.setValue(LocalDate.of(2001, 1, 1));
         topicConnection.subscribe(spy);
         spy.reset();
 
         Object newValue = LocalDate.of(2002, 2, 2);
-
         boolean success = topicConnection
                 .compareAndSet(LocalDate.of(2001, 1, 1), newValue);
-
         Assert.assertTrue("Operation should have succeeded", success);
         spy.assertUpdate("Value should be updated", newValue);
     }
@@ -177,9 +176,9 @@ public class SingleValueSubscriptionTest {
     @Test
     public void compareAndSet_otherValuePassed_oldValueRemains() {
         Object value = LocalDate.of(2001, 1, 1);
-        topicConnection.setValue(value);
-
         SubscriberSpy spy = new SubscriberSpy();
+
+        topicConnection.setValue(value);
         topicConnection.subscribe(spy);
         spy.reset();
 
@@ -187,7 +186,6 @@ public class SingleValueSubscriptionTest {
 
         boolean success = topicConnection
                 .compareAndSet(LocalDate.of(2002, 2, 2), newValue);
-
         Assert.assertFalse("Operation should not have succeeded", success);
         spy.assertNoUpdate("Value should not have changed");
         Assert.assertSame("Same value should be in use", value,

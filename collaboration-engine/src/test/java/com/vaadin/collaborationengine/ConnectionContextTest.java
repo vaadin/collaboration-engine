@@ -8,30 +8,31 @@ import com.vaadin.flow.server.Command;
 
 public class ConnectionContextTest {
 
-    private CollaborationEngine collaborationEngine;
-    private TopicConnection topicConnection;
     private SimpleConnectionContext simpleContext;
+    private TopicConnection topicConnection;
 
     @Before
     public void init() {
-        collaborationEngine = new CollaborationEngine();
+        CollaborationEngine collaborationEngine = new CollaborationEngine();
         simpleContext = new SimpleConnectionContext();
-        topicConnection = collaborationEngine.openTopicConnection(simpleContext,
-                "foo");
+
+        collaborationEngine.openTopicConnection(simpleContext, "foo", tc -> {
+            topicConnection = tc;
+            tc.subscribe(val -> {
+            });
+            return () -> {
+            };
+        });
     }
 
     @Test
     public void subscribe_actionDispatchedThroughContext() {
-        topicConnection.subscribe(newValue -> {
-            /* no impl */});
         Assert.assertTrue("Context should be passed through.",
                 simpleContext.isCalled);
     }
 
     @Test
     public void setTopicValue_actionDispatchedThroughContext() {
-        topicConnection.subscribe(newValue -> {
-            /* no impl */});
         simpleContext.reset();
         topicConnection.setValue("bar");
         Assert.assertTrue("Context should be passed through.",
@@ -40,6 +41,11 @@ public class ConnectionContextTest {
 
     static class SimpleConnectionContext implements ConnectionContext {
         boolean isCalled = false;
+
+        @Override
+        public void setActivationHandler(ActivationHandler handler) {
+            handler.setActive(true);
+        }
 
         @Override
         public void dispatchAction(Command action) {

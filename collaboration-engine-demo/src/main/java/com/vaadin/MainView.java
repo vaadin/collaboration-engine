@@ -101,9 +101,6 @@ public class MainView extends VerticalLayout {
     }
 
     private void showPersonEditor(String username) {
-        TopicConnection topic = CollaborationEngine.getInstance()
-                .openTopicConnection(this, "form");
-
         Person person = new Person();
 
         TextField firstName = new TextField("First name");
@@ -131,48 +128,56 @@ public class MainView extends VerticalLayout {
 
         add(avatarGroups, firstName, lastName, submitButton, log);
 
-        firstName.addFocusListener(
+        /*
+         * Tie connection to submit button so that it's deactivated when
+         * detaching the form
+         */
+        CollaborationEngine.getInstance().openTopicConnection(submitButton,
+                "form", topic -> configureTopicConnection(topic, username,
+                        firstName, lastName));
+    }
+
+    private Registration configureTopicConnection(TopicConnection topic,
+            String username, TextField firstName, TextField lastName) {
+        Registration firstNameFocusRegistration = firstName.addFocusListener(
                 event -> setEditor(topic, FIRST_NAME, username));
-        lastName.addFocusListener(
+        Registration lastNameFocusRegistration = lastName.addFocusListener(
                 event -> setEditor(topic, LAST_NAME, username));
 
-        firstName.addBlurListener(
+        Registration firstNameBlurRegistration = firstName.addBlurListener(
                 event -> clearEditor(topic, FIRST_NAME, username));
-        lastName.addBlurListener(
+        Registration lastNameBlurRegistration = lastName.addBlurListener(
                 event -> clearEditor(topic, LAST_NAME, username));
 
-        firstName.addValueChangeListener(event -> {
-            if (event.isFromClient()) {
-                submitValue(topic, FIRST_NAME, username, event.getValue());
-            }
-        });
-        lastName.addValueChangeListener(event -> {
-            if (event.isFromClient()) {
-                submitValue(topic, LAST_NAME, username, event.getValue());
-            }
-        });
+        Registration firstNameValueChangeRegistration = firstName
+                .addValueChangeListener(event -> {
+                    if (event.isFromClient()) {
+                        submitValue(topic, FIRST_NAME, username,
+                                event.getValue());
+                    }
+                });
+        Registration lastNameValueChangeRegistration = lastName
+                .addValueChangeListener(event -> {
+                    if (event.isFromClient()) {
+                        submitValue(topic, LAST_NAME, username,
+                                event.getValue());
+                    }
+                });
 
-        /*
-         * Tie subscription to submit button so that it's removed when detaching
-         * the form
-         */
-        submitButton.getElement().getNode().runWhenAttached(ui -> {
-            CollaborativeMap map = topic.getMap();
-            Registration registration = map
-                    .subscribe(event -> updateState(event, username));
+        CollaborativeMap map = topic.getMap();
+        map.subscribe(event -> updateState(event, username));
+        addEditor(map, EDITORS, username);
+        log(map, username + " joined");
 
-            addEditor(map, EDITORS, username);
+        Registration editorRegistration = () -> {
+            removeEditor(map, EDITORS, username);
+            log(map, username + " left");
+        };
 
-            log(map, username + " joined");
-
-            submitButton.addDetachListener(event -> {
-                registration.remove();
-                event.unregisterListener();
-
-                removeEditor(map, EDITORS, username);
-                log(map, username + " left");
-            });
-        });
+        return Registration.combine(firstNameFocusRegistration,
+                lastNameFocusRegistration, firstNameBlurRegistration,
+                lastNameBlurRegistration, firstNameValueChangeRegistration,
+                lastNameValueChangeRegistration, editorRegistration);
     }
 
     private static void removeEditor(CollaborativeMap map, String key,

@@ -17,6 +17,8 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.shared.Registration;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -55,14 +57,15 @@ public class CollaborationEngine {
      *            the component which hold UI access, not {@code null}
      * @param topicId
      *            the id of the topic to connect to, not {@code null}
-     * @return the {@link TopicConnection} for sending and receiving updates
-     * @throws NullPointerException
-     *             if given {@code null} component or topic id
+     * @param connectionActivationCallback
+     *            the callback to be executed when a connection is activated,
+     *            not {@code null}
      */
-    public TopicConnection openTopicConnection(Component component,
-            String topicId) {
-        return openTopicConnection(new ComponentConnectionContext(component),
-                topicId);
+    public void openTopicConnection(Component component, String topicId,
+            SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
+        Objects.requireNonNull(component, "Connection context can't be null");
+        ConnectionContext context = new ComponentConnectionContext(component);
+        openTopicConnection(context, topicId, connectionActivationCallback);
     }
 
     /**
@@ -74,15 +77,19 @@ public class CollaborationEngine {
      *            context for the connection
      * @param topicId
      *            the id of the topic to connect to, not {@code null}
-     * @return the {@link TopicConnection} for sending and receiving updates
-     * @throws NullPointerException
-     *             if given {@code null} context or topic id
+     * @param connectionActivationCallback
+     *            the callback to be executed when a connection is activated,
+     *            not {@code null}
      */
-    public TopicConnection openTopicConnection(ConnectionContext context,
-            String topicId) {
+    void openTopicConnection(ConnectionContext context, String topicId,
+            SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(context, "Connection context can't be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
+        Objects.requireNonNull(connectionActivationCallback,
+                "Callback for connection activation can't be null");
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
-        return new TopicConnection(context, topic);
+
+        new TopicConnection(context, topic, connectionActivationCallback);
     }
+
 }

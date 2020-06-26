@@ -12,11 +12,7 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,9 +60,24 @@ public class CollaborativeMapTest {
 
     @Before
     public void init() {
-        connection = new CollaborationEngine()
-                .openTopicConnection(Command::execute, "topic");
-        map = connection.getMap();
+        ConnectionContext context = new ConnectionContext() {
+            @Override
+            public void setActivationHandler(ActivationHandler handler) {
+                handler.setActive(true);
+            }
+
+            @Override
+            public void dispatchAction(Command action) {
+                action.execute();
+            }
+        };
+
+        new CollaborationEngine().openTopicConnection(context, "topic",
+                topicConnection -> {
+                    this.connection = topicConnection;
+                    map = connection.getMap();
+                    return null;
+                });
         spy = new MapSubscriberSpy();
     }
 
