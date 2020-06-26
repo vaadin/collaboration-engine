@@ -12,7 +12,11 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,7 +48,7 @@ public class CollaborativeMapTest {
             Assert.assertTrue("Event should be expected for key " + key,
                     expectedOld.containsKey(key));
             Assert.assertEquals(expectedOld.remove(key), event.getOldValue());
-            Assert.assertEquals(expectedNew.remove(key), event.getNewValue());
+            Assert.assertEquals(expectedNew.remove(key), event.getValue());
         }
 
         public void assertNoExpectedEvents() {

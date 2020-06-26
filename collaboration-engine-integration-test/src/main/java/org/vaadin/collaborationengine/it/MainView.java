@@ -31,7 +31,7 @@ public class MainView extends VerticalLayout {
                     }
 
                     map.subscribe(event -> span
-                            .setText(Objects.toString(event.getNewValue())));
+                            .setText(Objects.toString(event.getValue())));
 
                     return button.addClickListener(e -> {
                         Thread update = new Thread(() -> {

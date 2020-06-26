@@ -30,7 +30,7 @@ public class TutorialView extends VerticalLayout {
                     topic.getMap().subscribe(event -> {
                         if ("value".equals(event.getKey())) {
                             boolean value = Boolean.TRUE
-                                    .equals(event.getNewValue());
+                                    .equals(event.getValue());
                             checkbox.setValue(value);
                         }
                     });

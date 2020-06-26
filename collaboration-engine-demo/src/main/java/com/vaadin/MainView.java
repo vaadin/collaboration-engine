@@ -240,7 +240,7 @@ public class MainView extends VerticalLayout {
 
     @SuppressWarnings("unchecked")
     private void updateState(MapChangeEvent event, String username) {
-        Object value = event.getNewValue();
+        Object value = event.getValue();
         String key = event.getKey();
 
         if (EDITORS.equals(key)) {

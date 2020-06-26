@@ -113,7 +113,7 @@ it can be removed when the component is detached to avoid leaking memory.
         ...
         topic.getMap().subscribe(event -> {
                 if ("value".equals(event.getKey())) {
-                    boolean value = Boolean.TRUE.equals(event.getNewValue());
+                    boolean value = Boolean.TRUE.equals(event.getValue());
                     checkbox.setValue(value);
                 }
             });

@@ -24,7 +24,7 @@ public class MapChangeEvent extends EventObject {
 
     private final String key;
     private final Object oldValue;
-    private final Object newValue;
+    private final Object value;
 
     /**
      * Creates a new map change event.
@@ -37,17 +37,17 @@ public class MapChangeEvent extends EventObject {
      * @param oldValue
      *            the old map value, or <code>null</code> if no value was
      *            present previously
-     * @param newValue
+     * @param value
      *            the new map value, or <code>null</code> if the association was
      *            removed
      */
     public MapChangeEvent(CollaborativeMap source, String key, Object oldValue,
-            Object newValue) {
+            Object value) {
         super(source);
         this.key = Objects.requireNonNull(key, "Key should not be null");
 
         this.oldValue = oldValue;
-        this.newValue = newValue;
+        this.value = value;
     }
 
     @Override
@@ -80,8 +80,8 @@ public class MapChangeEvent extends EventObject {
      * @return the new map value, or <code>null</code> if the association was
      *         removed
      */
-    public Object getNewValue() {
-        return newValue;
+    public Object getValue() {
+        return value;
     }
 
 }
