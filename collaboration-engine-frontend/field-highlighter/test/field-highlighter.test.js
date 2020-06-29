@@ -195,24 +195,6 @@ describe('field highlighter', () => {
         expect(getComputedStyle(highlighter).getPropertyValue('--_user-tag-color')).to.equal('');
       });
 
-      it('should make user tags hidden by default', () => {
-        addUser(user1);
-        expect(wrapper.hasAttribute('hidden')).to.be.true;
-      });
-
-      it('should show user tags on field mouseover', () => {
-        addUser(user1);
-        field.dispatchEvent(new Event('mouseover'));
-        expect(wrapper.hasAttribute('hidden')).to.be.false;
-      });
-
-      it('should hide user tags on field mouseout', () => {
-        addUser(user1);
-        field.dispatchEvent(new Event('mouseover'));
-        field.dispatchEvent(new Event('mouseout'));
-        expect(wrapper.hasAttribute('hidden')).to.be.true;
-      });
-
       it('should dispatch event on tag mousedown', () => {
         addUser(user1);
         const tag = wrapper.shadowRoot.querySelector('[part="tag"]');

@@ -88,20 +88,11 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
 
     this._tags = this._createTags();
     this._field.shadowRoot.appendChild(this._tags);
-
-    this._field.addEventListener('mouseover', () => {
-      this._tags.removeAttribute('hidden');
-    });
-
-    this._field.addEventListener('mouseout', () => {
-      this._tags.setAttribute('hidden', '');
-    });
   }
 
   _createTags() {
     const tags = document.createElement('vaadin-user-tags');
     tags.users = this.users;
-    tags.setAttribute('hidden', '');
     return tags;
   }
 

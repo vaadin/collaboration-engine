@@ -34,9 +34,6 @@
       const field = document.querySelector('vaadin-checkbox');
       FieldHighlighter.addUser(field, { name: 'User', index: 0 });
 
-      // show highlight
-      field.dispatchEvent(new Event('mouseover'));
-
       window.requestAnimationFrame(() => {
         document.getElementById('test').dataset.ready = true;
       });
