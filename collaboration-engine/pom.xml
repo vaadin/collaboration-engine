@@ -16,7 +16,6 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>flow-server</artifactId>
-            <version>2.2.0</version>
         </dependency>
 
         <dependency>
