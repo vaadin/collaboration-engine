@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -29,6 +30,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
+@JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();

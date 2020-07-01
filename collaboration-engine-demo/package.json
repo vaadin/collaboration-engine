@@ -59,12 +59,11 @@
       "webpack-merge": "4.2.2",
       "webpack-dev-server": "3.10.3"
     },
-    "hash": "6641749040cb55e5fa6293a4e18dd5311b3f167c42cba8da9776faa736d3d96a"
+    "hash": "18571155940a86f0b2541910ce98b95e0907f0863cb5d3d00349fbb2be142713"
   },
   "dependencies": {
     "@polymer/polymer": "3.2.0",
     "@webcomponents/webcomponentsjs": "^2.2.10",
-    "@vaadin/field-highlighter": "file:../collaboration-engine-frontend/field-highlighter",
     "@vaadin/vaadin-crud": "1.1.0",
     "@vaadin/vaadin-grid": "5.5.3",
     "@vaadin/vaadin-icons": "4.3.1",

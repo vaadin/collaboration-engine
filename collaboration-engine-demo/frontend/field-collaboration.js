@@ -1,4 +1,4 @@
-import { FieldHighlighter } from '@vaadin/field-highlighter';
+import { FieldHighlighter } from '@vaadin/flow-frontend/field-highlighter/src/vaadin-field-highlighter.js';
 
 // TODO: get color index from the server?
 const users = [];

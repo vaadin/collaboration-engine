@@ -21,4 +21,8 @@ reference-screenshots
 tsconfig.json
 types.d.ts
 node_modules/
+package-lock.json
 webpack.generated.js
+
+# resources copied at build time
+collaboration-engine/src/main/resources/META-INF/resources/frontend/field-highlighter/
