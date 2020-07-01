@@ -83,25 +83,44 @@ CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
         // logic for the connection's activation callback
     });
 ----
-=== Pass Values to the Topic
-
-The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
-Update the code in the activation callback to add a value change listener that updates the topic.
-The value is with the `value` key inside the map of topic data.
+=== Define a category in the Topic
+The topic stores collaborative data in named maps. In the activation callback, get a map by its name:
 
 [source, java]
 ----
     ...
     topic -> {
+        CollaborativeMap fieldValues = topic.getNamedMap("fieldValues");
+----
+
+=== Pass Values to the Topic
+
+The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
+`isFriday` is the key associated with the value of the checkbox.
+Add a value change listener that updates the related topic map.
+
+[source, java]
+----
+    topic -> {
+        ...
         Registration registration = checkbox
             .addValueChangeListener(valueChangeEvent -> {
-                CollaborativeMap map = topic.getMap();
-                map.put("value", valueChangeEvent.getValue());
+                fieldValues.put("isFriday", valueChangeEvent.getValue());
             });
 ----
+
+The topic's structure now looks like:
+
+----
+Topic maps
+|_ fieldValues
+  |_ isFriday: true/false
+----
+
+
 === Subscribe to Topic Changes
 
-The final part of the code is to subscribe to updates to the topic and update the checkbox if the `value` key is changed.
+The final part of the code is to subscribe to updates to the topic map and update the checkbox if the related map is changed.
 This is also done in the activation callback so that the subscription is opened only when the view is actually used.
 
 It's also necessary to return the registration of the listener so
@@ -111,14 +130,15 @@ it can be removed when the component is detached to avoid leaking memory.
 ----
     topic -> {
         ...
-        topic.getMap().subscribe(event -> {
-                if ("value".equals(event.getKey())) {
-                    boolean value = Boolean.TRUE.equals(event.getValue());
-                    checkbox.setValue(value);
-                }
-            });
+        fieldValues.subscribe(event -> {
+            if ("isFriday".equals(event.getKey())) {
+                checkbox.setValue(
+                        Boolean.TRUE.equals(event.getValue()));
+            }
+        });
 
         return registration;
+    }
 ----
 TIP: In case there are many registrations, they can be combined by `Registration.combine(registration1, registration2);`.
 [[ce.tutorial.run]]

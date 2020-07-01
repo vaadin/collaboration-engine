@@ -25,7 +25,7 @@ public class MainView extends VerticalLayout {
     public MainView() {
         CollaborationEngine.getInstance().openTopicConnection(editor,
                 MainView.class.getName(), topic -> {
-                    CollaborativeMap map = topic.getMap();
+                    CollaborativeMap map = topic.getNamedMap("values");
                     if (map.get("value") == null) {
                         map.put("value", 0);
                     }

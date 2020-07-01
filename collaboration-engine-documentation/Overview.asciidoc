@@ -20,7 +20,7 @@ A topic connection can be opened through a shared `CollaborationEngine` instance
 The default instance is available using the static method `CollaborationEngine.getInstance()`.
 A topic is identified by a free-form string.
 
-Each topic has a shared string-keyed map of values.
+A topic has multiple named maps which are shared across connections, each map contains many <String-key, value> pairs.
 It is strongly recommended that shared values are immutable instances since subscribers are notified only when the shared value is replaced with another instance but not when the contents of an existing value is updated.
 For complex values, a conditional replace operation is available to prevent overwriting concurrent modifications to other parts of the shared data.
 
@@ -28,8 +28,7 @@ For complex values, a conditional replace operation is available to prevent over
 This is an early iteration of Collaboration Engine with several limitations that will be addressed in the future.
 The most noticeable limitations include:
 
-* A topic only contains a single map of values.
-  Future versions will support complex data structures with nested arrays and maps.
+* Missing support for complex data structures with nested arrays and maps.
 * There is not yet any high-level API for interacting with specific types of components or implementing specific use cases.
 * Topic data is not persisted between server restarts.
   Applications can manually persist topic data and repopulate after a restart if necessary.

@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborativeMap;
-import com.vaadin.collaborationengine.MapChangeEvent;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
@@ -34,8 +33,10 @@ import com.vaadin.flow.shared.Registration;
 @JsModule("./field-collaboration.js")
 public class MainView extends VerticalLayout {
 
-    private static final String EDITORS = "editors";
-    private static final String EDITORS_POSTFIX = "." + EDITORS;
+    private static final String EDITOR_MAP_NAME = "editor";
+    private static final String FIELD_EDITOR_MAP_NAME = "fieldName";
+    private static final String VALUE_MAP_NAME = "value";
+    private static final String ACTIVITY_LOG_MAP_NAME = "activityLog";
 
     private static final String FIRST_NAME = "firstName";
     private static final String LAST_NAME = "lastName";
@@ -164,14 +165,25 @@ public class MainView extends VerticalLayout {
                     }
                 });
 
-        CollaborativeMap map = topic.getMap();
-        map.subscribe(event -> updateState(event, username));
-        addEditor(map, EDITORS, username);
-        log(map, username + " joined");
+        topic.getNamedMap(EDITOR_MAP_NAME)
+                .subscribe(event -> updateEditors(event.getValue(), username));
+
+        topic.getNamedMap(FIELD_EDITOR_MAP_NAME)
+                .subscribe(event -> updateFieldEditors(username,
+                        (List<String>) event.getValue(), event.getKey()));
+
+        topic.getNamedMap(VALUE_MAP_NAME).subscribe(
+                event -> updateFieldValue(event.getValue(), event.getKey()));
+
+        topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
+                event -> log.setText(Objects.toString(event.getValue(), "")));
+
+        addEditor(topic.getNamedMap(EDITOR_MAP_NAME), "", username);
+        log(topic, username + " joined");
 
         Registration editorRegistration = () -> {
-            removeEditor(map, EDITORS, username);
-            log(map, username + " left");
+            removeEditor(topic.getNamedMap(EDITOR_MAP_NAME), "", username);
+            log(topic, username + " left");
         };
 
         return Registration.combine(firstNameFocusRegistration,
@@ -182,7 +194,7 @@ public class MainView extends VerticalLayout {
 
     private static void removeEditor(CollaborativeMap map, String key,
             String username) {
-        MainView.<List<String>> updateState(map, key, Collections.emptyList(),
+        MainView.<List<String>> updateMaps(map, key, Collections.emptyList(),
                 oldEditors -> oldEditors.stream()
                         .filter(value -> !username.equals(value))
                         .collect(Collectors.toList()));
@@ -190,18 +202,18 @@ public class MainView extends VerticalLayout {
 
     private static void addEditor(CollaborativeMap map, String key,
             String username) {
-        MainView.<List<String>> updateState(map, key, Collections.emptyList(),
+        MainView.<List<String>> updateMaps(map, key, Collections.emptyList(),
                 oldEditors -> Stream
                         .concat(oldEditors.stream(), Stream.of(username))
                         .collect(Collectors.toList()));
     }
 
-    private static void log(CollaborativeMap map, String message) {
-        MainView.<String> updateState(map, "activityLog", "",
-                oldLog -> message + "\n" + oldLog);
+    private static void log(TopicConnection topic, String message) {
+        MainView.<String> updateMaps(topic.getNamedMap(ACTIVITY_LOG_MAP_NAME),
+                "", "", oldLog -> message + "\n" + oldLog);
     }
 
-    private static <T> void updateState(CollaborativeMap map, String key,
+    private static <T> void updateMaps(CollaborativeMap map, String key,
             T nullValue, Function<T, T> updater) {
         while (true) {
             T oldValue = (T) map.get(key);
@@ -215,74 +227,64 @@ public class MainView extends VerticalLayout {
     private static void setEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " started editing " + fieldName;
-        addEditor(topicConnection.getMap(), fieldName + EDITORS_POSTFIX,
+        addEditor(topicConnection.getNamedMap(FIELD_EDITOR_MAP_NAME), fieldName,
                 username);
-        log(topicConnection.getMap(), message);
+        log(topicConnection, message);
     }
 
     private static void clearEditor(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " stopped editing " + fieldName;
 
-        removeEditor(topicConnection.getMap(), fieldName + EDITORS_POSTFIX,
-                username);
-        log(topicConnection.getMap(), message);
+        removeEditor(topicConnection.getNamedMap(FIELD_EDITOR_MAP_NAME),
+                fieldName, username);
+        log(topicConnection, message);
     }
 
     private static void submitValue(TopicConnection topicConnection,
             String fieldName, String username, Object value) {
         String message = username + " changed " + fieldName + " to " + value;
 
-        topicConnection.getMap().put(fieldName + ".value", value);
-
-        log(topicConnection.getMap(), message);
+        topicConnection.getNamedMap(VALUE_MAP_NAME).put(fieldName, value);
+        log(topicConnection, message);
     }
 
     @SuppressWarnings("unchecked")
-    private void updateState(MapChangeEvent event, String username) {
-        Object value = event.getValue();
-        String key = event.getKey();
+    private void updateEditors(Object value, String username) {
+        List<String> editors = (List<String>) value;
+        collaboratorsAvatars.setItems(
+                editors.stream().filter(name -> !username.equals(name))
+                        .map(AvatarGroup.AvatarGroupItem::new)
+                        .collect(Collectors.toList()));
+    }
 
-        if (EDITORS.equals(key)) {
-            List<String> editors = (List<String>) value;
-            collaboratorsAvatars.setItems(
-                    editors.stream().filter(name -> !username.equals(name))
-                            .map(AvatarGroup.AvatarGroupItem::new)
-                            .collect(Collectors.toList()));
-        } else if ("activityLog".contentEquals(key)) {
-            log.setText(Objects.toString(value, ""));
-        } else if (key.endsWith(".value")) {
-            String propertyName = key.substring(0, key.indexOf('.'));
-            binder.getBinding(propertyName).ifPresent(binding -> {
-                @SuppressWarnings("rawtypes")
-                HasValue field = binding.getField();
+    private void updateFieldValue(Object value, String propertyName) {
+        binder.getBinding(propertyName).ifPresent(binding -> {
+            @SuppressWarnings("rawtypes")
+            HasValue field = binding.getField();
 
-                if (value == null) {
-                    field.clear();
-                } else {
-                    field.setValue(value);
-                }
-            });
-        } else if (key.endsWith(EDITORS_POSTFIX)) {
-            String propertyName = key.substring(0, key.indexOf('.'));
+            if (value == null) {
+                field.clear();
+            } else {
+                field.setValue(value);
+            }
+        });
+    }
 
-            binder.getBinding(propertyName).ifPresent(binding -> {
-                HasValue<?, ?> field = binding.getField();
-                if (field instanceof HasElement) {
-                    HasElement component = (HasElement) field;
+    private void updateFieldEditors(String username, List<String> fieldEditors,
+            String propertyName) {
+        binder.getBinding(propertyName).ifPresent(binding -> {
+            HasValue<?, ?> field = binding.getField();
+            if (field instanceof HasElement) {
+                HasElement component = (HasElement) field;
 
-                    List<String> fieldEditors = (List<String>) value;
+                String effectiveEditor = fieldEditors.stream()
+                        .filter(editor -> !username.equals(editor)).findFirst()
+                        .orElse(null);
 
-                    String effectiveEditor = fieldEditors.stream()
-                            .filter(editor -> !username.equals(editor))
-                            .findFirst().orElse(null);
-
-                    component.getElement().executeJs(
-                            "window.setFieldState(this, $0)", effectiveEditor);
-                }
-            });
-        } else {
-            throw new UnsupportedOperationException("Unknown map key: " + key);
-        }
+                component.getElement().executeJs(
+                        "window.setFieldState(this, $0)", effectiveEditor);
+            }
+        });
     }
 }

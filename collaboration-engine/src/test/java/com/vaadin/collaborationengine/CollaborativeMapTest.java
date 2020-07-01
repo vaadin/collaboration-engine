@@ -79,7 +79,7 @@ public class CollaborativeMapTest {
         new CollaborationEngine().openTopicConnection(context, "topic",
                 topicConnection -> {
                     this.connection = topicConnection;
-                    map = connection.getMap();
+                    map = connection.getNamedMap("foo");
                     return null;
                 });
         spy = new MapSubscriberSpy();
@@ -107,7 +107,7 @@ public class CollaborativeMapTest {
     }
 
     @Test
-    public void mapWitSubscriber_setNewValue_valueChangedAndEventFired() {
+    public void mapWithSubscriber_setNewValue_valueChangedAndEventFired() {
         map.subscribe(spy);
 
         spy.addExpectedEvent("one", null, "first");
@@ -119,7 +119,7 @@ public class CollaborativeMapTest {
     }
 
     @Test
-    public void mapWitSubscriber_setSameValue_noEventFired() {
+    public void mapWithSubscriber_setSameValue_noEventFired() {
         map.put("one", "first");
         spy.addExpectedEvent("one", null, "first");
         map.subscribe(spy);
@@ -154,7 +154,7 @@ public class CollaborativeMapTest {
     }
 
     @Test
-    public void mapWitSubscriber_replaceCurrentValue_succeedNoEvent() {
+    public void mapWithSubscriber_replaceCurrentValue_succeedNoEvent() {
         map.subscribe(spy);
 
         boolean succeeded = map.replace("one", null, null);
@@ -196,7 +196,7 @@ public class CollaborativeMapTest {
     }
 
     @Test
-    public void mapWitSubscriber_addAnotherSubscriber_noEventForOldSubscriber() {
+    public void mapWithSubscriber_addAnotherSubscriber_noEventForOldSubscriber() {
         map.put("one", "first");
 
         spy.addExpectedEvent("one", null, "first");

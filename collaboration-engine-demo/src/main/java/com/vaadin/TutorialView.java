@@ -21,17 +21,19 @@ public class TutorialView extends VerticalLayout {
 
         CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
                 topic -> {
+                    CollaborativeMap fieldValues = topic
+                            .getNamedMap("fieldValues");
+
                     Registration registration = checkbox
                             .addValueChangeListener(valueChangeEvent -> {
-                                CollaborativeMap map = topic.getMap();
-                                map.put("value", valueChangeEvent.getValue());
+                                fieldValues.put("isFriday",
+                                        valueChangeEvent.getValue());
                             });
 
-                    topic.getMap().subscribe(event -> {
-                        if ("value".equals(event.getKey())) {
-                            boolean value = Boolean.TRUE
-                                    .equals(event.getValue());
-                            checkbox.setValue(value);
+                    fieldValues.subscribe(event -> {
+                        if ("isFriday".equals(event.getKey())) {
+                            checkbox.setValue(
+                                    Boolean.TRUE.equals(event.getValue()));
                         }
                     });
 

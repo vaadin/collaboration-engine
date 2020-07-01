@@ -31,7 +31,7 @@ public class TopicConnection {
 
     private final Topic topic;
     private final ConnectionContext context;
-    private Registration registration;
+    private Registration combinedRegistration;
 
     TopicConnection(ConnectionContext context, Topic topic,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
@@ -55,8 +55,8 @@ public class TopicConnection {
 
     private void addRegistration(Registration registration) {
         if (registration != null) {
-            this.registration = this.registration == null ? registration
-                    : Registration.combine(this.registration, registration);
+            combinedRegistration = combinedRegistration == null ? registration
+                    : Registration.combine(combinedRegistration, registration);
         }
     }
 
@@ -66,23 +66,27 @@ public class TopicConnection {
      *
      * @return the collaborative map, not <code>null</code>
      */
-    public CollaborativeMap getMap() {
+    public CollaborativeMap getNamedMap(String name) {
         return new CollaborativeMap() {
             @Override
             public Registration subscribe(MapSubscriber subscriber) {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
-                return topic.subscribeMap((key, oldValue, newValue) -> {
-                    MapChangeEvent event = new MapChangeEvent(this, key,
-                            oldValue, newValue);
-                    context.dispatchAction(() -> subscriber.onMapChange(event));
-                });
+                Registration registration = topic.subscribeMap(name,
+                        (key, oldValue, newValue) -> {
+                            MapChangeEvent event = new MapChangeEvent(this, key,
+                                    oldValue, newValue);
+                            context.dispatchAction(
+                                    () -> subscriber.onMapChange(event));
+                        });
+                addRegistration(registration);
+                return registration;
             }
 
             @Override
             public boolean replace(String key, Object expectedValue,
                     Object newValue) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                return topic.withMap((map, changeListener) -> {
+                return topic.withMap(name, (map, changeListener) -> {
                     Object oldValue = map.get(key);
                     if (!Objects.equals(oldValue, expectedValue)) {
                         return Boolean.FALSE;
@@ -102,7 +106,7 @@ public class TopicConnection {
             @Override
             public void put(String key, Object value) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                topic.withMap((map, changeListener) -> {
+                topic.withMap(name, (map, changeListener) -> {
                     Object oldValue = map.get(key);
                     if (Objects.equals(oldValue, value)) {
                         return null;
@@ -128,7 +132,7 @@ public class TopicConnection {
 
             @Override
             public Stream<String> getKeys() {
-                return topic.withMap((map, changeListener) -> {
+                return topic.withMap(name, (map, changeListener) -> {
                     ArrayList<String> snapshot = new ArrayList<>(map.keySet());
                     return snapshot.stream();
                 });
@@ -137,7 +141,8 @@ public class TopicConnection {
             @Override
             public Object get(String key) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                return topic.withMap((map, changeListener) -> map.get(key));
+                return topic.withMap(name,
+                        (map, changeListener) -> map.get(key));
             }
         };
     }
@@ -202,8 +207,8 @@ public class TopicConnection {
     }
 
     private void unsubscribe() {
-        registration.remove();
-        registration = null;
+        combinedRegistration.remove();
+        combinedRegistration = null;
     }
 
 }

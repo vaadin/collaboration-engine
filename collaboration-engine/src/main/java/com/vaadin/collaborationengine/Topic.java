@@ -33,10 +33,10 @@ class Topic {
 
     private Object singleValue;
 
-    private final Map<String, Object> map = new HashMap<>();
+    private final Map<String, Map<String, Object>> namedMapData = new HashMap<>();
+    private final Map<String, List<MapChangeNotifier>> namedMapSubscribers = new HashMap<>();
 
     private final List<SingleValueSubscriber> subscribers = new LinkedList<>();
-    private final List<MapChangeNotifier> mapSubscribers = new LinkedList<>();
 
     Registration subscribe(SingleValueSubscriber subscriber) {
         synchronized (lock) {
@@ -47,20 +47,27 @@ class Topic {
         return () -> unsubscribe(subscriber);
     }
 
-    Registration subscribeMap(MapChangeNotifier subscriber) {
+    Registration subscribeMap(String name, MapChangeNotifier subscriber) {
         synchronized (lock) {
-            mapSubscribers.add(subscriber);
+            namedMapSubscribers.computeIfAbsent(name, key -> new LinkedList<>())
+                    .add(subscriber);
 
-            map.forEach(
-                    (key, value) -> subscriber.onMapChange(key, null, value));
+            if (namedMapData.containsKey(name)) {
+                namedMapData.get(name).forEach((key, value) -> subscriber
+                        .onMapChange(key, null, value));
+            }
         }
 
-        return () -> unsubscribeMap(subscriber);
-
+        return () -> unsubscribeMap(name, subscriber);
     }
 
-    void fireMapChangeEvent(String key, Object oldValue, Object newValue) {
-        for (MapChangeNotifier subscriber : new ArrayList<>(mapSubscribers)) {
+    void fireMapChangeEvent(String name, String key, Object oldValue,
+            Object newValue) {
+        if (!namedMapSubscribers.containsKey(name)) {
+            return;
+        }
+        for (MapChangeNotifier subscriber : new ArrayList<>(
+                namedMapSubscribers.get(name))) {
             subscriber.onMapChange(key, oldValue, newValue);
         }
     }
@@ -71,9 +78,17 @@ class Topic {
         }
     }
 
-    private void unsubscribeMap(MapChangeNotifier subscriber) {
+    private void unsubscribeMap(String name, MapChangeNotifier subscriber) {
         synchronized (lock) {
-            mapSubscribers.remove(subscriber);
+            List<MapChangeNotifier> subscribers = namedMapSubscribers.get(name);
+            if (subscribers == null) {
+                return;
+            }
+
+            subscribers.remove(subscriber);
+            if (subscribers.isEmpty()) {
+                namedMapSubscribers.remove(name);
+            }
         }
     }
 
@@ -102,10 +117,13 @@ class Topic {
         }
     }
 
-    <T> T withMap(
+    <T> T withMap(String name,
             SerializableBiFunction<Map<String, Object>, MapChangeNotifier, T> mapHandler) {
         synchronized (lock) {
-            return mapHandler.apply(map, this::fireMapChangeEvent);
+            return mapHandler.apply(
+                    namedMapData.computeIfAbsent(name, key -> new HashMap<>()),
+                    (key, oldValue, newValue) -> fireMapChangeEvent(name, key,
+                            oldValue, newValue));
         }
     }
 }
