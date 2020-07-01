@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborativeBinder;
 import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.HasElement;
@@ -23,7 +24,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
@@ -35,7 +35,6 @@ public class MainView extends VerticalLayout {
 
     private static final String EDITOR_MAP_NAME = "editor";
     private static final String FIELD_EDITOR_MAP_NAME = "fieldName";
-    private static final String VALUE_MAP_NAME = "value";
     private static final String ACTIVITY_LOG_MAP_NAME = "activityLog";
 
     private static final String FIRST_NAME = "firstName";
@@ -68,7 +67,7 @@ public class MainView extends VerticalLayout {
         }
     }
 
-    private Binder<Person> binder;
+    private CollaborativeBinder<Person> binder;
 
     private AvatarGroup collaboratorsAvatars = new AvatarGroup();
     private AvatarGroup ownAvatar = new AvatarGroup();
@@ -102,20 +101,16 @@ public class MainView extends VerticalLayout {
     }
 
     private void showPersonEditor(String username) {
-        Person person = new Person();
-
         TextField firstName = new TextField("First name");
         TextField lastName = new TextField("Last name");
 
-        binder = new Binder<>(Person.class);
-        binder.forField(firstName).bind(FIRST_NAME);
-        binder.forField(lastName).bind(LAST_NAME);
-        binder.setBean(person);
-
         removeAll();
         Button submitButton = new Button("Submit", event -> {
-            Notification.show("Submit: " + person);
-            showLogin();
+            Person person = new Person();
+            if (binder.writeBeanIfValid(person)) {
+                Notification.show("Submit: " + person);
+                showLogin();
+            }
         });
 
         ownAvatar.setItems(
@@ -150,20 +145,15 @@ public class MainView extends VerticalLayout {
         Registration lastNameBlurRegistration = lastName.addBlurListener(
                 event -> clearEditor(topic, LAST_NAME, username));
 
-        Registration firstNameValueChangeRegistration = firstName
-                .addValueChangeListener(event -> {
-                    if (event.isFromClient()) {
-                        submitValue(topic, FIRST_NAME, username,
-                                event.getValue());
-                    }
-                });
-        Registration lastNameValueChangeRegistration = lastName
-                .addValueChangeListener(event -> {
-                    if (event.isFromClient()) {
-                        submitValue(topic, LAST_NAME, username,
-                                event.getValue());
-                    }
-                });
+        binder = new CollaborativeBinder<>(Person.class,
+                topic.getNamedMap("binder"));
+        binder.forField(firstName).bind(FIRST_NAME);
+        binder.forField(lastName).bind(LAST_NAME);
+
+        binder.addValueChangeListener(e -> log(topic,
+                username + " changed "
+                        + ((TextField) e.getHasValue()).getLabel() + " to "
+                        + e.getValue()));
 
         topic.getNamedMap(EDITOR_MAP_NAME)
                 .subscribe(event -> updateEditors(event.getValue(), username));
@@ -172,13 +162,11 @@ public class MainView extends VerticalLayout {
                 .subscribe(event -> updateFieldEditors(username,
                         (List<String>) event.getValue(), event.getKey()));
 
-        topic.getNamedMap(VALUE_MAP_NAME).subscribe(
-                event -> updateFieldValue(event.getValue(), event.getKey()));
-
         topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
                 event -> log.setText(Objects.toString(event.getValue(), "")));
 
         addEditor(topic.getNamedMap(EDITOR_MAP_NAME), "", username);
+
         log(topic, username + " joined");
 
         Registration editorRegistration = () -> {
@@ -188,8 +176,7 @@ public class MainView extends VerticalLayout {
 
         return Registration.combine(firstNameFocusRegistration,
                 lastNameFocusRegistration, firstNameBlurRegistration,
-                lastNameBlurRegistration, firstNameValueChangeRegistration,
-                lastNameValueChangeRegistration, editorRegistration);
+                lastNameBlurRegistration, editorRegistration);
     }
 
     private static void removeEditor(CollaborativeMap map, String key,
@@ -241,14 +228,6 @@ public class MainView extends VerticalLayout {
         log(topicConnection, message);
     }
 
-    private static void submitValue(TopicConnection topicConnection,
-            String fieldName, String username, Object value) {
-        String message = username + " changed " + fieldName + " to " + value;
-
-        topicConnection.getNamedMap(VALUE_MAP_NAME).put(fieldName, value);
-        log(topicConnection, message);
-    }
-
     @SuppressWarnings("unchecked")
     private void updateEditors(Object value, String username) {
         List<String> editors = (List<String>) value;
@@ -256,19 +235,6 @@ public class MainView extends VerticalLayout {
                 editors.stream().filter(name -> !username.equals(name))
                         .map(AvatarGroup.AvatarGroupItem::new)
                         .collect(Collectors.toList()));
-    }
-
-    private void updateFieldValue(Object value, String propertyName) {
-        binder.getBinding(propertyName).ifPresent(binding -> {
-            @SuppressWarnings("rawtypes")
-            HasValue field = binding.getField();
-
-            if (value == null) {
-                field.clear();
-            } else {
-                field.setValue(value);
-            }
-        });
     }
 
     private void updateFieldEditors(String username, List<String> fieldEditors,

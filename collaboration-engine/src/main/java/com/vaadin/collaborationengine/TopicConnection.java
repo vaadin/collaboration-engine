@@ -53,7 +53,7 @@ public class TopicConnection {
         return topic;
     }
 
-    private void addRegistration(Registration registration) {
+    void addRegistration(Registration registration) {
         if (registration != null) {
             combinedRegistration = combinedRegistration == null ? registration
                     : Registration.combine(combinedRegistration, registration);
@@ -143,6 +143,11 @@ public class TopicConnection {
                 Objects.requireNonNull(key, "Key cannot be null");
                 return topic.withMap(name,
                         (map, changeListener) -> map.get(key));
+            }
+
+            @Override
+            public TopicConnection getConnection() {
+                return TopicConnection.this;
             }
         };
     }

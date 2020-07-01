@@ -90,4 +90,11 @@ public interface CollaborativeMap {
      *         <code>null</code>
      */
     Registration subscribe(MapSubscriber subscriber);
+
+    /**
+     * Gets the topic connection which is used to propagate changes to this map.
+     *
+     * @return the topic connection used by this map, not <code>null</code>
+     */
+    TopicConnection getConnection();
 }
