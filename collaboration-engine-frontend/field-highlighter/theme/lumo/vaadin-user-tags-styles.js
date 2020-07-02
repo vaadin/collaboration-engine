@@ -1,0 +1,47 @@
+import { css, registerStyles } from '@vaadin/vaadin-themable-mixin/register-styles.js';
+import '@vaadin/vaadin-lumo-styles/color.js';
+import '@vaadin/vaadin-lumo-styles/spacing.js';
+import '@vaadin/vaadin-lumo-styles/style.js';
+import '@vaadin/vaadin-lumo-styles/typography.js';
+
+registerStyles(
+  'vaadin-user-tags',
+  css`
+    :host {
+      --lumo-user-tags-offset: calc((var(--lumo-space-s) - 2px) * -1);
+      top: var(--lumo-user-tags-offset);
+      right: var(--lumo-user-tags-offset);
+      padding: var(--lumo-space-xs);
+    }
+
+    :host(:not(:hover)) [part='tag'] {
+      border-radius: 50%;
+      --user-tag-size: 0.5em;
+      box-shadow: none;
+    }
+  `,
+  { moduleId: 'lumo-user-tags' }
+);
+
+// TODO: Lumo colors
+registerStyles(
+  'vaadin-user-tag',
+  css`
+    :host {
+      font-family: var(--lumo-font-family);
+      font-size: var(--lumo-font-size-xxs);
+      border-radius: var(--lumo-border-radius-s);
+      box-shadow: var(--lumo-box-shadow-s);
+      --user-tag-size: auto;
+    }
+
+    [part='name'] {
+      color: var(--lumo-primary-contrast-color);
+      padding: 0.3em calc(0.3em + var(--lumo-border-radius-s) / 4);
+      line-height: 1;
+      font-weight: 500;
+      min-width: calc(var(--lumo-line-height-xs) * 1em + 0.45em);
+    }
+  `,
+  { moduleId: 'lumo-user-tag' }
+);

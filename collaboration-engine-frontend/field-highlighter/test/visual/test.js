@@ -29,5 +29,13 @@ describe('field highlight', () => {
         .waitForVisible(locator, 10000)
         .assertView(`${theme}-text-field`, locator);
     });
+
+
+    it(`${theme}-user-tags`, function() {
+      return this.browser
+        .url(`user-tags.html?theme=${theme}`)
+        .waitForVisible(locator, 10000)
+        .assertView(`${theme}-user-tags`, locator);
+    });
   });
 });

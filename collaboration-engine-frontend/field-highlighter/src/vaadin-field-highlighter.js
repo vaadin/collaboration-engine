@@ -57,9 +57,19 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
           left: -8px;
           width: calc(100% + 16px);
           height: calc(100% + 16px);
+          user-select: none;
+        }
+
+        :host::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          opacity: 0.5;
           border: 2px solid var(--_active-user-color);
           border-radius: 8px;
-          user-select: none;
         }
 
         :host([has-active-user]) {

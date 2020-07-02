@@ -15,7 +15,7 @@
     }
 
     html {
-      --user-color-0: green;
+      --user-color-0: #b300d0;
     }
   </style>
 
@@ -28,14 +28,14 @@
   </div>
 
   <script type="module">
-    import { FieldHighlighter } from '../../src/vaadin-field-highlighter.js';
-
-    (async() => {
+    (async () => {
       const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
 
       // TODO: see https://github.com/vaadin/vaadin-checkbox/issues/178
       await import('@vaadin/vaadin-checkbox/theme/' + theme + '/vaadin-checkbox.js');
       await import('@vaadin/vaadin-checkbox/theme/' + theme + '/vaadin-checkbox-group.js');
+
+      const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
 
       const field = document.querySelector('vaadin-checkbox-group');
       FieldHighlighter.addUser(field, { name: 'User', index: 0 });

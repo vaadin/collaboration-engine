@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User tags</title>
+  <script>
+    window.polymerSkipLoadingFontRoboto = true;
+  </script>
+</head>
+
+<body>
+  <style>
+    #test {
+      padding: 20px;
+    }
+
+    /* override for testing */
+    vaadin-user-tags {
+      position: relative;
+      width: 100px;
+    }
+
+    html {
+      --user-color-0: #b300d0;
+      --user-color-1: #5c62f1;
+      --user-color-2: #00ae8f;
+    }
+  </style>
+
+  <div id="test">
+    <vaadin-user-tags></vaadin-user-tags>
+  </div>
+
+  <script type="module">
+    import { css, registerStyles } from '@vaadin/vaadin-themable-mixin/register-styles.js';
+
+    (async () => {
+      const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
+
+      // Apply CSS emulating :hover state
+      if (theme === 'lumo') {
+        registerStyles(
+          'vaadin-user-tags',
+          css`
+            :host(:not(:hover)) [part="tag"] {
+              border-radius: var(--lumo-border-radius-s);
+              box-shadow: var(--lumo-box-shadow-s);
+              --user-tag-size: auto;
+              --user-tag-visibility: visible;
+            }
+          `
+        );
+      } else {
+        registerStyles(
+          'vaadin-user-tags',
+          css`
+            :host(:not(:hover)) [part="tag"] {
+              border-radius: 0.25rem;
+              box-shadow: var(--material-shadow-elevation-2dp);
+              --user-tag-size: auto;
+              --user-tag-visibility: visible;
+            }
+          `
+        );
+      }
+
+      await import('@vaadin/vaadin-text-field/theme/' + theme + '/vaadin-text-field.js');
+      await import('../../theme/' + theme + '/vaadin-user-tags.js');
+
+      const tags = document.querySelector('vaadin-user-tags');
+      tags.users = [
+        { name: 'Foo', index: 0 },
+        { name: 'Overflowing long text', index: 1 },
+        { name: 'Baz', index: 2 }
+      ];
+
+      window.requestAnimationFrame(() => {
+        document.getElementById('test').dataset.ready = true;
+      });
+    })();
+  </script>
+</body>
+</html>

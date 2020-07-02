@@ -13,11 +13,13 @@ export class UserTag extends ThemableMixin(PolymerElement) {
           display: block;
           position: relative;
           box-sizing: border-box;
+          max-width: 100%;
           margin-bottom: var(--user-tag-offset);
           background-color: var(--_user-tag-color);
           color: #fff;
           width: var(--user-tag-size);
           height: var(--user-tag-size);
+          overflow: hidden;
           border-radius: 4px;
           cursor: default;
           --user-tag-size: 8px;
@@ -29,6 +31,10 @@ export class UserTag extends ThemableMixin(PolymerElement) {
         }
 
         [part='name'] {
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          box-sizing: border-box;
           padding: 2px 4px;
           font-size: 13px;
           visibility: var(--user-tag-visibility, hidden);

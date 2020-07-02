@@ -16,7 +16,11 @@ export class UserTags extends ThemableMixin(PolymerElement) {
           z-index: 1;
           top: -6px;
           right: -6px;
+          max-width: 100%;
           padding: 4px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
         }
 
         :host([hidden]) {
@@ -24,7 +28,6 @@ export class UserTags extends ThemableMixin(PolymerElement) {
         }
 
         :host(:hover) [part='tag'] {
-          --user-tag-height: 24px;
           --user-tag-size: auto;
           --user-tag-visibility: visible;
         }
