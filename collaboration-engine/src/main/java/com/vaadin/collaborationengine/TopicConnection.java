@@ -152,65 +152,6 @@ public class TopicConnection {
         };
     }
 
-    /**
-     * Gets the current topic value.
-     *
-     * @return the topic value
-     * @deprecated Store values in the map instead
-     */
-    @Deprecated
-    public Object getValue() {
-        return topic.getValue();
-    }
-
-    /**
-     * Sets the value of the connected collaboration topic, notifying all
-     * subscribers.
-     *
-     * @param value
-     *            the new value to set for the topic
-     * @deprecated Store values in the map instead
-     */
-    @Deprecated
-    public void setValue(Object value) {
-        topic.setValue(value);
-    }
-
-    /**
-     * Atomically updates the value if the current value {@code equals} the
-     * expected value. Subscribers are notified only if the value is updated.
-     *
-     * @param expected
-     *            the expected value
-     * @param update
-     *            the value to set if the expected value is currently set
-     * @return <code>true</code> if the value was updated, <code>false</code> if
-     *         the previous value is retained
-     * @deprecated Store values in the map instead
-     */
-    @Deprecated
-    public boolean compareAndSet(Object expected, Object update) {
-        return topic.compareAndSet(expected, update);
-    }
-
-    /**
-     * Adds a subscriber which will be notified whenever someone changes the
-     * value of the collaboration topic.
-     *
-     * @param subscriber
-     *            the callback for handling topic value changes
-     * @return a handle that can be used for removing the subscription, not
-     *         <code>null</code>
-     * @deprecated Store values in the map instead
-     */
-    @Deprecated
-    public Registration subscribe(SingleValueSubscriber subscriber) {
-        Registration topicRegistration = topic.subscribe(newValue -> context
-                .dispatchAction(() -> subscriber.onValueChange(newValue)));
-        addRegistration(topicRegistration);
-        return topicRegistration;
-    }
-
     private void unsubscribe() {
         combinedRegistration.remove();
         combinedRegistration = null;

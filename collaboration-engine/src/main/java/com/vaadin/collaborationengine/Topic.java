@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.vaadin.flow.function.SerializableBiFunction;
 import com.vaadin.flow.shared.Registration;
@@ -31,21 +30,8 @@ class Topic {
 
     private final Object lock = new Object();
 
-    private Object singleValue;
-
     private final Map<String, Map<String, Object>> namedMapData = new HashMap<>();
     private final Map<String, List<MapChangeNotifier>> namedMapSubscribers = new HashMap<>();
-
-    private final List<SingleValueSubscriber> subscribers = new LinkedList<>();
-
-    Registration subscribe(SingleValueSubscriber subscriber) {
-        synchronized (lock) {
-            subscribers.add(subscriber);
-            subscriber.onValueChange(singleValue);
-        }
-
-        return () -> unsubscribe(subscriber);
-    }
 
     Registration subscribeMap(String name, MapChangeNotifier subscriber) {
         synchronized (lock) {
@@ -72,12 +58,6 @@ class Topic {
         }
     }
 
-    private void unsubscribe(SingleValueSubscriber subscriber) {
-        synchronized (lock) {
-            subscribers.remove(subscriber);
-        }
-    }
-
     private void unsubscribeMap(String name, MapChangeNotifier subscriber) {
         synchronized (lock) {
             List<MapChangeNotifier> subscribers = namedMapSubscribers.get(name);
@@ -88,31 +68,6 @@ class Topic {
             subscribers.remove(subscriber);
             if (subscribers.isEmpty()) {
                 namedMapSubscribers.remove(name);
-            }
-        }
-    }
-
-    void setValue(Object value) {
-        synchronized (lock) {
-            this.singleValue = value;
-            for (SingleValueSubscriber subscriber : new ArrayList<>(
-                    subscribers)) {
-                subscriber.onValueChange(value);
-            }
-        }
-    }
-
-    Object getValue() {
-        return singleValue;
-    }
-
-    boolean compareAndSet(Object expected, Object update) {
-        synchronized (lock) {
-            if (Objects.equals(expected, singleValue)) {
-                setValue(update);
-                return true;
-            } else {
-                return false;
             }
         }
     }

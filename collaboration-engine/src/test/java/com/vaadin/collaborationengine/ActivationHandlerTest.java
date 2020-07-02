@@ -41,7 +41,8 @@ public class ActivationHandlerTest {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
                 topicConnection -> {
-                    topicConnection.subscribe(val -> isCalled.set(true));
+                    topicConnection.getNamedMap("map")
+                            .subscribe(event -> isCalled.set(true));
                     return null;
                 });
         context.activate();
@@ -51,7 +52,7 @@ public class ActivationHandlerTest {
         SpyConnectionContext otherContext = new SpyConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
                 topicConnection -> {
-                    topicConnection.setValue("baz");
+                    topicConnection.getNamedMap("map").put("bar", "baz");
                     return null;
                 });
         otherContext.activate();
@@ -61,21 +62,21 @@ public class ActivationHandlerTest {
                 isCalled.get());
     }
 
-    WeakReference<SingleValueSubscriber> weakSubscriber;
+    WeakReference<MapSubscriber> weakSubscriber;
 
     @Test
     public void deactivateConnection_garbageCollectedTheTopicSubscriber()
             throws InterruptedException {
         collaborationEngine.openTopicConnection(context, "foo",
                 topicConnection -> {
-                    SingleValueSubscriber subscriber = new SingleValueSubscriber() {
+                    MapSubscriber subscriber = new MapSubscriber() {
                         @Override
-                        public void onValueChange(Object value) {
-                            // no impl
+                        public void onMapChange(MapChangeEvent event) {
+                            // nop
                         }
                     };
                     weakSubscriber = new WeakReference<>(subscriber);
-                    topicConnection.subscribe(weakSubscriber.get());
+                    topicConnection.getNamedMap("map").subscribe(subscriber);
                     subscriber = null;
                     return null;
                 });
@@ -91,7 +92,7 @@ public class ActivationHandlerTest {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
                 topicConnection -> {
-                    topicConnection.subscribe(val -> {
+                    topicConnection.getNamedMap("map").subscribe(event -> {
                     });
                     return () -> isCalled.set(true);
                 });
@@ -108,7 +109,7 @@ public class ActivationHandlerTest {
         collaborationEngine.openTopicConnection(context, "foo",
                 topicConnection -> {
                     isCalled.set(true);
-                    topicConnection.subscribe(val -> {
+                    topicConnection.getNamedMap("").subscribe(event -> {
                     });
                     return null;
                 });

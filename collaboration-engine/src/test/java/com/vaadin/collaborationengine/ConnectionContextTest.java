@@ -10,6 +10,7 @@ public class ConnectionContextTest {
 
     private SimpleConnectionContext simpleContext;
     private TopicConnection topicConnection;
+    private CollaborativeMap map;
 
     @Before
     public void init() {
@@ -18,7 +19,8 @@ public class ConnectionContextTest {
 
         collaborationEngine.openTopicConnection(simpleContext, "foo", tc -> {
             topicConnection = tc;
-            tc.subscribe(val -> {
+            map = tc.getNamedMap("map");
+            map.subscribe(event -> {
             });
             return () -> {
             };
@@ -27,6 +29,7 @@ public class ConnectionContextTest {
 
     @Test
     public void subscribe_actionDispatchedThroughContext() {
+        map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
                 simpleContext.isCalled);
     }
@@ -34,7 +37,7 @@ public class ConnectionContextTest {
     @Test
     public void setTopicValue_actionDispatchedThroughContext() {
         simpleContext.reset();
-        topicConnection.setValue("bar");
+        map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
                 simpleContext.isCalled);
     }
