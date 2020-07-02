@@ -131,14 +131,14 @@ describe('field highlighter', () => {
       it('should set border color based on user index', () => {
         addUser(user1);
         field.style.setProperty('--user-color-0', 'red');
-        expect(getComputedStyle(highlighter).borderColor).to.equal('rgb(255, 0, 0)');
+        expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(255, 0, 0)');
       });
 
       it('should change border color when user changes', () => {
         addUser(user1);
         addUser(user2);
         field.style.setProperty('--user-color-1', 'blue');
-        expect(getComputedStyle(highlighter).borderColor).to.equal('rgb(0, 0, 255)');
+        expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(0, 0, 255)');
       });
 
       it('should make previous user active when user is removed', () => {
@@ -192,7 +192,7 @@ describe('field highlighter', () => {
 
       it('should not set custom property if index is NaN', () => {
         addUser({ name: 'xyz', index: null });
-        expect(getComputedStyle(highlighter).getPropertyValue('--_user-tag-color')).to.equal('');
+        expect(getComputedStyle(highlighter).getPropertyValue('--vaadin-user-tag-color')).to.equal('');
       });
 
       it('should dispatch event on tag mousedown', () => {

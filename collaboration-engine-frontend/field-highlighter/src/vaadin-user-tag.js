@@ -14,16 +14,16 @@ export class UserTag extends ThemableMixin(PolymerElement) {
           position: relative;
           box-sizing: border-box;
           max-width: 100%;
-          margin-bottom: var(--user-tag-offset);
-          background-color: var(--_user-tag-color);
+          margin-bottom: var(--vaadin-user-tag-offset);
+          background-color: var(--vaadin-user-tag-color);
           color: #fff;
-          width: var(--user-tag-size);
-          height: var(--user-tag-size);
+          width: var(--vaadin-user-tag-size);
+          height: var(--vaadin-user-tag-size);
           overflow: hidden;
           border-radius: 4px;
           cursor: default;
-          --user-tag-size: 8px;
-          --user-tag-offset: 4px;
+          --vaadin-user-tag-size: 8px;
+          --vaadin-user-tag-offset: 4px;
         }
 
         :host(:last-of-type) {
@@ -37,7 +37,7 @@ export class UserTag extends ThemableMixin(PolymerElement) {
           box-sizing: border-box;
           padding: 2px 4px;
           font-size: 13px;
-          visibility: var(--user-tag-visibility, hidden);
+          visibility: var(--vaadin-user-tag-visibility, hidden);
         }
       </style>
       <!-- TODO: image / avatar -->
@@ -68,7 +68,7 @@ export class UserTag extends ThemableMixin(PolymerElement) {
 
   _indexChanged(index) {
     if (index != null) {
-      this.style.setProperty('--_user-tag-color', `var(--user-color-${index})`);
+      this.style.setProperty('--vaadin-user-tag-color', `var(--user-color-${index})`);
     }
   }
 

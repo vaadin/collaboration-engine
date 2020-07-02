@@ -16,7 +16,7 @@ registerStyles(
 
     :host(:not(:hover)) [part='tag'] {
       border-radius: 50%;
-      --user-tag-size: 0.5em;
+      --vaadin-user-tag-size: 0.5em;
       box-shadow: none;
     }
   `,
@@ -32,7 +32,7 @@ registerStyles(
       font-size: var(--lumo-font-size-xxs);
       border-radius: var(--lumo-border-radius-s);
       box-shadow: var(--lumo-box-shadow-s);
-      --user-tag-size: auto;
+      --vaadin-user-tag-size: auto;
     }
 
     [part='name'] {

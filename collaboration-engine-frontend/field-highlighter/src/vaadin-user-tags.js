@@ -28,8 +28,8 @@ export class UserTags extends ThemableMixin(PolymerElement) {
         }
 
         :host(:hover) [part='tag'] {
-          --user-tag-size: auto;
-          --user-tag-visibility: visible;
+          --vaadin-user-tag-size: auto;
+          --vaadin-user-tag-visibility: visible;
         }
       </style>
       <template id="tags" is="dom-repeat" items="[[users]]">

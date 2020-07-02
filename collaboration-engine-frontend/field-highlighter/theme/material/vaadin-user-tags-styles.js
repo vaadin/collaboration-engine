@@ -8,7 +8,7 @@ registerStyles(
   css`
     :host(:not(:hover)) [part='tag'] {
       border-radius: 50%;
-      --user-tag-size: 0.5em;
+      --vaadin-user-tag-size: 0.5em;
       box-shadow: none;
     }
   `,
@@ -24,11 +24,11 @@ registerStyles(
       font-size: 0.75rem;
       border-radius: 0.25rem;
       box-shadow: var(--material-shadow-elevation-2dp);
-      --user-tag-size: auto;
+      --vaadin-user-tag-size: auto;
     }
 
     [part='name'] {
-      background-color: var(--_user-tag-color);
+      background-color: var(--vaadin-user-tag-color);
       color: var(--material-primary-contrast-color);
       padding: 0.3em;
       line-height: 1;
