@@ -1,5 +1,7 @@
 package com.vaadin.collaborationengine;
 
+import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.shared.Registration;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -84,7 +86,7 @@ public class ActivationHandlerTest {
         context.deactivate();
         Assert.assertTrue(
                 "Expect subscriber to be garbage-collected when connection is deactivated",
-                isGarbageCollected(this.weakSubscriber));
+                TestUtils.isGarbageCollected(this.weakSubscriber));
     }
 
     @Test
@@ -123,17 +125,6 @@ public class ActivationHandlerTest {
                 isCalled.get());
     }
 
-    private static boolean isGarbageCollected(WeakReference<?> ref)
-            throws InterruptedException {
-        for (int i = 0; i < 5; i++) {
-            System.gc();
-            if (ref.get() == null) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     class SpyConnectionContext implements ConnectionContext {
 
         private ActivationHandler activationHandler;
@@ -147,8 +138,9 @@ public class ActivationHandlerTest {
         }
 
         @Override
-        public void setActivationHandler(ActivationHandler handler) {
+        public Registration setActivationHandler(ActivationHandler handler) {
             activationHandler = handler;
+            return null;
         }
 
         @Override

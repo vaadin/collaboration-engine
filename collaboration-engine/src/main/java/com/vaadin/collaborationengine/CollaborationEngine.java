@@ -62,12 +62,14 @@ public class CollaborationEngine {
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
+     * @return the handle that can be used for closing the connection
      */
-    public void openTopicConnection(Component component, String topicId,
+    public Registration openTopicConnection(Component component, String topicId,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(component, "Connection context can't be null");
         ConnectionContext context = new ComponentConnectionContext(component);
-        openTopicConnection(context, topicId, connectionActivationCallback);
+        return openTopicConnection(context, topicId,
+                connectionActivationCallback);
     }
 
     /**
@@ -82,8 +84,10 @@ public class CollaborationEngine {
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
+     * @return the handle that can be used for closing the connection
      */
-    void openTopicConnection(ConnectionContext context, String topicId,
+    public Registration openTopicConnection(ConnectionContext context,
+            String topicId,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(context, "Connection context can't be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
@@ -91,7 +95,9 @@ public class CollaborationEngine {
                 "Callback for connection activation can't be null");
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
 
-        new TopicConnection(context, topic, connectionActivationCallback);
+        TopicConnection connection = new TopicConnection(context, topic,
+                connectionActivationCallback);
+        return connection::close;
     }
 
 }

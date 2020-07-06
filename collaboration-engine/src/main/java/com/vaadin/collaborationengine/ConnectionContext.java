@@ -13,6 +13,7 @@
 package com.vaadin.collaborationengine;
 
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 /**
  * Defining how a topic connection should handle incoming changes.
@@ -27,8 +28,11 @@ public interface ConnectionContext {
      *
      * @param handler
      *            the handler for activation changes
+     * @return the registration for any logic that needs to be cleaned up if the
+     *         connection is closed permanently, or <code>null</code> if there
+     *         is nothing to clean up
      */
-    void setActivationHandler(ActivationHandler handler);
+    Registration setActivationHandler(ActivationHandler handler);
 
     /**
      * Dispatches the given action.

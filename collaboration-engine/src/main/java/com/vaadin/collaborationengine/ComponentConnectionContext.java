@@ -12,6 +12,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Component;
@@ -42,12 +43,12 @@ public class ComponentConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public void setActivationHandler(ActivationHandler handler) {
-        component.addAttachListener(event -> {
+    public Registration setActivationHandler(ActivationHandler handler) {
+        Registration attachReg = component.addAttachListener(event -> {
             ui = event.getUI();
             handler.setActive(true);
         });
-        component.addDetachListener(event -> {
+        Registration detachReg = component.addDetachListener(event -> {
             handler.setActive(false);
             ui = null;
         });
@@ -56,6 +57,8 @@ public class ComponentConnectionContext implements ConnectionContext {
             this.ui = componentUI;
             handler.setActive(true);
         });
+
+        return Registration.combine(attachReg, detachReg);
     }
 
     @Override

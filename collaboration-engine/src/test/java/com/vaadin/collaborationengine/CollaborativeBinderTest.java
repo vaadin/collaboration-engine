@@ -12,6 +12,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,9 +36,11 @@ public class CollaborativeBinderTest {
         public Client(CollaborationEngine collaborationEngine) {
             ConnectionContext context = new ConnectionContext() {
                 @Override
-                public void setActivationHandler(ActivationHandler handler) {
+                public Registration setActivationHandler(
+                        ActivationHandler handler) {
                     Client.this.activationHandler = handler;
                     handler.setActive(true);
+                    return null;
                 }
 
                 @Override

@@ -66,8 +66,10 @@ public class CollaborativeMapTest {
     public void init() {
         ConnectionContext context = new ConnectionContext() {
             @Override
-            public void setActivationHandler(ActivationHandler handler) {
+            public Registration setActivationHandler(
+                    ActivationHandler handler) {
                 handler.setActive(true);
+                return null;
             }
 
             @Override

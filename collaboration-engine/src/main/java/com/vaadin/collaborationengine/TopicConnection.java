@@ -31,20 +31,21 @@ public class TopicConnection {
 
     private final Topic topic;
     private final ConnectionContext context;
-    private Registration combinedRegistration;
+    private Registration closeRegistration;
+    private Registration deactivateRegistration;
 
     TopicConnection(ConnectionContext context, Topic topic,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.context = context;
 
-        context.setActivationHandler(active -> {
+        closeRegistration = context.setActivationHandler(active -> {
             if (active) {
                 Registration callbackRegistration = connectionActivationCallback
                         .apply(this);
                 addRegistration(callbackRegistration);
             } else {
-                unsubscribe();
+                deactivate();
             }
         });
     }
@@ -55,8 +56,10 @@ public class TopicConnection {
 
     void addRegistration(Registration registration) {
         if (registration != null) {
-            combinedRegistration = combinedRegistration == null ? registration
-                    : Registration.combine(combinedRegistration, registration);
+            deactivateRegistration = deactivateRegistration == null
+                    ? registration
+                    : Registration.combine(deactivateRegistration,
+                            registration);
         }
     }
 
@@ -152,9 +155,19 @@ public class TopicConnection {
         };
     }
 
-    private void unsubscribe() {
-        combinedRegistration.remove();
-        combinedRegistration = null;
+    private void deactivate() {
+        if (deactivateRegistration != null) {
+            deactivateRegistration.remove();
+            deactivateRegistration = null;
+        }
+    }
+
+    void close() {
+        deactivate();
+        if (closeRegistration != null) {
+            closeRegistration.remove();
+            closeRegistration = null;
+        }
     }
 
 }

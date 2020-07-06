@@ -67,6 +67,7 @@ public class MainView extends VerticalLayout {
         }
     }
 
+    private Registration closeConnection;
     private CollaborativeBinder<Person> binder;
 
     private AvatarGroup collaboratorsAvatars = new AvatarGroup();
@@ -108,6 +109,7 @@ public class MainView extends VerticalLayout {
         Button submitButton = new Button("Submit", event -> {
             Person person = new Person();
             if (binder.writeBeanIfValid(person)) {
+                closeConnection.remove();
                 Notification.show("Submit: " + person);
                 showLogin();
             }
@@ -128,9 +130,9 @@ public class MainView extends VerticalLayout {
          * Tie connection to submit button so that it's deactivated when
          * detaching the form
          */
-        CollaborationEngine.getInstance().openTopicConnection(submitButton,
-                "form", topic -> configureTopicConnection(topic, username,
-                        firstName, lastName));
+        closeConnection = CollaborationEngine.getInstance().openTopicConnection(
+                submitButton, "form", topic -> configureTopicConnection(topic,
+                        username, firstName, lastName));
     }
 
     private Registration configureTopicConnection(TopicConnection topic,

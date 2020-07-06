@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -23,8 +24,10 @@ public class MultipleCollaborativeMapTest {
     public void init() {
         ConnectionContext context = new ConnectionContext() {
             @Override
-            public void setActivationHandler(ActivationHandler handler) {
+            public Registration setActivationHandler(
+                    ActivationHandler handler) {
                 handler.setActive(true);
+                return null;
             }
 
             @Override

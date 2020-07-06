@@ -1,9 +1,12 @@
 package com.vaadin.collaborationengine;
 
+import java.lang.ref.WeakReference;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
@@ -20,8 +23,10 @@ public class CollaborationEngineTest {
         collaborationEngine = new CollaborationEngine();
         context = new ConnectionContext() {
             @Override
-            public void setActivationHandler(ActivationHandler handler) {
+            public Registration setActivationHandler(
+                    ActivationHandler handler) {
                 handler.setActive(true);
+                return null;
             }
 
             @Override
@@ -40,8 +45,7 @@ public class CollaborationEngineTest {
         collaborationEngine.openTopicConnection(context, "foo",
                 topicConnection -> {
                     Assert.assertNotNull(topicConnection);
-                    return () -> {
-                    };
+                    return null;
                 });
     }
 
@@ -85,8 +89,10 @@ public class CollaborationEngineTest {
 
         ConnectionContext otherContext = new ConnectionContext() {
             @Override
-            public void setActivationHandler(ActivationHandler handler) {
+            public Registration setActivationHandler(
+                    ActivationHandler handler) {
                 handler.setActive(true);
+                return null;
             }
 
             @Override
@@ -119,4 +125,60 @@ public class CollaborationEngineTest {
         Assert.assertNotSame(topics[0], topics[1]);
     }
 
+    @Test
+    public void reopenTopicConnection_newTopicConnectionInstance() {
+        TopicConnection[] connections = new TopicConnection[2];
+        collaborationEngine.openTopicConnection(context, "foo", topic -> {
+            connections[0] = topic;
+            return null;
+        });
+        connections[0].close();
+        collaborationEngine.openTopicConnection(context, "foo", otherTopic -> {
+            connections[1] = otherTopic;
+            return null;
+        });
+        Assert.assertNotSame(
+                "TopicConnection instance should not be reused after closing.",
+                connections[0], connections[1]);
+    }
+
+    @Test
+    public void closeTopicConnection_garbageCollectedTheActivationHandler()
+            throws InterruptedException {
+        SpyConnectionContext spyContext = new SpyConnectionContext();
+        Registration registration = collaborationEngine
+                .openTopicConnection(spyContext, "foo", topic -> {
+                    // no impl
+                    return null;
+                });
+
+        WeakReference weakRef = new WeakReference(
+                spyContext.getActivationHandler());
+        registration.remove();
+
+        Assert.assertTrue(
+                "Expect ActivationHandler to be garbage-collected when connection closed",
+                TestUtils.isGarbageCollected(weakRef));
+
+    }
+
+    class SpyConnectionContext implements ConnectionContext {
+
+        private ActivationHandler activationHandler;
+
+        @Override
+        public Registration setActivationHandler(ActivationHandler handler) {
+            activationHandler = handler;
+            return () -> activationHandler = null;
+        }
+
+        public ActivationHandler getActivationHandler() {
+            return activationHandler;
+        }
+
+        @Override
+        public void dispatchAction(Command action) {
+            action.execute();
+        }
+    }
 }

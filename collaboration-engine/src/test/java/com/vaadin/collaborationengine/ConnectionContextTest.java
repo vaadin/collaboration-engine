@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,8 +47,9 @@ public class ConnectionContextTest {
         boolean isCalled = false;
 
         @Override
-        public void setActivationHandler(ActivationHandler handler) {
+        public Registration setActivationHandler(ActivationHandler handler) {
             handler.setActive(true);
+            return null;
         }
 
         @Override
