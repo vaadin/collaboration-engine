@@ -1,64 +1,143 @@
-/*
- * Copyright (C) 2020 Vaadin Ltd
- *
- * This program is available under Commercial Vaadin Add-On License 3.0
- * (CVALv3).
- *
- * See the file licensing.txt distributed with this software for more
- * information about licensing.
- *
- * You should have received a copy of the license along with this program.
- * If not, see <http://vaadin.com/license/cval-3>.
- */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.shared.Registration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 /**
- * A built-in implementation of {@link ConnectionContext} to dispatch an action
- * in the context of a component.
+ * A connection context based on the attach state of a set of component
+ * instances. The context is considered active whenever at least one tracked
+ * component is attached. All attached components must belong to the same UI
+ * instance, and this UI instance is used to dispatch actions using
+ * {@link UI#access(Command)}.
  *
  * @author Vaadin Ltd
  */
 public class ComponentConnectionContext implements ConnectionContext {
 
+    private final Map<Component, Registration> componentListeners = new HashMap<>();
+    private final Set<Component> attachedComponents = new HashSet<>();
+
     private volatile UI ui;
-    private final Component component;
+
+    private ActivationHandler activationHandler;
 
     /**
-     * Creates a new {@link ConnectionContext} from a component.
+     * Creates an empty component connection context.
+     */
+    public ComponentConnectionContext() {
+        // Nothing to do here
+    }
+
+    /**
+     * Creates a new component connection context which is initially using a
+     * single component.
      *
      * @param component
-     *            the component which holds the context to execute an action,
-     *            not {@code null}
+     *            the component to use, not <code>null</code>
      */
     public ComponentConnectionContext(Component component) {
+        addComponent(component);
+    }
+
+    /**
+     * Adds a component instance to track for this context. Calling this method
+     * again with a component that is already tracked has no effect.
+     *
+     * @param component
+     *            the component to track, not <code>null</code>
+     * @see #removeComponent(Component)
+     */
+    public void addComponent(Component component) {
         Objects.requireNonNull(component, "Component can't be null.");
-        this.component = component;
+
+        if (!componentListeners.containsKey(component)) {
+            Registration attachRegistration = component.addAttachListener(
+                    event -> markAsAttached(event.getUI(), event.getSource()));
+            Registration detachRegistration = component.addDetachListener(
+                    event -> markAsDetached(event.getSource()));
+
+            componentListeners.put(component, Registration
+                    .combine(attachRegistration, detachRegistration));
+
+            component.getUI().ifPresent(
+                    componentUi -> markAsAttached(componentUi, component));
+        }
+    }
+
+    /**
+     * Stops tracking a component for this context. Calling this method for a
+     * component that isn't tracked has no effect.
+     *
+     * @param component
+     *            the component to stop tracking, not <code>null</code>
+     * @see #addComponent(Component)
+     */
+    public void removeComponent(Component component) {
+        Objects.requireNonNull(component, "Component can't be null.");
+
+        Registration registration = componentListeners.remove(component);
+        if (registration != null) {
+            registration.remove();
+            markAsDetached(component);
+        }
+    }
+
+    private void markAsAttached(UI componentUi, Component component) {
+        if (attachedComponents.add(component)) {
+            if (attachedComponents.size() == 1) {
+                // First attach
+                this.ui = componentUi;
+                if (activationHandler != null) {
+                    activationHandler.setActive(true);
+                }
+            } else if (componentUi != ui) {
+                throw new IllegalStateException(
+                        "All components in this connection context must be associated with the same UI.");
+            }
+        }
+    }
+
+    private void markAsDetached(Component component) {
+        if (attachedComponents.remove(component)) {
+            if (attachedComponents.isEmpty()) {
+                // Last detach
+                if (activationHandler != null) {
+                    activationHandler.setActive(false);
+                }
+                this.ui = null;
+            }
+        }
     }
 
     @Override
-    public Registration setActivationHandler(ActivationHandler handler) {
-        Registration attachReg = component.addAttachListener(event -> {
-            ui = event.getUI();
-            handler.setActive(true);
-        });
-        Registration detachReg = component.addDetachListener(event -> {
-            handler.setActive(false);
+    public Registration setActivationHandler(
+            ActivationHandler activationHandler) {
+        if (this.activationHandler != null) {
+            throw new IllegalStateException(
+                    "An activation handler has already been set for this context");
+        }
+        this.activationHandler = Objects.requireNonNull(activationHandler,
+                "Activation handler cannot be null");
+
+        if (this.ui != null) {
+            activationHandler.setActive(true);
+        }
+
+        return () -> {
+            // This instance won't be used again, release all references
+            componentListeners.values().forEach(Registration::remove);
+            componentListeners.clear();
+            attachedComponents.clear();
             ui = null;
-        });
-
-        component.getUI().ifPresent(componentUI -> {
-            this.ui = componentUI;
-            handler.setActive(true);
-        });
-
-        return Registration.combine(attachReg, detachReg);
+        };
     }
 
     @Override
