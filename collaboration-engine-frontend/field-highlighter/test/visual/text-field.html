@@ -32,7 +32,7 @@
       const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
 
       const field = document.querySelector('vaadin-text-field');
-      FieldHighlighter.addUser(field, { name: 'User', index: 0 });
+      FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });
 
       window.requestAnimationFrame(() => {
         document.getElementById('test').dataset.ready = true;

@@ -50,9 +50,9 @@ export class UserTag extends ThemableMixin(PolymerElement) {
       name: {
         type: String
       },
-      index: {
+      colorIndex: {
         type: Number,
-        observer: '_indexChanged'
+        observer: '_colorIndexChanged'
       }
     };
   }
@@ -66,7 +66,7 @@ export class UserTag extends ThemableMixin(PolymerElement) {
     this.addEventListener('mousedown', this._onClick.bind(this), true);
   }
 
-  _indexChanged(index) {
+  _colorIndexChanged(index) {
     if (index != null) {
       this.style.setProperty('--vaadin-user-tag-color', `var(--user-color-${index})`);
     }

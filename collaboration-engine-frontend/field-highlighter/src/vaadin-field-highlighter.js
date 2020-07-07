@@ -144,7 +144,7 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
   _userChanged(user) {
     if (user) {
       this.setAttribute('has-active-user', '');
-      this.style.setProperty('--_active-user-color', `var(--user-color-${user.index})`);
+      this.style.setProperty('--_active-user-color', `var(--user-color-${user.colorIndex})`);
     } else {
       this.style.removeProperty('--_active-user-color');
       this.removeAttribute('has-active-user');

@@ -47,8 +47,8 @@ describe('field highlighter', () => {
   });
 
   describe('users', () => {
-    const user1 = { name: 'foo', index: 0 };
-    const user2 = { name: 'var', index: 1 };
+    const user1 = { name: 'foo', colorIndex: 0 };
+    const user2 = { name: 'var', colorIndex: 1 };
 
     const addUser = (user) => {
       FieldHighlighter.addUser(field, user);
@@ -191,7 +191,7 @@ describe('field highlighter', () => {
       });
 
       it('should not set custom property if index is NaN', () => {
-        addUser({ name: 'xyz', index: null });
+        addUser({ name: 'xyz', colorIndex: null });
         expect(getComputedStyle(highlighter).getPropertyValue('--vaadin-user-tag-color')).to.equal('');
       });
 

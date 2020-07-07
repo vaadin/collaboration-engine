@@ -39,7 +39,7 @@
     // Switch active user
     group.addEventListener('change', e => {
       Array.from(group.children).forEach((checkbox, index) => {
-        const user = { name: checkbox.value, index };
+        const user = { name: checkbox.value, colorIndex: index };
         if (group.value.indexOf(checkbox.value) > -1) {
           FieldHighlighter.addUser(field, user);
         } else {

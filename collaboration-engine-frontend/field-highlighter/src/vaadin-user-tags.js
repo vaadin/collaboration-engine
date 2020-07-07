@@ -33,7 +33,7 @@ export class UserTags extends ThemableMixin(PolymerElement) {
         }
       </style>
       <template id="tags" is="dom-repeat" items="[[users]]">
-        <vaadin-user-tag name="[[item.name]]" index="[[item.index]]" part="tag"></vaadin-user-tag>
+        <vaadin-user-tag name="[[item.name]]" color-index="[[item.colorIndex]]" part="tag"></vaadin-user-tag>
       </template>
     `;
   }

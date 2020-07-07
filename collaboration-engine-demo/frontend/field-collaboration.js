@@ -10,7 +10,7 @@ window.setFieldState = (field, activeUser) => {
         index = users.length - 1;
     }
 
-    const user = { name: activeUser, index };
+    const user = { name: activeUser, colorIndex: index };
     if (activeUser) {
         FieldHighlighter.addUser(field, user);
     } else {
