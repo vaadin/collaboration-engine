@@ -106,12 +106,8 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
     return tags;
   }
 
-  findUser(name) {
-    return this.users.find((user) => user.name === name);
-  }
-
   addUser(user) {
-    if (user && !this.findUser(user.name)) {
+    if (user) {
       this.push('users', user);
       if (this._tags) {
         this._tags.setUsers(this.users);
@@ -122,21 +118,27 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
     }
   }
 
-  removeUser(user = this.user) {
-    if (user) {
-      const index = this.users.findIndex((item) => item.name === user.name);
-      if (index !== -1) {
+  removeUser(user) {
+    if (user && user.id !== undefined) {
+      let index;
+      for (let i = 0; i < this.users.length; i++) {
+        if (this.users[i].id === user.id) {
+          index = i;
+          break;
+        }
+      }
+      if (index !== undefined) {
         this.splice('users', index, 1);
         if (this._tags) {
           this._tags.setUsers(this.users);
         }
-      }
 
-      // Change or remove active user
-      if (this.users.length > 0) {
-        this.user = this.users[this.users.length - 1];
-      } else {
-        this.user = null;
+        // Change or remove active user
+        if (this.users.length > 0) {
+          this.user = this.users[this.users.length - 1];
+        } else {
+          this.user = null;
+        }
       }
     }
   }

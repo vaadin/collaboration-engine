@@ -47,8 +47,8 @@ describe('field highlighter', () => {
   });
 
   describe('users', () => {
-    const user1 = { name: 'foo', colorIndex: 0 };
-    const user2 = { name: 'var', colorIndex: 1 };
+    const user1 = { id: 'a', name: 'foo', colorIndex: 0 };
+    const user2 = { id: 'b', name: 'var', colorIndex: 1 };
 
     const addUser = (user) => {
       FieldHighlighter.addUser(field, user);
@@ -73,22 +73,16 @@ describe('field highlighter', () => {
         expect(highlighter.users).to.deep.equal([]);
       });
 
-      it('should not add the same user twice', () => {
-        addUser(user1);
-        addUser(user1);
-        expect(highlighter.users).to.deep.equal([user1]);
-      });
-
       it('should not add user if empty value is passed', () => {
         addUser(user1);
         addUser(null);
         expect(highlighter.users).to.deep.equal([user1]);
       });
 
-      it('should remove user if no value is passed', () => {
+      it('should not remove user if no value is passed', () => {
         addUser(user1);
         removeUser();
-        expect(highlighter.users).to.deep.equal([]);
+        expect(highlighter.users).to.deep.equal([user1]);
       });
     });
 
@@ -120,12 +114,6 @@ describe('field highlighter', () => {
         addUser(user1);
         removeUser(user1);
         expect(highlighter.hasAttribute('has-active-user')).to.be.false;
-      });
-
-      it('should remove active user if no user is passed', () => {
-        addUser(user1);
-        removeUser();
-        expect(highlighter.user).to.equal(null);
       });
 
       it('should set border color based on user index', () => {
