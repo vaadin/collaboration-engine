@@ -1,9 +1,19 @@
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.vaadin.flow.component.BlurNotifier;
+import com.vaadin.flow.component.FocusNotifier;
+import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
@@ -22,6 +32,26 @@ import com.vaadin.flow.shared.Registration;
  *            the bean type
  */
 public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
+
+    private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
+            Collections.emptyList());
+
+    static final class FieldState {
+        public final Object value;
+        public final List<UserInfo> editors;
+
+        public FieldState(Object value, List<UserInfo> editors) {
+            this.value = value;
+            this.editors = Collections
+                    .unmodifiableList(new ArrayList<>(editors));
+        }
+
+        public FieldState(Object value, Stream<UserInfo> editors) {
+            this.value = value;
+            this.editors = Collections
+                    .unmodifiableList(editors.collect(Collectors.toList()));
+        }
+    }
 
     protected static class CollaborativeBindingBuilderImpl<BEAN, FIELDVALUE, TARGET>
             extends BindingBuilderImpl<BEAN, FIELDVALUE, TARGET> {
@@ -49,11 +79,25 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
             Binding<BEAN, TARGET> binding = super.bind(getter, setter);
 
-            HasValue field = binding.getField();
-            Registration registration = field
-                    .addValueChangeListener(event -> getBinder()
-                            .setMapValueFromField(propertyName, field));
-            getBinder().bindingRegistrations.put(binding, registration);
+            HasValue<?, ?> field = binding.getField();
+
+            List<Registration> registrations = new ArrayList<>();
+
+            registrations.add(field.addValueChangeListener(event -> getBinder()
+                    .setMapValueFromField(propertyName, field)));
+
+            if (field instanceof FocusNotifier<?>
+                    && field instanceof BlurNotifier<?>
+                    && field instanceof HasElement) {
+                registrations.add(((FocusNotifier<?>) field).addFocusListener(
+                        event -> getBinder().addEditor(propertyName)));
+                registrations.add(((BlurNotifier<?>) field).addBlurListener(
+                        event -> getBinder().removeEditor(propertyName)));
+                registrations.add(() -> getBinder().removeEditor(propertyName));
+            }
+
+            getBinder().bindingRegistrations.put(binding,
+                    () -> registrations.forEach(Registration::remove));
 
             getBinder().setFieldValueFromMap(propertyName, field);
 
@@ -79,6 +123,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     private final CollaborativeMap map;
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
+    private final UserInfo localUser;
 
     /**
      * Creates a new collaborative binder. It uses reflection based on the
@@ -93,6 +138,8 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     public CollaborativeBinder(Class<BEAN> beanType, CollaborativeMap map) {
         super(beanType);
         this.map = Objects.requireNonNull(map, "Map cannot be null");
+        this.localUser = new UserInfo(UUID.randomUUID().toString());
+
         Registration mapRegistration = map.subscribe(this::onMapChange);
         map.getConnection().addRegistration(() -> {
             getBindings().forEach(this::removeBinding);
@@ -108,7 +155,8 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     @SuppressWarnings("rawtypes")
     private void setFieldValueFromMap(String propertyName, HasValue field) {
-        Object value = map.get(propertyName);
+        FieldState fieldState = (FieldState) map.get(propertyName);
+        Object value = fieldState != null ? fieldState.value : null;
         if (value == null) {
             field.clear();
         } else {
@@ -118,7 +166,38 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     @SuppressWarnings("rawtypes")
     private void setMapValueFromField(String propertyName, HasValue field) {
-        map.put(propertyName, field.isEmpty() ? null : field.getValue());
+        Object value = field.isEmpty() ? null : field.getValue();
+        updateFieldState(propertyName,
+                state -> new FieldState(value, state.editors));
+    }
+
+    private void addEditor(String propertyName) {
+        updateFieldState(propertyName,
+                state -> new FieldState(state.value,
+                        Stream.concat(state.editors.stream(),
+                                state.editors.contains(localUser)
+                                        ? Stream.empty()
+                                        : Stream.of(localUser))));
+    }
+
+    private void removeEditor(String propertyName) {
+        updateFieldState(propertyName,
+                state -> new FieldState(state.value, state.editors.stream()
+                        .filter(editor -> !editor.equals(localUser))));
+    }
+
+    private void updateFieldState(String propertyName,
+            Function<FieldState, FieldState> updater) {
+        while (true) {
+            FieldState oldState = (FieldState) map.get(propertyName);
+
+            FieldState newState = updater
+                    .apply(oldState != null ? oldState : EMPTY_FIELD_STATE);
+
+            if (map.replace(propertyName, oldState, newState)) {
+                return;
+            }
+        }
     }
 
     @Override
@@ -214,5 +293,9 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     @Override
     public void bindInstanceFields(Object objectWithMemberFields) {
         super.bindInstanceFields(objectWithMemberFields);
+    }
+
+    UserInfo getLocalUser() {
+        return localUser;
     }
 }
