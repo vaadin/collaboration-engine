@@ -13,6 +13,7 @@
 package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -32,7 +33,7 @@ public class TopicConnection {
     private final Topic topic;
     private final ConnectionContext context;
     private Registration closeRegistration;
-    private Registration deactivateRegistration;
+    private final List<Registration> deactivateRegistrations = new ArrayList<>();
 
     TopicConnection(ConnectionContext context, Topic topic,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
@@ -56,10 +57,7 @@ public class TopicConnection {
 
     void addRegistration(Registration registration) {
         if (registration != null) {
-            deactivateRegistration = deactivateRegistration == null
-                    ? registration
-                    : Registration.combine(deactivateRegistration,
-                            registration);
+            deactivateRegistrations.add(registration);
         }
     }
 
@@ -156,10 +154,8 @@ public class TopicConnection {
     }
 
     private void deactivate() {
-        if (deactivateRegistration != null) {
-            deactivateRegistration.remove();
-            deactivateRegistration = null;
-        }
+        deactivateRegistrations.forEach(Registration::remove);
+        deactivateRegistrations.clear();
     }
 
     void close() {
