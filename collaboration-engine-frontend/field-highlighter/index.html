@@ -9,9 +9,10 @@
 <body>
   <style>
     html {
-      --user-color-0: red;
-      --user-color-1: blue;
-      --user-color-2: green;
+      --user-color-0: #B300D0;
+      --user-color-1: #00AE8F;
+      --user-color-2: #5C62F1;
+      --user-color-3: #D09600;
     }
   </style>
 
@@ -19,9 +20,10 @@
     <vaadin-text-field label="Label"></vaadin-text-field>
     <br>
     <vaadin-checkbox-group label="Active user">
-      <vaadin-checkbox name="user" value="Foo">Foo</vaadin-checkbox>
-      <vaadin-checkbox name="user" value="Bar">Bar</vaadin-checkbox>
-      <vaadin-checkbox name="user" value="Baz">Baz</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="All Beach">AB</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="Cold Duckling">CD</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="Effortless Flower">EF</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="Very long name that should be truncated">Long</vaadin-checkbox>
     </vaadin-checkbox-group>
   </div>
 
@@ -32,18 +34,21 @@
     import { FieldHighlighter } from './theme/lumo/vaadin-field-highlighter.js';
 
     const field = document.querySelector('vaadin-text-field');
-    FieldHighlighter.init(field);
+    const fh = FieldHighlighter.init(field);
 
     const group = document.querySelector('vaadin-checkbox-group');
 
     // Switch active user
     group.addEventListener('change', e => {
       Array.from(group.children).forEach((checkbox, index) => {
-        const user = { name: checkbox.value, colorIndex: index };
+        const user = { name: checkbox.value, colorIndex: index, id: index };
         if (group.value.indexOf(checkbox.value) > -1) {
-          FieldHighlighter.addUser(field, user);
+          // Do not add the same user twice
+          if (!fh.users.filter(u => u.id === index)[0]) {
+            fh.addUser(user);
+          }
         } else {
-          FieldHighlighter.removeUser(field, user);
+          fh.removeUser(user);
         }
       });
     });

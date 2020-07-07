@@ -43,10 +43,9 @@
           'vaadin-user-tags',
           css`
             :host(:not(:hover)) [part="tag"] {
-              border-radius: var(--lumo-border-radius-s);
+              max-width: 100%;
+              max-height: calc(1rem + 0.6em);
               box-shadow: var(--lumo-box-shadow-s);
-              --vaadin-user-tag-size: auto;
-              --vaadin-user-tag-visibility: visible;
             }
           `
         );
@@ -55,10 +54,9 @@
           'vaadin-user-tags',
           css`
             :host(:not(:hover)) [part="tag"] {
-              border-radius: 0.25rem;
+              max-width: 100%;
+              max-height: calc(1rem + 0.6em);
               box-shadow: var(--material-shadow-elevation-2dp);
-              --vaadin-user-tag-size: auto;
-              --vaadin-user-tag-visibility: visible;
             }
           `
         );

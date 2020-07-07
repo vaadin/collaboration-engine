@@ -7,8 +7,8 @@ registerStyles(
   'vaadin-user-tags',
   css`
     :host(:not(:hover)) [part='tag'] {
-      border-radius: 50%;
-      --vaadin-user-tag-size: 0.5em;
+      max-width: 0.5em;
+      max-height: 0.5em;
       box-shadow: none;
     }
   `,
@@ -24,7 +24,8 @@ registerStyles(
       font-size: 0.75rem;
       border-radius: 0.25rem;
       box-shadow: var(--material-shadow-elevation-2dp);
-      --vaadin-user-tag-size: auto;
+      max-height: calc(1 + 0.6em);
+      transition: max-width 0.3s, max-height 0.3s;
     }
 
     [part='name'] {

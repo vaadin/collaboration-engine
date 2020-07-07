@@ -13,16 +13,15 @@ export class UserTag extends ThemableMixin(PolymerElement) {
           display: block;
           position: relative;
           box-sizing: border-box;
-          max-width: 100%;
           margin-bottom: var(--vaadin-user-tag-offset);
           background-color: var(--vaadin-user-tag-color);
           color: #fff;
-          width: var(--vaadin-user-tag-size);
-          height: var(--vaadin-user-tag-size);
+          max-width: 6px;
+          max-height: 6px;
           overflow: hidden;
-          border-radius: 4px;
+          border-radius: 3px;
           cursor: default;
-          --vaadin-user-tag-size: 8px;
+          transition: max-width 0.3s, max-height 0.3s;
           --vaadin-user-tag-offset: 4px;
         }
 
@@ -37,7 +36,6 @@ export class UserTag extends ThemableMixin(PolymerElement) {
           box-sizing: border-box;
           padding: 2px 4px;
           font-size: 13px;
-          visibility: var(--vaadin-user-tag-visibility, hidden);
         }
       </style>
       <!-- TODO: image / avatar -->

@@ -15,8 +15,8 @@ registerStyles(
     }
 
     :host(:not(:hover)) [part='tag'] {
-      border-radius: 50%;
-      --vaadin-user-tag-size: 0.5em;
+      max-width: 0.5em;
+      max-height: 0.5em;
       box-shadow: none;
     }
   `,
@@ -32,7 +32,8 @@ registerStyles(
       font-size: var(--lumo-font-size-xxs);
       border-radius: var(--lumo-border-radius-s);
       box-shadow: var(--lumo-box-shadow-s);
-      --vaadin-user-tag-size: auto;
+      max-height: calc(1rem + 0.6em);
+      transition: max-width 0.3s, max-height 0.3s;
     }
 
     [part='name'] {
