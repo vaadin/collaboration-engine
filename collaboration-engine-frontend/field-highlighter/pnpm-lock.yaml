@@ -11,6 +11,7 @@ devDependencies:
   '@vaadin/vaadin-text-field': 2.6.1
   '@web/test-runner': 0.5.15
   '@web/test-runner-mocha': 0.2.4
+  '@webcomponents/webcomponentsjs': 2.4.3
   es-dev-server: 1.55.0
   hermione: 3.6.0
   hermione-esm: 0.3.0
@@ -1077,7 +1078,7 @@ packages:
       integrity: sha512-pWguPugiLYmWFV9UWxLWzZ6gm4wBwQdDy4VULKwdHCqR7OP7u98h+XDdGZsSlDPv6qoryV/e3tGHlTIT0mbzJA==
   /@polymer/polymer/3.2.0:
     dependencies:
-      '@webcomponents/shadycss': 1.10.0
+      '@webcomponents/shadycss': 1.9.4
     resolution:
       integrity: sha512-L6uV1oM6T6xbwbVx6t3biG5T2VSSB03LxnIrUd9M2pr6RkHVPFHJ37pC5MUwBAEhkGFJif7eks7fdMMSGZTeEQ==
   /@rollup/plugin-node-resolve/7.1.3_rollup@2.18.0:
@@ -1588,8 +1589,12 @@ packages:
     resolution:
       integrity: sha512-4khnwo30Gxx1PBwhV2b7Y28QKYz/sg0ReL3COQ30wQJl9zDPYlGybpeVlH9XI2qKEgtyb9RVEKzYZSL6Sc/EUQ==
   /@webcomponents/shadycss/1.10.0:
+    dev: true
     resolution:
       integrity: sha512-UMS+dF4DXDrcUmQqK6aLd/3mFyfGktKG/hZR6FtrsQK/INO07G0H8FxElLkuvHj0iePeZGpR7R4lWFTvX7rc9g==
+  /@webcomponents/shadycss/1.9.4:
+    resolution:
+      integrity: sha512-tgNcVEaKssyeZPbUBjVQf4aryO5Fi7fxRvOxV982ZJuRVDcefmIblBh0SXAbcvAAlQ2zpNEP4SuQUnr8uApIpw==
   /@webcomponents/webcomponentsjs/2.4.3:
     dev: true
     resolution:
@@ -7134,6 +7139,7 @@ specifiers:
   '@vaadin/vaadin-themable-mixin': ^1.6.1
   '@web/test-runner': ^0.5.15
   '@web/test-runner-mocha': ^0.2.4
+  '@webcomponents/webcomponentsjs': ^2.2.0
   es-dev-server: ^1.55.0
   hermione: ^3.6.0
   hermione-esm: ^0.3.0

@@ -1,5 +1,6 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
+import { applyShadyStyle, setCustomProperty } from './css-helpers.js';
 import './vaadin-user-tags.js';
 
 const fields = new WeakMap();
@@ -15,13 +16,12 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
       field.setAttribute('has-highlighter', '');
 
       // TODO: Not nice, have to create a stacking context
-      const style = document.createElement('style');
-      style.textContent = `
+      const style = `
         :host([has-highlighter]) {
           transform: translateZ(0);
         }
       `;
-      field.shadowRoot.appendChild(style);
+      applyShadyStyle(field, style);
 
       // Store instance
       fields.set(field, instance);
@@ -146,10 +146,10 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
   _userChanged(user) {
     if (user) {
       this.setAttribute('has-active-user', '');
-      this.style.setProperty('--_active-user-color', `var(--vaadin-user-color-${user.colorIndex})`);
+      setCustomProperty(this, '--_active-user-color', `var(--vaadin-user-color-${user.colorIndex})`);
     } else {
-      this.style.removeProperty('--_active-user-color');
       this.removeAttribute('has-active-user');
+      setCustomProperty(this, '--_active-user-color', 'transparent');
     }
   }
 }

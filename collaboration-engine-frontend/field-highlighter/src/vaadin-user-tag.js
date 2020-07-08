@@ -1,5 +1,6 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
+import { setCustomProperty } from './css-helpers.js';
 import './vaadin-user-colors.js';
 
 export class UserTag extends ThemableMixin(PolymerElement) {
@@ -67,7 +68,7 @@ export class UserTag extends ThemableMixin(PolymerElement) {
 
   _colorIndexChanged(index) {
     if (index != null) {
-      this.style.setProperty('--vaadin-user-tag-color', `var(--vaadin-user-color-${index})`);
+      setCustomProperty(this, '--vaadin-user-tag-color', `var(--vaadin-user-color-${index})`);
     }
   }
 
