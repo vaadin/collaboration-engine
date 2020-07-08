@@ -118,14 +118,14 @@ describe('field highlighter', () => {
 
       it('should set border color based on user index', () => {
         addUser(user1);
-        field.style.setProperty('--user-color-0', 'red');
+        field.style.setProperty('--vaadin-user-color-0', 'red');
         expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(255, 0, 0)');
       });
 
       it('should change border color when user changes', () => {
         addUser(user1);
         addUser(user2);
-        field.style.setProperty('--user-color-1', 'blue');
+        field.style.setProperty('--vaadin-user-color-1', 'blue');
         expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(0, 0, 255)');
       });
 
@@ -172,8 +172,8 @@ describe('field highlighter', () => {
         addUser(user1);
         addUser(user2);
         tags = wrapper.shadowRoot.querySelectorAll('[part="tag"]');
-        field.style.setProperty('--user-color-0', 'red');
-        field.style.setProperty('--user-color-1', 'blue');
+        field.style.setProperty('--vaadin-user-color-0', 'red');
+        field.style.setProperty('--vaadin-user-color-1', 'blue');
         expect(getComputedStyle(tags[0]).backgroundColor).to.equal('rgb(255, 0, 0)');
         expect(getComputedStyle(tags[1]).backgroundColor).to.equal('rgb(0, 0, 255)');
       });

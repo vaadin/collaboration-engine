@@ -1,9 +1,3 @@
-html {
-  --user-color-0: red;
-  --user-color-1: blue;
-  --user-color-2: green;
-}
-
 .centered-content {
   margin: 0 auto;
   max-width: fit-content;
