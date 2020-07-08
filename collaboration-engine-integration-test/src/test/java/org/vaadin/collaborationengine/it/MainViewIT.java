@@ -7,7 +7,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import com.vaadin.flow.component.button.testbench.ButtonElement;
 import com.vaadin.flow.component.html.testbench.SpanElement;
 
-public class MainViewIT extends AbstractViewTest {
+public class MainViewIT extends AbstractCollaborativeViewTest {
 
     @Test
     public void clickingButtonUpdateSpan() {
@@ -18,10 +18,18 @@ public class MainViewIT extends AbstractViewTest {
         waitUntil(ExpectedConditions.textToBePresentInElement(span, "1"), 1);
         Assert.assertEquals("1", span.getText());
 
+        Client client2 = addClient();
+        SpanElement span2 = client2.$(SpanElement.class).first();
+        Assert.assertEquals(
+                "Expected new client to get the current value when opened", "1",
+                span2.getText());
+
+        client2.$(ButtonElement.class).first().click();
         button.click();
-        button.click();
+
         waitUntil(ExpectedConditions.textToBePresentInElement(span, "3"), 1);
         Assert.assertEquals("3", span.getText());
+        Assert.assertEquals("3", span2.getText());
     }
 
 }

@@ -5,12 +5,15 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import com.vaadin.flow.theme.AbstractTheme;
 import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;
+import com.vaadin.testbench.TestBenchDriverProxy;
 import com.vaadin.testbench.parallel.ParallelTest;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -59,9 +62,18 @@ public abstract class AbstractViewTest extends ParallelTest {
         if (isUsingHub()) {
             super.setup();
         } else {
-            setDriver(TestBench.createDriver(new ChromeDriver()));
+            setDriver(createHeadlessChromeDriver());
         }
-        getDriver().get(getURL(route));
+        getDriver().get(getURL());
+    }
+
+    protected WebDriver createHeadlessChromeDriver() {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--no-sandbox", "--disable-dev-shm-usage",
+                "--headless");
+        TestBenchDriverProxy driver = TestBench
+                .createDriver(new ChromeDriver(options));
+        return driver;
     }
 
     /**
@@ -110,7 +122,7 @@ public abstract class AbstractViewTest extends ParallelTest {
      *
      * @return URL to route
      */
-    private static String getURL(String route) {
+    protected String getURL() {
         return String.format("http://%s:%d/%s", getDeploymentHostname(),
                 SERVER_PORT, route);
     }
