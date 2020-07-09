@@ -11,7 +11,7 @@ registerStyles(
       --lumo-user-tags-offset: calc((var(--lumo-space-s) - 2px) * -1);
       top: var(--lumo-user-tags-offset);
       right: var(--lumo-user-tags-offset);
-      padding: var(--lumo-space-xs);
+      border: solid var(--lumo-space-xs) transparent;
     }
 
     :host(:not(:hover)) [part='tag'] {

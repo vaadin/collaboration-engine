@@ -26,8 +26,8 @@ describe('field highlighter', () => {
       expect(field.hasAttribute('has-highlighter')).to.be.true;
     });
 
-    it('should create stacking context on the field', () => {
-      expect(getComputedStyle(field).transform).to.equal('matrix(1, 0, 0, 1, 0, 0)');
+    it('should set position: relative on the field', () => {
+      expect(getComputedStyle(field).position).to.equal('relative');
     });
 
     it('should position the highlighter based on the field', () => {
@@ -64,7 +64,7 @@ describe('field highlighter', () => {
         expect(highlighter.users).to.deep.equal([user1]);
 
         addUser(user2);
-        expect(highlighter.users).to.deep.equal([user1, user2]);
+        expect(highlighter.users).to.deep.equal([user2, user1]);
       });
 
       it('should remove users from the highlighter', () => {
@@ -174,8 +174,8 @@ describe('field highlighter', () => {
         tags = wrapper.shadowRoot.querySelectorAll('[part="tag"]');
         field.style.setProperty('--vaadin-user-color-0', 'red');
         field.style.setProperty('--vaadin-user-color-1', 'blue');
-        expect(getComputedStyle(tags[0]).backgroundColor).to.equal('rgb(255, 0, 0)');
-        expect(getComputedStyle(tags[1]).backgroundColor).to.equal('rgb(0, 0, 255)');
+        expect(getComputedStyle(tags[0]).backgroundColor).to.equal('rgb(0, 0, 255)');
+        expect(getComputedStyle(tags[1]).backgroundColor).to.equal('rgb(255, 0, 0)');
       });
 
       it('should not set custom property if index is NaN', () => {

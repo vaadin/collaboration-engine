@@ -30,6 +30,12 @@ describe('field highlight', () => {
         .assertView(`${theme}-text-field`, locator);
     });
 
+    it(`${theme}-overflow`, function() {
+      return this.browser
+        .url(`overflow.html?theme=${theme}`)
+        .waitForVisible(locator, 10000)
+        .assertView(`${theme}-overflow`, locator);
+    });
 
     it(`${theme}-user-tags`, function() {
       return this.browser

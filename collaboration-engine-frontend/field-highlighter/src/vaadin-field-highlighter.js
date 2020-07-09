@@ -18,7 +18,7 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
       // TODO: Not nice, have to create a stacking context
       const style = `
         :host([has-highlighter]) {
-          transform: translateZ(0);
+          position: relative;
         }
       `;
       applyShadyStyle(field, style);
@@ -108,7 +108,7 @@ export class FieldHighlighter extends ThemableMixin(PolymerElement) {
 
   addUser(user) {
     if (user) {
-      this.push('users', user);
+      this.splice('users', 0, 0, user);
       if (this._tags) {
         this._tags.setUsers(this.users);
       }

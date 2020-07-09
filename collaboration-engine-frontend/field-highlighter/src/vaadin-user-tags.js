@@ -17,10 +17,19 @@ export class UserTags extends ThemableMixin(PolymerElement) {
           top: -6px;
           right: -6px;
           max-width: 100%;
-          padding: 4px;
+          border: solid 4px transparent;
           display: flex;
           flex-direction: column;
           align-items: flex-end;
+        }
+
+        [part='tag'] {
+          flex-shrink: 0;
+        }
+
+        :host(:not(:hover)) {
+          max-height: calc(100% + 4px);
+          overflow: hidden;
         }
 
         :host([hidden]) {
