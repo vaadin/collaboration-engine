@@ -1,4 +1,4 @@
-package org.vaadin.collaborationengine.it;
+package org.vaadin.collaborationengine.it.util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,5 +40,10 @@ public abstract class AbstractCollaborativeViewTest extends AbstractViewTest {
     public void closeBrowsers() {
         addedClients.stream().map(TestBenchTestCase::getDriver)
                 .forEach(WebDriver::close);
+    }
+
+    protected void close(TestBenchTestCase client) {
+        client.getDriver().close();
+        addedClients.remove(client);
     }
 }

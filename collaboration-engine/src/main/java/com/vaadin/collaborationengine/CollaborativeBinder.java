@@ -33,6 +33,8 @@ import com.vaadin.flow.shared.Registration;
  */
 public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
+    private static final int USER_COLOR_COUNT = 10;
+
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
             Collections.emptyList());
 
@@ -138,7 +140,10 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     public CollaborativeBinder(Class<BEAN> beanType, CollaborativeMap map) {
         super(beanType);
         this.map = Objects.requireNonNull(map, "Map cannot be null");
+
         this.localUser = new UserInfo(UUID.randomUUID().toString());
+        localUser.setColorIndex(
+                Math.abs(localUser.hashCode() % USER_COLOR_COUNT));
 
         Registration mapRegistration = map.subscribe(this::onMapChange);
         map.getConnection().addRegistration(() -> {
@@ -148,9 +153,12 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     }
 
     private void onMapChange(MapChangeEvent event) {
-        getBinding(event.getKey())
-                .ifPresent(binding -> setFieldValueFromMap(event.getKey(),
-                        binding.getField()));
+        getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
+            setFieldValueFromMap(event.getKey(), field);
+
+            List<UserInfo> editors = ((FieldState) event.getValue()).editors;
+            FieldHighlighter.setEditors(field, editors, localUser);
+        });
     }
 
     @SuppressWarnings("rawtypes")
@@ -293,6 +301,27 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     @Override
     public void bindInstanceFields(Object objectWithMemberFields) {
         super.bindInstanceFields(objectWithMemberFields);
+    }
+
+    /**
+     * Sets the user name that will be displayed to other users when editing a
+     * field.
+     *
+     * @param userName
+     *            the user name to set, can be {@code null} to not display a
+     *            name
+     */
+    public void setUserName(String userName) {
+        localUser.setUserName(userName);
+    }
+
+    /**
+     * Gets the user name that is displayed to other users when editing a field.
+     *
+     * @return the user name, can be {@code null}
+     */
+    public String getUserName() {
+        return localUser.getUserName();
     }
 
     UserInfo getLocalUser() {

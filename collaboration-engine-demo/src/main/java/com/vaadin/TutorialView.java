@@ -62,6 +62,7 @@ public class TutorialView extends VerticalLayout {
                     CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
                             Person.class, topic.getNamedMap("binder"));
                     binder.forField(textField).bind("firstName");
+                    binder.setUserName("Jon Doe");
                     return null;
                 });
     }

@@ -3,6 +3,7 @@ package org.vaadin.collaborationengine.it;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.vaadin.collaborationengine.it.util.AbstractCollaborativeViewTest;
 
 import com.vaadin.flow.component.button.testbench.ButtonElement;
 import com.vaadin.flow.component.html.testbench.SpanElement;
@@ -32,4 +33,8 @@ public class MainViewIT extends AbstractCollaborativeViewTest {
         Assert.assertEquals("3", span2.getText());
     }
 
+    @Override
+    public String getRoute() {
+        return "";
+    }
 }

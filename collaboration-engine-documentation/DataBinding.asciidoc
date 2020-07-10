@@ -11,7 +11,10 @@ Vaadin provides the `Binder` API for binding values between data objects and fie
 Visit https://vaadin.com/docs/v14/flow/binding-data/tutorial-flow-components-binder.html[the Vaadin docs site] to learn more about the binder.
 
 To simplify data binding in collaborative views, a class called `CollaborativeBinder` is included in Collaboration Engine.
-In addition to the basic binder features (binding, validating and converting data etc.), collaborative binder propagates values between clients which are connected to the same topic.
+In addition to the basic binder features (binding, validating and converting data etc.), the collaborative binder provides two additional features:
+
+- Field value synchronization: When a user changes a field's value, the new value gets propagated to the other users, changing the field value in their views.
+- Field editing indicators: When a user has focus on a field, other users see visual indicators on the field, indicating who is currently editing it.
 
 == Usage Example
 
@@ -47,6 +50,7 @@ CollaborationEngine.getInstance().openTopicConnection(this, "profile",
             CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
                     Person.class, topic.getNamedMap("binder"));
             binder.forField(textField).bind("firstName");
+            binder.setUserName("Jon Doe");
             return null;
         });
 ```
@@ -57,6 +61,11 @@ Besides the data object type, `CollaborativeBinder` constructor needs a `Collabo
 
 After this, we use the regular binder methods for binding the text field's value to the property "firstName".
 
+Next, we set a user name to the binder.
+This name is displayed in the field editing indicators, informing other users who is currently focused on a field.
+In a real application, there should be logic to retrieve the name of the current user, which should be passed to the binder.
+In this simple example, every user would have the same hard-coded name.
+
 `CollaborativeBinder` takes care of removing any listeners it adds to the fields and the map when the connection gets deactivated, so we don't need to return any cleanup callbacks from the topic connection callback.
 In this case, `null` can be returned.
 
@@ -65,8 +74,3 @@ To bind the field value to a `Person` object (to be persisted in a database or u
 [NOTE]
 The other `bind` variants, which take the getter and the setter methods as separate arguments instead of the property name, do not work with the collaborative binder.
 The property name is needed as it's used as the key for the collaborative map.
-
-== Planned Features
-
-In future versions, the plan is that `CollaborativeBinder` would also handle field highlighting out of the box.
-This means visually displaying when another collaborating user is editing a field.

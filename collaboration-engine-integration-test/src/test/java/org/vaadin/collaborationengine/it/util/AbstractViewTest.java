@@ -1,5 +1,6 @@
-package org.vaadin.collaborationengine.it;
+package org.vaadin.collaborationengine.it.util;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -14,7 +15,7 @@ import com.vaadin.flow.theme.AbstractTheme;
 import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.TestBenchDriverProxy;
-import com.vaadin.testbench.parallel.ParallelTest;
+import com.vaadin.testbench.TestBenchTestCase;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 
@@ -33,10 +34,9 @@ import io.github.bonigarcia.wdm.WebDriverManager;
  * <a href="https://vaadin.com/docs/testbench/testbench-overview.html">Vaadin
  * TestBench</a>.
  */
-public abstract class AbstractViewTest extends ParallelTest {
+public abstract class AbstractViewTest extends TestBenchTestCase {
     private static final int SERVER_PORT = 8080;
 
-    private final String route;
     private final By rootSelector;
 
     @Rule
@@ -44,11 +44,10 @@ public abstract class AbstractViewTest extends ParallelTest {
             false);
 
     public AbstractViewTest() {
-        this("", By.tagName("body"));
+        this(By.tagName("body"));
     }
 
-    protected AbstractViewTest(String route, By rootSelector) {
-        this.route = route;
+    protected AbstractViewTest(By rootSelector) {
         this.rootSelector = rootSelector;
     }
 
@@ -58,13 +57,14 @@ public abstract class AbstractViewTest extends ParallelTest {
     }
 
     @Before
-    public void setup() throws Exception {
-        if (isUsingHub()) {
-            super.setup();
-        } else {
-            setDriver(createHeadlessChromeDriver());
-        }
+    public void setup() {
+        setDriver(createHeadlessChromeDriver());
         getDriver().get(getURL());
+    }
+
+    @After
+    public void close() {
+        driver.close();
     }
 
     protected WebDriver createHeadlessChromeDriver() {
@@ -124,7 +124,7 @@ public abstract class AbstractViewTest extends ParallelTest {
      */
     protected String getURL() {
         return String.format("http://%s:%d/%s", getDeploymentHostname(),
-                SERVER_PORT, route);
+                SERVER_PORT, getRoute());
     }
 
     /**
@@ -147,4 +147,10 @@ public abstract class AbstractViewTest extends ParallelTest {
     private static String getDeploymentHostname() {
         return isUsingHub() ? System.getenv("HOSTNAME") : "localhost";
     }
+
+    /**
+     * Get the route of the view to navigate to. In most cases it should be the
+     * same as the value in the {@code @Route} annotation of the view.
+     */
+    public abstract String getRoute();
 }

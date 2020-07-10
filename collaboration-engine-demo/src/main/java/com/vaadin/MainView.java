@@ -12,12 +12,9 @@ import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborativeBinder;
 import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.collaborationengine.TopicConnection;
-import com.vaadin.flow.component.HasElement;
-import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -30,11 +27,9 @@ import com.vaadin.flow.shared.Registration;
 @Route("")
 @Push
 @CssImport("./styles/shared-styles.css")
-@JsModule("./field-collaboration.js")
 public class MainView extends VerticalLayout {
 
     private static final String EDITOR_MAP_NAME = "editor";
-    private static final String FIELD_EDITOR_MAP_NAME = "fieldName";
     private static final String ACTIVITY_LOG_MAP_NAME = "activityLog";
 
     private static final String FIRST_NAME = "firstName";
@@ -138,19 +133,20 @@ public class MainView extends VerticalLayout {
     private Registration configureTopicConnection(TopicConnection topic,
             String username, TextField firstName, TextField lastName) {
         Registration firstNameFocusRegistration = firstName.addFocusListener(
-                event -> setEditor(topic, FIRST_NAME, username));
+                event -> logEditorFocused(topic, FIRST_NAME, username));
         Registration lastNameFocusRegistration = lastName.addFocusListener(
-                event -> setEditor(topic, LAST_NAME, username));
+                event -> logEditorFocused(topic, LAST_NAME, username));
 
         Registration firstNameBlurRegistration = firstName.addBlurListener(
-                event -> clearEditor(topic, FIRST_NAME, username));
+                event -> logEditorBlurred(topic, FIRST_NAME, username));
         Registration lastNameBlurRegistration = lastName.addBlurListener(
-                event -> clearEditor(topic, LAST_NAME, username));
+                event -> logEditorBlurred(topic, LAST_NAME, username));
 
         binder = new CollaborativeBinder<>(Person.class,
                 topic.getNamedMap("binder"));
         binder.forField(firstName).bind(FIRST_NAME);
         binder.forField(lastName).bind(LAST_NAME);
+        binder.setUserName(username);
 
         binder.addValueChangeListener(e -> log(topic,
                 username + " changed "
@@ -159,10 +155,6 @@ public class MainView extends VerticalLayout {
 
         topic.getNamedMap(EDITOR_MAP_NAME)
                 .subscribe(event -> updateEditors(event.getValue(), username));
-
-        topic.getNamedMap(FIELD_EDITOR_MAP_NAME)
-                .subscribe(event -> updateFieldEditors(username,
-                        (List<String>) event.getValue(), event.getKey()));
 
         topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
                 event -> log.setText(Objects.toString(event.getValue(), "")));
@@ -213,20 +205,15 @@ public class MainView extends VerticalLayout {
         }
     }
 
-    private static void setEditor(TopicConnection topicConnection,
+    private static void logEditorFocused(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " started editing " + fieldName;
-        addEditor(topicConnection.getNamedMap(FIELD_EDITOR_MAP_NAME), fieldName,
-                username);
         log(topicConnection, message);
     }
 
-    private static void clearEditor(TopicConnection topicConnection,
+    private static void logEditorBlurred(TopicConnection topicConnection,
             String fieldName, String username) {
         String message = username + " stopped editing " + fieldName;
-
-        removeEditor(topicConnection.getNamedMap(FIELD_EDITOR_MAP_NAME),
-                fieldName, username);
         log(topicConnection, message);
     }
 
@@ -237,22 +224,5 @@ public class MainView extends VerticalLayout {
                 editors.stream().filter(name -> !username.equals(name))
                         .map(AvatarGroup.AvatarGroupItem::new)
                         .collect(Collectors.toList()));
-    }
-
-    private void updateFieldEditors(String username, List<String> fieldEditors,
-            String propertyName) {
-        binder.getBinding(propertyName).ifPresent(binding -> {
-            HasValue<?, ?> field = binding.getField();
-            if (field instanceof HasElement) {
-                HasElement component = (HasElement) field;
-
-                String effectiveEditor = fieldEditors.stream()
-                        .filter(editor -> !username.equals(editor)).findFirst()
-                        .orElse(null);
-
-                component.getElement().executeJs(
-                        "window.setFieldState(this, $0)", effectiveEditor);
-            }
-        });
     }
 }

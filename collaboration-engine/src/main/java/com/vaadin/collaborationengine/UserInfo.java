@@ -17,6 +17,8 @@ import java.util.Objects;
 class UserInfo {
 
     private String id;
+    private String userName;
+    private int colorIndex;
 
     public UserInfo(String id) {
         this.id = Objects.requireNonNull(id, "User id cannot be null");
@@ -24,6 +26,22 @@ class UserInfo {
 
     public String getId() {
         return id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public int getColorIndex() {
+        return colorIndex;
+    }
+
+    public void setColorIndex(int colorIndex) {
+        this.colorIndex = colorIndex;
     }
 
     @Override
