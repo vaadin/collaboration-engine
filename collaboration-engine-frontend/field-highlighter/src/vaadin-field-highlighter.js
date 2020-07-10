@@ -1,11 +1,12 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
+import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { applyShadyStyle, setCustomProperty } from './css-helpers.js';
 import './vaadin-user-tags.js';
 
 const fields = new WeakMap();
 
-export class FieldHighlighter extends ThemableMixin(PolymerElement) {
+export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
   static init(field) {
     if (!fields.has(field)) {
       // Create instance

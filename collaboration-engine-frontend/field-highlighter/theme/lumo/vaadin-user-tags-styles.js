@@ -14,6 +14,11 @@ registerStyles(
       border: solid var(--lumo-space-xs) transparent;
     }
 
+    :host([dir="rtl"]) {
+      right: auto;
+      left: var(--lumo-user-tags-offset);
+    }
+
     :host(:not(:hover)) [part='tag'] {
       max-width: 0.5em;
       max-height: 0.5em;

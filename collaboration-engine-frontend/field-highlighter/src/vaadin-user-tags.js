@@ -1,9 +1,10 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
+import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import '@polymer/polymer/lib/elements/dom-repeat.js';
 import './vaadin-user-tag.js';
 
-export class UserTags extends ThemableMixin(PolymerElement) {
+export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
   static get is() {
     return 'vaadin-user-tags';
   }
@@ -21,6 +22,11 @@ export class UserTags extends ThemableMixin(PolymerElement) {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
+        }
+
+        :host([dir="rtl"]) {
+          right: auto;
+          left: -6px;
         }
 
         [part='tag'] {
