@@ -43,6 +43,10 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
     this.init(field).removeUser(user);
   }
 
+  static setUsers(field, users) {
+    this.init(field).setUsers(users);
+  }
+
   static get is() {
     return 'vaadin-field-highlighter';
   }
@@ -98,26 +102,29 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
   ready() {
     super.ready();
 
-    this._tags = this._createTags();
+    this._tags = document.createElement('vaadin-user-tags');
     this._field.shadowRoot.appendChild(this._tags);
+    this._setUserTags(this.users);
     IronA11yAnnouncer.requestAvailability();
-  }
-
-  _createTags() {
-    const tags = document.createElement('vaadin-user-tags');
-    tags.users = this.users;
-    return tags;
   }
 
   addUser(user) {
     if (user) {
-      this.splice('users', 0, 0, user);
-      if (this._tags) {
-        this._tags.setUsers(this.users);
-      }
+      this.push('users', user);
+      this._setUserTags(this.users);
 
       // Make user active
       this.user = user;
+    }
+  }
+
+  setUsers(users) {
+    if (Array.isArray(users)) {
+      this.set('users', users);
+      this._setUserTags(this.users);
+
+      // Make user active
+      this.user = users[users.length - 1] || null;
     }
   }
 
@@ -132,9 +139,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       }
       if (index !== undefined) {
         this.splice('users', index, 1);
-        if (this._tags) {
-          this._tags.setUsers(this.users);
-        }
+        this._setUserTags(this.users);
 
         // Change or remove active user
         if (this.users.length > 0) {
@@ -143,6 +148,12 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
           this.user = null;
         }
       }
+    }
+  }
+
+  _setUserTags(users) {
+    if (this._tags) {
+      this._tags.setUsers(Array.from(users).reverse());
     }
   }
 

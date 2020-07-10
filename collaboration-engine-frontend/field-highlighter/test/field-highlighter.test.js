@@ -58,18 +58,33 @@ describe('field highlighter', () => {
       FieldHighlighter.removeUser(field, user);
     };
 
+    const setUsers = (users) => {
+      FieldHighlighter.setUsers(field, users);
+    };
+
     describe('adding and removing', () => {
       it('should add users to the highlighter', () => {
         addUser(user1);
         expect(highlighter.users).to.deep.equal([user1]);
 
         addUser(user2);
-        expect(highlighter.users).to.deep.equal([user2, user1]);
+        expect(highlighter.users).to.deep.equal([user1, user2]);
       });
 
       it('should remove users from the highlighter', () => {
         addUser(user1);
         removeUser(user1);
+        expect(highlighter.users).to.deep.equal([]);
+      });
+
+      it('should add multiple users at a time', () => {
+        setUsers([user1, user2]);
+        expect(highlighter.users).to.deep.equal([user1, user2]);
+      });
+
+      it('should remove users if empty array is passed', () => {
+        setUsers([user1, user2]);
+        setUsers([]);
         expect(highlighter.users).to.deep.equal([]);
       });
 
@@ -90,6 +105,11 @@ describe('field highlighter', () => {
       it('should set active user on the highlighter', () => {
         addUser(user1);
         expect(highlighter.user).to.deep.equal(user1);
+      });
+
+      it('should set last added user as active', () => {
+        setUsers([user1, user2]);
+        expect(highlighter.user).to.deep.equal(user2);
       });
 
       it('should set attribute when user is added', () => {
@@ -141,6 +161,12 @@ describe('field highlighter', () => {
         addUser(user2);
         removeUser(user2);
         removeUser(user1);
+        expect(highlighter.user).to.equal(null);
+      });
+
+      it('should reset user when multiple users are removed', () => {
+        setUsers([user1, user2]);
+        setUsers([]);
         expect(highlighter.user).to.equal(null);
       });
     });
