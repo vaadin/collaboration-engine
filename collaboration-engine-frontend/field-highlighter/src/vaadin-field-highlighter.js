@@ -1,4 +1,5 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
+import { IronA11yAnnouncer } from '@polymer/iron-a11y-announcer/iron-a11y-announcer.js';
 import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { applyShadyStyle, setCustomProperty } from './css-helpers.js';
@@ -99,6 +100,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
 
     this._tags = this._createTags();
     this._field.shadowRoot.appendChild(this._tags);
+    IronA11yAnnouncer.requestAvailability();
   }
 
   _createTags() {
@@ -144,10 +146,22 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
     }
   }
 
+  _announce(msg) {
+    const label = this._field.label || '';
+    this.dispatchEvent(new CustomEvent('iron-announce', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        text: label ? `${msg} ${label}` : msg
+      }
+    }));
+  }
+
   _userChanged(user) {
     if (user) {
       this.setAttribute('has-active-user', '');
       setCustomProperty(this, '--_active-user-color', `var(--vaadin-user-color-${user.colorIndex})`);
+      this._announce(`${user.name} started editing`);
     } else {
       this.removeAttribute('has-active-user');
       setCustomProperty(this, '--_active-user-color', 'transparent');

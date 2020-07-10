@@ -1,4 +1,5 @@
 dependencies:
+  '@polymer/iron-a11y-announcer': 3.1.0
   '@polymer/polymer': 3.2.0
   '@vaadin/vaadin-element-mixin': 2.4.1
   '@vaadin/vaadin-lumo-styles': 1.6.0
@@ -1054,6 +1055,12 @@ packages:
     dev: true
     resolution:
       integrity: sha512-VLtX4cQ6dNMUMSbe3fsWZ0Laqo2cBX3titILczJ9qmXJeeB7MTXsZNck9B92a2aHz9w3C9FswQ0f/krqf/E8ng==
+  /@polymer/iron-a11y-announcer/3.1.0:
+    dependencies:
+      '@polymer/polymer': 3.2.0
+    dev: false
+    resolution:
+      integrity: sha512-lc5i4NKB8kSQHH0Hwu8WS3ym93m+J69OHJWSSBxwd17FI+h2wmgxDzeG9LI4ojMMck17/uc2pLe7g/UHt5/K/A==
   /@polymer/iron-flex-layout/3.0.1:
     dependencies:
       '@polymer/polymer': 3.2.0
@@ -7124,7 +7131,8 @@ packages:
 specifiers:
   '@bundled-es-modules/chai': ^4.2.2
   '@open-wc/testing-helpers': ^1.8.0
-  '@polymer/polymer': 3.2.0
+  '@polymer/iron-a11y-announcer': ^3.0.0
+  '@polymer/polymer': ^3.2.0
   '@vaadin/vaadin-checkbox': ^2.3.0
   '@vaadin/vaadin-element-mixin': ^2.4.1
   '@vaadin/vaadin-lumo-styles': ^1.6.0

@@ -192,5 +192,36 @@ describe('field highlighter', () => {
         expect(spy.callCount).to.equal(1);
       });
     });
+
+    describe('announcements', () => {
+      // NOTE: See <iron-a11y-announcer> API
+
+      function waitForAnnounce(callback) {
+        var listener = event => {
+          document.body.removeEventListener('iron-announce', listener);
+          callback(event.detail.text);
+        };
+        document.body.addEventListener('iron-announce', listener);
+      }
+
+      it('should announce adding a new user', done => {
+        waitForAnnounce(text => {
+          expect(text).to.equal(`${user1.name} started editing`);
+          done();
+        });
+
+        addUser(user1);
+      });
+
+      it('should announce field label, if any', done => {
+        waitForAnnounce(text => {
+          expect(text).to.equal(`${user1.name} started editing ${field.label}`);
+          done();
+        });
+
+        field.label = 'Username';
+        addUser(user1);
+      });
+    });
   });
 });
