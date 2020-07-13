@@ -1,5 +1,6 @@
 package com.vaadin;
 
+import com.vaadin.flow.component.avatar.AvatarGroup;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

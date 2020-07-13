@@ -89,6 +89,12 @@
             <artifactId>vaadin-testbench</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-avatar-flow</artifactId>
+            <version>1.0.0.alpha2</version>
+        </dependency>
     </dependencies>
 
     <build>
