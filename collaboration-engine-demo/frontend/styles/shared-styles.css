@@ -3,8 +3,9 @@
   max-width: fit-content;
 }
 
-.collaborators-avatars {
-  --lumo-primary-color: var(--lumo-contrast-80pct);
+.own-avatar {
+  background-color: var(--lumo-primary-color);
+  color: var(--lumo-base-color);
 }
 
 .log {

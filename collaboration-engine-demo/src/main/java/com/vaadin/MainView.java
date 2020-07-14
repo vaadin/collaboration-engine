@@ -1,7 +1,5 @@
 package com.vaadin;
 
-import com.vaadin.flow.component.avatar.AvatarGroup;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -14,6 +12,8 @@ import com.vaadin.collaborationengine.CollaborativeBinder;
 import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.avatar.Avatar;
+import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
@@ -67,13 +67,13 @@ public class MainView extends VerticalLayout {
     private CollaborativeBinder<Person> binder;
 
     private AvatarGroup collaboratorsAvatars = new AvatarGroup();
-    private AvatarGroup ownAvatar = new AvatarGroup();
+    private Avatar ownAvatar = new Avatar();
 
     private final Div log = new Div();
 
     public MainView() {
         addClassName("centered-content");
-        collaboratorsAvatars.addClassName("collaborators-avatars");
+        ownAvatar.addClassName("own-avatar");
         log.setClassName("log");
         showLogin();
 
@@ -111,16 +111,15 @@ public class MainView extends VerticalLayout {
             }
         });
 
-        ownAvatar.setItems(
-                Arrays.asList(new AvatarGroup.AvatarGroupItem(username)));
+        ownAvatar.setName(username);
 
-        HorizontalLayout avatarGroups = new HorizontalLayout(
+        HorizontalLayout avatarLayout = new HorizontalLayout(
                 collaboratorsAvatars, ownAvatar);
-        avatarGroups.setWidthFull();
-        avatarGroups.setSpacing(false);
-        avatarGroups.setJustifyContentMode(JustifyContentMode.BETWEEN);
+        avatarLayout.setWidthFull();
+        avatarLayout.setSpacing(false);
+        avatarLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
-        add(avatarGroups, firstName, lastName, submitButton, log);
+        add(avatarLayout, firstName, lastName, submitButton, log);
 
         /*
          * Tie connection to submit button so that it's deactivated when
