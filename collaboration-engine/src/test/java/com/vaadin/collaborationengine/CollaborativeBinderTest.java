@@ -346,4 +346,25 @@ public class CollaborativeBinderTest {
                 client2.binder.getLocalUser()), getEditors("value"));
     }
 
+    @Test
+    public void focus_deactivate_editorRemoved() {
+        client.bind();
+        client.attach();
+
+        client2.bind();
+        client2.attach();
+
+        field.focus();
+        client2.field.focus();
+
+        client.detach();
+
+        Assert.assertEquals(Arrays.asList(client2.binder.getLocalUser()),
+                getEditors("value"));
+
+        client2.detach();
+
+        Assert.assertEquals(Collections.emptyList(), getEditors("value"));
+    }
+
 }

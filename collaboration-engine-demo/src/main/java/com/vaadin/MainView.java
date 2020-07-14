@@ -22,7 +22,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
@@ -110,12 +109,6 @@ public class MainView extends VerticalLayout {
                 Notification.show("Submit: " + person);
                 showLogin();
             }
-        });
-
-        submitButton.addDetachListener(e -> {
-            // Workaround for blur not fired when closing tabs
-            binder.getBinding(FIRST_NAME).ifPresent(Binder.Binding::unbind);
-            binder.getBinding(LAST_NAME).ifPresent(Binder.Binding::unbind);
         });
 
         ownAvatar.setName(username);

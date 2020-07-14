@@ -6,13 +6,11 @@ import org.vaadin.collaborationengine.it.util.BeaconHandler;
 import org.vaadin.collaborationengine.it.util.Person;
 
 import com.vaadin.collaborationengine.CollaborativeBinder;
-import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 
 @Push
@@ -41,11 +39,4 @@ public class CollaborativeBinderView extends VerticalLayout {
         BeaconHandler.ensureInstalled(this);
     }
 
-    @Override
-    protected void onDetach(DetachEvent detachEvent) {
-        super.onDetach(detachEvent);
-        // Workaround for blur not fired when closing tabs
-        binder.getBinding("name").ifPresent(Binder.Binding::unbind);
-        binder.getBinding("married").ifPresent(Binder.Binding::unbind);
-    }
 }

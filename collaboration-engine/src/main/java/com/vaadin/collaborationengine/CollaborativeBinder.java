@@ -173,7 +173,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
                     map.subscribe(this::onMapChange);
                     fieldToPropertyName.forEach((field,
                             propName) -> setFieldValueFromMap(propName, field));
-                    return null;
+                    return this::onConnectionDeactivate;
                 });
     }
 
@@ -184,6 +184,10 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
             List<UserInfo> editors = ((FieldState) event.getValue()).editors;
             FieldHighlighter.setEditors(field, editors, localUser);
         });
+    }
+
+    private void onConnectionDeactivate() {
+        fieldToPropertyName.values().forEach(this::removeEditor);
     }
 
     @SuppressWarnings("rawtypes")
