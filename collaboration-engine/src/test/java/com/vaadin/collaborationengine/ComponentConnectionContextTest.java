@@ -12,52 +12,29 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 
 public class ComponentConnectionContextTest {
-    private UI ui;
-    private List<Command> accessTasks = new ArrayList<>();
+    private MockUI ui;
     private TestComponent component;
     private SpyActivationHandler activationHandler;
 
     @Before
     public void init() {
-        ui = new UI() {
-            @Override
-            public Future<Void> access(Command command) {
-                accessTasks.add(command);
-                return null;
-            }
-        };
-
-        ReentrantLock lock = new ReentrantLock();
-        // Lock to avoid triggering internal checks
-        lock.lock();
-        ui.getInternals().setSession(new VaadinSession(null) {
-            @Override
-            public Lock getLockInstance() {
-                return lock;
-            }
-        });
-
+        ui = new MockUI();
         component = new TestComponent();
 
         activationHandler = new SpyActivationHandler();
@@ -315,7 +292,7 @@ public class ComponentConnectionContextTest {
         context.dispatchAction(command);
 
         Assert.assertEquals("Command should have been passed to UI.access",
-                Arrays.asList(command), accessTasks);
+                Arrays.asList(command), ui.getAccessTasks());
     }
 
     @Test
@@ -332,7 +309,7 @@ public class ComponentConnectionContextTest {
         context.dispatchAction(command);
 
         Assert.assertTrue("UI.access should not be invoked",
-                accessTasks.isEmpty());
+                ui.getAccessTasks().isEmpty());
     }
 
     @Test(expected = IllegalStateException.class)

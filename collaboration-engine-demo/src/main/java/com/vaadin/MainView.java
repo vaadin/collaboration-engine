@@ -22,6 +22,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
@@ -111,6 +112,12 @@ public class MainView extends VerticalLayout {
             }
         });
 
+        submitButton.addDetachListener(e -> {
+            // Workaround for blur not fired when closing tabs
+            binder.getBinding(FIRST_NAME).ifPresent(Binder.Binding::unbind);
+            binder.getBinding(LAST_NAME).ifPresent(Binder.Binding::unbind);
+        });
+
         ownAvatar.setName(username);
 
         HorizontalLayout avatarLayout = new HorizontalLayout(
@@ -120,6 +127,11 @@ public class MainView extends VerticalLayout {
         avatarLayout.setJustifyContentMode(JustifyContentMode.BETWEEN);
 
         add(avatarLayout, firstName, lastName, submitButton, log);
+
+        binder = new CollaborativeBinder<>(Person.class, "binder");
+        binder.forField(firstName).bind(FIRST_NAME);
+        binder.forField(lastName).bind(LAST_NAME);
+        binder.setUserName(username);
 
         /*
          * Tie connection to submit button so that it's deactivated when
@@ -141,12 +153,6 @@ public class MainView extends VerticalLayout {
                 event -> logEditorBlurred(topic, FIRST_NAME, username));
         Registration lastNameBlurRegistration = lastName.addBlurListener(
                 event -> logEditorBlurred(topic, LAST_NAME, username));
-
-        binder = new CollaborativeBinder<>(Person.class,
-                topic.getNamedMap("binder"));
-        binder.forField(firstName).bind(FIRST_NAME);
-        binder.forField(lastName).bind(LAST_NAME);
-        binder.setUserName(username);
 
         binder.addValueChangeListener(e -> log(topic,
                 username + " changed "

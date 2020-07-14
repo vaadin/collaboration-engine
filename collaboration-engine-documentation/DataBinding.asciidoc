@@ -45,19 +45,12 @@ add(textField);
 To synchronize the value of the text field between collaborating users, add the following code to the view class:
 
 ```java
-CollaborationEngine.getInstance().openTopicConnection(this, "profile",
-        topic -> {
-            CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
-                    Person.class, topic.getNamedMap("binder"));
-            binder.forField(textField).bind("firstName");
-            binder.setUserName("Jon Doe");
-            return null;
-        });
+CollaborativeBinder<Person> binder = new CollaborativeBinder<>(Person.class, "profile");
+binder.forField(textField).bind("firstName");
+binder.setUserName("Jon Doe");
 ```
 
-(see the link:Tutorial.asciidoc[tutorial] for more info about `CollaborationEngine` and `openTopicConnection`)
-
-Besides the data object type, `CollaborativeBinder` constructor needs a `CollaborativeMap` instance which will be used for propagating the field values.
+Besides the data object type, `CollaborativeBinder` constructor needs a topic id which will be used for opening an internal connection to that topic.
 
 After this, we use the regular binder methods for binding the text field's value to the property "firstName".
 
@@ -66,11 +59,8 @@ This name is displayed in the field editing indicators, informing other users wh
 In a real application, there should be logic to retrieve the name of the current user, which should be passed to the binder.
 In this simple example, every user would have the same hard-coded name.
 
-`CollaborativeBinder` takes care of removing any listeners it adds to the fields and the map when the connection gets deactivated, so we don't need to return any cleanup callbacks from the topic connection callback.
-In this case, `null` can be returned.
-
 To bind the field value to a `Person` object (to be persisted in a database or used in the application logic), use either binder's `readBean`/`writeBean` or `setBean` methods, as described in the Vaadin documentation.
 
 [NOTE]
 The other `bind` variants, which take the getter and the setter methods as separate arguments instead of the property name, do not work with the collaborative binder.
-The property name is needed as it's used as the key for the collaborative map.
+It needs a property name for binding.

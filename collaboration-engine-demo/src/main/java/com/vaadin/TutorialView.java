@@ -57,13 +57,9 @@ public class TutorialView extends VerticalLayout {
         TextField textField = new TextField("First name");
         add(textField);
 
-        CollaborationEngine.getInstance().openTopicConnection(this, "profile",
-                topic -> {
-                    CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
-                            Person.class, topic.getNamedMap("binder"));
-                    binder.forField(textField).bind("firstName");
-                    binder.setUserName("Jon Doe");
-                    return null;
-                });
+        CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
+                Person.class, "profile");
+        binder.forField(textField).bind("firstName");
+        binder.setUserName("Jon Doe");
     }
 }

@@ -1,3 +1,15 @@
+/*
+ * Copyright (C) 2020 Vaadin Ltd
+ *
+ * This program is available under Commercial Vaadin Add-On License 3.0
+ * (CVALv3).
+ *
+ * See the file licensing.txt distributed with this software for more
+ * information about licensing.
+ *
+ * You should have received a copy of the license along with this program.
+ * If not, see <http://vaadin.com/license/cval-3>.
+ */
 package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
@@ -12,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vaadin.flow.component.BlurNotifier;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.FocusNotifier;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
@@ -28,11 +41,15 @@ import com.vaadin.flow.shared.Registration;
  * CollaborativeBinder synchronizes the field values between clients which are
  * connected to the same topic via {@link TopicConnection}.
  *
+ * @author Vaadin Ltd
+ *
  * @param <BEAN>
  *            the bean type
  */
 public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
+    static final String COLLABORATIVE_BINDER_MAP_NAME = CollaborativeBinder.class
+            .getName();
     private static final int USER_COLOR_COUNT = 10;
 
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
@@ -82,6 +99,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
             Binding<BEAN, TARGET> binding = super.bind(getter, setter);
 
             HasValue<?, ?> field = binding.getField();
+            getBinder().connectionContext.addComponent((Component) field);
 
             List<Registration> registrations = new ArrayList<>();
 
@@ -102,6 +120,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
                     () -> registrations.forEach(Registration::remove));
 
             getBinder().setFieldValueFromMap(propertyName, field);
+            getBinder().fieldToPropertyName.put(field, propertyName);
 
             return binding;
         }
@@ -123,33 +142,39 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     }
 
-    private final CollaborativeMap map;
+    private CollaborativeMap map;
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
+    private final ComponentConnectionContext connectionContext;
     private final UserInfo localUser;
+    private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
 
     /**
      * Creates a new collaborative binder. It uses reflection based on the
-     * provided bean type to resolve bean properties. The provided collaborative
-     * map is used for propagating value changes between clients.
+     * provided bean type to resolve bean properties. The provided topic id is
+     * used for opening a new connection for storing collaborative data and
+     * propagating value changes between clients.
      *
      * @param beanType
      *            the bean type to use, not <code>null</code>
-     * @param map
-     *            the collaborative map to use, not <code>null</code>
+     * @param topicId
+     *            the id of the topic to connect to, not <code>null</code>>
      */
-    public CollaborativeBinder(Class<BEAN> beanType, CollaborativeMap map) {
+    public CollaborativeBinder(Class<BEAN> beanType, String topicId) {
         super(beanType);
-        this.map = Objects.requireNonNull(map, "Map cannot be null");
-
+        Objects.requireNonNull(topicId, "Topic id can't be null");
+        connectionContext = new ComponentConnectionContext();
         this.localUser = new UserInfo(UUID.randomUUID().toString());
         localUser.setColorIndex(
                 Math.abs(localUser.hashCode() % USER_COLOR_COUNT));
 
-        Registration mapRegistration = map.subscribe(this::onMapChange);
-        map.getConnection().addRegistration(() -> {
-            getBindings().forEach(this::removeBinding);
-            mapRegistration.remove();
-        });
+        CollaborationEngine.getInstance().openTopicConnection(connectionContext,
+                topicId, topic -> {
+                    this.map = topic.getNamedMap(COLLABORATIVE_BINDER_MAP_NAME);
+                    map.subscribe(this::onMapChange);
+                    fieldToPropertyName.forEach((field,
+                            propName) -> setFieldValueFromMap(propName, field));
+                    return null;
+                });
     }
 
     private void onMapChange(MapChangeEvent event) {
@@ -163,6 +188,10 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     @SuppressWarnings("rawtypes")
     private void setFieldValueFromMap(String propertyName, HasValue field) {
+        if (map == null) {
+            // map is null when the connection isn't activated.
+            return;
+        }
         FieldState fieldState = (FieldState) map.get(propertyName);
         Object value = fieldState != null ? fieldState.value : null;
         if (value == null) {
@@ -196,6 +225,10 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     private void updateFieldState(String propertyName,
             Function<FieldState, FieldState> updater) {
+        if (map == null) {
+            // map is null when the connection isn't activated.
+            return;
+        }
         while (true) {
             FieldState oldState = (FieldState) map.get(propertyName);
 
@@ -210,6 +243,9 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     @Override
     protected void removeBindingInternal(Binding<BEAN, ?> binding) {
+        fieldToPropertyName.remove(binding.getField());
+        connectionContext.removeComponent((Component) binding.getField());
+
         Registration registration = bindingRegistrations.remove(binding);
         if (registration != null) {
             registration.remove();
