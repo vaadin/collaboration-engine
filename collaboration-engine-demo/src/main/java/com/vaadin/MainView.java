@@ -76,8 +76,6 @@ public class MainView extends VerticalLayout {
         ownAvatar.addClassName("own-avatar");
         log.setClassName("log");
         showLogin();
-
-        BeaconHandler.ensureInstalled(this);
     }
 
     private void showLogin() {

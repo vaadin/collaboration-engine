@@ -2,7 +2,6 @@ package org.vaadin.collaborationengine.it;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.vaadin.collaborationengine.it.util.BeaconHandler;
 import org.vaadin.collaborationengine.it.util.Person;
 
 import com.vaadin.collaborationengine.CollaborativeBinder;
@@ -35,8 +34,6 @@ public class CollaborativeBinderView extends VerticalLayout {
         binder.bind(checkbox, "married");
 
         binder.setUserName("User " + userCounter.incrementAndGet());
-
-        BeaconHandler.ensureInstalled(this);
     }
 
 }

@@ -326,6 +326,38 @@ public class ComponentConnectionContextTest {
         context.addComponent(c2);
     }
 
+    @Test
+    public void activateTwoContexts_hasOneBeaconHandler() {
+        ComponentConnectionContext context1 = new ComponentConnectionContext(
+                component);
+        Component component2 = new TestComponent();
+        ComponentConnectionContext context2 = new ComponentConnectionContext(
+                component2);
+        ui.add(component);
+        ui.add(component2);
+
+        Assert.assertEquals(1, ui.getSession().getRequestHandlers().stream()
+                .filter(BeaconHandler.class::isInstance).count());
+    }
+
+    @Test
+    public void activateContext_triggerBeaconRequestHandling_deactivateConnection() {
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        context.setActivationHandler(activationHandler);
+        ui.add(component);
+        activationHandler.assertActive(
+                "Should be activated when the component is attached.");
+
+        ui.getSession().getRequestHandlers().stream()
+                .filter(BeaconHandler.class::isInstance)
+                .map(BeaconHandler.class::cast).findFirst().get()
+                .synchronizedHandleRequest(null, null, null);
+
+        activationHandler.assertInactive(
+                "Should be deactivated when Beacon handler is triggered.");
+    }
+
     @Tag("test")
     private static class TestComponent extends Component {
         public boolean hasAttachListener() {

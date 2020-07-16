@@ -28,6 +28,7 @@ public class ComponentConnectionContext implements ConnectionContext {
     private volatile UI ui;
 
     private ActivationHandler activationHandler;
+    private Registration beaconListener;
 
     /**
      * Creates an empty component connection context.
@@ -95,6 +96,10 @@ public class ComponentConnectionContext implements ConnectionContext {
             if (attachedComponents.size() == 1) {
                 // First attach
                 this.ui = componentUi;
+                BeaconHandler beaconHandler = BeaconHandler
+                        .ensureInstalled(this.ui);
+                beaconListener = beaconHandler
+                        .addListener(this::deactivateConnection);
                 if (activationHandler != null) {
                     activationHandler.setActive(true);
                 }
@@ -109,10 +114,8 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (attachedComponents.remove(component)) {
             if (attachedComponents.isEmpty()) {
                 // Last detach
-                if (activationHandler != null) {
-                    activationHandler.setActive(false);
-                }
-                this.ui = null;
+                deactivateConnection();
+                ui = null;
             }
         }
     }
@@ -138,6 +141,15 @@ public class ComponentConnectionContext implements ConnectionContext {
             attachedComponents.clear();
             ui = null;
         };
+    }
+
+    private void deactivateConnection() {
+        if (beaconListener != null) {
+            beaconListener.remove();
+        }
+        if (activationHandler != null) {
+            activationHandler.setActive(false);
+        }
     }
 
     @Override
