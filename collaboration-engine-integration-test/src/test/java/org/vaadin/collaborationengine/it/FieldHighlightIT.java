@@ -3,72 +3,9 @@ package org.vaadin.collaborationengine.it;
 import static org.vaadin.collaborationengine.it.util.FieldHighlightUtil.assertNoUserTags;
 import static org.vaadin.collaborationengine.it.util.FieldHighlightUtil.assertUserTags;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.vaadin.collaborationengine.it.util.AbstractCollaborativeViewTest;
 
-import com.vaadin.flow.component.checkbox.testbench.CheckboxElement;
-import com.vaadin.flow.component.textfield.testbench.TextFieldElement;
-import com.vaadin.testbench.TestBenchElement;
-import com.vaadin.testbench.TestBenchTestCase;
-
-public class FieldHighlightIT extends AbstractCollaborativeViewTest {
-
-    @Override
-    public String getRoute() {
-        return "binder";
-    }
-
-    private static class ClientState {
-        TestBenchTestCase client;
-        TextFieldElement textField;
-        CheckboxElement checkbox;
-
-        TestBenchElement focusedElement;
-
-        ClientState(TestBenchTestCase client) {
-            this.client = client;
-            textField = client.$(TextFieldElement.class).first();
-            checkbox = client.$(CheckboxElement.class).first();
-        }
-
-        /**
-         * Note: Focus and blur is simulated with events, because otherwise
-         * interacting with another browser would blur the focused field.
-         */
-        void focusTextField() {
-            blur();
-            textField.dispatchEvent("focus");
-            focusedElement = textField;
-        }
-
-        void focusCheckbox() {
-            blur();
-            checkbox.dispatchEvent("focus");
-            focusedElement = checkbox;
-        }
-
-        void blur() {
-            if (focusedElement != null) {
-                focusedElement.dispatchEvent("blur");
-                focusedElement = null;
-            }
-        }
-
-    }
-
-    private ClientState client1;
-
-    @Before
-    public void init() {
-        client1 = new ClientState(this);
-    }
-
-    @After
-    public void reset() {
-        $("button").id("reset-user-counter").click();
-    }
+public class FieldHighlightIT extends AbstractCollaborativeFormIT {
 
     @Test
     public void noInitialUserTags() {

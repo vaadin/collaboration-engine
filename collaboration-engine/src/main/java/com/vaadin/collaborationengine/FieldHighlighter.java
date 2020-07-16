@@ -35,7 +35,7 @@ class FieldHighlighter {
     private static JsonObject serialize(UserInfo editor) {
         JsonObject editorJson = Json.createObject();
         editorJson.put("id", editor.getId());
-        editorJson.put("name", Objects.toString(editor.getUserName(), ""));
+        editorJson.put("name", Objects.toString(editor.getName(), ""));
         editorJson.put("colorIndex", editor.getColorIndex());
         return editorJson;
     }

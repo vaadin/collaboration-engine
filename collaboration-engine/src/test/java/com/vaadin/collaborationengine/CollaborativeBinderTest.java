@@ -24,13 +24,12 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.BlurNotifier.BlurEvent;
 import com.vaadin.flow.component.FocusNotifier.FocusEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
 
 public class CollaborativeBinderTest {
 
@@ -76,24 +75,9 @@ public class CollaborativeBinderTest {
 
         client2 = new Client();
 
-        CollaborationEngine.getInstance()
-                .openTopicConnection(new ConnectionContext() {
-                    @Override
-                    public Registration setActivationHandler(
-                            ActivationHandler handler) {
-                        handler.setActive(true);
-                        return null;
-                    }
-
-                    @Override
-                    public void dispatchAction(Command action) {
-                        action.execute();
-                    }
-                }, "topic", topic -> {
-                    map = topic.getNamedMap(
-                            CollaborativeBinder.COLLABORATIVE_BINDER_MAP_NAME);
-                    return null;
-                });
+        TestUtils.openEagerConnection("topic",
+                topicConnection -> map = topicConnection.getNamedMap(
+                        CollaborativeBinder.COLLABORATIVE_BINDER_MAP_NAME));
     }
 
     @After

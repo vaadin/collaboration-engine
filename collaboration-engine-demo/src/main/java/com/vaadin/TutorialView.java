@@ -1,8 +1,10 @@
 package com.vaadin;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
 import com.vaadin.collaborationengine.CollaborativeBinder;
 import com.vaadin.collaborationengine.CollaborativeMap;
+import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
@@ -57,9 +59,16 @@ public class TutorialView extends VerticalLayout {
         TextField textField = new TextField("First name");
         add(textField);
 
+        UserInfo localUser = new UserInfo();
+        localUser.setName("Jon Doe");
+        localUser.setImage("./profile-pic.png");
+
         CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
-                Person.class, "profile");
+                Person.class, localUser, "profile");
         binder.forField(textField).bind("firstName");
-        binder.setUserName("Jon Doe");
+
+        CollaborativeAvatarGroup avatarGroup = new CollaborativeAvatarGroup(
+                localUser, "invoice/1234");
+        add(avatarGroup);
     }
 }

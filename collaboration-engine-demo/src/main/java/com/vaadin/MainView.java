@@ -1,19 +1,16 @@
 package com.vaadin;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
 import com.vaadin.collaborationengine.CollaborativeBinder;
 import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.collaborationengine.TopicConnection;
+import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.avatar.Avatar;
-import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.html.Div;
@@ -30,7 +27,7 @@ import com.vaadin.flow.shared.Registration;
 @CssImport("./styles/shared-styles.css")
 public class MainView extends VerticalLayout {
 
-    private static final String EDITOR_MAP_NAME = "editor";
+    private static final String TOPIC_ID = "form";
     private static final String ACTIVITY_LOG_MAP_NAME = "activityLog";
 
     private static final String FIRST_NAME = "firstName";
@@ -66,14 +63,10 @@ public class MainView extends VerticalLayout {
     private Registration closeConnection;
     private CollaborativeBinder<Person> binder;
 
-    private AvatarGroup collaboratorsAvatars = new AvatarGroup();
-    private Avatar ownAvatar = new Avatar();
-
     private final Div log = new Div();
 
     public MainView() {
         addClassName("centered-content");
-        ownAvatar.addClassName("own-avatar");
         log.setClassName("log");
         showLogin();
     }
@@ -108,7 +101,13 @@ public class MainView extends VerticalLayout {
                 showLogin();
             }
         });
+        UserInfo user = new UserInfo();
+        user.setName(username);
+        CollaborativeAvatarGroup collaboratorsAvatars = new CollaborativeAvatarGroup(
+                user, TOPIC_ID);
 
+        Avatar ownAvatar = new Avatar();
+        ownAvatar.addClassName("own-avatar");
         ownAvatar.setName(username);
 
         HorizontalLayout avatarLayout = new HorizontalLayout(
@@ -119,17 +118,16 @@ public class MainView extends VerticalLayout {
 
         add(avatarLayout, firstName, lastName, submitButton, log);
 
-        binder = new CollaborativeBinder<>(Person.class, "binder");
+        binder = new CollaborativeBinder<>(Person.class, user, TOPIC_ID);
         binder.forField(firstName).bind(FIRST_NAME);
         binder.forField(lastName).bind(LAST_NAME);
-        binder.setUserName(username);
 
         /*
          * Tie connection to submit button so that it's deactivated when
          * detaching the form
          */
         closeConnection = CollaborationEngine.getInstance().openTopicConnection(
-                submitButton, "form", topic -> configureTopicConnection(topic,
+                submitButton, TOPIC_ID, topic -> configureTopicConnection(topic,
                         username, firstName, lastName));
     }
 
@@ -150,40 +148,16 @@ public class MainView extends VerticalLayout {
                         + ((TextField) e.getHasValue()).getLabel() + " to "
                         + e.getValue()));
 
-        topic.getNamedMap(EDITOR_MAP_NAME)
-                .subscribe(event -> updateEditors(event.getValue(), username));
-
         topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
                 event -> log.setText(Objects.toString(event.getValue(), "")));
 
-        addEditor(topic.getNamedMap(EDITOR_MAP_NAME), "", username);
-
         log(topic, username + " joined");
 
-        Registration editorRegistration = () -> {
-            removeEditor(topic.getNamedMap(EDITOR_MAP_NAME), "", username);
-            log(topic, username + " left");
-        };
+        Registration editorRegistration = () -> log(topic, username + " left");
 
         return Registration.combine(firstNameFocusRegistration,
                 lastNameFocusRegistration, firstNameBlurRegistration,
                 lastNameBlurRegistration, editorRegistration);
-    }
-
-    private static void removeEditor(CollaborativeMap map, String key,
-            String username) {
-        MainView.<List<String>> updateMaps(map, key, Collections.emptyList(),
-                oldEditors -> oldEditors.stream()
-                        .filter(value -> !username.equals(value))
-                        .collect(Collectors.toList()));
-    }
-
-    private static void addEditor(CollaborativeMap map, String key,
-            String username) {
-        MainView.<List<String>> updateMaps(map, key, Collections.emptyList(),
-                oldEditors -> Stream
-                        .concat(oldEditors.stream(), Stream.of(username))
-                        .collect(Collectors.toList()));
     }
 
     private static void log(TopicConnection topic, String message) {
@@ -214,12 +188,4 @@ public class MainView extends VerticalLayout {
         log(topicConnection, message);
     }
 
-    @SuppressWarnings("unchecked")
-    private void updateEditors(Object value, String username) {
-        List<String> editors = (List<String>) value;
-        collaboratorsAvatars.setItems(
-                editors.stream().filter(name -> !username.equals(name))
-                        .map(AvatarGroup.AvatarGroupItem::new)
-                        .collect(Collectors.toList()));
-    }
 }

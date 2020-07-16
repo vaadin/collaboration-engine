@@ -13,33 +13,119 @@
 package com.vaadin.collaborationengine;
 
 import java.util.Objects;
+import java.util.UUID;
 
-class UserInfo {
+/**
+ * User information of a collaborating user, used with various features of the
+ * collaboration engine.
+ */
+public class UserInfo {
+
+    private static final int USER_COLOR_COUNT = 10;
 
     private String id;
-    private String userName;
+    private String name;
+    private String abbreviation;
+    private String image;
     private int colorIndex;
 
-    public UserInfo(String id) {
-        this.id = Objects.requireNonNull(id, "User id cannot be null");
+    /**
+     * Creates a new user info object with random id and color index.
+     */
+    public UserInfo() {
+        this.id = UUID.randomUUID().toString();
+        this.colorIndex = Math.abs(this.hashCode() % USER_COLOR_COUNT);
     }
 
+    /**
+     * Gets the user's unique identifier.
+     *
+     * @return the user's id, not {@code null}
+     */
     public String getId() {
         return id;
     }
 
-    public String getUserName() {
-        return userName;
+    /**
+     * Gets the user's name.
+     *
+     * @return the user's name.
+     */
+    public String getName() {
+        return name;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    /**
+     * Sets the user's name.
+     *
+     * @param name
+     *            the name to set
+     */
+    public void setName(String name) {
+        this.name = name;
     }
 
+    /**
+     * Gets the user's abbreviation.
+     * <p>
+     * Note: This is not computed based on the user's name, but needs to be
+     * explicitly set with {@link #setAbbreviation(String)}.
+     *
+     * @return the user's abbreviation
+     */
+    public String getAbbreviation() {
+        return abbreviation;
+    }
+
+    /**
+     * Sets the user's abbreviation.
+     *
+     * @param abbreviation
+     *            the abbreviation to set
+     */
+    public void setAbbreviation(String abbreviation) {
+        this.abbreviation = abbreviation;
+    }
+
+    /**
+     * Gets the url of the user's image.
+     *
+     * @return the image url
+     */
+    public String getImage() {
+        return image;
+    }
+
+    /**
+     * Sets the url of the user's image.
+     *
+     * @param image
+     *            the image url to set
+     */
+    public void setImage(String image) {
+        this.image = image;
+    }
+
+    /**
+     * Gets the user's color index.
+     * <p>
+     * The color index defines the user specific color. In practice, color index
+     * {@code n} means that the user color will be set as the CSS variable
+     * {@code --vaadin-user-color-n}.
+     *
+     * @return the user's color index
+     */
     public int getColorIndex() {
         return colorIndex;
     }
 
+    /**
+     * Sets the user's color index.
+     *
+     * @param colorIndex
+     *            the color index to set
+     * @see #getColorIndex()
+     */
     public void setColorIndex(int colorIndex) {
         this.colorIndex = colorIndex;
     }

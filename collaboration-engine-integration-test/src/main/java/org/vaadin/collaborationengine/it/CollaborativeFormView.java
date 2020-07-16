@@ -4,7 +4,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.vaadin.collaborationengine.it.util.Person;
 
+import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
 import com.vaadin.collaborationengine.CollaborativeBinder;
+import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -13,8 +15,12 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
 @Push
-@Route("binder")
-public class CollaborativeBinderView extends VerticalLayout {
+@Route("form")
+public class CollaborativeFormView extends VerticalLayout {
+
+    public static final String TOPIC_ID = "topic";
+
+    private CollaborativeAvatarGroup avatars;
 
     private TextField textField = new TextField("Name");
     private Checkbox checkbox = new Checkbox("Married");
@@ -25,15 +31,20 @@ public class CollaborativeBinderView extends VerticalLayout {
     private NativeButton resetUserCounter = new NativeButton(
             "Reset user counter", e -> userCounter.set(0));
 
-    public CollaborativeBinderView() {
-        add(textField, checkbox, resetUserCounter);
+    public CollaborativeFormView() {
+        int userIndex = userCounter.incrementAndGet();
+
+        UserInfo localUser = new UserInfo();
+        localUser.setName("User " + userIndex);
+        avatars = new CollaborativeAvatarGroup(localUser, TOPIC_ID);
+
         resetUserCounter.setId("reset-user-counter");
 
-        binder = new CollaborativeBinder<>(Person.class, "topic");
+        add(avatars, textField, checkbox, resetUserCounter);
+
+        binder = new CollaborativeBinder<>(Person.class, localUser, TOPIC_ID);
         binder.bind(textField, "name");
         binder.bind(checkbox, "married");
-
-        binder.setUserName("User " + userCounter.incrementAndGet());
     }
 
 }

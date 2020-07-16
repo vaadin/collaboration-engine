@@ -21,6 +21,11 @@
             <groupId>com.vaadin</groupId>
             <artifactId>flow-data</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-avatar-flow</artifactId>
+            <version>${avatar.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>javax.servlet</groupId>

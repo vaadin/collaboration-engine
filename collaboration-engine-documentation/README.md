@@ -5,3 +5,4 @@
 * [Overview](./Overview.asciidoc)
 * [Tutorial](./Tutorial.asciidoc)
 * [Data Binding](./DataBinding.asciidoc)
+* [Indicating User Presence With Avatars](./Avatars.asciidoc)

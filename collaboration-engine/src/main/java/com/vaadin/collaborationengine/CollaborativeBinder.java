@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +49,6 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     static final String COLLABORATIVE_BINDER_MAP_NAME = CollaborativeBinder.class
             .getName();
-    private static final int USER_COLOR_COUNT = 10;
 
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
             Collections.emptyList());
@@ -142,10 +140,11 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     }
 
+    private UserInfo localUser;
+
     private CollaborativeMap map;
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final ComponentConnectionContext connectionContext;
-    private final UserInfo localUser;
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
 
     /**
@@ -160,12 +159,35 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      *            the id of the topic to connect to, not <code>null</code>>
      */
     public CollaborativeBinder(Class<BEAN> beanType, String topicId) {
+        this(beanType, new UserInfo(), topicId);
+    }
+
+    /**
+     * Creates a new collaborative binder. It uses reflection based on the
+     * provided bean type to resolve bean properties.
+     * <p>
+     * The provided user information is used in the field editing indicators.
+     * The name of the user will be displayed to other users when editing a
+     * field, and the user's color index will be used to set the field's
+     * highlight color.
+     * <p>
+     * The provided topic id is used for opening a new connection for storing
+     * collaborative data and propagating value changes between clients.
+     *
+     * @param beanType
+     *            the bean type to use, not <code>null</code>
+     * @param localUser
+     *            the information of the local user, not <code>null</code>
+     * @param topicId
+     *            the id of the topic to connect to, not <code>null</code>>
+     */
+    public CollaborativeBinder(Class<BEAN> beanType, UserInfo localUser,
+            String topicId) {
         super(beanType);
+        this.localUser = Objects.requireNonNull(localUser,
+                "User cannot be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
         connectionContext = new ComponentConnectionContext();
-        this.localUser = new UserInfo(UUID.randomUUID().toString());
-        localUser.setColorIndex(
-                Math.abs(localUser.hashCode() % USER_COLOR_COUNT));
 
         CollaborationEngine.getInstance().openTopicConnection(connectionContext,
                 topicId, topic -> {
@@ -350,18 +372,26 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * @param userName
      *            the user name to set, can be {@code null} to not display a
      *            name
+     * @deprecated set the local user's information (including name) in the
+     *             constructor
+     *             {@link #CollaborativeBinder(Class, UserInfo, String)}
      */
+    @Deprecated
     public void setUserName(String userName) {
-        localUser.setUserName(userName);
+        localUser.setName(userName);
     }
 
     /**
      * Gets the user name that is displayed to other users when editing a field.
      *
      * @return the user name, can be {@code null}
+     * @deprecated the name is included in the user information object that
+     *             should be set in the constructor
+     *             {@link #CollaborativeBinder(Class, UserInfo, String)}
      */
+    @Deprecated
     public String getUserName() {
-        return localUser.getUserName();
+        return localUser.getName();
     }
 
     UserInfo getLocalUser() {
