@@ -1,9 +1,9 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.vaadin.collaborationengine.it.util.AbstractCollaborativeViewTest;
+import com.vaadin.collaborationengine.util.AbstractCollaborativeViewTest;
 
 import com.vaadin.flow.component.button.testbench.ButtonElement;
 import com.vaadin.flow.component.html.testbench.SpanElement;

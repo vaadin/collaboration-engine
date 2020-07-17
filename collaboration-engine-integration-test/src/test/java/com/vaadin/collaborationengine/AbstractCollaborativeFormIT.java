@@ -1,11 +1,11 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
-import org.vaadin.collaborationengine.it.util.AbstractCollaborativeViewTest;
+import com.vaadin.collaborationengine.util.AbstractCollaborativeViewTest;
 
 import com.vaadin.flow.component.avatar.testbench.AvatarElement;
 import com.vaadin.flow.component.avatar.testbench.AvatarGroupElement;

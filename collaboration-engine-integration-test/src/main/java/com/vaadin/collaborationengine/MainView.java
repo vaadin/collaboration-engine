@@ -1,9 +1,7 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
 import java.util.Objects;
 
-import com.vaadin.collaborationengine.CollaborationEngine;
-import com.vaadin.collaborationengine.CollaborativeMap;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;

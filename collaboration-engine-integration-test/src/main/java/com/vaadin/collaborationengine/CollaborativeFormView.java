@@ -1,12 +1,8 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
+import com.vaadin.collaborationengine.util.Person;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.vaadin.collaborationengine.it.util.Person;
-
-import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
-import com.vaadin.collaborationengine.CollaborativeBinder;
-import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;

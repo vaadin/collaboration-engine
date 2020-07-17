@@ -1,4 +1,4 @@
-package org.vaadin.collaborationengine.it.util;
+package com.vaadin.collaborationengine.util;
 
 public class Person {
     private String name;

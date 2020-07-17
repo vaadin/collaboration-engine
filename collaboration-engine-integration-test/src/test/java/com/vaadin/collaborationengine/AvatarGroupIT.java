@@ -1,6 +1,6 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
-import static org.vaadin.collaborationengine.it.util.FieldHighlightUtil.getUserTags;
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.getUserTags;
 
 import java.util.Arrays;
 import java.util.Collections;

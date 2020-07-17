@@ -1,4 +1,4 @@
-package org.vaadin.collaborationengine.it.util;
+package com.vaadin.collaborationengine.util;
 
 import java.util.ArrayList;
 import java.util.List;

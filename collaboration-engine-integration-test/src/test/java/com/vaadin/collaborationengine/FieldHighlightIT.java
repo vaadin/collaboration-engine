@@ -1,7 +1,7 @@
-package org.vaadin.collaborationengine.it;
+package com.vaadin.collaborationengine;
 
-import static org.vaadin.collaborationengine.it.util.FieldHighlightUtil.assertNoUserTags;
-import static org.vaadin.collaborationengine.it.util.FieldHighlightUtil.assertUserTags;
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserTags;
 
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package org.vaadin.collaborationengine.it.util;
+package com.vaadin.collaborationengine.util;
 
 import org.junit.After;
 import org.junit.Assert;

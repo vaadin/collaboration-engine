@@ -1,4 +1,4 @@
-package org.vaadin.collaborationengine.it.util;
+package com.vaadin.collaborationengine.util;
 
 import com.vaadin.testbench.TestBenchElement;
 import com.vaadin.testbench.elementsbase.Element;
