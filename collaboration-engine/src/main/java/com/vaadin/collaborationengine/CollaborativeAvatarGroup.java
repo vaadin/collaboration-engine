@@ -12,6 +12,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.component.HasTheme;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,7 @@ import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
+import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -34,7 +36,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
-        implements HasSize, HasStyle {
+        implements HasSize, HasStyle, HasTheme {
 
     static final String MAP_NAME = CollaborativeAvatarGroup.class.getName();
     static final String KEY = "users";
@@ -62,6 +64,53 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
                 "User cannot be null");
         CollaborationEngine.getInstance().openTopicConnection(getContent(),
                 topicId, this::onConnectionActivate);
+    }
+
+    /**
+     * Gets the maximum number of avatars to display, or {@code null} if no max
+     * has been set.
+     *
+     * @return the max number of avatars
+     * @see AvatarGroup#getMax()
+     */
+    public Integer getMax() {
+        return getContent().getMax();
+    }
+
+    /**
+     * Sets the the maximum number of avatars to display.
+     * <p>
+     * By default, all the avatars are displayed. When max is set, the
+     * overflowing avatars are grouped into one avatar.
+     *
+     * @param max
+     *            the max number of avatars, or {@code null} to remove the max
+     * @see AvatarGroup#setMax(Integer)
+     */
+    public void setMax(Integer max) {
+        getContent().setMax(max);
+    }
+
+    /**
+     * Adds theme variants to the avatar group component.
+     *
+     * @param variants
+     *            theme variants to add
+     * @see AvatarGroup#addThemeVariants(AvatarGroupVariant...)
+     */
+    public void addThemeVariants(AvatarGroupVariant... variants) {
+        getContent().addThemeVariants(variants);
+    }
+
+    /**
+     * Removes theme variants from the avatar group component.
+     *
+     * @param variants
+     *            theme variants to remove
+     * @see AvatarGroup#removeThemeVariants(AvatarGroupVariant...)
+     */
+    public void removeThemeVariants(AvatarGroupVariant... variants) {
+        getContent().removeThemeVariants(variants);
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {

@@ -24,8 +24,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 
 public class CollaborativeAvatarGroupTest {
@@ -198,4 +200,26 @@ public class CollaborativeAvatarGroupTest {
         Assert.assertEquals(Arrays.asList("name3", "name1"),
                 client2.getItemNames());
     }
+
+    private static List<String> blackListedMethods = Arrays.asList("setItems",
+            "getItems", "add", "remove");
+
+    @Test
+    public void avatarGroup_replicateRelevantAPIs() {
+        List<String> avatarGroupMethods = ReflectionUtils
+                .getMethodNames(AvatarGroup.class);
+        List<String> collaborativeAvatarGroupMethods = ReflectionUtils
+                .getMethodNames(CollaborativeAvatarGroup.class);
+
+        List<String> missingMethods = avatarGroupMethods.stream()
+                .filter(m -> !blackListedMethods.contains(m)
+                        && !collaborativeAvatarGroupMethods.contains(m))
+                .collect(Collectors.toList());
+
+        if (!missingMethods.isEmpty()) {
+            Assert.fail("Missing wrapper for methods: "
+                    + missingMethods.toString());
+        }
+    }
+
 }
