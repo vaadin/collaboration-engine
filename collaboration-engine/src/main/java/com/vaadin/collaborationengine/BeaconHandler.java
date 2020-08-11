@@ -69,10 +69,7 @@ class BeaconHandler extends SynchronizedRequestHandler {
         // ./beacon/<random uuid>
         String relativeBeaconPath = "." + newBeaconHandler.beaconPath;
 
-        // TODO Use synchronous XHR if Beacon cannot be used (IE11)?
-        ui.getElement().executeJs(
-                "window.addEventListener('unload', function() {navigator.sendBeacon && navigator.sendBeacon($0)})",
-                relativeBeaconPath);
+        ui.getElement().executeJs(getUnloadScript(), relativeBeaconPath);
 
         VaadinSession session = ui.getSession();
         session.addRequestHandler(newBeaconHandler);
@@ -81,5 +78,19 @@ class BeaconHandler extends SynchronizedRequestHandler {
         ui.addDetachListener(
                 detachEvent -> session.removeRequestHandler(newBeaconHandler));
         return newBeaconHandler;
+    }
+
+    private static String getUnloadScript() {
+        //@formatter:off
+        return "window.addEventListener('unload', function() {"
+                + "  if (navigator.sendBeacon) {"
+                + "    navigator.sendBeacon($0);"
+                + "  } else {"
+                + "    var xhr = new XMLHttpRequest();"
+                + "    xhr.open(\"POST\", $0, false);"
+                + "    xhr.send(\"\");"
+                + "  }"
+                + "})";
+        //@formatter:on
     }
 }
