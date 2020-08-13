@@ -12,6 +12,8 @@ import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
+import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
+
 public class CollaborationEngineTest {
 
     private CollaborationEngine collaborationEngine;
@@ -160,6 +162,27 @@ public class CollaborationEngineTest {
                 "Expect ActivationHandler to be garbage-collected when connection closed",
                 TestUtils.isGarbageCollected(weakRef));
 
+    }
+
+    @Test
+    public void userColors_sameColorForSameUserId() {
+        UserInfo firstUser = new UserInfo("id1234");
+        UserInfo secondUser = new UserInfo("id1234");
+        Assert.assertEquals(firstUser.getColorIndex(),
+                secondUser.getColorIndex());
+    }
+
+    @Test
+    public void userColors_calculateBaseOnMapSize() {
+        for (int i = 0; i < 12; i++) {
+            UserInfo user = new UserInfo("userId-" + i);
+            Assert.assertEquals(user.getColorIndex(), i % USER_COLOR_COUNT);
+        }
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void nullUserId_throws() {
+        new UserInfo(null);
     }
 
     class SpyConnectionContext implements ConnectionContext {

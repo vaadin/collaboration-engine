@@ -11,6 +11,7 @@ import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
+import java.util.UUID;
 
 @Push
 // Use "" instead in the tutorial text to make it open for /
@@ -59,7 +60,7 @@ public class TutorialView extends VerticalLayout {
         TextField textField = new TextField("First name");
         add(textField);
 
-        UserInfo localUser = new UserInfo();
+        UserInfo localUser = new UserInfo(UUID.randomUUID().toString());
         localUser.setName("Jon Doe");
         localUser.setImage("./profile-pic.png");
 

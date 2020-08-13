@@ -1,6 +1,7 @@
 package com.vaadin;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
@@ -101,7 +102,7 @@ public class MainView extends VerticalLayout {
                 showLogin();
             }
         });
-        UserInfo user = new UserInfo();
+        UserInfo user = new UserInfo(UUID.randomUUID().toString());
         user.setName(username);
         CollaborativeAvatarGroup collaboratorsAvatars = new CollaborativeAvatarGroup(
                 user, TOPIC_ID);

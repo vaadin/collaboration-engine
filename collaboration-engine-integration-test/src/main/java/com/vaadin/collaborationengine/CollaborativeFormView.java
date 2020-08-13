@@ -33,7 +33,7 @@ public class CollaborativeFormView extends VerticalLayout {
     public CollaborativeFormView() {
         int userIndex = userCounter.incrementAndGet();
 
-        UserInfo localUser = new UserInfo();
+        UserInfo localUser = new UserInfo("userId-" + userIndex);
         localUser.setName("User " + userIndex);
         avatars = new CollaborativeAvatarGroup(localUser, TOPIC_ID);
 

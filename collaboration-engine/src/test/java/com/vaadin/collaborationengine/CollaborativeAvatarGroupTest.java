@@ -1,20 +1,9 @@
-/*
- * Copyright (C) 2020 Vaadin Ltd
- *
- * This program is available under Commercial Vaadin Add-On License 3.0
- * (CVALv3).
- *
- * See the file licensing.txt distributed with this software for more
- * information about licensing.
- *
- * You should have received a copy of the license along with this program.
- * If not, see <http://vaadin.com/license/cval-3>.
- */
 package com.vaadin.collaborationengine;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,7 +35,7 @@ public class CollaborativeAvatarGroupTest {
 
         Client(int index, String topicId) {
             this.ui = new MockUI();
-            this.user = new UserInfo();
+            this.user = new UserInfo(UUID.randomUUID().toString());
             user.setName("name" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setImage("image" + index);

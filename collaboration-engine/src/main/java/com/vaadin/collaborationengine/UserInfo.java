@@ -13,15 +13,12 @@
 package com.vaadin.collaborationengine;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * User information of a collaborating user, used with various features of the
  * collaboration engine.
  */
 public class UserInfo {
-
-    private static final int USER_COLOR_COUNT = 10;
 
     private String id;
     private String name;
@@ -30,11 +27,17 @@ public class UserInfo {
     private int colorIndex;
 
     /**
-     * Creates a new user info object with random id and color index.
+     * Creates a new user info object from user id. The color index is
+     * calculated based on the id.
+     * 
+     * @param userId
+     *            the user id, not {@code null}
      */
-    public UserInfo() {
-        this.id = UUID.randomUUID().toString();
-        this.colorIndex = Math.abs(this.hashCode() % USER_COLOR_COUNT);
+    public UserInfo(String userId) {
+        Objects.requireNonNull(userId, "Null user id isn't supported");
+        this.id = userId;
+        CollaborationEngine.getInstance().requestUserColorIndex(this.id,
+                this::setColorIndex);
     }
 
     /**

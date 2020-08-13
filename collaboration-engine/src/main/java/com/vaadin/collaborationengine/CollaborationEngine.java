@@ -15,6 +15,7 @@ package com.vaadin.collaborationengine;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -34,8 +35,10 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationEngine {
 
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
+    static final int USER_COLOR_COUNT = 10;
 
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
+    private Map<String, Integer> userColors = new ConcurrentHashMap<>();
 
     CollaborationEngine() {
         // package-protected to hide from users but to be usable in unit tests
@@ -100,4 +103,18 @@ public class CollaborationEngine {
         return connection::close;
     }
 
+    /**
+     * Calculates the color index of a user based on the user id. If the color
+     * index for a user id does not exist yet, it's created on demand.
+     * 
+     * @param userId
+     *            user id
+     * @param handler
+     *            the callback to handle the returned color index
+     */
+    void requestUserColorIndex(String userId, Consumer<Integer> handler) {
+        Integer colorIndex = userColors.computeIfAbsent(userId,
+                id -> userColors.size() % USER_COLOR_COUNT);
+        handler.accept(colorIndex);
+    }
 }

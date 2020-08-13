@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -159,7 +160,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      *            the id of the topic to connect to, not <code>null</code>>
      */
     public CollaborativeBinder(Class<BEAN> beanType, String topicId) {
-        this(beanType, new UserInfo(), topicId);
+        this(beanType, new UserInfo(UUID.randomUUID().toString()), topicId);
     }
 
     /**

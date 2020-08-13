@@ -45,7 +45,7 @@ add(textField);
 To synchronize the value of the text field between collaborating users, add the following code to the view class:
 
 ```java
-UserInfo localUser = new UserInfo();
+UserInfo localUser = new UserInfo("user-id");
 localUser.setName("Jon Doe");
 
 CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
