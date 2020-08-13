@@ -46,4 +46,5 @@ public abstract class AbstractCollaborativeViewTest extends AbstractViewTest {
         client.getDriver().close();
         addedClients.remove(client);
     }
+
 }

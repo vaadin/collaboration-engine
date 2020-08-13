@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import com.vaadin.collaborationengine.util.Person;
+import com.vaadin.flow.router.PreserveOnRefresh;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -12,6 +13,7 @@ import com.vaadin.flow.router.Route;
 
 @Push
 @Route("form")
+@PreserveOnRefresh
 public class CollaborativeFormView extends VerticalLayout {
 
     public static final String TOPIC_ID = "topic";
@@ -20,6 +22,7 @@ public class CollaborativeFormView extends VerticalLayout {
 
     private TextField textField = new TextField("Name");
     private Checkbox checkbox = new Checkbox("Married");
+    private TextField email = new TextField("Email (not collaborative)");
 
     private CollaborativeBinder<Person> binder;
 
@@ -35,8 +38,8 @@ public class CollaborativeFormView extends VerticalLayout {
         avatars = new CollaborativeAvatarGroup(localUser, TOPIC_ID);
 
         resetUserCounter.setId("reset-user-counter");
-
-        add(avatars, textField, checkbox, resetUserCounter);
+        email.setId("emailField");
+        add(avatars, textField, checkbox, resetUserCounter, email);
 
         binder = new CollaborativeBinder<>(Person.class, localUser, TOPIC_ID);
         binder.bind(textField, "name");

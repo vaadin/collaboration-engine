@@ -67,6 +67,10 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
         driver.close();
     }
 
+    protected void refresh() {
+        driver.navigate().refresh();
+    }
+
     protected WebDriver createHeadlessChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--no-sandbox", "--disable-dev-shm-usage",

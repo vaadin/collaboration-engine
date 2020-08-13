@@ -56,6 +56,10 @@ class BeaconHandler extends SynchronizedRequestHandler {
         return () -> listeners.remove(listener);
     }
 
+    List<Command> getListeners() {
+        return new ArrayList<>(listeners);
+    }
+
     static BeaconHandler ensureInstalled(UI ui) {
         BeaconHandler beaconHandler = ComponentUtil.getData(ui,
                 BeaconHandler.class);

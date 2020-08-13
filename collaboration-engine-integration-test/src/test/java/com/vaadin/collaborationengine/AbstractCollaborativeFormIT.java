@@ -29,6 +29,7 @@ public abstract class AbstractCollaborativeFormIT
         TestBenchTestCase client;
         AvatarGroupElement avatars;
         TextFieldElement textField;
+        TextFieldElement emailField;
         CheckboxElement checkbox;
 
         TestBenchElement focusedElement;
@@ -37,6 +38,7 @@ public abstract class AbstractCollaborativeFormIT
             this.client = client;
             avatars = client.$(AvatarGroupElement.class).first();
             textField = client.$(TextFieldElement.class).first();
+            emailField = client.$(TextFieldElement.class).id("emailField");
             checkbox = client.$(CheckboxElement.class).first();
         }
 

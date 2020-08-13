@@ -1,17 +1,6 @@
-/*
- * Copyright (C) 2020 Vaadin Ltd
- *
- * This program is available under Commercial Vaadin Add-On License 3.0
- * (CVALv3).
- *
- * See the file licensing.txt distributed with this software for more
- * information about licensing.
- *
- * You should have received a copy of the license along with this program.
- * If not, see <http://vaadin.com/license/cval-3>.
- */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import java.util.Arrays;
 
 import org.junit.Assert;
@@ -341,7 +330,7 @@ public class ComponentConnectionContextTest {
     }
 
     @Test
-    public void activateContext_triggerBeaconRequestHandling_deactivateConnection() {
+    public void activateContext_triggerBeaconRequestHandling_deactivateConnectionAndRemoveBeaconListener() {
         ComponentConnectionContext context = new ComponentConnectionContext(
                 component);
         context.setActivationHandler(activationHandler);
@@ -349,13 +338,50 @@ public class ComponentConnectionContextTest {
         activationHandler.assertActive(
                 "Should be activated when the component is attached.");
 
-        ui.getSession().getRequestHandlers().stream()
-                .filter(BeaconHandler.class::isInstance)
-                .map(BeaconHandler.class::cast).findFirst().get()
-                .synchronizedHandleRequest(null, null, null);
+        BeaconHandler beaconHandler = getBeaconHandler(ui);
+        beaconHandler.synchronizedHandleRequest(null, null, null);
 
+        Assert.assertTrue(beaconHandler.getListeners().isEmpty());
         activationHandler.assertInactive(
                 "Should be deactivated when Beacon handler is triggered.");
+    }
+
+    @Test
+    public void activateContext_deactivateContext_removeBeaconListener() {
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        context.setActivationHandler(activationHandler);
+        ui.add(component);
+        activationHandler.assertActive(
+                "Should be activated when the component is attached.");
+        ui.remove(component);
+        Assert.assertTrue(getBeaconHandler(ui).getListeners().isEmpty());
+    }
+
+    @Test
+    public void activateContext_moveComponentsToAnotherUI_triggerBeaconRequestHandling_shouldNotDeactivate() {
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        context.setActivationHandler(activationHandler);
+        ui.add(component);
+        activationHandler.assertActive(
+                "Should be activated when the component is attached.");
+
+        ui.remove(component);
+        component.getElement().getNode().removeFromTree();
+        activationHandler.assertInactive(
+                "Should be inactive when all components are detached.");
+        new MockUI().add(component);
+
+        getBeaconHandler(ui).synchronizedHandleRequest(null, null, null);
+        activationHandler.assertActive(
+                "BeaconHandler should not deactivate connection.");
+    }
+
+    public BeaconHandler getBeaconHandler(MockUI mockUI) {
+        return mockUI.getSession().getRequestHandlers().stream()
+                .filter(BeaconHandler.class::isInstance)
+                .map(BeaconHandler.class::cast).findFirst().get();
     }
 
     @Tag("test")
@@ -366,33 +392,6 @@ public class ComponentConnectionContextTest {
 
         public boolean hasDetachListener() {
             return hasListener(DetachEvent.class);
-        }
-    }
-
-    private static class SpyActivationHandler implements ActivationHandler {
-
-        private boolean changeExpected = true;
-
-        private boolean active;
-
-        @Override
-        public void setActive(boolean active) {
-            if (!changeExpected) {
-                Assert.fail("No change expected");
-            }
-            this.active = active;
-
-            changeExpected = false;
-        }
-
-        public void assertActive(String message) {
-            Assert.assertTrue(message, active);
-            changeExpected = true;
-        }
-
-        public void assertInactive(String message) {
-            Assert.assertFalse(message, active);
-            changeExpected = true;
         }
     }
 }

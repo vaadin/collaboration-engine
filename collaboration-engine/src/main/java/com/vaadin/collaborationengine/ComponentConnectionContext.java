@@ -146,6 +146,7 @@ public class ComponentConnectionContext implements ConnectionContext {
     private void deactivateConnection() {
         if (beaconListener != null) {
             beaconListener.remove();
+            beaconListener = null;
         }
         if (activationHandler != null) {
             activationHandler.setActive(false);
