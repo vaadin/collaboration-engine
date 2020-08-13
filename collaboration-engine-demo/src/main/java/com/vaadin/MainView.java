@@ -143,10 +143,16 @@ public class MainView extends VerticalLayout {
         Registration lastNameBlurRegistration = lastName.addBlurListener(
                 event -> logEditorBlurred(topic, LAST_NAME, username));
 
-        binder.addValueChangeListener(e -> log(topic,
-                username + " changed "
-                        + ((TextField) e.getHasValue()).getLabel() + " to "
-                        + e.getValue()));
+        Registration valueChangeRegistration = binder
+                .addValueChangeListener(e -> {
+                    if (e.isFromClient()) {
+                        log(topic,
+                                username + " changed "
+                                        + ((TextField) e.getHasValue())
+                                                .getLabel()
+                                        + " to " + e.getValue());
+                    }
+                });
 
         topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
                 event -> log.setText(Objects.toString(event.getValue(), "")));
@@ -157,7 +163,8 @@ public class MainView extends VerticalLayout {
 
         return Registration.combine(firstNameFocusRegistration,
                 lastNameFocusRegistration, firstNameBlurRegistration,
-                lastNameBlurRegistration, editorRegistration);
+                lastNameBlurRegistration, valueChangeRegistration,
+                editorRegistration);
     }
 
     private static void log(TopicConnection topic, String message) {
