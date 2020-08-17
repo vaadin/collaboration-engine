@@ -14,6 +14,7 @@ import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.BlurNotifier.BlurEvent;
 import com.vaadin.flow.component.FocusNotifier.FocusEvent;
 import com.vaadin.flow.component.UI;
@@ -29,7 +30,8 @@ public class CollaborativeBinderTest {
 
         public Client() {
             this.ui = new MockUI();
-            binder = new CollaborativeBinder<>(TestBean.class, "topic");
+            binder = new CollaborativeBinder<>(TestBean.class);
+            binder.setTopic("topic", () -> null);
         }
 
         public Binder.Binding<TestBean, String> bind() {
@@ -339,4 +341,109 @@ public class CollaborativeBinderTest {
         Assert.assertEquals(Collections.emptyList(), getEditors("value"));
     }
 
+    @Test
+    public void setTopicWhenAttached_topicEmpty_topicInitialized() {
+        // Prevent attach from populating the regular topic
+        client.binder.setTopic("another", () -> null);
+
+        client.bind();
+        client.attach();
+
+        client.binder.setTopic("topic", () -> new TestBean("a"));
+
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void setTopicWhenDetached_topicEmpty_topicInitialized() {
+        client.binder.setTopic("topic", () -> new TestBean("a"));
+
+        client.bind();
+        client.attach();
+
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void setTopicWhenAttached_initializedTopic_topicValueRetained() {
+        // Prevent attach from using the regular topic
+        client.binder.setTopic("another", () -> null);
+
+        setSharedValue("value", "a");
+
+        client.bind();
+        client.attach();
+
+        client.binder.setTopic("topic", () -> new TestBean("b"));
+
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void setTopicWhenDetached_initializedTopic_topicValueRetained() {
+        setSharedValue("value", "a");
+
+        client.binder.setTopic("topic", () -> new TestBean("b"));
+
+        client.bind();
+        client.attach();
+
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void setTopic_initializedTopic_supplierNotCalled() {
+        setSharedValue("value", "a");
+
+        client.binder.setTopic("topic", () -> {
+            throw new AssertionError();
+        });
+
+        client.bind();
+        client.attach();
+    }
+
+    @Test
+    public void changeTopic_ignoreOldTopic() {
+        client.bind();
+        client.attach();
+
+        client.binder.setTopic("another", () -> null);
+
+        setSharedValue("value", "a");
+        Assert.assertTrue(client.field.isEmpty());
+
+        client.field.setValue("b");
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void clearTopic_ignoreOldTopic() {
+        client.bind();
+        client.attach();
+
+        client.binder.setTopic(null, () -> null);
+
+        setSharedValue("value", "a");
+        Assert.assertTrue(client.field.isEmpty());
+
+        client.field.setValue("b");
+        Assert.assertEquals("a", getSharedValue("value"));
+    }
+
+    @Test
+    public void clearTopic_clientsNotConnected() {
+        client.bind();
+        client.attach();
+        client.binder.setTopic(null, () -> null);
+
+        client2.bind();
+        client2.attach();
+        client2.binder.setTopic(null, () -> null);
+
+        client2.field.setValue("b");
+
+        Assert.assertTrue(client.field.isEmpty());
+        Assert.assertFalse(client.field.hasListener(AttachEvent.class));
+    }
 }

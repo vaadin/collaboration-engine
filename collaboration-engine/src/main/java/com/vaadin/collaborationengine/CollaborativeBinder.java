@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.data.converter.Converter;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.shared.Registration;
 
@@ -98,7 +100,11 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
             Binding<BEAN, TARGET> binding = super.bind(getter, setter);
 
             HasValue<?, ?> field = binding.getField();
-            getBinder().connectionContext.addComponent((Component) field);
+
+            ComponentConnectionContext connectionContext = getBinder().connectionContext;
+            if (connectionContext != null) {
+                connectionContext.addComponent((Component) field);
+            }
 
             List<Registration> registrations = new ArrayList<>();
 
@@ -144,23 +150,21 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     private UserInfo localUser;
 
     private CollaborativeMap map;
+    private ComponentConnectionContext connectionContext;
+    private Registration topicRegistration;
+
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
-    private final ComponentConnectionContext connectionContext;
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
 
     /**
      * Creates a new collaborative binder. It uses reflection based on the
-     * provided bean type to resolve bean properties. The provided topic id is
-     * used for opening a new connection for storing collaborative data and
-     * propagating value changes between clients.
+     * provided bean type to resolve bean properties.
      *
      * @param beanType
      *            the bean type to use, not <code>null</code>
-     * @param topicId
-     *            the id of the topic to connect to, not <code>null</code>>
      */
-    public CollaborativeBinder(Class<BEAN> beanType, String topicId) {
-        this(beanType, new UserInfo(UUID.randomUUID().toString()), topicId);
+    public CollaborativeBinder(Class<BEAN> beanType) {
+        this(beanType, new UserInfo(UUID.randomUUID().toString()));
     }
 
     /**
@@ -171,33 +175,16 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * The name of the user will be displayed to other users when editing a
      * field, and the user's color index will be used to set the field's
      * highlight color.
-     * <p>
-     * The provided topic id is used for opening a new connection for storing
-     * collaborative data and propagating value changes between clients.
      *
      * @param beanType
      *            the bean type to use, not <code>null</code>
      * @param localUser
      *            the information of the local user, not <code>null</code>
-     * @param topicId
-     *            the id of the topic to connect to, not <code>null</code>>
      */
-    public CollaborativeBinder(Class<BEAN> beanType, UserInfo localUser,
-            String topicId) {
+    public CollaborativeBinder(Class<BEAN> beanType, UserInfo localUser) {
         super(beanType);
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
-        Objects.requireNonNull(topicId, "Topic id can't be null");
-        connectionContext = new ComponentConnectionContext();
-
-        CollaborationEngine.getInstance().openTopicConnection(connectionContext,
-                topicId, topic -> {
-                    this.map = topic.getNamedMap(COLLABORATIVE_BINDER_MAP_NAME);
-                    map.subscribe(this::onMapChange);
-                    fieldToPropertyName.forEach((field,
-                            propName) -> setFieldValueFromMap(propName, field));
-                    return this::onConnectionDeactivate;
-                });
     }
 
     private void onMapChange(MapChangeEvent event) {
@@ -271,7 +258,9 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     @Override
     protected void removeBindingInternal(Binding<BEAN, ?> binding) {
         fieldToPropertyName.remove(binding.getField());
-        connectionContext.removeComponent((Component) binding.getField());
+        if (connectionContext != null) {
+            connectionContext.removeComponent((Component) binding.getField());
+        }
 
         Registration registration = bindingRegistrations.remove(binding);
         if (registration != null) {
@@ -397,5 +386,80 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     UserInfo getLocalUser() {
         return localUser;
+    }
+
+    /**
+     * Sets the topic to use with this binder and initializes the topic contents
+     * if not already set. Setting a topic removes the connection to the
+     * previous topic (if any) and resets all bindings based on values in the
+     * new topic. The bean supplier is used to provide initial values for
+     * bindings in case the topic doesn't yet contain any values.
+     *
+     *
+     * @param topicId
+     *            the topic id to use, or <code>null</code> to not use any topic
+     * @param initialBeanSupplier
+     *            a supplier that is invoked to get a bean from which to read
+     *            initial values. Only invoked if there are no property values
+     *            in the topic, or if the topic id is <code>null</code>.
+     */
+    public void setTopic(String topicId,
+            SerializableSupplier<BEAN> initialBeanSupplier) {
+        if (topicRegistration != null) {
+            topicRegistration.remove();
+            topicRegistration = null;
+            connectionContext = null;
+            map = null;
+        }
+
+        if (topicId == null) {
+            super.readBean(initialBeanSupplier.get());
+        } else {
+            super.readBean(null);
+
+            connectionContext = new ComponentConnectionContext();
+            fieldToPropertyName.keySet().forEach(
+                    field -> connectionContext.addComponent((Component) field));
+
+            topicRegistration = CollaborationEngine.getInstance()
+                    .openTopicConnection(connectionContext, topicId,
+                            topic -> bindToTopic(topic, initialBeanSupplier));
+        }
+
+    }
+
+    private Registration bindToTopic(TopicConnection topic,
+            SerializableSupplier<BEAN> initialBeanSupplier) {
+        map = topic.getNamedMap(COLLABORATIVE_BINDER_MAP_NAME);
+
+        map.subscribe(this::onMapChange);
+
+        initializeBindingsWithoutFieldState(initialBeanSupplier);
+
+        fieldToPropertyName.forEach(
+                (field, propName) -> setFieldValueFromMap(propName, field));
+
+        return this::onConnectionDeactivate;
+    }
+
+    private void initializeBindingsWithoutFieldState(
+            SerializableSupplier<BEAN> initialBeanSupplier) {
+        List<String> propertiesWithoutFieldState = fieldToPropertyName.values()
+                .stream().filter(propertyName -> map.get(propertyName) == null)
+                .collect(Collectors.toList());
+
+        if (propertiesWithoutFieldState.isEmpty()) {
+            return;
+        }
+
+        BEAN initialBean = initialBeanSupplier.get();
+
+        if (initialBean == null) {
+            return;
+        }
+
+        propertiesWithoutFieldState.stream().map(this::getBinding)
+                .filter(Optional::isPresent).map(Optional::get)
+                .forEach(binding -> binding.read(initialBean));
     }
 }

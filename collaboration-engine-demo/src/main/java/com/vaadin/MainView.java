@@ -119,7 +119,8 @@ public class MainView extends VerticalLayout {
 
         add(avatarLayout, firstName, lastName, submitButton, log);
 
-        binder = new CollaborativeBinder<>(Person.class, user, TOPIC_ID);
+        binder = new CollaborativeBinder<>(Person.class, user);
+        binder.setTopic(TOPIC_ID, Person::new);
         binder.forField(firstName).bind(FIRST_NAME);
         binder.forField(lastName).bind(LAST_NAME);
 

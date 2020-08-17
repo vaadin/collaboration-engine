@@ -65,7 +65,8 @@ public class TutorialView extends VerticalLayout {
         localUser.setImage("./profile-pic.png");
 
         CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
-                Person.class, localUser, "profile");
+                Person.class, localUser);
+        binder.setTopic("profile", Person::new);
         binder.forField(textField).bind("firstName");
 
         CollaborativeAvatarGroup avatarGroup = new CollaborativeAvatarGroup(

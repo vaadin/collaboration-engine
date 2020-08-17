@@ -1,14 +1,14 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.Person;
-import com.vaadin.flow.router.PreserveOnRefresh;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.vaadin.collaborationengine.util.Person;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PreserveOnRefresh;
 import com.vaadin.flow.router.Route;
 
 @Push
@@ -41,7 +41,8 @@ public class CollaborativeFormView extends VerticalLayout {
         email.setId("emailField");
         add(avatars, textField, checkbox, resetUserCounter, email);
 
-        binder = new CollaborativeBinder<>(Person.class, localUser, TOPIC_ID);
+        binder = new CollaborativeBinder<>(Person.class, localUser);
+        binder.setTopic(TOPIC_ID, () -> null);
         binder.bind(textField, "name");
         binder.bind(checkbox, "married");
     }
