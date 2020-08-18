@@ -29,7 +29,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <vaadin.version>14.3.0</vaadin.version>
-        <avatar.version>1.0.0.alpha2</avatar.version>
+        <avatar.version>1.0.0.alpha3</avatar.version>
 
         <jetty.version>9.4.28.v20200408</jetty.version>
     </properties>

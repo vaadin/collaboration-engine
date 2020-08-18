@@ -60,13 +60,7 @@ public class CollaborationAvatarGroupTest {
         }
 
         List<AvatarGroupItem> getItems() {
-            // TODO Remove try-catch after AvatarGroup::getItems NPE fixed:
-            // https://github.com/vaadin/vaadin-avatar-flow/issues/16
-            try {
-                return group.getContent().getItems();
-            } catch (NullPointerException e) {
-                return Collections.emptyList();
-            }
+            return group.getContent().getItems();
         }
 
         List<String> getItemNames() {
