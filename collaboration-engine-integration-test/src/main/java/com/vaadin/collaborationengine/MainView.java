@@ -50,7 +50,7 @@ public class MainView extends VerticalLayout {
         connectionRegistration = CollaborationEngine.getInstance()
                 .openTopicConnection(editor, MainView.class.getName(),
                         topic -> {
-                            CollaborativeMap map = topic.getNamedMap("values");
+                            CollaborationMap map = topic.getNamedMap("values");
                             if (map.get("value") == null) {
                                 map.put("value", 0);
                             }

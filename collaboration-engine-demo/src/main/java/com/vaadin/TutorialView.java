@@ -3,8 +3,8 @@ package com.vaadin;
 import java.time.LocalDate;
 import java.util.UUID;
 
-import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
-import com.vaadin.collaborationengine.CollaborativeBinder;
+import com.vaadin.collaborationengine.CollaborationAvatarGroup;
+import com.vaadin.collaborationengine.CollaborationBinder;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -48,7 +48,7 @@ public class TutorialView extends VerticalLayout {
         UserInfo localUser = new UserInfo(UUID.randomUUID().toString());
         localUser.setName("Jon Doe");
 
-        CollaborativeAvatarGroup avatarGroup = new CollaborativeAvatarGroup(
+        CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
                 localUser, "tutorial");
 
         Avatar avatar = new Avatar(localUser.getName());
@@ -57,7 +57,7 @@ public class TutorialView extends VerticalLayout {
         HorizontalLayout allAvatars = new HorizontalLayout(avatarGroup, avatar);
         addComponentAsFirst(allAvatars);
 
-        CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
+        CollaborationBinder<Person> binder = new CollaborationBinder<>(
                 Person.class, localUser);
         binder.forField(nameField).bind("name");
         binder.forField(dateOfBirthField).bind("dateOfBirth");

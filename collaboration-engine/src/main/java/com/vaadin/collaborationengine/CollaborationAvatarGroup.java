@@ -12,7 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.component.HasTheme;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +21,7 @@ import java.util.stream.Stream;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
+import com.vaadin.flow.component.HasTheme;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
@@ -35,23 +35,23 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
+public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         implements HasSize, HasStyle, HasTheme {
 
-    static final String MAP_NAME = CollaborativeAvatarGroup.class.getName();
+    static final String MAP_NAME = CollaborationAvatarGroup.class.getName();
     static final String KEY = "users";
 
     private Registration topicRegistration;
     private final UserInfo localUser;
 
     /**
-     * Creates a new collaborative avatar group component with the provided
+     * Creates a new collaboration avatar group component with the provided
      * local user and topic id.
      * <p>
      * The provided user information is used in the local user's avatar which is
      * displayed to the other users.
      * <p>
-     * Whenever another collaborative avatar group with the same topic id is
+     * Whenever another collaboration avatar group with the same topic id is
      * attached to another user's UI, this avatar group is updated to include an
      * avatar with that user's information.
      *
@@ -61,22 +61,22 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
      *            the id of the topic to connect to, or <code>null</code> to not
      *            connect the component to any topic
      */
-    public CollaborativeAvatarGroup(UserInfo localUser, String topicId) {
+    public CollaborationAvatarGroup(UserInfo localUser, String topicId) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
         setTopic(topicId);
     }
 
     /**
-     * Creates a new collaborative avatar group component with the provided
+     * Creates a new collaboration avatar group component with the provided
      * local user. The component should be assigned with a topic via
-     * {@link #setTopic(String)} in order to show avatars of collaborative users
+     * {@link #setTopic(String)} in order to show avatars of collaborating users
      * of the topic.
-     * 
+     *
      * @param localUser
      *            the information of the local user
      */
-    public CollaborativeAvatarGroup(UserInfo localUser) {
+    public CollaborationAvatarGroup(UserInfo localUser) {
         this(localUser, null);
     }
 
@@ -149,7 +149,7 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        CollaborativeMap map = topicConnection.getNamedMap(MAP_NAME);
+        CollaborationMap map = topicConnection.getNamedMap(MAP_NAME);
 
         updateUsers(map,
                 oldValue -> Stream.concat(oldValue, Stream.of(localUser)));
@@ -159,12 +159,12 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
         return () -> onConnectionDeactivate(map);
     }
 
-    private void onConnectionDeactivate(CollaborativeMap map) {
+    private void onConnectionDeactivate(CollaborationMap map) {
         updateUsers(map, oldValue -> oldValue.filter(this::isNotLocalUser));
         getContent().setItems(Collections.emptyList());
     }
 
-    private void updateUsers(CollaborativeMap map,
+    private void updateUsers(CollaborationMap map,
             SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
         while (true) {
             List<UserInfo> oldValue = (List<UserInfo>) map.get(KEY);

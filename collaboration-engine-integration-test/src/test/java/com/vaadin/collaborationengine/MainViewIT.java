@@ -3,12 +3,12 @@ package com.vaadin.collaborationengine;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import com.vaadin.collaborationengine.util.AbstractCollaborativeViewTest;
 
+import com.vaadin.collaborationengine.util.AbstractCollaborationViewTest;
 import com.vaadin.flow.component.button.testbench.ButtonElement;
 import com.vaadin.flow.component.html.testbench.SpanElement;
 
-public class MainViewIT extends AbstractCollaborativeViewTest {
+public class MainViewIT extends AbstractCollaborationViewTest {
 
     @Test
     public void clickingButtonUpdateSpan() {

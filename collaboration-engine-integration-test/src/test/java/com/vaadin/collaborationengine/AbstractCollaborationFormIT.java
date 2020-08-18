@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
-import com.vaadin.collaborationengine.util.AbstractCollaborativeViewTest;
 
+import com.vaadin.collaborationengine.util.AbstractCollaborationViewTest;
 import com.vaadin.flow.component.avatar.testbench.AvatarElement;
 import com.vaadin.flow.component.avatar.testbench.AvatarGroupElement;
 import com.vaadin.flow.component.checkbox.testbench.CheckboxElement;
@@ -15,10 +15,10 @@ import com.vaadin.testbench.TestBenchElement;
 import com.vaadin.testbench.TestBenchTestCase;
 
 /**
- * Base class for tests that use the {@link CollaborativeFormView}.
+ * Base class for tests that use the {@link CollaborationFormView}.
  */
-public abstract class AbstractCollaborativeFormIT
-        extends AbstractCollaborativeViewTest {
+public abstract class AbstractCollaborationFormIT
+        extends AbstractCollaborationViewTest {
 
     @Override
     public String getRoute() {

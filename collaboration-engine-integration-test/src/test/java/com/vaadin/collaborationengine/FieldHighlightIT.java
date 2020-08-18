@@ -5,7 +5,7 @@ import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserT
 
 import org.junit.Test;
 
-public class FieldHighlightIT extends AbstractCollaborativeFormIT {
+public class FieldHighlightIT extends AbstractCollaborationFormIT {
 
     @Test
     public void noInitialUserTags() {

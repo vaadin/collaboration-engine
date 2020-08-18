@@ -3,7 +3,7 @@ package com.vaadin.collaborationengine;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ConnectionActivationIT extends AbstractCollaborativeFormIT {
+public class ConnectionActivationIT extends AbstractCollaborationFormIT {
     @Test
     public void preserveOnRefresh_fieldValuesPreserved_fieldIsCollaborative() {
         client1.textField.setValue("foo");

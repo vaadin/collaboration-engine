@@ -1,6 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.shared.Registration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -14,11 +13,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
-public class MultipleCollaborativeMapTest {
+public class MultipleCollaborationMapTest {
 
     private TopicConnection connection;
-    private CollaborativeMap namedMapData;
+    private CollaborationMap namedMapData;
 
     @Before
     public void init() {
@@ -70,7 +70,7 @@ public class MultipleCollaborativeMapTest {
         Assert.assertEquals(wrongResultCount, 0);
     }
 
-    private List<Integer> parallelPut(CollaborativeMap map, int executionTimes)
+    private List<Integer> parallelPut(CollaborationMap map, int executionTimes)
             throws InterruptedException {
         int[] count = { 0 };
         map.subscribe(e -> count[0]++);

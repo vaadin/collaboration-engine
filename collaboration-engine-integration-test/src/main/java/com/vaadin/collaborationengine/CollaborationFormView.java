@@ -14,34 +14,34 @@ import com.vaadin.flow.router.Route;
 @Push
 @Route("form")
 @PreserveOnRefresh
-public class CollaborativeFormView extends VerticalLayout {
+public class CollaborationFormView extends VerticalLayout {
 
     public static final String TOPIC_ID = "topic";
 
-    private CollaborativeAvatarGroup avatars;
+    private CollaborationAvatarGroup avatars;
 
     private TextField textField = new TextField("Name");
     private Checkbox checkbox = new Checkbox("Married");
     private TextField email = new TextField("Email (not collaborative)");
 
-    private CollaborativeBinder<Person> binder;
+    private CollaborationBinder<Person> binder;
 
     private static AtomicInteger userCounter = new AtomicInteger(0);
     private NativeButton resetUserCounter = new NativeButton(
             "Reset user counter", e -> userCounter.set(0));
 
-    public CollaborativeFormView() {
+    public CollaborationFormView() {
         int userIndex = userCounter.incrementAndGet();
 
         UserInfo localUser = new UserInfo("userId-" + userIndex);
         localUser.setName("User " + userIndex);
-        avatars = new CollaborativeAvatarGroup(localUser, TOPIC_ID);
+        avatars = new CollaborationAvatarGroup(localUser, TOPIC_ID);
 
         resetUserCounter.setId("reset-user-counter");
         email.setId("emailField");
         add(avatars, textField, checkbox, resetUserCounter, email);
 
-        binder = new CollaborativeBinder<>(Person.class, localUser);
+        binder = new CollaborationBinder<>(Person.class, localUser);
         binder.setTopic(TOPIC_ID, () -> null);
         binder.bind(textField, "name");
         binder.bind(checkbox, "married");

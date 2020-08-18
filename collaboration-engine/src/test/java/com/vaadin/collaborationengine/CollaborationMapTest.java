@@ -27,7 +27,7 @@ import org.junit.Test;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
-public class CollaborativeMapTest {
+public class CollaborationMapTest {
 
     private static class MapSubscriberSpy implements MapSubscriber {
         private final Map<String, Object> expectedOld = new HashMap<>();
@@ -59,7 +59,7 @@ public class CollaborativeMapTest {
     }
 
     private TopicConnection connection;
-    private CollaborativeMap map;
+    private CollaborationMap map;
     private MapSubscriberSpy spy;
 
     @Before

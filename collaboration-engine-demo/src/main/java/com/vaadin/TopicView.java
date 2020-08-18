@@ -1,7 +1,7 @@
 package com.vaadin;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
-import com.vaadin.collaborationengine.CollaborativeMap;
+import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
@@ -21,7 +21,7 @@ public class TopicView extends VerticalLayout {
 
         CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
                 topic -> {
-                    CollaborativeMap fieldValues = topic
+                    CollaborationMap fieldValues = topic
                             .getNamedMap("fieldValues");
 
                     Registration registration = checkbox

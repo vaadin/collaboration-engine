@@ -11,7 +11,7 @@ import com.vaadin.testbench.TestBenchTestCase;
 /**
  * Helpers for adding multiple "collaborating" browsers to a test.
  */
-public abstract class AbstractCollaborativeViewTest extends AbstractViewTest {
+public abstract class AbstractCollaborationViewTest extends AbstractViewTest {
 
     /**
      * Web driver wrapper with the TestBench query methods.

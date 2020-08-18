@@ -64,7 +64,7 @@ The topic stores collaborative data in named maps. In the activation callback, g
 ----
     ...
     topic -> {
-        CollaborativeMap fieldValues = topic.getNamedMap("fieldValues");
+        CollaborationMap fieldValues = topic.getNamedMap("fieldValues");
 ----
 
 === Pass Values to the Topic

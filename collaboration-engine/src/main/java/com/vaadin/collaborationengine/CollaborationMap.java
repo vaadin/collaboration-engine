@@ -23,7 +23,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public interface CollaborativeMap {
+public interface CollaborationMap {
     /**
      * Gets the current map value for the given key.
      *

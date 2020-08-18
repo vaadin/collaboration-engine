@@ -4,10 +4,10 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
+import com.vaadin.collaborationengine.CollaborationAvatarGroup;
+import com.vaadin.collaborationengine.CollaborationBinder;
 import com.vaadin.collaborationengine.CollaborationEngine;
-import com.vaadin.collaborationengine.CollaborativeAvatarGroup;
-import com.vaadin.collaborationengine.CollaborativeBinder;
-import com.vaadin.collaborationengine.CollaborativeMap;
+import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Key;
@@ -62,7 +62,7 @@ public class MainView extends VerticalLayout {
     }
 
     private Registration closeConnection;
-    private CollaborativeBinder<Person> binder;
+    private CollaborationBinder<Person> binder;
 
     private final Div log = new Div();
 
@@ -104,7 +104,7 @@ public class MainView extends VerticalLayout {
         });
         UserInfo user = new UserInfo(UUID.randomUUID().toString());
         user.setName(username);
-        CollaborativeAvatarGroup collaboratorsAvatars = new CollaborativeAvatarGroup(
+        CollaborationAvatarGroup collaboratorsAvatars = new CollaborationAvatarGroup(
                 user, TOPIC_ID);
 
         Avatar ownAvatar = new Avatar();
@@ -119,7 +119,7 @@ public class MainView extends VerticalLayout {
 
         add(avatarLayout, firstName, lastName, submitButton, log);
 
-        binder = new CollaborativeBinder<>(Person.class, user);
+        binder = new CollaborationBinder<>(Person.class, user);
         binder.setTopic(TOPIC_ID, Person::new);
         binder.forField(firstName).bind(FIRST_NAME);
         binder.forField(lastName).bind(LAST_NAME);
@@ -174,7 +174,7 @@ public class MainView extends VerticalLayout {
                 "", "", oldLog -> message + "\n" + oldLog);
     }
 
-    private static <T> void updateMaps(CollaborativeMap map, String key,
+    private static <T> void updateMaps(CollaborationMap map, String key,
             T nullValue, Function<T, T> updater) {
         while (true) {
             T oldValue = (T) map.get(key);

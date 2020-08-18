@@ -13,9 +13,9 @@
 package com.vaadin.collaborationengine;
 
 /**
- * Event handler that gets notified for changes to collaborative maps. A
+ * Event handler that gets notified for changes to collaboration maps. A
  * listener can be registered using
- * {@link CollaborativeMap#subscribe(MapSubscriber)}.
+ * {@link CollaborationMap#subscribe(MapSubscriber)}.
  *
  * @author Vaadin Ltd
  */

@@ -20,17 +20,17 @@ import com.vaadin.flow.component.FocusNotifier.FocusEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
 
-public class CollaborativeBinderTest {
+public class CollaborationBinderTest {
 
     private class Client {
         TestField field = new TestField();
 
-        CollaborativeBinder<TestBean> binder;
+        CollaborationBinder<TestBean> binder;
         private final UI ui;
 
         public Client() {
             this.ui = new MockUI();
-            binder = new CollaborativeBinder<>(TestBean.class);
+            binder = new CollaborationBinder<>(TestBean.class);
             binder.setTopic("topic", () -> null);
         }
 
@@ -56,7 +56,7 @@ public class CollaborativeBinderTest {
     private Client client;
     private Client client2;
     private TestField field;
-    private CollaborativeMap map;
+    private CollaborationMap map;
 
     @Before
     public void init() {
@@ -67,7 +67,7 @@ public class CollaborativeBinderTest {
 
         TestUtils.openEagerConnection("topic",
                 topicConnection -> map = topicConnection.getNamedMap(
-                        CollaborativeBinder.COLLABORATIVE_BINDER_MAP_NAME));
+                        CollaborationBinder.COLLABORATION_BINDER_MAP_NAME));
     }
 
     @After
@@ -78,18 +78,18 @@ public class CollaborativeBinderTest {
     }
 
     private void setSharedValue(String key, Object value) {
-        CollaborativeBinder.FieldState oldState = getFieldState(key);
-        map.put(key, new CollaborativeBinder.FieldState(value,
+        CollaborationBinder.FieldState oldState = getFieldState(key);
+        map.put(key, new CollaborationBinder.FieldState(value,
                 oldState != null ? oldState.editors : Collections.emptyList()));
     }
 
     private Object getSharedValue(String key) {
-        CollaborativeBinder.FieldState fieldState = getFieldState(key);
+        CollaborationBinder.FieldState fieldState = getFieldState(key);
         return fieldState != null ? fieldState.value : null;
     }
 
-    private CollaborativeBinder.FieldState getFieldState(String key) {
-        return (CollaborativeBinder.FieldState) map.get(key);
+    private CollaborationBinder.FieldState getFieldState(String key) {
+        return (CollaborationBinder.FieldState) map.get(key);
     }
 
     private List<UserInfo> getEditors(String key) {

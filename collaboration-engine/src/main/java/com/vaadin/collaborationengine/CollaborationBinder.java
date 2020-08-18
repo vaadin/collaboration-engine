@@ -40,7 +40,7 @@ import com.vaadin.flow.shared.Registration;
 /**
  * Extension of {@link Binder} for creating collaborative forms with
  * {@link CollaborationEngine}. In addition to Binder's data binding mechanism,
- * CollaborativeBinder synchronizes the field values between clients which are
+ * CollaborationBinder synchronizes the field values between clients which are
  * connected to the same topic via {@link TopicConnection}.
  *
  * @author Vaadin Ltd
@@ -48,9 +48,9 @@ import com.vaadin.flow.shared.Registration;
  * @param <BEAN>
  *            the bean type
  */
-public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
+public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
-    static final String COLLABORATIVE_BINDER_MAP_NAME = CollaborativeBinder.class
+    static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
             .getName();
 
     private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
@@ -73,13 +73,13 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
         }
     }
 
-    protected static class CollaborativeBindingBuilderImpl<BEAN, FIELDVALUE, TARGET>
+    protected static class CollaborationBindingBuilderImpl<BEAN, FIELDVALUE, TARGET>
             extends BindingBuilderImpl<BEAN, FIELDVALUE, TARGET> {
 
         private String propertyName = null;
 
-        protected CollaborativeBindingBuilderImpl(
-                CollaborativeBinder<BEAN> binder, HasValue<?, FIELDVALUE> field,
+        protected CollaborationBindingBuilderImpl(
+                CollaborationBinder<BEAN> binder, HasValue<?, FIELDVALUE> field,
                 Converter<FIELDVALUE, TARGET> converterValidatorChain,
                 BindingValidationStatusHandler statusHandler) {
             super(binder, field, converterValidatorChain, statusHandler);
@@ -93,7 +93,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
             if (propertyName == null) {
                 throw new UnsupportedOperationException(
-                        "A property name must always be provided when binding with the collaborative binder. "
+                        "A property name must always be provided when binding with the collaboration binder. "
                                 + "Use bind(String propertyName) instead.");
             }
 
@@ -141,15 +141,15 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
         }
 
         @Override
-        protected CollaborativeBinder<BEAN> getBinder() {
-            return (CollaborativeBinder<BEAN>) super.getBinder();
+        protected CollaborationBinder<BEAN> getBinder() {
+            return (CollaborationBinder<BEAN>) super.getBinder();
         }
 
     }
 
     private UserInfo localUser;
 
-    private CollaborativeMap map;
+    private CollaborationMap map;
     private ComponentConnectionContext connectionContext;
     private Registration topicRegistration;
 
@@ -157,18 +157,18 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
 
     /**
-     * Creates a new collaborative binder. It uses reflection based on the
+     * Creates a new collaboration binder. It uses reflection based on the
      * provided bean type to resolve bean properties.
      *
      * @param beanType
      *            the bean type to use, not <code>null</code>
      */
-    public CollaborativeBinder(Class<BEAN> beanType) {
+    public CollaborationBinder(Class<BEAN> beanType) {
         this(beanType, new UserInfo(UUID.randomUUID().toString()));
     }
 
     /**
-     * Creates a new collaborative binder. It uses reflection based on the
+     * Creates a new collaboration binder. It uses reflection based on the
      * provided bean type to resolve bean properties.
      * <p>
      * The provided user information is used in the field editing indicators.
@@ -181,7 +181,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * @param localUser
      *            the information of the local user, not <code>null</code>
      */
-    public CollaborativeBinder(Class<BEAN> beanType, UserInfo localUser) {
+    public CollaborationBinder(Class<BEAN> beanType, UserInfo localUser) {
         super(beanType);
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
@@ -274,18 +274,18 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
             HasValue<?, FIELDVALUE> field,
             Converter<FIELDVALUE, TARGET> converter,
             BindingValidationStatusHandler handler) {
-        return new CollaborativeBindingBuilderImpl<>(this, field, converter,
+        return new CollaborationBindingBuilderImpl<>(this, field, converter,
                 handler);
     }
 
     /**
-     * Not supported by the collaborative binder! It requires a property name
+     * Not supported by the collaboration binder! It requires a property name
      * for binding, so the other overload
-     * {@link CollaborativeBinder#bind(HasValue, String)} should be used
+     * {@link CollaborationBinder#bind(HasValue, String)} should be used
      * instead.
      * <p>
      * See {@link Binder#bind(HasValue, ValueProvider, Setter)} to learn how to
-     * use the method with the regular (non-collaborative) binder.
+     * use the method with the regular (non-collaboration) binder.
      *
      * @param <FIELDVALUE>
      *            the value type of the field
@@ -299,9 +299,9 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      *            <code>null</code> if read-only
      * @return the newly created binding
      * @throws UnsupportedOperationException
-     *             as the method is not supported by the collaborative binder
-     * @deprecated The method does not work with the collaborative binder. Use
-     *             {@link CollaborativeBinder#bind(HasValue, String)} instead.
+     *             as the method is not supported by the collaboration binder
+     * @deprecated The method does not work with the collaboration binder. Use
+     *             {@link CollaborationBinder#bind(HasValue, String)} instead.
      */
     @Override
     @Deprecated
@@ -316,7 +316,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * Binds the given field to the property with the given name, as described
      * in {@link Binder#bind(HasValue, String)}.
      * <p>
-     * In addition, synchronizes the values with other collaborative binder
+     * In addition, synchronizes the values with other collaboration binder
      * instances which are connected to the same topic.
      *
      * @param <FIELDVALUE>
@@ -341,7 +341,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * Binds the member fields found in the given object, as described in
      * {@link Binder#bindInstanceFields(Object)}.
      * <p>
-     * In addition, synchronizes the values with other collaborative binder
+     * In addition, synchronizes the values with other collaboration binder
      * instances which are connected to the same topic.
      *
      * @param objectWithMemberFields
@@ -364,7 +364,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      *            name
      * @deprecated set the local user's information (including name) in the
      *             constructor
-     *             {@link #CollaborativeBinder(Class, UserInfo, String)}
+     *             {@link #CollaborationBinder(Class, UserInfo, String)}
      */
     @Deprecated
     public void setUserName(String userName) {
@@ -377,7 +377,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
      * @return the user name, can be {@code null}
      * @deprecated the name is included in the user information object that
      *             should be set in the constructor
-     *             {@link #CollaborativeBinder(Class, UserInfo, String)}
+     *             {@link #CollaborationBinder(Class, UserInfo, String)}
      */
     @Deprecated
     public String getUserName() {
@@ -430,7 +430,7 @@ public class CollaborativeBinder<BEAN> extends Binder<BEAN> {
 
     private Registration bindToTopic(TopicConnection topic,
             SerializableSupplier<BEAN> initialBeanSupplier) {
-        map = topic.getNamedMap(COLLABORATIVE_BINDER_MAP_NAME);
+        map = topic.getNamedMap(COLLABORATION_BINDER_MAP_NAME);
 
         map.subscribe(this::onMapChange);
 

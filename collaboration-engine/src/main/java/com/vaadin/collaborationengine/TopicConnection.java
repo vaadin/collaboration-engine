@@ -62,13 +62,13 @@ public class TopicConnection {
     }
 
     /**
-     * Gets a collaborative map that can be used to track multiple values in a
+     * Gets a collaboration map that can be used to track multiple values in a
      * single topic.
      *
-     * @return the collaborative map, not <code>null</code>
+     * @return the collaboration map, not <code>null</code>
      */
-    public CollaborativeMap getNamedMap(String name) {
-        return new CollaborativeMap() {
+    public CollaborationMap getNamedMap(String name) {
+        return new CollaborationMap() {
             @Override
             public Registration subscribe(MapSubscriber subscriber) {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");

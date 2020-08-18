@@ -1,14 +1,14 @@
 package com.vaadin.collaborationengine;
 
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.getUserTags;
+
 import java.util.Arrays;
 import java.util.Collections;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.getUserTags;
-
-public class AvatarGroupIT extends AbstractCollaborativeFormIT {
+public class AvatarGroupIT extends AbstractCollaborationFormIT {
 
     @Test
     public void openAndCloseClients_avatarsUpdated() {

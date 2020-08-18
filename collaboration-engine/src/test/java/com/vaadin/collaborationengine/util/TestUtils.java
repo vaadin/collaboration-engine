@@ -4,7 +4,7 @@ import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
-import com.vaadin.collaborationengine.CollaborativeMap;
+import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.TopicConnection;
 
 public class TestUtils {
@@ -23,7 +23,7 @@ public class TestUtils {
     public static void clearMap(String topicId, String mapName,
             String... keys) {
         openEagerConnection(topicId, topicConnection -> {
-            CollaborativeMap map = topicConnection.getNamedMap(mapName);
+            CollaborationMap map = topicConnection.getNamedMap(mapName);
             for (String key : keys) {
                 map.put(key, null);
             }

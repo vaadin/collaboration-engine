@@ -1,17 +1,17 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 public class ConnectionContextTest {
 
     private SimpleConnectionContext simpleContext;
     private TopicConnection topicConnection;
-    private CollaborativeMap map;
+    private CollaborationMap map;
 
     @Before
     public void init() {

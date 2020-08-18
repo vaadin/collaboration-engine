@@ -127,11 +127,11 @@ don't have to set it explicitly.
 === Add User Avatars
 
 To display the avatars of all other users who are currently in the application,
-create a `CollaborativeAvatarGroup` component.
+create a `CollaborationAvatarGroup` component.
 
 [source, java]
 ----
-CollaborativeAvatarGroup avatarGroup = new CollaborativeAvatarGroup(
+CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
         localUser, "tutorial");
 ----
 
@@ -147,10 +147,10 @@ In our case, there's only one topic to work on, so we can use any hardcoded topi
 NOTE: If we'd expand our application so that there would be multiple editable
 person entities, we'd need to have unique topic ids for each one. For example,
 we could have a topic id "person/123", where "123" would be unique to each person.
-In that case the same `CollaborativeAvatarGroup` component could be reused for
+In that case the same `CollaborationAvatarGroup` component could be reused for
 editing different persons by changing the topic with the `setTopic` method.
 
-Since `CollaborativeAvatarGroup` displays only the avatars of other users,
+Since `CollaborationAvatarGroup` displays only the avatars of other users,
 let's create also an avatar component representing the local user.
 Let's also wrap all avatars in a horizontal layout, and add it to
 the top of the view.
@@ -167,17 +167,17 @@ addComponentAsFirst(allAvatars);
 === Add Field Collaboration
 
 To enable collaboration with the text field and date picker components, we'll use a class called
-`CollaborativeBinder`. It extends the functionality of the `Binder` class, which
+`CollaborationBinder`. It extends the functionality of the `Binder` class, which
 binds values between Java beans and Vaadin field components.
 Visit https://vaadin.com/docs/v14/flow/binding-data/tutorial-flow-components-binder.html[the Vaadin docs site] to learn more about the binder.
 
-To initialize a collaborative binder, we need to provide the type that will be
+To initialize a collaboration binder, we need to provide the type that will be
 edited, as well as the local user's information.
 After initializing, we use the regular binder methods to bind
 the person object's name property to our text field component,
 and the date of birth property to our date picker component.
 
-Finally, we set the topic to connect to (the same as for `CollaborativeAvatarGroup`)
+Finally, we set the topic to connect to (the same as for `CollaborationAvatarGroup`)
 and a supplier for the initial bean value that will populate the
 fields when the first user connects to the topic. The supplier could load the
 editable item from a backend, but in this example we populate the fields with an empty
@@ -185,7 +185,7 @@ editable item from a backend, but in this example we populate the fields with an
 
 [source, java]
 ----
-CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
+CollaborationBinder<Person> binder = new CollaborationBinder<>(
         Person.class, localUser);
 binder.forField(nameField).bind("name");
 binder.forField(dateOfBirthField).bind("dateOfBirth");
@@ -197,7 +197,7 @@ as well as displaying the currently focused user with the field highlight.
 
 NOTE: The other bind variants, which take the getter and the setter methods
 as separate arguments instead of the property name, do not work with the
-collaborative binder. It needs the property name.
+collaboration binder. It needs the property name.
 
 [[ce.tutorial.run]]
 == Run the Application

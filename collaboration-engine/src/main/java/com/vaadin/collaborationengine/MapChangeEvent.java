@@ -16,7 +16,7 @@ import java.util.EventObject;
 import java.util.Objects;
 
 /**
- * Event that is fired when the value in a collaborative map changes.
+ * Event that is fired when the value in a collaboration map changes.
  *
  * @author Vaadin Ltd
  */
@@ -30,7 +30,7 @@ public class MapChangeEvent extends EventObject {
      * Creates a new map change event.
      *
      * @param source
-     *            the collaborative map for which the event is fired, not
+     *            the collaboration map for which the event is fired, not
      *            <code>null</code>
      * @param key
      *            the updated map key, not <code>null</code>
@@ -41,7 +41,7 @@ public class MapChangeEvent extends EventObject {
      *            the new map value, or <code>null</code> if the association was
      *            removed
      */
-    public MapChangeEvent(CollaborativeMap source, String key, Object oldValue,
+    public MapChangeEvent(CollaborationMap source, String key, Object oldValue,
             Object value) {
         super(source);
         this.key = Objects.requireNonNull(key, "Key should not be null");
@@ -51,8 +51,8 @@ public class MapChangeEvent extends EventObject {
     }
 
     @Override
-    public CollaborativeMap getSource() {
-        return (CollaborativeMap) super.getSource();
+    public CollaborationMap getSource() {
+        return (CollaborationMap) super.getSource();
     }
 
     /**

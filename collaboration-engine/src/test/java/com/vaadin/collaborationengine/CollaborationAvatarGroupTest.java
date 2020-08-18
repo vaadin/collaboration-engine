@@ -19,7 +19,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 
-public class CollaborativeAvatarGroupTest {
+public class CollaborationAvatarGroupTest {
 
     private static final String TOPIC_ID = "topic";
     private static final String TOPIC_ID_2 = "topic2";
@@ -27,7 +27,7 @@ public class CollaborativeAvatarGroupTest {
     private static class Client {
         final UI ui;
         final UserInfo user;
-        CollaborativeAvatarGroup group;
+        CollaborationAvatarGroup group;
 
         Client(int index) {
             this(index, TOPIC_ID);
@@ -40,7 +40,7 @@ public class CollaborativeAvatarGroupTest {
             user.setAbbreviation("abbreviation" + index);
             user.setImage("image" + index);
             user.setColorIndex(index);
-            group = new CollaborativeAvatarGroup(user, topicId);
+            group = new CollaborationAvatarGroup(user, topicId);
         }
 
         void attach() {
@@ -93,10 +93,10 @@ public class CollaborativeAvatarGroupTest {
     public void cleanUp() {
         Stream.of(client1, client2, client3, clientInOtherTopic)
                 .forEach(Client::cleanUp);
-        TestUtils.clearMap(TOPIC_ID, CollaborativeAvatarGroup.MAP_NAME,
-                CollaborativeAvatarGroup.KEY);
-        TestUtils.clearMap(TOPIC_ID_2, CollaborativeAvatarGroup.MAP_NAME,
-                CollaborativeAvatarGroup.KEY);
+        TestUtils.clearMap(TOPIC_ID, CollaborationAvatarGroup.MAP_NAME,
+                CollaborationAvatarGroup.KEY);
+        TestUtils.clearMap(TOPIC_ID_2, CollaborationAvatarGroup.MAP_NAME,
+                CollaborationAvatarGroup.KEY);
     }
 
     @Test
@@ -237,7 +237,7 @@ public class CollaborativeAvatarGroupTest {
         client2.attach();
         client3.attach();
 
-        client1.group = new CollaborativeAvatarGroup(new UserInfo("userid"));
+        client1.group = new CollaborationAvatarGroup(new UserInfo("userid"));
         client1.setGroupTopic(TOPIC_ID);
         client1.attach();
         Assert.assertEquals(Arrays.asList("name2", "name3"),
@@ -251,12 +251,12 @@ public class CollaborativeAvatarGroupTest {
     public void avatarGroup_replicateRelevantAPIs() {
         List<String> avatarGroupMethods = ReflectionUtils
                 .getMethodNames(AvatarGroup.class);
-        List<String> collaborativeAvatarGroupMethods = ReflectionUtils
-                .getMethodNames(CollaborativeAvatarGroup.class);
+        List<String> collaborationAvatarGroupMethods = ReflectionUtils
+                .getMethodNames(CollaborationAvatarGroup.class);
 
         List<String> missingMethods = avatarGroupMethods.stream()
                 .filter(m -> !blackListedMethods.contains(m)
-                        && !collaborativeAvatarGroupMethods.contains(m))
+                        && !collaborationAvatarGroupMethods.contains(m))
                 .collect(Collectors.toList());
 
         if (!missingMethods.isEmpty()) {
