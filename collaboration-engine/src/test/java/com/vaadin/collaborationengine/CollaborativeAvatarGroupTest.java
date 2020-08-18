@@ -27,7 +27,7 @@ public class CollaborativeAvatarGroupTest {
     private static class Client {
         final UI ui;
         final UserInfo user;
-        final CollaborativeAvatarGroup group;
+        CollaborativeAvatarGroup group;
 
         Client(int index) {
             this(index, TOPIC_ID);
@@ -49,6 +49,10 @@ public class CollaborativeAvatarGroupTest {
 
         void detach() {
             ui.remove(group);
+        }
+
+        void setGroupTopic(String topicId) {
+            group.setTopic(topicId);
         }
 
         void cleanUp() {
@@ -188,6 +192,56 @@ public class CollaborativeAvatarGroupTest {
                 client1.getItemNames());
         Assert.assertEquals(Arrays.asList("name3", "name1"),
                 client2.getItemNames());
+    }
+
+    @Test
+    public void setTopic_closeExistingConnection() {
+        client1.attach();
+        client2.attach();
+
+        client1.setGroupTopic("new topic");
+        client3.attach();
+        Assert.assertEquals(Collections.emptyList(), client1.getItemNames());
+    }
+
+    @Test
+    public void setTopic_showAvatarsFromNewTopic() {
+        client1.attach();
+        client2.attach();
+
+        Client newClient = new Client(9, "new topic");
+        newClient.attach();
+
+        client1.setGroupTopic("new topic");
+        Assert.assertEquals(Arrays.asList(newClient.user.getName()),
+                client1.getItemNames());
+
+        Client newClient1 = new Client(10, "new topic");
+        newClient1.attach();
+        Assert.assertEquals(Arrays.asList(newClient.user.getName(),
+                newClient1.user.getName()), client1.getItemNames());
+    }
+
+    @Test
+    public void setTopic_nullTopic_closeConnectionAndRemoveAvatars() {
+        client1.attach();
+        client2.attach();
+
+        client1.setGroupTopic(null);
+        client3.attach();
+        Assert.assertEquals(Collections.emptyList(), client1.getItemNames());
+    }
+
+    @Test
+    public void nullTopic_setTopic_avatarsUpdated() {
+        client2.attach();
+        client3.attach();
+
+        client1.group = new CollaborativeAvatarGroup(new UserInfo("userid"));
+        client1.setGroupTopic(TOPIC_ID);
+        client1.attach();
+        Assert.assertEquals(Arrays.asList("name2", "name3"),
+                client1.getItemNames());
     }
 
     private static List<String> blackListedMethods = Arrays.asList("setItems",

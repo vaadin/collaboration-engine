@@ -50,3 +50,10 @@ When a user opens the view and the avatar group is attached,
 collaboration engine sends a message to any other avatar groups connected to the same topic.
 When the other avatar group instances see that a user with the provided information has joined, an avatar will be added to the group.
 When the avatar group is detached, eg. by navigating away from the view or closing the browser tab, collaboration engine informs others again, and the avatar will be removed from their views.
+
+Topic connection of an avatar group component can be changed:
+```java
+avatarGroup.setTopic("newTopicId");
+```
+This will close the connection of the avatar group component to the previous topic thus removing all existing avatars,
+then the component is connected to the new topic and shows collaborating users from that topic.

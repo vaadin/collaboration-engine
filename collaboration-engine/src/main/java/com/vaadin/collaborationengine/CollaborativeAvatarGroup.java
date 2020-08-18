@@ -41,6 +41,7 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
     static final String MAP_NAME = CollaborativeAvatarGroup.class.getName();
     static final String KEY = "users";
 
+    private Registration topicRegistration;
     private final UserInfo localUser;
 
     /**
@@ -57,13 +58,47 @@ public class CollaborativeAvatarGroup extends Composite<AvatarGroup>
      * @param localUser
      *            the information of the local user
      * @param topicId
-     *            the id of the topic to connect to
+     *            the id of the topic to connect to, or <code>null</code> to not
+     *            connect the component to any topic
      */
     public CollaborativeAvatarGroup(UserInfo localUser, String topicId) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
-        CollaborationEngine.getInstance().openTopicConnection(getContent(),
-                topicId, this::onConnectionActivate);
+        setTopic(topicId);
+    }
+
+    /**
+     * Creates a new collaborative avatar group component with the provided
+     * local user. The component should be assigned with a topic via
+     * {@link #setTopic(String)} in order to show avatars of collaborative users
+     * of the topic.
+     * 
+     * @param localUser
+     *            the information of the local user
+     */
+    public CollaborativeAvatarGroup(UserInfo localUser) {
+        this(localUser, null);
+    }
+
+    /**
+     * Sets the topic to use with this component. The connection to the previous
+     * topic (if any) and existing avatars are removed. Connection to the new
+     * topic is opened and avatars of collaborating users in the new topic are
+     * populated to this component.
+     *
+     * @param topicId
+     *            the topic id to use, or <code>null</code> to not use any topic
+     */
+    public void setTopic(String topicId) {
+        if (topicRegistration != null) {
+            topicRegistration.remove();
+            topicRegistration = null;
+        }
+        if (topicId != null) {
+            topicRegistration = CollaborationEngine.getInstance()
+                    .openTopicConnection(getContent(), topicId,
+                            this::onConnectionActivate);
+        }
     }
 
     /**
