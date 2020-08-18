@@ -3,6 +3,5 @@
 ## Table of contents 
 
 * [Overview](./Overview.asciidoc)
-* [Tutorial](./Tutorial.asciidoc)
-* [Data Binding](./DataBinding.asciidoc)
-* [Indicating User Presence With Avatars](./Avatars.asciidoc)
+* [Getting Started Tutorial](./Tutorial.asciidoc)
+* [Topic API Tutorial](./TopicAPI.asciidoc)

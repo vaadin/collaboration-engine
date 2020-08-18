@@ -9,7 +9,11 @@ layout: page
 :sectnums:
 
 This tutorial shows basic steps to set up Collaboration Engine in your Vaadin project
-and subscribe a user to a single topic.
+and add the following collaboration features to a simple form:
+
+* Users can see the avatars of all the users who are currently present in the app
+* When someone enters a new value to a field, it will be propagated to all users
+* Users can see who is currently editing each field (a feature referred to as field highlight)
 
 [[ce.tutorial.setup]]
 == Prepare the Application
@@ -47,102 +51,158 @@ The latest version of this tutorial might use functionality that is only availab
 You can use the branch selector in the GitHub UI to view the tutorial that corresponds to a specific release tag.
 
 [[ce.tutorial.add-collaborative-feature]]
-== Add Collaborative Features
-This tutorial will build a view with a checkbox where the user can choose whether they are in a Friday mood.
+== Add Collaboration Features
+This tutorial will build a form where the users can edit the name and
+date of birth of a person. Let's start by adding the `Person` bean class.
+
+[source, java]
+----
+public class Person {
+    private String name;
+    private LocalDate dateOfBirth;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+}
+----
 
 === Create a Simple View
 
-First, create the view with a checkbox but not yet any collaborative functionality.
-The view is annotated with `@Push` so that updates from other users can be pushed out.
+To start writing the actual application, create a view with a text field
+and a date picker but not yet any collaborative functionality.
+The view is annotated with `@Push` so that the server can push updates from one user to the others.
 
 [source, java]
 ----
 @Push
 @Route("")
 public class TutorialView extends VerticalLayout {
-  private final Checkbox checkbox;
 
-  public TutorialView() {
-      checkbox = new Checkbox("Is it Friday?");
-      add(checkbox);
-  }
+    public TutorialView() {
+        TextField nameField = new TextField("Name");
+        DatePicker dateOfBirthField = new DatePicker("Date of birth");
+        add(nameField, dateOfBirthField);
+    }
 }
 ----
-=== Define Topic Connection
 
-Sharing data between multiple users happens through a `TopicConnection` instance.
-By default, the connection is deactivated until its related component is attached to the UI.
+=== Provide User Information
 
-Open a connection to the `tutorial` topic and define the activation callback
-which will be triggered when the current `TutorialView` component (i.e. `this`) is attached.
+The `UserInfo` class represents an end user of a collaborative application.
+It has properties such as `name` and `image`, which will be used to display
+information of who is currently present in the view or editing a field.
+
+In a real application, this kind of profile information should come from the
+application's backend based on the currently logged in user.
+For the sake of this tutorial, let's just use the same hard-coded name for
+each user. Let's also generate a random UUID as the unique user identifier
+(required by the `UserInfo` constructor).
+[source, java]
+----
+UserInfo localUser = new UserInfo(UUID.randomUUID().toString());
+localUser.setName("Jon Doe");
+----
+The name will be displayed to other users when editing a field, and
+the user's avatar will contain the abbreviation of the name (as we don't
+provide a user image in this example).
+
+NOTE: `UserInfo` has also a `colorIndex` property. It defines which color will be
+used in the user's avatar as well as in the field highlight when editing a field.
+This property is generated automatically based on the user id by default, so we
+don't have to set it explicitly.
+
+=== Add User Avatars
+
+To display the avatars of all other users who are currently in the application,
+create a `CollaborativeAvatarGroup` component.
 
 [source, java]
 ----
-CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
-    topic -> {
-        // logic for the connection's activation callback
-    });
+CollaborativeAvatarGroup avatarGroup = new CollaborativeAvatarGroup(
+        localUser, "tutorial");
 ----
-=== Define a category in the Topic
-The topic stores collaborative data in named maps. In the activation callback, get a map by its name:
+
+First of all, the components needs our local users information (the `UserInfo`
+object which we created earlier), to know how to render the user's avatar for
+other collaborators.
+
+As a second constructor argument, the component needs a topic id.
+The Collaboration Engine propagates information only within the group that is
+connected to the same topic.
+In our case, there's only one topic to work on, so we can use any hardcoded topic id.
+
+NOTE: If we'd expand our application so that there would be multiple editable
+person entities, we'd need to have unique topic ids for each one. For example,
+we could have a topic id "person/123", where "123" would be unique to each person.
+In that case the same `CollaborativeAvatarGroup` component could be reused for
+editing different persons by changing the topic with the `setTopic` method.
+
+Since `CollaborativeAvatarGroup` displays only the avatars of other users,
+let's create also an avatar component representing the local user.
+Let's also wrap all avatars in a horizontal layout, and add it to
+the top of the view.
 
 [source, java]
 ----
-    ...
-    topic -> {
-        CollaborativeMap fieldValues = topic.getNamedMap("fieldValues");
+Avatar avatar = new Avatar(localUser.getName());
+avatar.setColorIndex(localUser.getColorIndex());
+
+HorizontalLayout allAvatars = new HorizontalLayout(avatarGroup, avatar);
+addComponentAsFirst(allAvatars);
 ----
 
-=== Pass Values to the Topic
+=== Add Field Collaboration
 
-The first actual step to making the application collaborative is to update the topic whenever the checkbox value changes.
-`isFriday` is the key associated with the value of the checkbox.
-Add a value change listener that updates the related topic map.
+To enable collaboration with the text field and date picker components, we'll use a class called
+`CollaborativeBinder`. It extends the functionality of the `Binder` class, which
+binds values between Java beans and Vaadin field components.
+Visit https://vaadin.com/docs/v14/flow/binding-data/tutorial-flow-components-binder.html[the Vaadin docs site] to learn more about the binder.
+
+To initialize a collaborative binder, we need to provide the type that will be
+edited, as well as the local user's information.
+After initializing, we use the regular binder methods to bind
+the person object's name property to our text field component,
+and the date of birth property to our date picker component.
+
+Finally, we set the topic to connect to (the same as for `CollaborativeAvatarGroup`)
+and a supplier for the initial bean value that will populate the
+fields when the first user connects to the topic. The supplier could load the
+editable item from a backend, but in this example we populate the fields with an empty
+`Person` object.
 
 [source, java]
 ----
-    topic -> {
-        ...
-        Registration registration = checkbox
-            .addValueChangeListener(valueChangeEvent -> {
-                fieldValues.put("isFriday", valueChangeEvent.getValue());
-            });
+CollaborativeBinder<Person> binder = new CollaborativeBinder<>(
+        Person.class, localUser);
+binder.forField(nameField).bind("name");
+binder.forField(dateOfBirthField).bind("dateOfBirth");
+binder.setTopic("tutorial", () -> new Person());
 ----
 
-The topic's structure now looks like:
+This piece of code takes care of propagating the field values among users,
+as well as displaying the currently focused user with the field highlight.
 
-----
-Topic maps
-|_ fieldValues
-  |_ isFriday: true/false
-----
+NOTE: The other bind variants, which take the getter and the setter methods
+as separate arguments instead of the property name, do not work with the
+collaborative binder. It needs the property name.
 
-
-=== Subscribe to Topic Changes
-
-The final part of the code is to subscribe to updates to the topic map and update the checkbox if the related map is changed.
-This is also done in the activation callback so that the subscription is opened only when the view is actually used.
-
-It's also necessary to return the registration of the listener so
-it can be removed when the component is detached to avoid leaking memory.
-
-[source, java]
-----
-    topic -> {
-        ...
-        fieldValues.subscribe(event -> {
-            if ("isFriday".equals(event.getKey())) {
-                checkbox.setValue(
-                        Boolean.TRUE.equals(event.getValue()));
-            }
-        });
-
-        return registration;
-    }
-----
-TIP: In case there are many registrations, they can be combined by `Registration.combine(registration1, registration2);`.
 [[ce.tutorial.run]]
 == Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
 The exact steps depend on the chosen tech stack.
-* Open http://localhost:8080/ in multiple browser tabs to see how a change made in one tab is automatically shown in the other tabs.
+* Open http://localhost:8080/ in multiple browser tabs and test the app: notice the avatars,
+focus the fields and notice the field highlight, enter new values and notice how the fields
+update in the other tabs
