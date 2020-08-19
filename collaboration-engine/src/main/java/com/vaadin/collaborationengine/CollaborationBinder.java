@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -155,17 +154,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
-
-    /**
-     * Creates a new collaboration binder. It uses reflection based on the
-     * provided bean type to resolve bean properties.
-     *
-     * @param beanType
-     *            the bean type to use, not <code>null</code>
-     */
-    public CollaborationBinder(Class<BEAN> beanType) {
-        this(beanType, new UserInfo(UUID.randomUUID().toString()));
-    }
 
     /**
      * Creates a new collaboration binder. It uses reflection based on the

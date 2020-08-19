@@ -3,6 +3,7 @@ package com.vaadin.collaborationengine;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -30,7 +31,8 @@ public class CollaborationBinderTest {
 
         public Client() {
             this.ui = new MockUI();
-            binder = new CollaborationBinder<>(TestBean.class);
+            binder = new CollaborationBinder<>(TestBean.class,
+                    new UserInfo(UUID.randomUUID().toString()));
             binder.setTopic("topic", () -> null);
         }
 
