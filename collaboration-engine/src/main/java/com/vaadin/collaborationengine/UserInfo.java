@@ -29,15 +29,15 @@ public class UserInfo {
     /**
      * Creates a new user info object from user id. The color index is
      * calculated based on the id.
-     * 
+     *
      * @param userId
      *            the user id, not {@code null}
      */
     public UserInfo(String userId) {
         Objects.requireNonNull(userId, "Null user id isn't supported");
         this.id = userId;
-        CollaborationEngine.getInstance().requestUserColorIndex(this.id,
-                this::setColorIndex);
+        this.colorIndex = CollaborationEngine.getInstance()
+                .getUserColorIndex(this.id);
     }
 
     /**

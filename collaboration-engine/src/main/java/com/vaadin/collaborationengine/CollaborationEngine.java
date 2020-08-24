@@ -15,7 +15,6 @@ package com.vaadin.collaborationengine;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -104,17 +103,16 @@ public class CollaborationEngine {
     }
 
     /**
-     * Calculates the color index of a user based on the user id. If the color
-     * index for a user id does not exist yet, it's created on demand.
-     * 
+     * Gets the color index of a user based on the user id. If the color index
+     * for a user id does not exist yet, it's created on demand.
+     *
      * @param userId
      *            user id
-     * @param handler
-     *            the callback to handle the returned color index
+     * @return the color index
      */
-    void requestUserColorIndex(String userId, Consumer<Integer> handler) {
+    int getUserColorIndex(String userId) {
         Integer colorIndex = userColors.computeIfAbsent(userId,
                 id -> userColors.size() % USER_COLOR_COUNT);
-        handler.accept(colorIndex);
+        return colorIndex.intValue();
     }
 }
