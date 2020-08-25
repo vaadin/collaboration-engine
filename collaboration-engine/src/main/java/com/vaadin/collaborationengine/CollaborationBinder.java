@@ -343,35 +343,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         super.bindInstanceFields(objectWithMemberFields);
     }
 
-    /**
-     * Sets the user name that will be displayed to other users when editing a
-     * field.
-     *
-     * @param userName
-     *            the user name to set, can be {@code null} to not display a
-     *            name
-     * @deprecated set the local user's information (including name) in the
-     *             constructor
-     *             {@link #CollaborationBinder(Class, UserInfo, String)}
-     */
-    @Deprecated
-    public void setUserName(String userName) {
-        localUser.setName(userName);
-    }
-
-    /**
-     * Gets the user name that is displayed to other users when editing a field.
-     *
-     * @return the user name, can be {@code null}
-     * @deprecated the name is included in the user information object that
-     *             should be set in the constructor
-     *             {@link #CollaborationBinder(Class, UserInfo, String)}
-     */
-    @Deprecated
-    public String getUserName() {
-        return localUser.getName();
-    }
-
     UserInfo getLocalUser() {
         return localUser;
     }
