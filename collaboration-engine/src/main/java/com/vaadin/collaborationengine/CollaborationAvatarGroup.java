@@ -23,6 +23,7 @@ import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.HasTheme;
 import com.vaadin.flow.component.avatar.AvatarGroup;
+import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.function.SerializableFunction;
@@ -146,6 +147,30 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      */
     public void removeThemeVariants(AvatarGroupVariant... variants) {
         getContent().removeThemeVariants(variants);
+    }
+
+    /**
+     * Gets the internationalization object previously set for this component.
+     * <p>
+     * Note: updating the object content that is gotten from this method will
+     * not update the lang on the component if not set back using
+     * {@link CollaborationAvatarGroup#setI18n(AvatarGroupI18n)}
+     *
+     * @return the i18n object. It will be <code>null</code>, if the i18n
+     *         properties haven't been set.
+     */
+    public AvatarGroupI18n getI18n() {
+        return getContent().getI18n();
+    }
+
+    /**
+     * Sets the internationalization properties for this component.
+     *
+     * @param i18n
+     *            the internationalized properties, not <code>null</code>
+     */
+    public void setI18n(AvatarGroupI18n i18n) {
+        getContent().setI18n(i18n);
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
