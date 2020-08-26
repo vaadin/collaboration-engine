@@ -29,6 +29,7 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private ActivationHandler activationHandler;
     private Registration beaconListener;
+    private Registration destroyListener;
 
     /**
      * Creates an empty component connection context.
@@ -96,10 +97,17 @@ public class ComponentConnectionContext implements ConnectionContext {
             if (attachedComponents.size() == 1) {
                 // First attach
                 this.ui = componentUi;
+
                 BeaconHandler beaconHandler = BeaconHandler
                         .ensureInstalled(this.ui);
                 beaconListener = beaconHandler
                         .addListener(this::deactivateConnection);
+
+                ServiceDestroyDelegate destroyDelegate = ServiceDestroyDelegate
+                        .ensureInstalled(this.ui);
+                destroyListener = destroyDelegate
+                        .addListener(event -> deactivateConnection());
+
                 if (activationHandler != null) {
                     activationHandler.setActive(true);
                 }
@@ -147,6 +155,10 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (beaconListener != null) {
             beaconListener.remove();
             beaconListener = null;
+        }
+        if (destroyListener != null) {
+            destroyListener.remove();
+            destroyListener = null;
         }
         if (activationHandler != null) {
             activationHandler.setActive(false);

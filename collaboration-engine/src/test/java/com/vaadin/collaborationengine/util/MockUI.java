@@ -19,7 +19,7 @@ public class MockUI extends UI {
         ReentrantLock lock = new ReentrantLock();
         // Lock to avoid triggering internal checks
         lock.lock();
-        this.getInternals().setSession(new VaadinSession(null) {
+        this.getInternals().setSession(new VaadinSession(new MockService()) {
             @Override
             public Lock getLockInstance() {
                 return lock;

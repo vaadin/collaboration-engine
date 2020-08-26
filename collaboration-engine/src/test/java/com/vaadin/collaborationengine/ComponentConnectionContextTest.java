@@ -1,6 +1,6 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.SpyActivationHandler;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
 import org.junit.Assert;
@@ -8,12 +8,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.SpyActivationHandler;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.ServiceException;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 public class ComponentConnectionContextTest {
@@ -376,6 +380,50 @@ public class ComponentConnectionContextTest {
         getBeaconHandler(ui).synchronizedHandleRequest(null, null, null);
         activationHandler.assertActive(
                 "BeaconHandler should not deactivate connection.");
+    }
+
+    @Test
+    public void serviceDestory_deactivatesConnection() throws ServiceException {
+        VaadinService service = ui.getSession().getService();
+
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        context.setActivationHandler(activationHandler);
+        ui.add(component);
+
+        activationHandler.assertActive("Just clearing some internal flags :)");
+
+        // Allow destroy event to be handled through session.access
+        ui.getSession().unlock();
+
+        service.destroy();
+
+        activationHandler.assertInactive(
+                "Connection should become inactive when service is destroyed");
+    }
+
+    @Test
+    public void expiredSession_noLeaks() throws InterruptedException {
+        // Must keep service as a local to prevent GCing the whole system
+        VaadinService service = ui.getSession().getService();
+
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        WeakReference<ComponentConnectionContext> contextRef = new WeakReference<>(
+                context);
+        context = null;
+
+        ui.add(component);
+
+        // Allow destroy event to be handled through session.access
+        ui.getSession().unlock();
+
+        service.fireSessionDestroy(ui.getSession());
+
+        ui = null;
+        component = null;
+
+        Assert.assertTrue(TestUtils.isGarbageCollected(contextRef));
     }
 
     public BeaconHandler getBeaconHandler(MockUI mockUI) {
