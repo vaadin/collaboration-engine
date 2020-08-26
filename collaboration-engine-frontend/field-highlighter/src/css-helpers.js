@@ -1,8 +1,10 @@
 const isShadyCSS = window.ShadyCSS && !window.ShadyCSS.nativeCss;
 
+/* c8 ignore next */
 const isShadyDOM = window.ShadyDOM && window.ShadyDOM.inUse;
 
 export const setCustomProperty = (node, prop, value) => {
+  /* c8 ignore next 4 */
   if (isShadyCSS) {
     window.ShadyCSS.styleSubtree(node, {
       [prop]: value
@@ -15,6 +17,7 @@ export const setCustomProperty = (node, prop, value) => {
 let stylesMap = {};
 
 export const applyShadyStyle = (node, css) => {
+  /* c8 ignore next 11 */
   if (isShadyDOM) {
     const tag = node.tagName.toLowerCase();
     // create style once per class

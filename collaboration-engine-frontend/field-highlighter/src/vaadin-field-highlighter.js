@@ -2,6 +2,12 @@ import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { IronA11yAnnouncer } from '@polymer/iron-a11y-announcer/iron-a11y-announcer.js';
 import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
+import { DatePickerObserver } from './fields/vaadin-date-picker-observer.js';
+import { DateTimePickerObserver } from './fields/vaadin-date-time-picker-observer.js';
+import { GroupObserver } from './fields/vaadin-group-observer.js';
+import { FieldObserver } from './fields/vaadin-field-observer.js';
+import { SelectObserver } from './fields/vaadin-select-observer.js';
+
 import { applyShadyStyle, setCustomProperty } from './css-helpers.js';
 import './vaadin-user-tags.js';
 
@@ -28,11 +34,38 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       // Store instance
       fields.set(field, instance);
 
+      this.initFieldObserver(field);
+
       // Attach instance
       field.shadowRoot.appendChild(instance);
     }
 
     return fields.get(field);
+  }
+
+  static initFieldObserver(field) {
+    let result;
+    switch (field.tagName.toLowerCase()) {
+      /* c8 ignore next */
+      case 'vaadin-date-picker':
+        result = new DatePickerObserver(field);
+        break;
+      /* c8 ignore next */
+      case 'vaadin-date-time-picker':
+        result = new DateTimePickerObserver(field);
+        break;
+      /* c8 ignore next */
+      case 'vaadin-select':
+        result = new SelectObserver(field);
+        break;
+      /* c8 ignore next 2 */
+      case 'vaadin-checkbox-group':
+      case 'vaadin-radio-group':
+        result = new GroupObserver(field);
+        break;
+      default:
+        result = new FieldObserver(field);
+    }
   }
 
   static addUser(field, user) {
@@ -124,7 +157,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       this._setUserTags(this.users);
 
       // Make user active
-      this.user = users[users.length - 1] || null;
+      this.user = users[users.length - 1] || null;
     }
   }
 
@@ -159,13 +192,15 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
 
   _announce(msg) {
     const label = this._field.label || '';
-    this.dispatchEvent(new CustomEvent('iron-announce', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        text: label ? `${msg} ${label}` : msg
-      }
-    }));
+    this.dispatchEvent(
+      new CustomEvent('iron-announce', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          text: label ? `${msg} ${label}` : msg
+        }
+      })
+    );
   }
 
   _userChanged(user) {

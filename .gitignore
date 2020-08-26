@@ -21,6 +21,7 @@ reference-screenshots
 tsconfig.json
 types.d.ts
 node_modules/
+coverage/
 package-lock.json
 webpack.generated.js
 
