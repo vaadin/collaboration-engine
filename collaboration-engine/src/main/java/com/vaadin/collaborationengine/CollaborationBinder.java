@@ -23,15 +23,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.vaadin.flow.component.BlurNotifier;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.FocusNotifier;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.data.converter.Converter;
+import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.shared.Registration;
@@ -110,13 +109,18 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             registrations.add(field.addValueChangeListener(event -> getBinder()
                     .setMapValueFromField(propertyName, field)));
 
-            if (field instanceof FocusNotifier<?>
-                    && field instanceof BlurNotifier<?>
-                    && field instanceof HasElement) {
-                registrations.add(((FocusNotifier<?>) field).addFocusListener(
-                        event -> getBinder().addEditor(propertyName)));
-                registrations.add(((BlurNotifier<?>) field).addBlurListener(
-                        event -> getBinder().removeEditor(propertyName)));
+            if (field instanceof HasElement) {
+                Element element = ((HasElement) field).getElement();
+
+                registrations.add(FieldHighlighter.init(element));
+
+                registrations
+                        .add(element.addEventListener("vaadin-highlight-show",
+                                e -> getBinder().addEditor(propertyName)));
+                registrations
+                        .add(element.addEventListener("vaadin-highlight-hide",
+                                e -> getBinder().removeEditor(propertyName)));
+
                 registrations.add(() -> getBinder().removeEditor(propertyName));
             }
 

@@ -6,7 +6,10 @@ import java.util.stream.Stream;
 
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.internal.JsonUtils;
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 import elemental.json.Json;
 import elemental.json.JsonArray;
@@ -15,6 +18,15 @@ import elemental.json.JsonObject;
 class FieldHighlighter {
 
     private FieldHighlighter() {
+    }
+
+    static Registration init(Element field) {
+        Command initWithJS = () -> field.executeJs(
+                "customElements.get('vaadin-field-highlighter').init(this)");
+        if (field.getNode().isAttached()) {
+            initWithJS.execute();
+        }
+        return field.addAttachListener(e -> initWithJS.execute());
     }
 
     static void setEditors(HasValue<?, ?> field, List<UserInfo> editors,

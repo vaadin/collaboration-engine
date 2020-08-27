@@ -45,6 +45,15 @@ public class CollaborationFormView extends VerticalLayout {
         binder.setTopic(TOPIC_ID, () -> null);
         binder.bind(textField, "name");
         binder.bind(checkbox, "married");
+
+        NativeButton detachTextField = new NativeButton("Detach text field",
+                e -> remove(textField));
+        detachTextField.setId("detach-text-field");
+        NativeButton attachTextField = new NativeButton("Attach text field",
+                e -> addComponentAtIndex(1, textField));
+        attachTextField.setId("attach-text-field");
+
+        add(detachTextField, attachTextField);
     }
 
 }

@@ -48,19 +48,19 @@ public abstract class AbstractCollaborationFormIT
          */
         void focusTextField() {
             blur();
-            textField.dispatchEvent("focus");
+            textField.dispatchEvent("focusin");
             focusedElement = textField;
         }
 
         void focusCheckbox() {
             blur();
-            checkbox.dispatchEvent("focus");
+            checkbox.dispatchEvent("focusin");
             focusedElement = checkbox;
         }
 
         void blur() {
             if (focusedElement != null) {
-                focusedElement.dispatchEvent("blur");
+                focusedElement.dispatchEvent("focusout");
                 focusedElement = null;
             }
         }
@@ -70,6 +70,19 @@ public abstract class AbstractCollaborationFormIT
                     .filter(avatar -> !avatar.hasAttribute("hidden"))
                     .map(avatar -> avatar.getPropertyString("name"))
                     .collect(Collectors.toList());
+        }
+
+        void detachTextField() {
+            click("detach-text-field");
+        }
+
+        void attachTextField() {
+            click("attach-text-field");
+            this.textField = client.$(TextFieldElement.class).first();
+        }
+
+        void click(String id) {
+            client.$(TestBenchElement.class).id(id).click();
         }
 
     }

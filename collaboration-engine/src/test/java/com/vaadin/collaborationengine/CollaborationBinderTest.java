@@ -16,8 +16,6 @@ import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.BlurNotifier.BlurEvent;
-import com.vaadin.flow.component.FocusNotifier.FocusEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
 
@@ -49,8 +47,8 @@ public class CollaborationBinderTest {
         }
 
         public void cleanUp() {
-            ui.getChildren()
-                    .forEach(component -> ((TestField) component).blur());
+            ui.getChildren().forEach(
+                    component -> ((TestField) component).hideHighlight());
             ui.removeAll();
         }
     }
@@ -179,17 +177,19 @@ public class CollaborationBinderTest {
         Assert.assertTrue(
                 "Expected field to have listeners. The test is invalid.",
                 field.hasListener(ComponentValueChangeEvent.class)
-                        && field.hasListener(FocusEvent.class)
-                        && field.hasListener(BlurEvent.class));
+                        && field.hasFieldHighlightShowListener()
+                        && field.hasFieldHighlightHideListener());
 
         binding.unbind();
 
         Assert.assertFalse("All ValueChangeListeners should have been removed",
                 field.hasListener(ComponentValueChangeEvent.class));
-        Assert.assertFalse("All focus listeners should have been removed",
-                field.hasListener(FocusEvent.class));
-        Assert.assertFalse("All blur listeners should have been removed",
-                field.hasListener(BlurEvent.class));
+        Assert.assertFalse(
+                "All listeners for showing highlight should have been removed",
+                field.hasFieldHighlightShowListener());
+        Assert.assertFalse(
+                "All listeners for hiding highlight should have been removed",
+                field.hasFieldHighlightHideListener());
     }
 
     @Test
@@ -212,7 +212,7 @@ public class CollaborationBinderTest {
     public void bind_unbind_editorRemoved() {
         Binder.Binding<TestBean, String> bind = client.bind();
         client.attach();
-        field.focus();
+        field.showHighlight();
 
         bind.unbind();
 
@@ -283,7 +283,7 @@ public class CollaborationBinderTest {
     public void bind_activate_focusField_topicHasEditor() {
         client.bind();
         client.attach();
-        field.focus();
+        field.showHighlight();
         Assert.assertEquals(Arrays.asList(client.binder.getLocalUser()),
                 getEditors("value"));
     }
@@ -292,8 +292,8 @@ public class CollaborationBinderTest {
     public void bind_activate_focusField_blurField_topicHasNoEditors() {
         client.bind();
         client.attach();
-        field.focus();
-        field.blur();
+        field.showHighlight();
+        field.hideHighlight();
         Assert.assertEquals(Collections.emptyList(), getEditors("value"));
     }
 
@@ -301,8 +301,8 @@ public class CollaborationBinderTest {
     public void bind_focusTwice_topicHasOneEditor() {
         client.bind();
         client.attach();
-        field.focus();
-        field.focus();
+        field.showHighlight();
+        field.showHighlight();
         Assert.assertEquals(Arrays.asList(client.binder.getLocalUser()),
                 getEditors("value"));
     }
@@ -315,8 +315,8 @@ public class CollaborationBinderTest {
         client2.bind();
         client2.attach();
 
-        field.focus();
-        client2.field.focus();
+        field.showHighlight();
+        client2.field.showHighlight();
 
         Assert.assertEquals(Arrays.asList(client.binder.getLocalUser(),
                 client2.binder.getLocalUser()), getEditors("value"));
@@ -330,8 +330,8 @@ public class CollaborationBinderTest {
         client2.bind();
         client2.attach();
 
-        field.focus();
-        client2.field.focus();
+        field.showHighlight();
+        client2.field.showHighlight();
 
         client.detach();
 
