@@ -2,102 +2,16 @@ package com.vaadin.collaborationengine;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
-import com.vaadin.collaborationengine.util.TestField;
-import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
 
-public class CollaborationBinderTest {
-
-    private class Client {
-        TestField field = new TestField();
-
-        CollaborationBinder<TestBean> binder;
-        private final UI ui;
-
-        public Client() {
-            this.ui = new MockUI();
-            binder = new CollaborationBinder<>(TestBean.class,
-                    new UserInfo(UUID.randomUUID().toString()));
-            binder.setTopic("topic", () -> null);
-        }
-
-        public Binder.Binding<TestBean, String> bind() {
-            return binder.bind(field, "value");
-        }
-
-        public void attach() {
-            ui.add(field);
-        }
-
-        public void detach() {
-            ui.remove(field);
-        }
-
-        public void cleanUp() {
-            ui.getChildren().forEach(
-                    component -> ((TestField) component).hideHighlight());
-            ui.removeAll();
-        }
-    }
-
-    private Client client;
-    private Client client2;
-    private TestField field;
-    private CollaborationMap map;
-
-    @Before
-    public void init() {
-        client = new Client();
-        field = client.field;
-
-        client2 = new Client();
-
-        TestUtils.openEagerConnection("topic",
-                topicConnection -> map = topicConnection.getNamedMap(
-                        CollaborationBinder.COLLABORATION_BINDER_MAP_NAME));
-    }
-
-    @After
-    public void cleanUp() {
-        client.cleanUp();
-        client2.cleanUp();
-        map.put("value", null);
-    }
-
-    private void setSharedValue(String key, Object value) {
-        CollaborationBinder.FieldState oldState = getFieldState(key);
-        map.put(key, new CollaborationBinder.FieldState(value,
-                oldState != null ? oldState.editors : Collections.emptyList()));
-    }
-
-    private Object getSharedValue(String key) {
-        CollaborationBinder.FieldState fieldState = getFieldState(key);
-        return fieldState != null ? fieldState.value : null;
-    }
-
-    private CollaborationBinder.FieldState getFieldState(String key) {
-        return (CollaborationBinder.FieldState) map.get(key);
-    }
-
-    private List<UserInfo> getEditors(String key) {
-        if (getFieldState(key) == null) {
-            return Collections.emptyList();
-        }
-        return getFieldState(key).editors;
-    }
+public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
     @Test
     public void bind_setFieldValue_sharedValueNotUpdated() {

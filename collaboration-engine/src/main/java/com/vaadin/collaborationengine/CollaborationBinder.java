@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,12 +48,6 @@ import com.vaadin.flow.shared.Registration;
  *            the bean type
  */
 public class CollaborationBinder<BEAN> extends Binder<BEAN> {
-
-    static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
-            .getName();
-
-    private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
-            Collections.emptyList());
 
     static final class FieldState {
         public final Object value;
@@ -152,7 +147,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private UserInfo localUser;
 
-    private CollaborationMap map;
+    private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
     private Registration topicRegistration;
 
@@ -194,11 +189,11 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     @SuppressWarnings("rawtypes")
     private void setFieldValueFromMap(String propertyName, HasValue field) {
-        if (map == null) {
-            // map is null when the connection isn't activated.
+        if (topic == null) {
+            // the connection isn't activated.
             return;
         }
-        FieldState fieldState = (FieldState) map.get(propertyName);
+        FieldState fieldState = (FieldState) getMap(topic).get(propertyName);
         Object value = fieldState != null ? fieldState.value : null;
         if (value == null) {
             field.clear();
@@ -210,40 +205,21 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     @SuppressWarnings("rawtypes")
     private void setMapValueFromField(String propertyName, HasValue field) {
         Object value = field.isEmpty() ? null : field.getValue();
-        updateFieldState(propertyName,
-                state -> new FieldState(value, state.editors));
+        if (topic != null) {
+            CollaborationBinderUtil.setProperty(topic, propertyName, value);
+        }
     }
 
     private void addEditor(String propertyName) {
-        updateFieldState(propertyName,
-                state -> new FieldState(state.value,
-                        Stream.concat(state.editors.stream(),
-                                state.editors.contains(localUser)
-                                        ? Stream.empty()
-                                        : Stream.of(localUser))));
+        if (topic != null) {
+            CollaborationBinderUtil.addEditor(topic, propertyName, localUser);
+        }
     }
 
     private void removeEditor(String propertyName) {
-        updateFieldState(propertyName,
-                state -> new FieldState(state.value, state.editors.stream()
-                        .filter(editor -> !editor.equals(localUser))));
-    }
-
-    private void updateFieldState(String propertyName,
-            Function<FieldState, FieldState> updater) {
-        if (map == null) {
-            // map is null when the connection isn't activated.
-            return;
-        }
-        while (true) {
-            FieldState oldState = (FieldState) map.get(propertyName);
-
-            FieldState newState = updater
-                    .apply(oldState != null ? oldState : EMPTY_FIELD_STATE);
-
-            if (map.replace(propertyName, oldState, newState)) {
-                return;
-            }
+        if (topic != null) {
+            CollaborationBinderUtil.removeEditor(topic, propertyName,
+                    localUser);
         }
     }
 
@@ -372,7 +348,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             topicRegistration.remove();
             topicRegistration = null;
             connectionContext = null;
-            map = null;
+            topic = null;
         }
 
         if (topicId == null) {
@@ -393,9 +369,9 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private Registration bindToTopic(TopicConnection topic,
             SerializableSupplier<BEAN> initialBeanSupplier) {
-        map = topic.getNamedMap(COLLABORATION_BINDER_MAP_NAME);
+        this.topic = topic;
 
-        map.subscribe(this::onMapChange);
+        getMap(topic).subscribe(this::onMapChange);
 
         initializeBindingsWithoutFieldState(initialBeanSupplier);
 
@@ -407,6 +383,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private void initializeBindingsWithoutFieldState(
             SerializableSupplier<BEAN> initialBeanSupplier) {
+        CollaborationMap map = getMap(topic);
+
         List<String> propertiesWithoutFieldState = fieldToPropertyName.values()
                 .stream().filter(propertyName -> map.get(propertyName) == null)
                 .collect(Collectors.toList());
