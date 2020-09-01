@@ -174,9 +174,13 @@ public class CollaborationEngineTest {
 
     @Test
     public void userColors_calculateBaseOnMapSize() {
+        UserInfo firstUser = new UserInfo("userId-first");
+        int offset = firstUser.getColorIndex();
+
         for (int i = 0; i < 12; i++) {
             UserInfo user = new UserInfo("userId-" + i);
-            Assert.assertEquals(user.getColorIndex(), i % USER_COLOR_COUNT);
+            Assert.assertEquals(user.getColorIndex(),
+                    (offset + i + 1) % USER_COLOR_COUNT);
         }
     }
 

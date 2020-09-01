@@ -1,5 +1,0 @@
-# Browser drivers for local integration tests
-drivers/
-
-# integration test
-**/webdriver
