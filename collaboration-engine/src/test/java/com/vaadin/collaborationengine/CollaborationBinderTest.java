@@ -72,10 +72,10 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
-    public void bind_activate_readBean_sharedValueAndFieldUpdated() {
+    public void bind_activate_resetBean_sharedValueAndFieldUpdated() {
         client.bind();
         client.attach();
-        client.binder.readBean(new TestBean("foo"));
+        client.binder.reset(new TestBean("foo"));
         Assert.assertEquals("foo", getSharedValue("value"));
         Assert.assertEquals("foo", field.getValue());
     }
@@ -361,5 +361,15 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
         Assert.assertTrue(client.field.isEmpty());
         Assert.assertFalse(client.field.hasListener(AttachEvent.class));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void readBean_operationNotSupported() {
+        client.binder.readBean(new TestBean());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void setBean_operationNotSupported() {
+        client.binder.setBean(new TestBean());
     }
 }

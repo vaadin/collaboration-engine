@@ -12,8 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +33,8 @@ import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.shared.Registration;
+
+import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
 
 /**
  * Extension of {@link Binder} for creating collaborative forms with
@@ -321,6 +321,53 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     @Override
     public void bindInstanceFields(Object objectWithMemberFields) {
         super.bindInstanceFields(objectWithMemberFields);
+    }
+
+    /**
+     * @deprecated This operation is not supported by the collaboration binder.
+     *             You can instead provide the bean for populating the fields
+     *             using {@link #setTopic}, and write the values back to the
+     *             bean using {@link #writeBean}.
+     */
+    @Override
+    @Deprecated
+    public void setBean(BEAN bean) {
+        throw new UnsupportedOperationException(
+                "This operation is not supported by the collaboration binder. "
+                        + "You can instead provide the bean for populating "
+                        + "the fields with the setTopic method, and write the "
+                        + "values back to the bean with the writeBean method.");
+    }
+
+    /**
+     * @deprecated This operation is not supported by the collaboration binder.
+     *             You can instead provide the bean for populating the fields
+     *             using {@link #setTopic} to avoid overriding currently edited
+     *             values. If you explicitly want to reset the field values for
+     *             every user currently editing the fields, you can use
+     *             {@link #reset}.
+     */
+    @Override
+    @Deprecated
+    public void readBean(BEAN bean) {
+        throw new UnsupportedOperationException(
+                "This operation is not supported by the collaboration binder. "
+                        + "You can instead provide the bean for populating the fields "
+                        + "with the setTopic method to avoid overriding currently edited values. "
+                        + "If you explicitly want to reset the field values for every user "
+                        + "currently editing the fields, you can use the reset method.");
+    }
+
+    /**
+     * Resets collaborative fields with values from the bound properties of the
+     * given bean. The values will be propagated to all collaborating users.
+     *
+     * @param bean
+     *            the bean whose property values to read or {@code null} to
+     *            clear bound fields
+     */
+    public void reset(BEAN bean) {
+        super.readBean(bean);
     }
 
     UserInfo getLocalUser() {
