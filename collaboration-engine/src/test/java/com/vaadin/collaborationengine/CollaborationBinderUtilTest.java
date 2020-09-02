@@ -17,8 +17,8 @@ public class CollaborationBinderUtilTest
     }
 
     @Test
-    public void setProperty_fieldUpdated() {
-        CollaborationBinderUtil.setProperty(topicConnection, "value", "foo");
+    public void setFieldValue_fieldUpdated() {
+        CollaborationBinderUtil.setFieldValue(topicConnection, "value", "foo");
 
         Assert.assertEquals("foo", field.getValue());
     }

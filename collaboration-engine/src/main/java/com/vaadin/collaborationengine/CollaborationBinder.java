@@ -206,7 +206,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     private void setMapValueFromField(String propertyName, HasValue field) {
         Object value = field.isEmpty() ? null : field.getValue();
         if (topic != null) {
-            CollaborationBinderUtil.setProperty(topic, propertyName, value);
+            CollaborationBinderUtil.setFieldValue(topic, propertyName, value);
         }
     }
 

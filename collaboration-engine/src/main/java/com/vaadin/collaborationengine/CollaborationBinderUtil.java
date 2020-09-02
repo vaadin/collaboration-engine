@@ -53,7 +53,7 @@ public class CollaborationBinderUtil {
      * @param value
      *            the new value to set, can be {@code null} to clear the fields
      */
-    public static void setProperty(TopicConnection topicConnection,
+    public static void setFieldValue(TopicConnection topicConnection,
             String propertyName, Object value) {
 
         Objects.requireNonNull(topicConnection,
