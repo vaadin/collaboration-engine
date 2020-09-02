@@ -72,51 +72,67 @@ public class TopicConnection {
             @Override
             public Registration subscribe(MapSubscriber subscriber) {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
-                Registration registration = topic.subscribeMap(name,
-                        (key, oldValue, newValue) -> {
-                            MapChangeEvent event = new MapChangeEvent(this, key,
-                                    oldValue, newValue);
-                            context.dispatchAction(
-                                    () -> subscriber.onMapChange(event));
-                        });
-                addRegistration(registration);
-                return registration;
+                Registration registration;
+                synchronized (topic) {
+                    registration = topic.subscribeMap(name,
+                            (key, oldValue, newValue) -> {
+
+                                MapChangeEvent event = new MapChangeEvent(this,
+                                        key, oldValue, newValue);
+                                context.dispatchAction(
+                                        () -> subscriber.onMapChange(event));
+                            });
+                }
+                Registration lockedRegistration = () -> {
+                    synchronized (topic) {
+                        registration.remove();
+                    }
+                };
+                addRegistration(lockedRegistration);
+                return lockedRegistration;
             }
 
             @Override
             public boolean replace(String key, Object expectedValue,
                     Object newValue) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                return topic.withMap(name, (map, changeListener) -> {
-                    Object oldValue = map.get(key);
-                    if (!Objects.equals(oldValue, expectedValue)) {
-                        return Boolean.FALSE;
-                    }
+                synchronized (topic) {
+                    return topic.withMap(name, (map, changeListener) -> {
 
-                    if (Objects.equals(oldValue, newValue)) {
+                        Object oldValue = map.get(key);
+                        if (!Objects.equals(oldValue, expectedValue)) {
+                            return Boolean.FALSE;
+                        }
+
+                        if (Objects.equals(oldValue, newValue)) {
+                            return Boolean.TRUE;
+                        }
+
+                        updateMapValue(map, changeListener, key, newValue,
+                                oldValue);
+
                         return Boolean.TRUE;
-                    }
-
-                    updateMapValue(map, changeListener, key, newValue,
-                            oldValue);
-
-                    return Boolean.TRUE;
-                }).booleanValue();
+                    }).booleanValue();
+                }
             }
 
             @Override
             public void put(String key, Object value) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                topic.withMap(name, (map, changeListener) -> {
-                    Object oldValue = map.get(key);
-                    if (Objects.equals(oldValue, value)) {
+                synchronized (topic) {
+                    topic.withMap(name, (map, changeListener) -> {
+
+                        Object oldValue = map.get(key);
+                        if (Objects.equals(oldValue, value)) {
+                            return null;
+                        }
+
+                        updateMapValue(map, changeListener, key, value,
+                                oldValue);
+
                         return null;
-                    }
-
-                    updateMapValue(map, changeListener, key, value, oldValue);
-
-                    return null;
-                });
+                    });
+                }
             }
 
             private void updateMapValue(Map<String, Object> map,
@@ -133,17 +149,22 @@ public class TopicConnection {
 
             @Override
             public Stream<String> getKeys() {
-                return topic.withMap(name, (map, changeListener) -> {
-                    ArrayList<String> snapshot = new ArrayList<>(map.keySet());
-                    return snapshot.stream();
-                });
+                synchronized (topic) {
+                    return topic.withMap(name, (map, changeListener) -> {
+                        ArrayList<String> snapshot = new ArrayList<>(
+                                map.keySet());
+                        return snapshot.stream();
+                    });
+                }
             }
 
             @Override
             public Object get(String key) {
                 Objects.requireNonNull(key, "Key cannot be null");
-                return topic.withMap(name,
-                        (map, changeListener) -> map.get(key));
+                synchronized (topic) {
+                    return topic.withMap(name,
+                            (map, changeListener) -> map.get(key));
+                }
             }
 
             @Override

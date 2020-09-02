@@ -28,22 +28,17 @@ class Topic {
         void onMapChange(String key, Object oldValue, Object newValue);
     }
 
-    private final Object lock = new Object();
-
     private final Map<String, Map<String, Object>> namedMapData = new HashMap<>();
     private final Map<String, List<MapChangeNotifier>> namedMapSubscribers = new HashMap<>();
 
     Registration subscribeMap(String name, MapChangeNotifier subscriber) {
-        synchronized (lock) {
-            namedMapSubscribers.computeIfAbsent(name, key -> new LinkedList<>())
-                    .add(subscriber);
+        namedMapSubscribers.computeIfAbsent(name, key -> new LinkedList<>())
+                .add(subscriber);
 
-            if (namedMapData.containsKey(name)) {
-                namedMapData.get(name).forEach((key, value) -> subscriber
-                        .onMapChange(key, null, value));
-            }
+        if (namedMapData.containsKey(name)) {
+            namedMapData.get(name).forEach(
+                    (key, value) -> subscriber.onMapChange(key, null, value));
         }
-
         return () -> unsubscribeMap(name, subscriber);
     }
 
@@ -59,26 +54,22 @@ class Topic {
     }
 
     private void unsubscribeMap(String name, MapChangeNotifier subscriber) {
-        synchronized (lock) {
-            List<MapChangeNotifier> subscribers = namedMapSubscribers.get(name);
-            if (subscribers == null) {
-                return;
-            }
+        List<MapChangeNotifier> subscribers = namedMapSubscribers.get(name);
+        if (subscribers == null) {
+            return;
+        }
 
-            subscribers.remove(subscriber);
-            if (subscribers.isEmpty()) {
-                namedMapSubscribers.remove(name);
-            }
+        subscribers.remove(subscriber);
+        if (subscribers.isEmpty()) {
+            namedMapSubscribers.remove(name);
         }
     }
 
     <T> T withMap(String name,
             SerializableBiFunction<Map<String, Object>, MapChangeNotifier, T> mapHandler) {
-        synchronized (lock) {
-            return mapHandler.apply(
-                    namedMapData.computeIfAbsent(name, key -> new HashMap<>()),
-                    (key, oldValue, newValue) -> fireMapChangeEvent(name, key,
-                            oldValue, newValue));
-        }
+        return mapHandler.apply(
+                namedMapData.computeIfAbsent(name, key -> new HashMap<>()),
+                (key, oldValue, newValue) -> fireMapChangeEvent(name, key,
+                        oldValue, newValue));
     }
 }
