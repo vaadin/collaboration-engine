@@ -14,17 +14,11 @@ export class UserTag extends ThemableMixin(DirMixin(PolymerElement)) {
       <style>
         :host {
           display: block;
-          position: relative;
           box-sizing: border-box;
           margin-bottom: var(--vaadin-user-tag-offset);
           background-color: var(--vaadin-user-tag-color);
           color: #fff;
-          max-width: 6px;
-          max-height: 6px;
-          overflow: hidden;
-          border-radius: 3px;
           cursor: default;
-          transition: max-width 0.3s, max-height 0.3s;
           --vaadin-user-tag-offset: 4px;
         }
 

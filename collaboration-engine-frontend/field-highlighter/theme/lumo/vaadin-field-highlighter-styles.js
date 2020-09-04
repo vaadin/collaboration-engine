@@ -6,24 +6,29 @@ registerStyles(
   'vaadin-field-highlighter',
   css`
     :host {
-      display: block;
-      --lumo-field-highlight-offset: var(--lumo-space-s);
-      top: calc(var(--lumo-field-highlight-offset) * -1);
-      left: calc(var(--lumo-field-highlight-offset) * -1);
-      width: calc(100% + var(--lumo-field-highlight-offset) * 2);
-      height: calc(100% + var(--lumo-field-highlight-offset) * 2);
-      opacity: 0;
       transition: opacity 0.3s;
-      --_active-user-color: transparent;
     }
 
     :host::before {
-      border-radius: var(--lumo-border-radius-l);
-      transition: border-color 0.3s;
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0.5;
+      box-shadow: 0 0 0 2px var(--_active-user-color);
+      border-radius: var(--lumo-border-radius);
+      transition: box-shadow 0.3s;
     }
 
-    :host([has-active-user]) {
-      opacity: 1;
+    :host([context='vaadin-checkbox'])::before {
+      box-shadow: 0 0 0 2px var(--lumo-base-color), 0 0 0 4px var(--_active-user-color);
+    }
+
+    :host([context='vaadin-radio-button'])::before {
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px var(--lumo-base-color), 0 0 0 5px var(--_active-user-color);
     }
   `,
   { moduleId: 'lumo-field-highlighter' }

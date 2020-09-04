@@ -1,8 +1,10 @@
 package com.vaadin.collaborationengine.util;
 
+import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.TestBenchElement;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.Assert;
 
 public class FieldHighlightUtil {
@@ -47,7 +49,13 @@ public class FieldHighlightUtil {
         if (!field.$("vaadin-user-tags").exists()) {
             return Collections.emptyList();
         }
-        return field.$("vaadin-user-tags").first().$(UserTagElement.class)
-                .all();
+        TestBenchElement tagsElement = field.$("vaadin-user-tags").first();
+        List<TestBenchElement> tagElements = (List<TestBenchElement>) tagsElement
+                .getCommandExecutor().executeScript(
+                        "return Array.from(arguments[0].$.overlay.content.querySelectorAll('vaadin-user-tag'))",
+                        tagsElement);
+        return tagElements.stream()
+                .map(tag -> TestBench.wrap(tag, UserTagElement.class))
+                .collect(Collectors.toList());
     }
 }

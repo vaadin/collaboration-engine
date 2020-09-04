@@ -4,10 +4,10 @@ module.exports = {
   coverageConfig: {
     include: ['**/src/**/*'],
     threshold: {
-      statements: 100,
-      branches: 98,
+      statements: 99,
+      branches: 97,
       functions: 100,
-      lines: 100
+      lines: 99
     }
   },
 };

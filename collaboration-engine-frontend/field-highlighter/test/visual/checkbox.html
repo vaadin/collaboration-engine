@@ -11,6 +11,7 @@
 <body>
   <style>
     #test {
+      height: 150px;
       padding: 20px;
     }
   </style>
@@ -28,10 +29,18 @@
       const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
 
       const field = document.querySelector('vaadin-checkbox');
-      FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });
 
       window.requestAnimationFrame(() => {
-        document.getElementById('test').dataset.ready = true;
+        FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });
+        FieldHighlighter.addUser(field, { name: 'Moderator', colorIndex: 1 });
+        FieldHighlighter.addUser(field, { name: 'Admin', colorIndex: 2 });
+
+        // Mimic focus to show highlight and badges
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+
+        setTimeout(() => {
+          document.getElementById('test').dataset.ready = true;
+        });
       });
     })();
   </script>

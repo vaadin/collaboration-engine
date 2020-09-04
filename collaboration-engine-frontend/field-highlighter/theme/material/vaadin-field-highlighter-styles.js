@@ -4,15 +4,23 @@ registerStyles(
   'vaadin-field-highlighter',
   css`
     :host {
-      --material-field-highlight-offset: 0.5em;
-      top: calc(var(--material-field-highlight-offset) * -1);
-      left: calc(var(--material-field-highlight-offset) * -1);
-      width: calc(100% + var(--material-field-highlight-offset) * 2);
-      height: calc(100% + var(--material-field-highlight-offset) * 2);
+      transition: opacity 0.3s;
     }
 
-    :host::before {
-      border-radius: 0.5em;
+    :host([context$='area']),
+    :host([context$='field']) {
+      top: auto;
+      height: 2px;
+      z-index: 1;
+      background-color: var(--_active-user-color);
+    }
+
+    :host([context='vaadin-checkbox']),
+    :host([context='vaadin-radio-button']) {
+      border-radius: 50%;
+      background-color: var(--_active-user-color);
+      transform: scale(2.5);
+      opacity: 0.15;
     }
   `,
   { moduleId: 'material-field-highlighter' }

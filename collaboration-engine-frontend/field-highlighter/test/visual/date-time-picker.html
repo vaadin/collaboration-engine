@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Date Time Picker highlight</title>
+    <script>
+      window.polymerSkipLoadingFontRoboto = true;
+    </script>
+  </head>
+
+  <body>
+    <style>
+      #test {
+        height: 150px;
+        padding: 20px;
+      }
+    </style>
+
+    <div id="test">
+      <vaadin-date-time-picker></vaadin-date-time-picker>
+    </div>
+
+    <script type="module">
+      (async () => {
+        const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
+
+        await import('@vaadin/vaadin-date-time-picker/theme/' + theme + '/vaadin-date-time-picker.js');
+
+        const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
+
+        const field = document.querySelector('vaadin-date-time-picker');
+
+        window.requestAnimationFrame(() => {
+          FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });
+          FieldHighlighter.addUser(field, { name: 'Moderator', colorIndex: 1 });
+          FieldHighlighter.addUser(field, { name: 'Admin', colorIndex: 2 });
+
+          // Mimic focus to show highlight and badges
+          field.dispatchEvent(new CustomEvent('mouseenter'));
+
+          setTimeout(() => {
+            document.getElementById('test').dataset.ready = true;
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

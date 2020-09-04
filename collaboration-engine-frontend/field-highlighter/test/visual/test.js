@@ -16,6 +16,20 @@ describe('field highlight', () => {
         .assertView(`${theme}-checkbox-group`, locator);
     });
 
+    it(`${theme}-date-time-picker`, function() {
+      return this.browser
+        .url(`date-time-picker.html?theme=${theme}`)
+        .waitForVisible(locator, 12000)
+        .assertView(`${theme}-date-time-picker`, locator);
+    });
+
+    it(`${theme}-radio-button`, function() {
+      return this.browser
+        .url(`radio-button.html?theme=${theme}`)
+        .waitForVisible(locator, 10000)
+        .assertView(`${theme}-radio-button`, locator);
+    });
+
     it(`${theme}-radio-group`, function() {
       return this.browser
         .url(`radio-group.html?theme=${theme}`)
@@ -30,25 +44,11 @@ describe('field highlight', () => {
         .assertView(`${theme}-text-field`, locator);
     });
 
-    it(`${theme}-overflow`, function() {
-      return this.browser
-        .url(`overflow.html?theme=${theme}`)
-        .waitForVisible(locator, 10000)
-        .assertView(`${theme}-overflow`, locator);
-    });
-
     it(`${theme}-rtl`, function() {
       return this.browser
         .url(`rtl.html?theme=${theme}`)
         .waitForVisible(locator, 10000)
         .assertView(`${theme}-rtl`, locator);
-    });
-
-    it(`${theme}-user-tags`, function() {
-      return this.browser
-        .url(`user-tags.html?theme=${theme}`)
-        .waitForVisible(locator, 10000)
-        .assertView(`${theme}-user-tags`, locator);
     });
   });
 });

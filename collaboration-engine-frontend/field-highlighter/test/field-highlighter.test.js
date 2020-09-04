@@ -1,6 +1,6 @@
 import { expect } from '@bundled-es-modules/chai';
 import sinon from 'sinon';
-import { fixture, html } from '@open-wc/testing-helpers';
+import { fixture, html, nextFrame } from '@open-wc/testing-helpers';
 import '@vaadin/vaadin-text-field/vaadin-text-field.js';
 import { FieldHighlighter } from '../src/vaadin-field-highlighter.js';
 
@@ -26,19 +26,17 @@ describe('field highlighter', () => {
       expect(field.hasAttribute('has-highlighter')).to.be.true;
     });
 
-    it('should set position: relative on the field', () => {
-      expect(getComputedStyle(field).position).to.equal('relative');
-    });
-
     it('should position the highlighter based on the field', () => {
-      const { position, top, left } = getComputedStyle(highlighter);
+      const { position, top, left, right, bottom } = getComputedStyle(highlighter);
       expect(position).to.equal('absolute');
-      expect(top).to.equal('-8px');
-      expect(left).to.equal('-8px');
+      expect(top).to.equal('0px');
+      expect(left).to.equal('0px');
+      expect(right).to.equal('0px');
+      expect(bottom).to.equal('0px');
     });
 
     it('should not show highlighter by default', () => {
-      expect(getComputedStyle(highlighter).display).to.equal('none');
+      expect(getComputedStyle(highlighter).opacity).to.equal('0');
     });
 
     it('should set z-index on the highlighter to -1', () => {
@@ -117,36 +115,16 @@ describe('field highlighter', () => {
         expect(highlighter.hasAttribute('has-active-user')).to.be.true;
       });
 
-      it('should show highlighter when user is added', () => {
+      it('should show highlighter when user is added', async () => {
         addUser(user1);
-        expect(getComputedStyle(highlighter).display).to.equal('block');
-      });
-
-      it('should set width and height on the highlighter', () => {
-        addUser(user1);
-        const { width, height } = getComputedStyle(highlighter);
-        const rect = field.getBoundingClientRect(field);
-        expect(parseInt(width)).to.equal(parseInt(rect.width) + 16);
-        expect(parseInt(height)).to.equal(parseInt(rect.height) + 16);
+        await nextFrame();
+        expect(getComputedStyle(highlighter).opacity).to.equal('1');
       });
 
       it('should remove attribute when user is removed', () => {
         addUser(user1);
         removeUser(user1);
         expect(highlighter.hasAttribute('has-active-user')).to.be.false;
-      });
-
-      it('should set border color based on user index', () => {
-        addUser(user1);
-        field.style.setProperty('--vaadin-user-color-0', 'red');
-        expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(255, 0, 0)');
-      });
-
-      it('should change border color when user changes', () => {
-        addUser(user1);
-        addUser(user2);
-        field.style.setProperty('--vaadin-user-color-1', 'blue');
-        expect(getComputedStyle(highlighter, '::before').borderColor).to.equal('rgb(0, 0, 255)');
       });
 
       it('should make previous user active when user is removed', () => {
@@ -171,35 +149,151 @@ describe('field highlighter', () => {
       });
     });
 
-    describe('user tags', () => {
-      let wrapper;
+    describe('overlay', () => {
+      let overlay;
       let tags;
 
-      beforeEach(async () => {
-        wrapper = field.shadowRoot.querySelector('vaadin-user-tags');
+      beforeEach(() => {
+        tags = field.shadowRoot.querySelector('vaadin-user-tags');
+        overlay = tags.$.overlay;
       });
 
-      it('should create user tags for each added user', () => {
+      afterEach(() => {
+        if (overlay.opened) {
+          overlay.opened = false;
+        }
+      });
+
+      it('should open overlay on field focusin', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('focusin'));
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should close overlay on field focusout', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('focusin'));
+        field.dispatchEvent(new CustomEvent('focusout'));
+        expect(overlay.opened).to.equal(false);
+      });
+
+      it('should open overlay on field mouseenter', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should close overlay on field mouseleave', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        field.dispatchEvent(new CustomEvent('mouseleave'));
+        expect(overlay.opened).to.equal(false);
+      });
+
+      it('should not close overlay on field mouseleave after focusin', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        field.dispatchEvent(new CustomEvent('focusin'));
+        field.dispatchEvent(new CustomEvent('mouseleave'));
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should not close overlay on field focusout after mouseenter', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('focusin'));
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        field.dispatchEvent(new CustomEvent('focusout'));
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should not close overlay on field mouseleave to overlay', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        const leave = new CustomEvent('mouseleave');
+        leave.relatedTarget = overlay;
+        field.dispatchEvent(leave);
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should close overlay on overlay mouseleave', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        overlay.dispatchEvent(new CustomEvent('mouseleave'));
+        expect(overlay.opened).to.equal(false);
+      });
+
+      it('should not close overlay on overlay mouseleave to field', async () => {
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        const leave = new CustomEvent('mouseleave');
+        leave.relatedTarget = field;
+        overlay.dispatchEvent(leave);
+        expect(overlay.opened).to.equal(true);
+      });
+
+      it('should set position on tags overlay when opened', async () => {
+        const spy = sinon.spy(tags, 'setPosition');
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        expect(spy.callCount).to.equal(1);
+      });
+
+      it('should not re-position overlay on mouseenter from overlay', async () => {
+        const spy = sinon.spy(tags, 'setPosition');
+        addUser(user1);
+        await nextFrame();
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+        // Emulate second mouseenter from overlay
+        const enter = new CustomEvent('mouseenter');
+        enter.relatedTarget = overlay;
+        field.dispatchEvent(enter);
+        expect(spy.callCount).to.equal(1);
+      });
+    });
+
+    describe('user tags', () => {
+      let tags;
+
+      const getTags = (field) => {
+        const overlay = field.shadowRoot.querySelector('vaadin-user-tags').$.overlay;
+        return overlay.content.querySelectorAll('vaadin-user-tag');
+      };
+
+      it('should create user tags for each added user', async () => {
         addUser(user1);
         addUser(user2);
-        tags = wrapper.shadowRoot.querySelectorAll('[part="tag"]');
+        await nextFrame();
+        tags = getTags(field);
         expect(tags.length).to.equal(2);
       });
 
-      it('should remove user tag when user is removed', () => {
+      it('should remove user tag when user is removed', async () => {
         addUser(user1);
         addUser(user2);
+        await nextFrame();
         removeUser(user2);
-        tags = wrapper.shadowRoot.querySelectorAll('[part="tag"]');
+        await nextFrame();
+        tags = getTags(field);
         expect(tags.length).to.equal(1);
       });
 
-      it('should set tag background color based on user index', () => {
+      it('should set tag background color based on user index', async () => {
         addUser(user1);
         addUser(user2);
-        tags = wrapper.shadowRoot.querySelectorAll('[part="tag"]');
-        field.style.setProperty('--vaadin-user-color-0', 'red');
-        field.style.setProperty('--vaadin-user-color-1', 'blue');
+        await nextFrame();
+        tags = getTags(field);
+        document.documentElement.style.setProperty('--vaadin-user-color-0', 'red');
+        document.documentElement.style.setProperty('--vaadin-user-color-1', 'blue');
         expect(getComputedStyle(tags[0]).backgroundColor).to.equal('rgb(0, 0, 255)');
         expect(getComputedStyle(tags[1]).backgroundColor).to.equal('rgb(255, 0, 0)');
       });
@@ -209,9 +303,10 @@ describe('field highlighter', () => {
         expect(getComputedStyle(highlighter).getPropertyValue('--vaadin-user-tag-color')).to.equal('');
       });
 
-      it('should dispatch event on tag mousedown', () => {
+      it('should dispatch event on tag mousedown', async () => {
         addUser(user1);
-        const tag = wrapper.shadowRoot.querySelector('[part="tag"]');
+        await nextFrame();
+        const tag = getTags(field)[0];
         const spy = sinon.spy();
         tag.addEventListener('user-tag-click', spy);
         tag.dispatchEvent(new Event('mousedown'));
@@ -223,15 +318,15 @@ describe('field highlighter', () => {
       // NOTE: See <iron-a11y-announcer> API
 
       function waitForAnnounce(callback) {
-        var listener = event => {
+        var listener = (event) => {
           document.body.removeEventListener('iron-announce', listener);
           callback(event.detail.text);
         };
         document.body.addEventListener('iron-announce', listener);
       }
 
-      it('should announce adding a new user', done => {
-        waitForAnnounce(text => {
+      it('should announce adding a new user', (done) => {
+        waitForAnnounce((text) => {
           expect(text).to.equal(`${user1.name} started editing`);
           done();
         });
@@ -239,8 +334,8 @@ describe('field highlighter', () => {
         addUser(user1);
       });
 
-      it('should announce field label, if any', done => {
-        waitForAnnounce(text => {
+      it('should announce field label, if any', (done) => {
+        waitForAnnounce((text) => {
           expect(text).to.equal(`${user1.name} started editing ${field.label}`);
           done();
         });

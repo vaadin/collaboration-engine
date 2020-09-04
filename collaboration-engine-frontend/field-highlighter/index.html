@@ -27,22 +27,25 @@
     import { FieldHighlighter } from './theme/lumo/vaadin-field-highlighter.js';
 
     const field = document.querySelector('vaadin-text-field');
-    const fh = FieldHighlighter.init(field);
 
-    const group = document.querySelector('vaadin-checkbox-group');
+    window.requestAnimationFrame(() => {
+      const fh = FieldHighlighter.init(field);
 
-    // Switch active user
-    group.addEventListener('change', e => {
-      Array.from(group.children).forEach((checkbox, index) => {
-        const user = { name: checkbox.value, colorIndex: index, id: index };
-        if (group.value.indexOf(checkbox.value) > -1) {
-          // Do not add the same user twice
-          if (!fh.users.filter(u => u.id === index)[0]) {
-            fh.addUser(user);
+      const group = document.querySelector('vaadin-checkbox-group');
+
+      // Switch active user
+      group.addEventListener('change', e => {
+        Array.from(group.children).forEach((checkbox, index) => {
+          const user = { name: checkbox.value, colorIndex: index, id: index };
+          if (group.value.indexOf(checkbox.value) > -1) {
+            // Do not add the same user twice
+            if (!fh.users.filter(u => u.id === index)[0]) {
+              fh.addUser(user);
+            }
+          } else {
+            fh.removeUser(user);
           }
-        } else {
-          fh.removeUser(user);
-        }
+        });
       });
     });
   </script>

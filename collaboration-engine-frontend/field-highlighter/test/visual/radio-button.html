@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Text Field highlight</title>
+  <title>Radio button highlight</title>
   <script>
     window.polymerSkipLoadingFontRoboto = true;
   </script>
@@ -17,18 +17,18 @@
   </style>
 
   <div id="test">
-    <vaadin-text-field></vaadin-text-field>
+    <vaadin-radio-button>I agree with terms</vaadin-radio-button>
   </div>
 
   <script type="module">
     (async () => {
       const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
 
-      await import('@vaadin/vaadin-text-field/theme/' + theme + '/vaadin-text-field.js');
+      await import('@vaadin/vaadin-radio-button/theme/' + theme + '/vaadin-radio-button.js');
 
       const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
 
-      const field = document.querySelector('vaadin-text-field');
+      const field = document.querySelector('vaadin-radio-button');
 
       window.requestAnimationFrame(() => {
         FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });

@@ -23,13 +23,29 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       // Set attribute for styling
       field.setAttribute('has-highlighter', '');
 
-      // TODO: Not nice, have to create a stacking context
+      window.ShadyDOM && window.ShadyDOM.flush();
+
+      // Get root component to apply styles
+      const root = this.getHighlightRoot(field);
+      instance._highlightRoot = root;
+
+      // Mimic :host-context to apply styles
+      instance.setAttribute('context', root.tagName.toLowerCase());
+
+      // Get target to attach instance
+      const target = this.getHighlightTarget(root);
+      instance._target = target;
+
+      // Some components set this, but not all
+      target.style.position = 'relative';
+
       const style = `
-        :host([has-highlighter]) {
-          position: relative;
+        :host([active]) [part="highlight"],
+        :host([focus-ring]) [part="highlight"] {
+          display: none;
         }
       `;
-      applyShadyStyle(field, style);
+      applyShadyStyle(root, style);
 
       // Store instance
       fields.set(field, instance);
@@ -37,10 +53,59 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       this.initFieldObserver(field);
 
       // Attach instance
-      field.shadowRoot.appendChild(instance);
+      target.appendChild(instance);
     }
 
     return fields.get(field);
+  }
+
+  static getHighlightRoot(field) {
+    switch (field.tagName.toLowerCase()) {
+      /* c8 ignore next 4 */
+      case 'vaadin-combo-box':
+      case 'vaadin-date-picker':
+      case 'vaadin-select':
+      case 'vaadin-time-picker':
+        return field.focusElement;
+      /* c8 ignore next */
+      case 'vaadin-checkbox-group':
+        // TODO: support multiple checkboxes
+        return field._checkboxes[0];
+      /* c8 ignore next */
+      case 'vaadin-radio-group':
+        // TODO: support multiple radios
+        return field._radioButtons[0];
+      /* c8 ignore next */
+      case 'vaadin-date-time-picker':
+        return field.$.customField.inputs[0].focusElement;
+      default:
+        return field;
+    }
+  }
+
+  static getHighlightTarget(element) {
+    switch (element.tagName.toLowerCase()) {
+      /* c8 ignore next */
+      case 'vaadin-text-area':
+      case 'vaadin-text-field':
+      case 'vaadin-password-field':
+      case 'vaadin-email-field':
+      case 'vaadin-number-field':
+      case 'vaadin-integer-field':
+      case 'vaadin-select-text-field':
+      case 'vaadin-date-picker-text-field':
+      case 'vaadin-time-picker-text-field':
+      case 'vaadin-date-time-picker-date-text-field':
+        return element.shadowRoot.querySelector('[part="input-field"]');
+      /* c8 ignore next */
+      case 'vaadin-checkbox':
+        return element.shadowRoot.querySelector('[part="checkbox"]');
+      /* c8 ignore next */
+      case 'vaadin-radio-button':
+        return element.shadowRoot.querySelector('[part="radio"]');
+      default:
+        return element.shadowRoot;
+    }
   }
 
   static initFieldObserver(field) {
@@ -88,31 +153,23 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
     return html`
       <style>
         :host {
-          display: none;
+          display: block;
           box-sizing: border-box;
-          position: absolute;
-          z-index: -1;
-          top: -8px;
-          left: -8px;
-          width: calc(100% + 16px);
-          height: calc(100% + 16px);
-          user-select: none;
-        }
-
-        :host::before {
-          content: '';
           position: absolute;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          opacity: 0.5;
-          border: 2px solid var(--_active-user-color);
-          border-radius: 8px;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+          user-select: none;
+          opacity: 0;
+          --_active-user-color: transparent;
         }
 
         :host([has-active-user]) {
-          display: block;
+          opacity: 1;
         }
       </style>
     `;
@@ -135,8 +192,11 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
   ready() {
     super.ready();
 
+    this.setAttribute('part', 'highlight');
     this._tags = document.createElement('vaadin-user-tags');
-    this._field.shadowRoot.appendChild(this._tags);
+    this._target.appendChild(this._tags);
+    this._tags.target = this._highlightRoot;
+    this._addListeners();
     this._setUserTags(this.users);
     IronA11yAnnouncer.requestAvailability();
   }
@@ -182,6 +242,53 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
         }
       }
     }
+  }
+
+  _addListeners() {
+    const field = this._field;
+
+    field.addEventListener('mouseenter', (event) => {
+      // ignore mouseleave on overlay opening
+      if (event.relatedTarget === this._tags.$.overlay) {
+        return;
+      }
+      this._mouse = true;
+      this._tags.opened = true;
+    });
+
+    field.addEventListener('mouseleave', (event) => {
+      // ignore mouseleave on overlay opening
+      if (event.relatedTarget === this._tags.$.overlay) {
+        return;
+      }
+      this._mouse = false;
+      if (!this._hasFocus) {
+        this._tags.opened = false;
+      }
+    });
+
+    field.addEventListener('vaadin-highlight-show', (event) => {
+      this._hasFocus = true;
+      this._tags.opened = true;
+    });
+
+    field.addEventListener('vaadin-highlight-hide', (event) => {
+      this._hasFocus = false;
+      if (!this._mouse) {
+        this._tags.opened = false;
+      }
+    });
+
+    this._tags.$.overlay.addEventListener('mouseleave', (event) => {
+      // ignore mouseleave when moving back to field
+      if (event.relatedTarget === field) {
+        return;
+      }
+      this._mouse = false;
+      if (!field.hasAttribute('focused')) {
+        this._tags.opened = false;
+      }
+    });
   }
 
   _setUserTags(users) {
