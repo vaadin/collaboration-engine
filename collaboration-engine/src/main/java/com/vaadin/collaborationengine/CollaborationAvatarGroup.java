@@ -107,10 +107,10 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * has been set.
      *
      * @return the max number of avatars
-     * @see AvatarGroup#getMax()
+     * @see AvatarGroup#getMaxItemsVisible()
      */
-    public Integer getMax() {
-        return getContent().getMax();
+    public Integer getMaxItemsVisible() {
+        return getContent().getMaxItemsVisible();
     }
 
     /**
@@ -121,10 +121,10 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @param max
      *            the max number of avatars, or {@code null} to remove the max
-     * @see AvatarGroup#setMax(Integer)
+     * @see AvatarGroup#setMaxItemsVisible(Integer)
      */
-    public void setMax(Integer max) {
-        getContent().setMax(max);
+    public void setMaxItemsVisible(Integer max) {
+        getContent().setMaxItemsVisible(max);
     }
 
     /**
