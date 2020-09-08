@@ -1,15 +1,18 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.component.page.Push;
-import com.vaadin.flow.router.PreserveOnRefresh;
-import com.vaadin.flow.router.Route;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.vaadin.collaborationengine.util.Person;
+import com.vaadin.collaborationengine.util.Person.Diet;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
+import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.PreserveOnRefresh;
+import com.vaadin.flow.router.Route;
 
 @Push
 @Route("form")
@@ -23,6 +26,7 @@ public class CommonCollaborativeFormView extends VerticalLayout {
     TextField textField = new TextField("Name");
     Checkbox checkbox = new Checkbox("Married");
     TextField email = new TextField("Email (not collaborative)");
+    RadioButtonGroup<Diet> radioButtonGroup = new RadioButtonGroup<>();
 
     CollaborationBinder<Person> binder;
 
@@ -37,14 +41,21 @@ public class CommonCollaborativeFormView extends VerticalLayout {
         localUser.setName("User " + userIndex);
         avatars = new CollaborationAvatarGroup(localUser, TOPIC_ID);
 
+        radioButtonGroup.setItems(Diet.values());
+        radioButtonGroup.addThemeVariants(RadioGroupVariant.LUMO_VERTICAL);
+        radioButtonGroup.setLabel("Diet");
+
         resetUserCounter.setId("reset-user-counter");
         email.setId("emailField");
-        add(avatars, textField, checkbox, resetUserCounter, email);
+
+        add(avatars, textField, checkbox, radioButtonGroup, resetUserCounter,
+                email);
 
         binder = new CollaborationBinder<>(Person.class, localUser);
         binder.setTopic(TOPIC_ID, () -> null);
         binder.bind(textField, "name");
         binder.bind(checkbox, "married");
+        binder.bind(radioButtonGroup, "diet");
 
         NativeButton detachTextField = new NativeButton("Detach text field",
                 e -> remove(textField));

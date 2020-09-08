@@ -41,6 +41,11 @@
             <artifactId>vaadin-checkbox-testbench</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-radio-button-testbench</artifactId>
+            <scope>compile</scope>
+        </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
         <dependency>

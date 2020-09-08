@@ -18,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
+import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
 
 /**
  * Utility methods for {@link CollaborationBinder}.
@@ -87,17 +88,48 @@ public class CollaborationBinderUtil {
      */
     public static void addEditor(TopicConnection topicConnection,
             String propertyName, UserInfo user) {
+        addEditor(topicConnection, propertyName, user, 0);
+    }
+
+    /**
+     * Signals that the user is currently editing the field that is bound to the
+     * property. This is indicated to the collaborating users by highlighting
+     * the field.
+     * <p>
+     * If the user is already an editor of the field, this method does nothing.
+     * <p>
+     * The collaboration binder already takes care of updating the active
+     * editors when users focus the fields. This method is needed only if you
+     * need to explicitly control the users who are displayed as the active
+     * editors.
+     *
+     * @param topicConnection
+     *            the topic connection, not {@code null}
+     * @param propertyName
+     *            the name of the property bound to the edited field, not
+     *            {@code null}
+     * @param user
+     *            information of the user to add as the editor of the field, not
+     *            {@code null}
+     * @param fieldIndex
+     *            index of the focused element inside the field, for example a
+     *            radio button inside a radio button group
+     */
+    public static void addEditor(TopicConnection topicConnection,
+            String propertyName, UserInfo user, int fieldIndex) {
 
         Objects.requireNonNull(topicConnection,
                 "Topic connection can't be null.");
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
 
-        updateFieldState(topicConnection, propertyName,
-                state -> new FieldState(state.value,
-                        Stream.concat(state.editors.stream(),
-                                state.editors.contains(user) ? Stream.empty()
-                                        : Stream.of(user))));
+        updateFieldState(topicConnection, propertyName, state -> {
+            Stream<FocusedEditor> editors = Stream.concat(
+                    state.editors.stream().filter(
+                            focusedEditor -> !focusedEditor.user.equals(user)),
+                    Stream.of(new FocusedEditor(user, fieldIndex)));
+            return new FieldState(state.value, editors);
+        });
     }
 
     /**
@@ -130,9 +162,9 @@ public class CollaborationBinderUtil {
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
 
-        updateFieldState(topicConnection, propertyName, state -> new FieldState(
-                state.value,
-                state.editors.stream().filter(editor -> !editor.equals(user))));
+        updateFieldState(topicConnection, propertyName,
+                state -> new FieldState(state.value, state.editors.stream()
+                        .filter(editor -> !editor.user.equals(user))));
     }
 
     static void updateFieldState(TopicConnection topicConnection,

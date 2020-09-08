@@ -1,15 +1,18 @@
 package com.vaadin.collaborationengine.util;
 
-import com.vaadin.collaborationengine.CommonCollaborativeFormView;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
 
+import com.vaadin.collaborationengine.CommonCollaborativeFormView;
 import com.vaadin.flow.component.avatar.testbench.AvatarElement;
 import com.vaadin.flow.component.avatar.testbench.AvatarGroupElement;
 import com.vaadin.flow.component.checkbox.testbench.CheckboxElement;
+import com.vaadin.flow.component.radiobutton.testbench.RadioButtonElement;
+import com.vaadin.flow.component.radiobutton.testbench.RadioButtonGroupElement;
 import com.vaadin.flow.component.textfield.testbench.TextFieldElement;
 import com.vaadin.testbench.TestBenchElement;
 import com.vaadin.testbench.TestBenchTestCase;
@@ -31,6 +34,8 @@ public abstract class AbstractCollaborativeFormIT
         public TextFieldElement textField;
         public TextFieldElement emailField;
         public CheckboxElement checkbox;
+        public RadioButtonGroupElement radioButtonGroup;
+        public List<RadioButtonElement> radioButtons;
 
         TestBenchElement focusedElement;
 
@@ -40,6 +45,8 @@ public abstract class AbstractCollaborativeFormIT
             textField = client.$(TextFieldElement.class).first();
             emailField = client.$(TextFieldElement.class).id("emailField");
             checkbox = client.$(CheckboxElement.class).first();
+            radioButtonGroup = client.$(RadioButtonGroupElement.class).first();
+            radioButtons = radioButtonGroup.$(RadioButtonElement.class).all();
         }
 
         /**
@@ -47,20 +54,28 @@ public abstract class AbstractCollaborativeFormIT
          * interacting with another browser would blur the focused field.
          */
         public void focusTextField() {
-            blur();
-            textField.dispatchEvent("focusin");
-            focusedElement = textField;
+            focus(textField);
         }
 
         public void focusCheckbox() {
+            focus(checkbox);
+        }
+
+        public void focusRadioButton(int index) {
+            focus(radioButtons.get(index));
+        }
+
+        public void focus(TestBenchElement element) {
             blur();
-            checkbox.dispatchEvent("focusin");
-            focusedElement = checkbox;
+            element.dispatchEvent("focusin",
+                    Collections.singletonMap("bubbles", true));
+            focusedElement = element;
         }
 
         public void blur() {
             if (focusedElement != null) {
-                focusedElement.dispatchEvent("focusout");
+                focusedElement.dispatchEvent("focusout",
+                        Collections.singletonMap("bubbles", true));
                 focusedElement = null;
             }
         }

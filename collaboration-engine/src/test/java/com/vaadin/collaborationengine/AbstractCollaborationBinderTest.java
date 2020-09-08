@@ -3,6 +3,7 @@ package com.vaadin.collaborationengine;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
@@ -93,7 +94,9 @@ public class AbstractCollaborationBinderTest {
         if (getFieldState(key) == null) {
             return Collections.emptyList();
         }
-        return getFieldState(key).editors;
+        return getFieldState(key).editors.stream()
+                .map(focusedEditor -> focusedEditor.user)
+                .collect(Collectors.toList());
     }
 
 }

@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,18 +25,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.data.converter.Converter;
-import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.shared.Registration;
-
-import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
 
 /**
  * Extension of {@link Binder} for creating collaborative forms with
@@ -51,18 +49,34 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     static final class FieldState {
         public final Object value;
-        public final List<UserInfo> editors;
+        public final List<FocusedEditor> editors;
 
-        public FieldState(Object value, List<UserInfo> editors) {
+        public FieldState(Object value, List<FocusedEditor> editors) {
             this.value = value;
             this.editors = Collections
                     .unmodifiableList(new ArrayList<>(editors));
         }
 
-        public FieldState(Object value, Stream<UserInfo> editors) {
+        public FieldState(Object value, Stream<FocusedEditor> editors) {
             this.value = value;
             this.editors = Collections
                     .unmodifiableList(editors.collect(Collectors.toList()));
+        }
+    }
+
+    /**
+     * Maps the focused user to the index of the focused element inside the
+     * field. The index is needed for components such as radio button group,
+     * where the highlight should be displayed on an individual radio button
+     * inside the group.
+     */
+    static final class FocusedEditor {
+        public final UserInfo user;
+        public final int fieldIndex;
+
+        public FocusedEditor(UserInfo user, int fieldIndex) {
+            this.user = user;
+            this.fieldIndex = fieldIndex;
         }
     }
 
@@ -104,20 +118,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             registrations.add(field.addValueChangeListener(event -> getBinder()
                     .setMapValueFromField(propertyName, field)));
 
-            if (field instanceof HasElement) {
-                Element element = ((HasElement) field).getElement();
-
-                registrations.add(FieldHighlighter.init(element));
-
-                registrations
-                        .add(element.addEventListener("vaadin-highlight-show",
-                                e -> getBinder().addEditor(propertyName)));
-                registrations
-                        .add(element.addEventListener("vaadin-highlight-hide",
-                                e -> getBinder().removeEditor(propertyName)));
-
-                registrations.add(() -> getBinder().removeEditor(propertyName));
-            }
+            registrations.add(FieldHighlighter.setupForField(field,
+                    propertyName, getBinder()));
 
             getBinder().bindingRegistrations.put(binding,
                     () -> registrations.forEach(Registration::remove));
@@ -178,7 +180,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
             setFieldValueFromMap(event.getKey(), field);
 
-            List<UserInfo> editors = ((FieldState) event.getValue()).editors;
+            List<FocusedEditor> editors = ((FieldState) event
+                    .getValue()).editors;
             FieldHighlighter.setEditors(field, editors, localUser);
         });
     }
@@ -210,13 +213,14 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         }
     }
 
-    private void addEditor(String propertyName) {
+    void addEditor(String propertyName, int fieldIndex) {
         if (topic != null) {
-            CollaborationBinderUtil.addEditor(topic, propertyName, localUser);
+            CollaborationBinderUtil.addEditor(topic, propertyName, localUser,
+                    fieldIndex);
         }
     }
 
-    private void removeEditor(String propertyName) {
+    void removeEditor(String propertyName) {
         if (topic != null) {
             CollaborationBinderUtil.removeEditor(topic, propertyName,
                     localUser);

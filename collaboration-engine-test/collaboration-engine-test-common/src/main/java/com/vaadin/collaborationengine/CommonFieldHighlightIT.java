@@ -1,9 +1,14 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
 import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
 import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserTags;
+
+import org.junit.Assert;
 import org.junit.Test;
+
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
+import com.vaadin.collaborationengine.util.FieldOutlineElement;
+import com.vaadin.flow.component.radiobutton.testbench.RadioButtonElement;
 
 public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
 
@@ -81,5 +86,70 @@ public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
         close(client2.client);
 
         assertNoUserTags(client1.textField);
+    }
+
+    @Test
+    public void focusRadioButtonsInsideGroup_individualButtonsHighlighted() {
+        ClientState client2 = new ClientState(addClient());
+
+        // No highlight initially
+        assertNoUserTags(client1.radioButtonGroup, client2.radioButtonGroup);
+        assertRadioButtonHighlight(client1, null, null, null);
+        assertRadioButtonHighlight(client2, null, null, null);
+
+        // Client focuses radio button
+        client2.focusRadioButton(1);
+
+        assertUserTags(client1.radioButtonGroup, "User 2");
+        assertNoUserTags(client2.radioButtonGroup);
+
+        assertRadioButtonHighlight(client1, null, 1, null);
+        assertRadioButtonHighlight(client2, null, null, null);
+
+        // Two clients focus different radio buttons in a group
+        ClientState client3 = new ClientState(addClient());
+        client3.focusRadioButton(2);
+
+        assertUserTags(client1.radioButtonGroup, "User 3", "User 2");
+        assertUserTags(client2.radioButtonGroup, "User 3");
+        assertUserTags(client3.radioButtonGroup, "User 2");
+
+        assertRadioButtonHighlight(client1, null, 1, 2);
+        assertRadioButtonHighlight(client2, null, null, 2);
+        assertRadioButtonHighlight(client3, null, 1, null);
+
+        // Client blurs radio button
+        client3.blur();
+
+        assertUserTags(client1.radioButtonGroup, "User 2");
+        assertNoUserTags(client2.radioButtonGroup);
+        assertUserTags(client3.radioButtonGroup, "User 2");
+
+        assertRadioButtonHighlight(client1, null, 1, null);
+        assertRadioButtonHighlight(client2, null, null, null);
+        assertRadioButtonHighlight(client3, null, 1, null);
+
+        // Two clients focus the same radio button
+        client3.focusRadioButton(1);
+
+        assertUserTags(client1.radioButtonGroup, "User 3", "User 2");
+        assertUserTags(client2.radioButtonGroup, "User 3");
+        assertUserTags(client3.radioButtonGroup, "User 2");
+
+        assertRadioButtonHighlight(client1, null, 2, null);
+        assertRadioButtonHighlight(client2, null, 2, null);
+        assertRadioButtonHighlight(client3, null, 1, null);
+    }
+
+    private void assertRadioButtonHighlight(ClientState client,
+            Integer... expectedColorIndices) {
+        int index = 0;
+        for (RadioButtonElement radioButton : client.radioButtons) {
+            FieldOutlineElement outline = radioButton
+                    .$(FieldOutlineElement.class).first();
+            Integer colorIndex = outline.getColorIndex();
+            Assert.assertEquals("Radio button had unexpected color index",
+                    expectedColorIndices[index++], colorIndex);
+        }
     }
 }
