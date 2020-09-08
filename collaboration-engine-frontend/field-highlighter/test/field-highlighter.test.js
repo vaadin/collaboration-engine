@@ -8,11 +8,13 @@ describe('field highlighter', () => {
   let field;
   let highlighter;
   let outline;
+  let wrapper;
 
   beforeEach(async () => {
     field = await fixture(html`<vaadin-text-field></vaadin-text-field>`);
     highlighter = FieldHighlighter.init(field);
-    outline = field.shadowRoot.querySelector('[part="outline"]')
+    outline = field.shadowRoot.querySelector('[part="outline"]');
+    wrapper = field.shadowRoot.querySelector('vaadin-user-tags');
   });
 
   describe('initialization', () => {
@@ -53,17 +55,21 @@ describe('field highlighter', () => {
   describe('users', () => {
     const user1 = { id: 'a', name: 'foo', colorIndex: 0 };
     const user2 = { id: 'b', name: 'var', colorIndex: 1 };
+    const user3 = { id: 'c', name: 'baz', colorIndex: 2 };
 
     const addUser = (user) => {
       FieldHighlighter.addUser(field, user);
+      wrapper.render();
     };
 
     const removeUser = (user) => {
       FieldHighlighter.removeUser(field, user);
+      wrapper.render();
     };
 
     const setUsers = (users) => {
       FieldHighlighter.setUsers(field, users);
+      wrapper.render();
     };
 
     describe('adding and removing', () => {
@@ -157,11 +163,9 @@ describe('field highlighter', () => {
 
     describe('overlay', () => {
       let overlay;
-      let tags;
 
       beforeEach(() => {
-        tags = field.shadowRoot.querySelector('vaadin-user-tags');
-        overlay = tags.$.overlay;
+        overlay = wrapper.$.overlay;
       });
 
       afterEach(() => {
@@ -248,7 +252,7 @@ describe('field highlighter', () => {
       });
 
       it('should set position on tags overlay when opened', async () => {
-        const spy = sinon.spy(tags, '_setPosition');
+        const spy = sinon.spy(wrapper, '_setPosition');
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
@@ -256,7 +260,7 @@ describe('field highlighter', () => {
       });
 
       it('should not re-position overlay on mouseenter from overlay', async () => {
-        const spy = sinon.spy(tags, '_setPosition');
+        const spy = sinon.spy(wrapper, '_setPosition');
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
@@ -266,39 +270,45 @@ describe('field highlighter', () => {
         field.dispatchEvent(enter);
         expect(spy.callCount).to.equal(1);
       });
+
+      it('should close overlay when users set to empty while opened', async () => {
+        setUsers([user1, user2]);
+        field.dispatchEvent(new CustomEvent('focusin'));
+        await nextFrame();
+        expect(overlay.opened).to.equal(true);
+        setUsers([]);
+        await nextFrame();
+        expect(overlay.opened).to.equal(false);
+      });
     });
 
     describe('user tags', () => {
       let tags;
 
-      const getTags = (field) => {
-        const overlay = field.shadowRoot.querySelector('vaadin-user-tags').$.overlay;
+      const getTags = () => {
+        const overlay = wrapper.$.overlay;
         return overlay.content.querySelectorAll('vaadin-user-tag');
       };
 
-      it('should create user tags for each added user', async () => {
+      it('should create user tags for each added user', () => {
         addUser(user1);
         addUser(user2);
-        await nextFrame();
-        tags = getTags(field);
+        tags = getTags();
         expect(tags.length).to.equal(2);
       });
 
-      it('should remove user tag when user is removed', async () => {
+      it('should remove user tag when user is removed', () => {
         addUser(user1);
         addUser(user2);
-        await nextFrame();
         removeUser(user2);
-        await nextFrame();
-        tags = getTags(field);
+        tags = getTags();
         expect(tags.length).to.equal(1);
       });
 
-      it('should set tag background color based on user index', async () => {
+      it('should set tag background color based on user index', () => {
         addUser(user1);
         addUser(user2);
-        await nextFrame();
-        tags = getTags(field);
+        tags = getTags();
         document.documentElement.style.setProperty('--vaadin-user-color-0', 'red');
         document.documentElement.style.setProperty('--vaadin-user-color-1', 'blue');
         expect(getComputedStyle(tags[0]).backgroundColor).to.equal('rgb(0, 0, 255)');
@@ -310,14 +320,31 @@ describe('field highlighter', () => {
         expect(getComputedStyle(highlighter).getPropertyValue('--vaadin-user-tag-color')).to.equal('');
       });
 
-      it('should dispatch event on tag mousedown', async () => {
+      it('should dispatch event on tag mousedown', () => {
         addUser(user1);
-        await nextFrame();
-        const tag = getTags(field)[0];
+        const tag = getTags()[0];
         const spy = sinon.spy();
         tag.addEventListener('user-tag-click', spy);
         tag.dispatchEvent(new Event('mousedown'));
         expect(spy.callCount).to.equal(1);
+      });
+
+      it('should reuse existing user tag when user is moved', () => {
+        setUsers([user3, user2]);
+        const oldTags = getTags();
+        setUsers([user1, user2, user3]);
+        const newTags = getTags();
+        // ['b', 'c'] -> ['a', 'b', 'c']
+        expect(newTags[1].id).to.deep.equal(oldTags[0].id);
+        expect(newTags[2].id).to.deep.equal(oldTags[1].id);
+      });
+
+      it('should handle pending changes properly', () => {
+        FieldHighlighter.setUsers(field, [user3, user2]);
+        field.dispatchEvent(new CustomEvent('focusin'));
+        FieldHighlighter.setUsers(field, []);
+        wrapper.render();
+        expect(getTags().length).to.equal(0);
       });
     });
 

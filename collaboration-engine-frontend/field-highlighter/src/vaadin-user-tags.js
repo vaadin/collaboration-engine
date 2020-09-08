@@ -1,11 +1,11 @@
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { Debouncer } from '@polymer/polymer/lib/utils/debounce.js';
 import { timeOut } from '@polymer/polymer/lib/utils/async.js';
+import { calculateSplices } from '@polymer/polymer/lib/utils/array-splice.js';
 import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { registerStyles, css } from '@vaadin/vaadin-themable-mixin/register-styles.js';
 import { OverlayElement } from '@vaadin/vaadin-overlay/vaadin-overlay.js';
-import '@polymer/polymer/lib/elements/dom-repeat.js';
 import './vaadin-user-tag.js';
 
 class UserTagsOverlayElement extends OverlayElement {
@@ -39,6 +39,7 @@ registerStyles(
       left: -4px;
       padding: 4px;
       outline: none;
+      overflow: visible;
     }
 
     :host([dir='rtl']) [part='overlay'] {
@@ -80,11 +81,7 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
       </style>
       <vaadin-user-tags-overlay modeless id="overlay" opened="[[opened]]">
         <template>
-          <div part="tags">
-            <template id="tags" is="dom-repeat" items="[[users]]">
-              <vaadin-user-tag name="[[item.name]]" color-index="[[item.colorIndex]]"></vaadin-user-tag>
-            </template>
-          </div>
+          <div part="tags"></div>
         </template>
       </vaadin-user-tags-overlay>
     `;
@@ -125,7 +122,7 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
   }
 
   _debounceSetPosition() {
-    this._debouncer = Debouncer.debounce(this._debouncer, timeOut.after(16), () => this._setPosition());
+    this._debouncePosition = Debouncer.debounce(this._debouncePosition, timeOut.after(16), () => this._setPosition());
   }
 
   _openedChanged(opened) {
@@ -157,7 +154,73 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
   }
 
   setUsers(users) {
-    this.set('users', users);
+    // Apply pending change if needed
+    this.render();
+
+    const splices = calculateSplices(users, this.users);
+    if (splices.length === 0) {
+      return;
+    }
+
+    const wrapper = this.$.overlay.content.querySelector('[part="tags"]');
+
+    const removed = [];
+    const added = [];
+
+    splices.forEach((splice) => {
+      for (let i = 0; i < splice.removed.length; i++) {
+        const user = splice.removed[i];
+        const tag = wrapper.querySelector(`#tag-${user.id}`);
+        removed.push(tag);
+      }
+
+      for (let i = splice.addedCount - 1; i >= 0; i--) {
+        const user = users[splice.index + i];
+        // Check if the tag is moved and can be reused
+        let tag = wrapper.querySelector(`#tag-${user.id}`);
+        if (!tag) {
+          tag = document.createElement('vaadin-user-tag');
+          tag.setAttribute('id', `tag-${user.id}`);
+          tag.name = user.name;
+          tag.colorIndex = user.colorIndex;
+        }
+        added.push(tag);
+      }
+    });
+
+    // Filter out reused tags instances
+    const tags = wrapper.querySelectorAll('vaadin-user-tag');
+    tags.forEach((tag) => {
+      const a = added.indexOf(tag);
+      const r = removed.indexOf(tag);
+
+      if (a !== -1 && r !== -1) {
+        removed.splice(r, 1);
+        added.splice(a, 1);
+      }
+    });
+
+    removed.forEach((tag) => tag.classList.remove('show'));
+
+    added.forEach((tag) => wrapper.insertBefore(tag, wrapper.firstChild));
+
+    this._debounceRender = Debouncer.debounce(this._debounceRender, timeOut.after(200), () => {
+      this.set('users', users);
+
+      removed.forEach((tag) => wrapper.removeChild(tag));
+
+      added.forEach((tag) => tag.classList.add('show'));
+
+      if (users.length === 0 && this.opened) {
+        this.opened = false;
+      }
+    });
+  }
+
+  render() {
+    if (this._debounceRender && this._debounceRender.isActive()) {
+      this._debounceRender.flush();
+    }
   }
 }
 

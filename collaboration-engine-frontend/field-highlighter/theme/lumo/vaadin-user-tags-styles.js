@@ -19,6 +19,7 @@ registerStyles(
       font-size: var(--lumo-font-size-xxs);
       border-radius: var(--lumo-border-radius-s);
       box-shadow: var(--lumo-box-shadow-xs);
+      --vaadin-user-tag-offset: var(--lumo-space-xs);
     }
 
     [part='name'] {
