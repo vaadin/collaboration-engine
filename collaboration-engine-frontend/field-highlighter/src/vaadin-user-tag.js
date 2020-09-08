@@ -19,6 +19,8 @@ export class UserTag extends ThemableMixin(DirMixin(PolymerElement)) {
           background-color: var(--vaadin-user-tag-color);
           color: #fff;
           cursor: default;
+          -webkit-user-select: none;
+          user-select: none;
           --vaadin-user-tag-offset: 4px;
         }
 

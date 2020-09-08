@@ -19,6 +19,10 @@ describe('field components', () => {
   let showSpy;
   let hideSpy;
 
+  function getOutline(elem) {
+    return elem.shadowRoot.querySelector('[part="outline"]');
+  }
+
   function listenForEvent(elem, type, callback) {
     const listener = function () {
       elem.removeEventListener(type, listener);
@@ -321,26 +325,39 @@ describe('field components', () => {
     it('should dispatch vaadin-highlight-show event on checkbox focus', () => {
       checkboxes[0].focus();
       expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
     it('should dispatch vaadin-highlight-hide event on checkbox blur', () => {
       checkboxes[0].focus();
       checkboxes[0].blur();
       expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch vaadin-highlight-hide event on other checkbox focus', () => {
+    it('should dispatch vaadin-highlight-hide event on other checkbox focus', () => {
       checkboxes[0].focus();
       focusout(checkboxes[0], checkboxes[1]);
       checkboxes[1].focus();
-      expect(hideSpy.callCount).to.equal(0);
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch second vaadin-highlight-show event on other checkbox focus', () => {
+    it('should dispatch second vaadin-highlight-show event on other checkbox focus', () => {
       checkboxes[0].focus();
       focusout(checkboxes[0], checkboxes[1]);
       checkboxes[1].focus();
-      expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.callCount).to.equal(2);
+      expect(showSpy.getCalls()[1].args[0].detail.fieldIndex).to.equal(1);
+    });
+
+    it('should set outline on multiple checkboxes based on the fieldIndex', () => {
+      const user1 = { id: 'a', name: 'foo', fieldIndex: 0 };
+      const user2 = { id: 'b', name: 'var', fieldIndex: 1 };
+      FieldHighlighter.setUsers(field, [user1, user2]);
+      expect(getComputedStyle(getOutline(checkboxes[0])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(checkboxes[1])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(checkboxes[2])).opacity).to.equal('0');
     });
   });
 
@@ -366,26 +383,39 @@ describe('field components', () => {
     it('should dispatch vaadin-highlight-show event on checkbox focus', () => {
       radios[0].focus();
       expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
     it('should dispatch vaadin-highlight-hide event on checkbox blur', () => {
       radios[0].focus();
       radios[0].blur();
       expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch vaadin-highlight-hide event on other checkbox focus', () => {
+    it('should dispatch vaadin-highlight-hide event on other radio focus', () => {
       radios[0].focus();
       focusout(radios[0], radios[1]);
       radios[1].focus();
-      expect(hideSpy.callCount).to.equal(0);
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch second vaadin-highlight-show event on other checkbox focus', () => {
+    it('should dispatch second vaadin-highlight-show event on other radio focus', () => {
       radios[0].focus();
       focusout(radios[0], radios[1]);
       radios[1].focus();
-      expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.callCount).to.equal(2);
+      expect(showSpy.getCalls()[1].args[0].detail.fieldIndex).to.equal(1);
+    });
+
+    it('should set outline on multiple radios based on the fieldIndex', () => {
+      const user1 = { id: 'a', name: 'foo', fieldIndex: 0 };
+      const user2 = { id: 'b', name: 'var', fieldIndex: 1 };
+      FieldHighlighter.setUsers(field, [user1, user2]);
+      expect(getComputedStyle(getOutline(radios[0])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(radios[1])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(radios[2])).opacity).to.equal('0');
     });
   });
 
@@ -431,39 +461,40 @@ describe('field components', () => {
       expect(hideSpy.callCount).to.equal(1);
     });
 
-    it('should not dispatch vaadin-highlight-hide event on moving focus to time picker', () => {
-      date.focus();
+    it('should dispatch vaadin-highlight-hide event on moving focus to time picker', () => {
       focusout(date, time);
       focusin(time, date);
-      expect(hideSpy.callCount).to.equal(0);
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch second vaadin-highlight-show event on moving focus to time picker', () => {
-      date.focus();
+    it('should dispatch second vaadin-highlight-show event on moving focus to time picker', () => {
       focusout(date, time);
       focusin(time, date);
-      expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.callCount).to.equal(2);
+      expect(showSpy.getCalls()[1].args[0].detail.fieldIndex).to.equal(1);
     });
 
-    it('should not dispatch vaadin-highlight-hide event on moving focus to date picker', () => {
-      time.focus();
+    it('should dispatch vaadin-highlight-hide event on moving focus to date picker', () => {
       focusout(time, date);
       focusin(date, time);
-      expect(hideSpy.callCount).to.equal(0);
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(1);
     });
 
-    it('should not dispatch second vaadin-highlight-show event on moving focus to date picker', () => {
-      time.focus();
+    it('should dispatch second vaadin-highlight-show event on moving focus to date picker', () => {
       focusout(time, date);
       focusin(date, time);
-      expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.callCount).to.equal(2);
+      expect(showSpy.getCalls()[1].args[0].detail.fieldIndex).to.equal(0);
     });
 
-    it('should not dispatch vaadin-highlight-hide event on overlay focusout to time picker', (done) => {
+    it('should dispatch vaadin-highlight-hide event on overlay focusout to time picker', (done) => {
       date.focus();
       open(date, () => {
         listenForEvent(date, 'opened-changed', () => {
-          expect(hideSpy.callCount).to.equal(0);
+          expect(hideSpy.callCount).to.equal(1);
+          expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
           done();
         });
         date.$.overlay.focus();
@@ -472,17 +503,12 @@ describe('field components', () => {
       });
     });
 
-    it('should not dispatch vaadin-highlight-hide event on overlay focusout to host element', (done) => {
-      date.focus();
-      open(date, () => {
-        listenForEvent(date, 'opened-changed', () => {
-          expect(hideSpy.callCount).to.equal(0);
-          done();
-        });
-        date.$.overlay.focus();
-        focusout(date.$.overlay, field);
-        date.close();
-      });
+    it('should set outline on both date and time pickers based on the fieldIndex', () => {
+      const user1 = { id: 'a', name: 'foo', fieldIndex: 0 };
+      const user2 = { id: 'b', name: 'var', fieldIndex: 1 };
+      FieldHighlighter.setUsers(field, [user1, user2]);
+      expect(getComputedStyle(getOutline(date.focusElement)).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(time.focusElement)).opacity).to.equal('1');
     });
   });
 });

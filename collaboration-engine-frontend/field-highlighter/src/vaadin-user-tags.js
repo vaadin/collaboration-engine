@@ -29,6 +29,7 @@ registerStyles(
       justify-content: flex-start;
       background: transparent;
       box-shadow: none;
+      bottom: auto;
     }
 
     [part='overlay'] {
@@ -37,6 +38,7 @@ registerStyles(
       position: relative;
       left: -4px;
       padding: 4px;
+      outline: none;
     }
 
     :host([dir='rtl']) [part='overlay'] {
@@ -46,6 +48,14 @@ registerStyles(
 
     [part='content'] {
       padding: 0;
+    }
+
+    :host([dir='rtl']) {
+      left: auto;
+    }
+
+    :host(:not([dir='rtl'])) {
+      right: auto;
     }
   `
 );
@@ -133,9 +143,10 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
 
     const overlayRect = this.$.overlay.getBoundingClientRect();
 
-    this._translateX =  (this.getAttribute('dir') === 'rtl') ?
-      targetRect.right - overlayRect.right + (this._translateX || 0) :
-      targetRect.left - overlayRect.left + (this._translateX || 0);
+    this._translateX =
+      this.getAttribute('dir') === 'rtl'
+        ? targetRect.right - overlayRect.right + (this._translateX || 0)
+        : targetRect.left - overlayRect.left + (this._translateX || 0);
     this._translateY = targetRect.top - overlayRect.top + (this._translateY || 0) + targetRect.height;
 
     const devicePixelRatio = window.devicePixelRatio || 1;

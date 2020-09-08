@@ -5,7 +5,7 @@ module.exports = {
     include: ['**/src/**/*'],
     threshold: {
       statements: 99,
-      branches: 97,
+      branches: 92,
       functions: 100,
       lines: 99
     }

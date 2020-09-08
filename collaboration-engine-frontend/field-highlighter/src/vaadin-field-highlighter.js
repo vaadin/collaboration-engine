@@ -4,11 +4,12 @@ import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { DatePickerObserver } from './fields/vaadin-date-picker-observer.js';
 import { DateTimePickerObserver } from './fields/vaadin-date-time-picker-observer.js';
-import { GroupObserver } from './fields/vaadin-group-observer.js';
+import { CheckboxGroupObserver } from './fields/vaadin-checkbox-group-observer.js';
+import { RadioGroupObserver } from './fields/vaadin-radio-group-observer.js';
 import { FieldObserver } from './fields/vaadin-field-observer.js';
 import { SelectObserver } from './fields/vaadin-select-observer.js';
 
-import { applyShadyStyle, setCustomProperty } from './css-helpers.js';
+import './vaadin-field-outline.js';
 import './vaadin-user-tags.js';
 
 const fields = new WeakMap();
@@ -25,87 +26,17 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
 
       window.ShadyDOM && window.ShadyDOM.flush();
 
-      // Get root component to apply styles
-      const root = this.getHighlightRoot(field);
-      instance._highlightRoot = root;
-
-      // Mimic :host-context to apply styles
-      instance.setAttribute('context', root.tagName.toLowerCase());
-
-      // Get target to attach instance
-      const target = this.getHighlightTarget(root);
-      instance._target = target;
-
-      // Some components set this, but not all
-      target.style.position = 'relative';
-
-      const style = `
-        :host([active]) [part="highlight"],
-        :host([focus-ring]) [part="highlight"] {
-          display: none;
-        }
-      `;
-      applyShadyStyle(root, style);
-
       // Store instance
       fields.set(field, instance);
 
-      this.initFieldObserver(field);
+      // Create observer
+      instance.observer = this.initFieldObserver(field);
 
       // Attach instance
-      target.appendChild(instance);
+      field.shadowRoot.appendChild(instance);
     }
 
     return fields.get(field);
-  }
-
-  static getHighlightRoot(field) {
-    switch (field.tagName.toLowerCase()) {
-      /* c8 ignore next 4 */
-      case 'vaadin-combo-box':
-      case 'vaadin-date-picker':
-      case 'vaadin-select':
-      case 'vaadin-time-picker':
-        return field.focusElement;
-      /* c8 ignore next */
-      case 'vaadin-checkbox-group':
-        // TODO: support multiple checkboxes
-        return field._checkboxes[0];
-      /* c8 ignore next */
-      case 'vaadin-radio-group':
-        // TODO: support multiple radios
-        return field._radioButtons[0];
-      /* c8 ignore next */
-      case 'vaadin-date-time-picker':
-        return field.$.customField.inputs[0].focusElement;
-      default:
-        return field;
-    }
-  }
-
-  static getHighlightTarget(element) {
-    switch (element.tagName.toLowerCase()) {
-      /* c8 ignore next */
-      case 'vaadin-text-area':
-      case 'vaadin-text-field':
-      case 'vaadin-password-field':
-      case 'vaadin-email-field':
-      case 'vaadin-number-field':
-      case 'vaadin-integer-field':
-      case 'vaadin-select-text-field':
-      case 'vaadin-date-picker-text-field':
-      case 'vaadin-time-picker-text-field':
-      case 'vaadin-date-time-picker-date-text-field':
-        return element.shadowRoot.querySelector('[part="input-field"]');
-      /* c8 ignore next */
-      case 'vaadin-checkbox':
-        return element.shadowRoot.querySelector('[part="checkbox"]');
-      /* c8 ignore next */
-      case 'vaadin-radio-button':
-        return element.shadowRoot.querySelector('[part="radio"]');
-      default:
-        return element.shadowRoot;
-    }
   }
 
   static initFieldObserver(field) {
@@ -125,12 +56,15 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
         break;
       /* c8 ignore next 2 */
       case 'vaadin-checkbox-group':
+        result = new CheckboxGroupObserver(field);
+        break;
       case 'vaadin-radio-group':
-        result = new GroupObserver(field);
+        result = new RadioGroupObserver(field);
         break;
       default:
         result = new FieldObserver(field);
     }
+    return result;
   }
 
   static addUser(field, user) {
@@ -153,23 +87,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
     return html`
       <style>
         :host {
-          display: block;
-          box-sizing: border-box;
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          width: 100%;
-          height: 100%;
-          z-index: -1;
-          user-select: none;
-          opacity: 0;
-          --_active-user-color: transparent;
-        }
-
-        :host([has-active-user]) {
-          opacity: 1;
+          display: none;
         }
       </style>
     `;
@@ -192,19 +110,14 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
   ready() {
     super.ready();
 
-    this.setAttribute('part', 'highlight');
-    this._tags = document.createElement('vaadin-user-tags');
-    this._target.appendChild(this._tags);
-    this._tags.target = this._highlightRoot;
-    this._addListeners();
-    this._setUserTags(this.users);
+    this.redraw();
     IronA11yAnnouncer.requestAvailability();
   }
 
   addUser(user) {
     if (user) {
       this.push('users', user);
-      this._setUserTags(this.users);
+      this.redraw();
 
       // Make user active
       this.user = user;
@@ -214,7 +127,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
   setUsers(users) {
     if (Array.isArray(users)) {
       this.set('users', users);
-      this._setUserTags(this.users);
+      this.redraw();
 
       // Make user active
       this.user = users[users.length - 1] || null;
@@ -232,7 +145,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
       }
       if (index !== undefined) {
         this.splice('users', index, 1);
-        this._setUserTags(this.users);
+        this.redraw();
 
         // Change or remove active user
         if (this.users.length > 0) {
@@ -244,57 +157,8 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
     }
   }
 
-  _addListeners() {
-    const field = this._field;
-
-    field.addEventListener('mouseenter', (event) => {
-      // ignore mouseleave on overlay opening
-      if (event.relatedTarget === this._tags.$.overlay) {
-        return;
-      }
-      this._mouse = true;
-      this._tags.opened = true;
-    });
-
-    field.addEventListener('mouseleave', (event) => {
-      // ignore mouseleave on overlay opening
-      if (event.relatedTarget === this._tags.$.overlay) {
-        return;
-      }
-      this._mouse = false;
-      if (!this._hasFocus) {
-        this._tags.opened = false;
-      }
-    });
-
-    field.addEventListener('vaadin-highlight-show', (event) => {
-      this._hasFocus = true;
-      this._tags.opened = true;
-    });
-
-    field.addEventListener('vaadin-highlight-hide', (event) => {
-      this._hasFocus = false;
-      if (!this._mouse) {
-        this._tags.opened = false;
-      }
-    });
-
-    this._tags.$.overlay.addEventListener('mouseleave', (event) => {
-      // ignore mouseleave when moving back to field
-      if (event.relatedTarget === field) {
-        return;
-      }
-      this._mouse = false;
-      if (!field.hasAttribute('focused')) {
-        this._tags.opened = false;
-      }
-    });
-  }
-
-  _setUserTags(users) {
-    if (this._tags) {
-      this._tags.setUsers(Array.from(users).reverse());
-    }
+  redraw() {
+    this.observer.redraw(Array.from(this.users).reverse());
   }
 
   _announce(msg) {
@@ -312,12 +176,7 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
 
   _userChanged(user) {
     if (user) {
-      this.setAttribute('has-active-user', '');
-      setCustomProperty(this, '--_active-user-color', `var(--vaadin-user-color-${user.colorIndex})`);
       this._announce(`${user.name} started editing`);
-    } else {
-      this.removeAttribute('has-active-user');
-      setCustomProperty(this, '--_active-user-color', 'transparent');
     }
   }
 }

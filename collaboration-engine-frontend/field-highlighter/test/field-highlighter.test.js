@@ -1,21 +1,27 @@
 import { expect } from '@bundled-es-modules/chai';
 import sinon from 'sinon';
-import { fixture, html, nextFrame } from '@open-wc/testing-helpers';
+import { fixture, html, aTimeout, nextFrame } from '@open-wc/testing-helpers';
 import '@vaadin/vaadin-text-field/vaadin-text-field.js';
 import { FieldHighlighter } from '../src/vaadin-field-highlighter.js';
 
 describe('field highlighter', () => {
   let field;
   let highlighter;
+  let outline;
 
   beforeEach(async () => {
     field = await fixture(html`<vaadin-text-field></vaadin-text-field>`);
     highlighter = FieldHighlighter.init(field);
+    outline = field.shadowRoot.querySelector('[part="outline"]')
   });
 
   describe('initialization', () => {
     it('should create field highlighter instance', () => {
       expect(highlighter).to.be.ok;
+    });
+
+    it('should create field outline instance', () => {
+      expect(outline).to.be.ok;
     });
 
     it('should attach field highlighter instance to field', () => {
@@ -26,8 +32,8 @@ describe('field highlighter', () => {
       expect(field.hasAttribute('has-highlighter')).to.be.true;
     });
 
-    it('should position the highlighter based on the field', () => {
-      const { position, top, left, right, bottom } = getComputedStyle(highlighter);
+    it('should position the outline based on the field', () => {
+      const { position, top, left, right, bottom } = getComputedStyle(outline);
       expect(position).to.equal('absolute');
       expect(top).to.equal('0px');
       expect(left).to.equal('0px');
@@ -35,12 +41,12 @@ describe('field highlighter', () => {
       expect(bottom).to.equal('0px');
     });
 
-    it('should not show highlighter by default', () => {
-      expect(getComputedStyle(highlighter).opacity).to.equal('0');
+    it('should not show outline by default', () => {
+      expect(getComputedStyle(outline).opacity).to.equal('0');
     });
 
-    it('should set z-index on the highlighter to -1', () => {
-      expect(getComputedStyle(highlighter).zIndex).to.equal('-1');
+    it('should set z-index on the outline to -1', () => {
+      expect(getComputedStyle(outline).zIndex).to.equal('-1');
     });
   });
 
@@ -110,21 +116,21 @@ describe('field highlighter', () => {
         expect(highlighter.user).to.deep.equal(user2);
       });
 
-      it('should set attribute when user is added', () => {
+      it('should set attribute on the outline when user is added', () => {
         addUser(user1);
-        expect(highlighter.hasAttribute('has-active-user')).to.be.true;
+        expect(outline.hasAttribute('has-active-user')).to.be.true;
       });
 
       it('should show highlighter when user is added', async () => {
         addUser(user1);
         await nextFrame();
-        expect(getComputedStyle(highlighter).opacity).to.equal('1');
+        expect(getComputedStyle(outline).opacity).to.equal('1');
       });
 
       it('should remove attribute when user is removed', () => {
         addUser(user1);
         removeUser(user1);
-        expect(highlighter.hasAttribute('has-active-user')).to.be.false;
+        expect(outline.hasAttribute('has-active-user')).to.be.false;
       });
 
       it('should make previous user active when user is removed', () => {
@@ -176,6 +182,7 @@ describe('field highlighter', () => {
         await nextFrame();
         field.dispatchEvent(new CustomEvent('focusin'));
         field.dispatchEvent(new CustomEvent('focusout'));
+        await aTimeout(1);
         expect(overlay.opened).to.equal(false);
       });
 
@@ -241,7 +248,7 @@ describe('field highlighter', () => {
       });
 
       it('should set position on tags overlay when opened', async () => {
-        const spy = sinon.spy(tags, 'setPosition');
+        const spy = sinon.spy(tags, '_setPosition');
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
@@ -249,7 +256,7 @@ describe('field highlighter', () => {
       });
 
       it('should not re-position overlay on mouseenter from overlay', async () => {
-        const spy = sinon.spy(tags, 'setPosition');
+        const spy = sinon.spy(tags, '_setPosition');
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));

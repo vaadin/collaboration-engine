@@ -20,15 +20,15 @@ export class DatePickerObserver extends ComponentObserver {
     // Here we set the flag to ignore related focusout events and then to
     // mark date picker as being edited by user (to show field highlight).
     // We have to use capture phase in order to catch this event early.
-    datePicker.addEventListener('focus', event => this.onFocus(event), true);
+    datePicker.addEventListener('focus', (event) => this.onFocus(event), true);
 
-    datePicker.addEventListener('opened-changed', event => this.onOpenedChanged(event));
+    datePicker.addEventListener('opened-changed', (event) => this.onOpenedChanged(event));
 
-    this.overlay.addEventListener('focusout', event => this.onOverlayFocusOut(event));
+    this.overlay.addEventListener('focusout', (event) => this.onOverlayFocusOut(event));
 
-    datePicker.addEventListener('focusin', event => this.onFocusIn(event));
+    datePicker.addEventListener('focusin', (event) => this.onFocusIn(event));
 
-    datePicker.addEventListener('focusout', event => this.onFocusOut(event));
+    datePicker.addEventListener('focusout', (event) => this.onFocusOut(event));
   }
 
   onFocus(event) {
@@ -38,7 +38,7 @@ export class DatePickerObserver extends ComponentObserver {
 
       if (datePicker.opened) {
         this.fullscreenFocus = false;
-        this.fireShowHighlight();
+        this.showOutline(datePicker);
       }
     }
   }
@@ -55,7 +55,7 @@ export class DatePickerObserver extends ComponentObserver {
       return;
     }
 
-    this.fireShowHighlight();
+    this.showOutline(this.datePicker);
   }
 
   onFocusOut(event) {
@@ -63,7 +63,7 @@ export class DatePickerObserver extends ComponentObserver {
       // do nothing, overlay is opening.
     } else if (!this.datePicker.opened) {
       // field blur when closed.
-      this.fireHideHighlight();
+      this.hideOutline(this.datePicker);
     } else {
       // Focus moves away while still opened, e.g. outside the browser.
       // Mark the date picker as blurred and wait for opened-changed.
@@ -71,7 +71,7 @@ export class DatePickerObserver extends ComponentObserver {
     }
   }
 
-  onOverlayFocusOut(event) {
+  onOverlayFocusOut(event) {
     if (event.relatedTarget !== this.datePicker) {
       // Mark as blurred to wait for opened-changed.
       this.blurWhileOpened = true;
@@ -82,7 +82,7 @@ export class DatePickerObserver extends ComponentObserver {
     // closing after previously moving focus away.
     if (event.detail.value === false && this.blurWhileOpened) {
       this.blurWhileOpened = false;
-      this.fireHideHighlight();
+      this.hideOutline(this.datePicker);
       return;
     }
   }

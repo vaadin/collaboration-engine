@@ -21,6 +21,7 @@
       <vaadin-checkbox name="user" value="1">Option 1</vaadin-checkbox>
       <vaadin-checkbox name="user" value="2">Option 2</vaadin-checkbox>
       <vaadin-checkbox name="user" value="3">Option 3</vaadin-checkbox>
+      <vaadin-checkbox name="user" value="4">Option 4</vaadin-checkbox>
     </vaadin-checkbox-group>
   </div>
 
@@ -37,9 +38,9 @@
       const field = document.querySelector('vaadin-checkbox-group');
 
       window.requestAnimationFrame(() => {
-        FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0 });
-        FieldHighlighter.addUser(field, { name: 'Moderator', colorIndex: 1 });
-        FieldHighlighter.addUser(field, { name: 'Admin', colorIndex: 2 });
+        FieldHighlighter.addUser(field, { name: 'User', colorIndex: 0, fieldIndex: 2 });
+        FieldHighlighter.addUser(field, { name: 'Moderator', colorIndex: 1, fieldIndex: 1 });
+        FieldHighlighter.addUser(field, { name: 'Admin', colorIndex: 2, fieldIndex: 0 });
 
         // Mimic focus to show highlight and badges
         field.dispatchEvent(new CustomEvent('mouseenter'));

@@ -11,10 +11,10 @@ export class SelectObserver extends FieldObserver {
   addListeners(select) {
     super.addListeners(select);
 
-    select.addEventListener('opened-changed', event => {
+    select.addEventListener('opened-changed', (event) => {
       // when in phone mode, focus is lost when closing.
       if (select._phone && event.detail.value === false) {
-        this.fireHideHighlight();
+        this.hideOutline(select);
       }
     });
   }

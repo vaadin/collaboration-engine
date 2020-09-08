@@ -3,7 +3,7 @@ import '@vaadin/vaadin-lumo-styles/spacing.js';
 import '@vaadin/vaadin-lumo-styles/style.js';
 
 registerStyles(
-  'vaadin-field-highlighter',
+  'vaadin-field-outline',
   css`
     :host {
       transition: opacity 0.3s;
@@ -31,5 +31,5 @@ registerStyles(
       box-shadow: 0 0 0 3px var(--lumo-base-color), 0 0 0 5px var(--_active-user-color);
     }
   `,
-  { moduleId: 'lumo-field-highlighter' }
+  { moduleId: 'lumo-field-outline' }
 );

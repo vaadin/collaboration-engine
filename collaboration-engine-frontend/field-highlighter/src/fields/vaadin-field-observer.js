@@ -8,15 +8,17 @@ export class FieldObserver extends ComponentObserver {
   }
 
   addListeners(field) {
-    field.addEventListener('focusin', event => this.onFocusIn(event));
-    field.addEventListener('focusout', event => this.onFocusOut(event));
+    field.addEventListener('focusin', (event) => this.onFocusIn(event));
+    field.addEventListener('focusout', (event) => this.onFocusOut(event));
   }
 
   onFocusIn(event) {
-    this.fireShowHighlight();
+    const target = this.getFocusTarget(event);
+    this.showOutline(target);
   }
 
   onFocusOut(event) {
-    this.fireHideHighlight();
+    const target = this.getFocusTarget(event);
+    this.hideOutline(target);
   }
 }

@@ -1,7 +1,7 @@
 import { css, registerStyles } from '@vaadin/vaadin-themable-mixin/register-styles.js';
 
 registerStyles(
-  'vaadin-field-highlighter',
+  'vaadin-field-outline',
   css`
     :host {
       transition: opacity 0.3s;
@@ -23,5 +23,5 @@ registerStyles(
       opacity: 0.15;
     }
   `,
-  { moduleId: 'material-field-highlighter' }
+  { moduleId: 'material-field-outline' }
 );
