@@ -29,14 +29,19 @@
       const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
 
       const field = document.querySelector('vaadin-text-field');
+      FieldHighlighter.init(field);
 
       window.requestAnimationFrame(() => {
-        FieldHighlighter.addUser(field, { id: 'a', name: 'User', colorIndex: 0 });
-        FieldHighlighter.addUser(field, { id: 'b', name: 'Moderator', colorIndex: 1 });
-        FieldHighlighter.addUser(field, { id: 'c', name: 'Admin', colorIndex: 2 });
+        const users = [
+          { id: 'a', name: 'User', colorIndex: 0 },
+          { id: 'b', name: 'Moderator', colorIndex: 1 },
+          { id: 'c', name: 'Admin', colorIndex: 2 }
+        ];
 
         // Mimic focus to show highlight and badges
         field.dispatchEvent(new CustomEvent('mouseenter'));
+
+        FieldHighlighter.setUsers(field, users);
 
         setTimeout(() => {
           document.getElementById('test').dataset.ready = true;

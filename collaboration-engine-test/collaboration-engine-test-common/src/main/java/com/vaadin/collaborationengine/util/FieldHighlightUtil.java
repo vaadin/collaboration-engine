@@ -52,7 +52,7 @@ public class FieldHighlightUtil {
         TestBenchElement tagsElement = field.$("vaadin-user-tags").first();
         List<TestBenchElement> tagElements = (List<TestBenchElement>) tagsElement
                 .getCommandExecutor().executeScript(
-                        "arguments[0].render(); return Array.from(arguments[0].$.overlay.content.querySelectorAll('vaadin-user-tag'))",
+                        "arguments[0].render(); return arguments[0].tags",
                         tagsElement);
         return tagElements.stream()
                 .map(tag -> TestBench.wrap(tag, UserTagElement.class))

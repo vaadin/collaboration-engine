@@ -1,6 +1,6 @@
 import { expect } from '@bundled-es-modules/chai';
 import sinon from 'sinon';
-import { fixture, html, aTimeout, nextFrame } from '@open-wc/testing-helpers';
+import { fixture, html, aTimeout, nextFrame, oneEvent } from '@open-wc/testing-helpers';
 import '@vaadin/vaadin-text-field/vaadin-text-field.js';
 import { FieldHighlighter } from '../src/vaadin-field-highlighter.js';
 
@@ -9,12 +9,18 @@ describe('field highlighter', () => {
   let highlighter;
   let outline;
   let wrapper;
+  let overlay;
+
+  const getTags = () => {
+    return overlay.content.querySelectorAll('vaadin-user-tag');
+  };
 
   beforeEach(async () => {
     field = await fixture(html`<vaadin-text-field></vaadin-text-field>`);
     highlighter = FieldHighlighter.init(field);
     outline = field.shadowRoot.querySelector('[part="outline"]');
     wrapper = field.shadowRoot.querySelector('vaadin-user-tags');
+    overlay = wrapper.$.overlay;
   });
 
   describe('initialization', () => {
@@ -162,12 +168,6 @@ describe('field highlighter', () => {
     });
 
     describe('overlay', () => {
-      let overlay;
-
-      beforeEach(() => {
-        overlay = wrapper.$.overlay;
-      });
-
       afterEach(() => {
         if (overlay.opened) {
           overlay.opened = false;
@@ -272,8 +272,8 @@ describe('field highlighter', () => {
       });
 
       it('should close overlay when users set to empty while opened', async () => {
-        setUsers([user1, user2]);
         field.dispatchEvent(new CustomEvent('focusin'));
+        setUsers([user1, user2]);
         await nextFrame();
         expect(overlay.opened).to.equal(true);
         setUsers([]);
@@ -282,13 +282,18 @@ describe('field highlighter', () => {
       });
     });
 
-    describe('user tags', () => {
+    describe('user tags opened', () => {
       let tags;
 
-      const getTags = () => {
-        const overlay = wrapper.$.overlay;
-        return overlay.content.querySelectorAll('vaadin-user-tag');
-      };
+      beforeEach(() => {
+        wrapper.opened = true;
+      });
+
+      afterEach(() => {
+        if (overlay.opened) {
+          overlay.opened = false;
+        }
+      });
 
       it('should create user tags for each added user', () => {
         addUser(user1);
@@ -306,8 +311,7 @@ describe('field highlighter', () => {
       });
 
       it('should set tag background color based on user index', () => {
-        addUser(user1);
-        addUser(user2);
+        setUsers([user1, user2]);
         tags = getTags();
         document.documentElement.style.setProperty('--vaadin-user-color-0', 'red');
         document.documentElement.style.setProperty('--vaadin-user-color-1', 'blue');
@@ -345,6 +349,41 @@ describe('field highlighter', () => {
         FieldHighlighter.setUsers(field, []);
         wrapper.render();
         expect(getTags().length).to.equal(0);
+      });
+    });
+
+    describe('user tags closed', () => {
+      let allTags;
+      let newTags;
+
+      beforeEach(async () => {
+        wrapper.opened = true;
+        setUsers([user2, user3]);
+        wrapper.opened = false;
+        await nextFrame();
+        allTags = overlay.content.querySelector('[part="tags"]')
+        newTags = allTags.nextElementSibling;
+      })
+
+      it('should render and hide all tags when user is added', async() => {
+        FieldHighlighter.addUser(field, user1);
+        await oneEvent(overlay, 'vaadin-overlay-open');
+        expect(allTags.querySelectorAll('vaadin-user-tag').length).to.equal(3);
+        expect(getComputedStyle(allTags).display).to.equal('none');
+      });
+
+      it('should open overlay with one tag when user is added', async() => {
+        FieldHighlighter.addUser(field, user1);
+        await oneEvent(overlay, 'vaadin-overlay-open');
+        expect(newTags.querySelectorAll('vaadin-user-tag').length).to.equal(1);
+      });
+
+      it('should close overlay and restore tags after a timeout', async() => {
+        FieldHighlighter.addUser(field, user1);
+        await oneEvent(overlay, 'vaadin-overlay-open');
+        await wrapper.flashPromise;
+        expect(wrapper.opened).to.equal(false);
+        expect(getComputedStyle(allTags).display).to.equal('flex');
       });
     });
 
