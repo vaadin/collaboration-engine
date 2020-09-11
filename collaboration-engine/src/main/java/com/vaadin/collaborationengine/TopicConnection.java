@@ -13,12 +13,13 @@
 package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
+import com.vaadin.collaborationengine.Topic.ChangeNotifier;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -34,6 +35,7 @@ public class TopicConnection {
     private final ConnectionContext context;
     private Registration closeRegistration;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
+    private final Map<String, List<ChangeNotifier>> subscribersPerMap = new HashMap<>();
 
     TopicConnection(ConnectionContext context, Topic topic,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
@@ -42,22 +44,57 @@ public class TopicConnection {
 
         closeRegistration = context.setActivationHandler(active -> {
             if (active) {
-                Registration callbackRegistration = connectionActivationCallback
-                        .apply(this);
-                addRegistration(callbackRegistration);
+                synchronized (this.topic) {
+                    Registration callbackRegistration = connectionActivationCallback
+                            .apply(this);
+                    addRegistration(callbackRegistration);
+
+                    Registration changeRegistration = this.topic
+                            .subscribe(this::handleChange);
+                    addRegistration(changeRegistration);
+                }
             } else {
                 deactivate();
             }
         });
     }
 
+    private void handleChange(MapChange change) {
+        if (!subscribersPerMap.containsKey(change.getMapName())) {
+            return;
+        }
+        for (ChangeNotifier notifier : new ArrayList<>(
+                subscribersPerMap.get(change.getMapName()))) {
+            notifier.onEntryChange(change);
+        }
+    }
+
     Topic getTopic() {
         return topic;
     }
 
-    void addRegistration(Registration registration) {
+    private void addRegistration(Registration registration) {
         if (registration != null) {
             deactivateRegistrations.add(registration);
+        }
+    }
+
+    private Registration subscribeToMap(String mapName,
+            ChangeNotifier changeNotifier) {
+        subscribersPerMap.computeIfAbsent(mapName, key -> new ArrayList<>())
+                .add(changeNotifier);
+        return () -> unsubscribeFromMap(mapName, changeNotifier);
+    }
+
+    private void unsubscribeFromMap(String mapName,
+            ChangeNotifier changeNotifier) {
+        List<ChangeNotifier> notifiers = subscribersPerMap.get(mapName);
+        if (notifiers == null) {
+            return;
+        }
+        notifiers.remove(changeNotifier);
+        if (notifiers.isEmpty()) {
+            subscribersPerMap.remove(mapName);
         }
     }
 
@@ -72,24 +109,21 @@ public class TopicConnection {
             @Override
             public Registration subscribe(MapSubscriber subscriber) {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
-                Registration registration;
                 synchronized (topic) {
-                    registration = topic.subscribeMap(name,
-                            (key, oldValue, newValue) -> {
+                    ChangeNotifier changeNotifier = mapChange -> {
+                        MapChangeEvent event = new MapChangeEvent(this,
+                                mapChange);
+                        context.dispatchAction(
+                                () -> subscriber.onMapChange(event));
+                    };
+                    topic.getMapData(name)
+                            .forEach(changeNotifier::onEntryChange);
 
-                                MapChangeEvent event = new MapChangeEvent(this,
-                                        key, oldValue, newValue);
-                                context.dispatchAction(
-                                        () -> subscriber.onMapChange(event));
-                            });
+                    Registration registration = subscribeToMap(name,
+                            changeNotifier);
+                    addRegistration(registration);
+                    return registration;
                 }
-                Registration lockedRegistration = () -> {
-                    synchronized (topic) {
-                        registration.remove();
-                    }
-                };
-                addRegistration(lockedRegistration);
-                return lockedRegistration;
             }
 
             @Override
@@ -136,15 +170,16 @@ public class TopicConnection {
             }
 
             private void updateMapValue(Map<String, Object> map,
-                    MapChangeNotifier changeNotifier, String key,
-                    Object newValue, Object oldValue) {
+                    ChangeNotifier changeNotifier, String key, Object newValue,
+                    Object oldValue) {
                 if (newValue == null) {
                     map.remove(key);
                 } else {
                     map.put(key, newValue);
                 }
 
-                changeNotifier.onMapChange(key, oldValue, newValue);
+                changeNotifier.onEntryChange(
+                        new MapChange(name, key, oldValue, newValue));
             }
 
             @Override

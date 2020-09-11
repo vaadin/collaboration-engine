@@ -14,9 +14,9 @@ package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.vaadin.flow.function.SerializableBiFunction;
 import com.vaadin.flow.shared.Registration;
@@ -24,52 +24,35 @@ import com.vaadin.flow.shared.Registration;
 class Topic {
 
     @FunctionalInterface
-    interface MapChangeNotifier {
-        void onMapChange(String key, Object oldValue, Object newValue);
+    interface ChangeNotifier {
+        void onEntryChange(MapChange mapChange);
     }
 
     private final Map<String, Map<String, Object>> namedMapData = new HashMap<>();
-    private final Map<String, List<MapChangeNotifier>> namedMapSubscribers = new HashMap<>();
+    private final List<ChangeNotifier> changeListeners = new ArrayList<>();
 
-    Registration subscribeMap(String name, MapChangeNotifier subscriber) {
-        namedMapSubscribers.computeIfAbsent(name, key -> new LinkedList<>())
-                .add(subscriber);
-
-        if (namedMapData.containsKey(name)) {
-            namedMapData.get(name).forEach(
-                    (key, value) -> subscriber.onMapChange(key, null, value));
-        }
-        return () -> unsubscribeMap(name, subscriber);
+    Registration subscribe(ChangeNotifier changeNotifier) {
+        return Registration.addAndRemove(changeListeners, changeNotifier);
     }
 
-    void fireMapChangeEvent(String name, String key, Object oldValue,
-            Object newValue) {
-        if (!namedMapSubscribers.containsKey(name)) {
-            return;
-        }
-        for (MapChangeNotifier subscriber : new ArrayList<>(
-                namedMapSubscribers.get(name))) {
-            subscriber.onMapChange(key, oldValue, newValue);
-        }
+    private void fireMapChangeEvent(MapChange change) {
+        new ArrayList<>(changeListeners).forEach(l -> l.onEntryChange(change));
     }
 
-    private void unsubscribeMap(String name, MapChangeNotifier subscriber) {
-        List<MapChangeNotifier> subscribers = namedMapSubscribers.get(name);
-        if (subscribers == null) {
-            return;
+    Stream<MapChange> getMapData(String mapName) {
+        Map<String, Object> mapData = namedMapData.get(mapName);
+        if (mapData == null) {
+            return Stream.empty();
         }
-
-        subscribers.remove(subscriber);
-        if (subscribers.isEmpty()) {
-            namedMapSubscribers.remove(name);
-        }
+        return mapData.entrySet().stream().map(entry -> new MapChange(mapName,
+                entry.getKey(), null, entry.getValue()));
     }
 
     <T> T withMap(String name,
-            SerializableBiFunction<Map<String, Object>, MapChangeNotifier, T> mapHandler) {
+            SerializableBiFunction<Map<String, Object>, ChangeNotifier, T> mapHandler) {
         return mapHandler.apply(
                 namedMapData.computeIfAbsent(name, key -> new HashMap<>()),
-                (key, oldValue, newValue) -> fireMapChangeEvent(name, key,
-                        oldValue, newValue));
+                this::fireMapChangeEvent);
     }
+
 }

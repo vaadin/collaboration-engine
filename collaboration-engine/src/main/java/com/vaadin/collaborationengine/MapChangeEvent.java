@@ -28,26 +28,19 @@ public class MapChangeEvent extends EventObject {
 
     /**
      * Creates a new map change event.
-     *
+     * 
      * @param source
      *            the collaboration map for which the event is fired, not
      *            <code>null</code>
-     * @param key
-     *            the updated map key, not <code>null</code>
-     * @param oldValue
-     *            the old map value, or <code>null</code> if no value was
-     *            present previously
-     * @param value
-     *            the new map value, or <code>null</code> if the association was
-     *            removed
+     * @param change
+     *            detail of the change, not <code>null</code>
      */
-    public MapChangeEvent(CollaborationMap source, String key, Object oldValue,
-            Object value) {
+    public MapChangeEvent(CollaborationMap source, MapChange change) {
         super(source);
-        this.key = Objects.requireNonNull(key, "Key should not be null");
-
-        this.oldValue = oldValue;
-        this.value = value;
+        Objects.requireNonNull(change, "Entry change must not be null");
+        this.key = change.getKey();
+        this.oldValue = change.getOldValue();
+        this.value = change.getNewValue();
     }
 
     @Override
