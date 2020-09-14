@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.Topic.ChangeNotifier;
@@ -131,22 +132,8 @@ public class TopicConnection {
                     Object newValue) {
                 Objects.requireNonNull(key, "Key cannot be null");
                 synchronized (topic) {
-                    return topic.withMap(name, (map, changeListener) -> {
-
-                        Object oldValue = map.get(key);
-                        if (!Objects.equals(oldValue, expectedValue)) {
-                            return Boolean.FALSE;
-                        }
-
-                        if (Objects.equals(oldValue, newValue)) {
-                            return Boolean.TRUE;
-                        }
-
-                        updateMapValue(map, changeListener, key, newValue,
-                                oldValue);
-
-                        return Boolean.TRUE;
-                    }).booleanValue();
+                    return topic.applyReplace(new ReplaceChange(name, key,
+                            expectedValue, newValue));
                 }
             }
 
@@ -154,42 +141,17 @@ public class TopicConnection {
             public void put(String key, Object value) {
                 Objects.requireNonNull(key, "Key cannot be null");
                 synchronized (topic) {
-                    topic.withMap(name, (map, changeListener) -> {
-
-                        Object oldValue = map.get(key);
-                        if (Objects.equals(oldValue, value)) {
-                            return null;
-                        }
-
-                        updateMapValue(map, changeListener, key, value,
-                                oldValue);
-
-                        return null;
-                    });
+                    topic.applyChange(new PutChange(name, key, value));
                 }
-            }
-
-            private void updateMapValue(Map<String, Object> map,
-                    ChangeNotifier changeNotifier, String key, Object newValue,
-                    Object oldValue) {
-                if (newValue == null) {
-                    map.remove(key);
-                } else {
-                    map.put(key, newValue);
-                }
-
-                changeNotifier.onEntryChange(
-                        new MapChange(name, key, oldValue, newValue));
             }
 
             @Override
             public Stream<String> getKeys() {
                 synchronized (topic) {
-                    return topic.withMap(name, (map, changeListener) -> {
-                        ArrayList<String> snapshot = new ArrayList<>(
-                                map.keySet());
-                        return snapshot.stream();
-                    });
+                    List<String> snapshot = topic.getMapData(name)
+                            .map(MapChange::getKey)
+                            .collect(Collectors.toList());
+                    return snapshot.stream();
                 }
             }
 
@@ -197,8 +159,7 @@ public class TopicConnection {
             public Object get(String key) {
                 Objects.requireNonNull(key, "Key cannot be null");
                 synchronized (topic) {
-                    return topic.withMap(name,
-                            (map, changeListener) -> map.get(key));
+                    return topic.getMapValue(name, key);
                 }
             }
 

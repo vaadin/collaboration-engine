@@ -13,20 +13,22 @@
 package com.vaadin.collaborationengine;
 
 /**
- * A single change that is emitted from the map data of a {@link Topic}.
+ * A change that will be applied to the map data of a {@link Topic} only when
+ * this change has the latest snapshot of the changing data.
  *
  * @author Vaadin Ltd
  */
-public class MapChange extends AbstractMapChange {
-    private final Object oldValue;
+public class ReplaceChange extends AbstractMapChange {
+    private final Object expectedValue;
 
-    public MapChange(String mapName, String key, Object oldValue,
+    public ReplaceChange(String mapName, String key, Object expectedValue,
             Object newValue) {
         super(mapName, key, newValue);
-        this.oldValue = oldValue;
+        this.expectedValue = expectedValue;
     }
 
-    public Object getOldValue() {
-        return oldValue;
+    public Object getExpectedValue() {
+        return expectedValue;
     }
+
 }

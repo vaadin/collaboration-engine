@@ -28,7 +28,7 @@ public class MapChangeEvent extends EventObject {
 
     /**
      * Creates a new map change event.
-     * 
+     *
      * @param source
      *            the collaboration map for which the event is fired, not
      *            <code>null</code>
@@ -40,7 +40,7 @@ public class MapChangeEvent extends EventObject {
         Objects.requireNonNull(change, "Entry change must not be null");
         this.key = change.getKey();
         this.oldValue = change.getOldValue();
-        this.value = change.getNewValue();
+        this.value = change.getValue();
     }
 
     @Override

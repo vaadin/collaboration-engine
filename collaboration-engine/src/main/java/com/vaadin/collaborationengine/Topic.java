@@ -12,14 +12,15 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.shared.Registration;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import com.vaadin.flow.function.SerializableBiFunction;
-import com.vaadin.flow.shared.Registration;
 
 class Topic {
 
@@ -48,11 +49,46 @@ class Topic {
                 entry.getKey(), null, entry.getValue()));
     }
 
-    <T> T withMap(String name,
-            SerializableBiFunction<Map<String, Object>, ChangeNotifier, T> mapHandler) {
-        return mapHandler.apply(
-                namedMapData.computeIfAbsent(name, key -> new HashMap<>()),
-                this::fireMapChangeEvent);
+    Object getMapValue(String mapName, String key) {
+        Map<String, Object> map = namedMapData.get(mapName);
+        if (map == null) {
+            return null;
+        }
+        return map.get(key);
+    }
+
+    void applyChange(PutChange change) {
+        applyChange(change, null);
+    }
+
+    boolean applyChange(PutChange change, Predicate<Object> condition) {
+        String mapName = change.getMapName();
+        String key = change.getKey();
+
+        Map<String, Object> map = namedMapData.computeIfAbsent(mapName,
+                name -> new HashMap<>());
+        Object oldValue = map.get(key);
+
+        if (condition != null && !condition.test(oldValue)) {
+            return false;
+        }
+        if (Objects.equals(oldValue, change.getValue())) {
+            return true;
+        }
+
+        Object newValue = change.getValue();
+        if (newValue == null) {
+            map.remove(key);
+        } else {
+            map.put(key, newValue);
+        }
+        fireMapChangeEvent(new MapChange(mapName, key, oldValue, newValue));
+        return true;
+    }
+
+    boolean applyReplace(ReplaceChange replaceChange) {
+        return applyChange(new PutChange(replaceChange), oldValue -> Objects
+                .equals(oldValue, replaceChange.getExpectedValue()));
     }
 
 }

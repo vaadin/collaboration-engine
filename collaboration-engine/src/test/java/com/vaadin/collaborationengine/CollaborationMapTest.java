@@ -178,9 +178,7 @@ public class CollaborationMapTest {
     @Test
     public void oldKeysSnapshot_newValueAdded_snapshotUnchanged() {
         map.put("one", "first");
-
         Stream<String> keysStream = map.getKeys();
-
         map.put("two", "second");
 
         List<String> keys = keysStream.collect(Collectors.toList());
