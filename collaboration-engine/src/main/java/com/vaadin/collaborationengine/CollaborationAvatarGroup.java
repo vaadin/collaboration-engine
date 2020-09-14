@@ -12,6 +12,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
+import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -192,18 +195,18 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     private void updateUsers(CollaborationMap map,
             SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
         while (true) {
-            List<UserInfo> oldValue = (List<UserInfo>) map.get(KEY);
-            List<UserInfo> newValue = updater.apply(
-                    oldValue != null ? oldValue.stream() : Stream.empty())
+            String oldValue = (String) map.get(KEY);
+            List<UserInfo> oldUsers = jsonToUsers(oldValue);
+            List<UserInfo> newUsers = updater.apply(oldUsers.stream())
                     .collect(Collectors.toList());
-            if (map.replace(KEY, oldValue, newValue)) {
+            if (map.replace(KEY, oldValue, usersToJson(newUsers))) {
                 break;
             }
         }
     }
 
     private void onMapChange(MapChangeEvent event) {
-        List<UserInfo> users = (List<UserInfo>) event.getValue();
+        List<UserInfo> users = jsonToUsers((String) event.getValue());
         List<AvatarGroupItem> items = users != null ? users.stream()
                 .filter(this::isNotLocalUser).map(this::userToAvatarGroupItem)
                 .collect(Collectors.toList()) : Collections.emptyList();

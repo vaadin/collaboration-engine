@@ -4,9 +4,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -257,6 +259,22 @@ public class CollaborationAvatarGroupTest {
             Assert.fail("Missing wrapper for methods: "
                     + missingMethods.toString());
         }
+    }
+
+    @Test
+    public void collaborationMapValueEncodedAsString() {
+        client1.attach();
+        AtomicBoolean done = new AtomicBoolean(false);
+        TestUtils.openEagerConnection(TOPIC_ID, topicConnection -> {
+            Object mapValue = topicConnection
+                    .getNamedMap(CollaborationAvatarGroup.MAP_NAME)
+                    .get(CollaborationAvatarGroup.KEY);
+            Assert.assertThat(mapValue, CoreMatchers.instanceOf(String.class));
+            Assert.assertThat((String) mapValue,
+                    CoreMatchers.containsString(client1.user.getId()));
+            done.set(true);
+        });
+        Assert.assertTrue("Topic connection callback has not run", done.get());
     }
 
 }

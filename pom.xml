@@ -29,6 +29,7 @@
 
         <vaadin.version>14.3.0</vaadin.version>
         <avatar.version>1.0.0</avatar.version>
+        <jackson.version>2.11.2</jackson.version>
 
         <jetty.version>9.4.28.v20200408</jetty.version>
     </properties>

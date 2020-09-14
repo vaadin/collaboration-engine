@@ -14,6 +14,9 @@ package com.vaadin.collaborationengine;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * User information of a collaborating user, used with various features of the
  * collaboration engine.
@@ -33,7 +36,8 @@ public class UserInfo {
      * @param userId
      *            the user id, not {@code null}
      */
-    public UserInfo(String userId) {
+    @JsonCreator
+    public UserInfo(@JsonProperty("id") String userId) {
         Objects.requireNonNull(userId, "Null user id isn't supported");
         this.id = userId;
         this.colorIndex = CollaborationEngine.getInstance()
