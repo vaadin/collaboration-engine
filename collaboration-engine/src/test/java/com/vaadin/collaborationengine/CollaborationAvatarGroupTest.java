@@ -20,8 +20,15 @@ import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
+import com.vaadin.flow.server.StreamResource;
 
 public class CollaborationAvatarGroupTest {
+
+    private static class TestStreamResource extends StreamResource {
+        public TestStreamResource(String name) {
+            super(name, () -> null);
+        }
+    }
 
     private static final String TOPIC_ID = "topic";
     private static final String TOPIC_ID_2 = "topic2";
@@ -93,6 +100,8 @@ public class CollaborationAvatarGroupTest {
                 CollaborationAvatarGroup.KEY);
         TestUtils.clearMap(TOPIC_ID_2, CollaborationAvatarGroup.MAP_NAME,
                 CollaborationAvatarGroup.KEY);
+
+        UI.setCurrent(null);
     }
 
     @Test
@@ -275,6 +284,77 @@ public class CollaborationAvatarGroupTest {
             done.set(true);
         });
         Assert.assertTrue("Topic connection callback has not run", done.get());
+    }
+
+    @Test
+    public void imageProvider_beforeAttach_streamResourceIsUsed() {
+        UI.setCurrent(client1.ui);
+        client1.group.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+        client1.attach();
+        client2.attach();
+
+        List<AvatarGroupItem> items = client1.getItems();
+        Assert.assertEquals(1, items.size());
+        AvatarGroupItem item = items.get(0);
+
+        Assert.assertThat(item.getImage(),
+                CoreMatchers.startsWith("VAADIN/dynamic"));
+        Assert.assertEquals("name2", item.getImageResource().getName());
+    }
+
+    @Test
+    public void imageProvider_afterAttach_streamResourceIsUsed() {
+        UI.setCurrent(client1.ui);
+        client1.attach();
+        client2.attach();
+
+        client1.group.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+
+        List<AvatarGroupItem> items = client1.getItems();
+        Assert.assertEquals(1, items.size());
+
+        AvatarGroupItem item = items.get(0);
+
+        Assert.assertThat(item.getImage(),
+                CoreMatchers.startsWith("VAADIN/dynamic"));
+        Assert.assertEquals("name2", item.getImageResource().getName());
+    }
+
+    @Test
+    public void imageProvider_nullStream_noImage() {
+        UI.setCurrent(client1.ui);
+        client1.attach();
+        client2.attach();
+
+        client1.group.setImageProvider(user -> null);
+
+        List<AvatarGroupItem> items = client1.getItems();
+        Assert.assertEquals(1, items.size());
+
+        AvatarGroupItem item = items.get(0);
+
+        Assert.assertNull(item.getImage());
+        Assert.assertNull(item.getImageResource());
+    }
+
+    @Test
+    public void imageProvider_clearProvider_imageIsSetFromUserInfo() {
+        UI.setCurrent(client1.ui);
+        client1.group.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+        client1.attach();
+        client2.attach();
+
+        client1.group.setImageProvider(null);
+
+        List<AvatarGroupItem> items = client1.getItems();
+        Assert.assertEquals(1, items.size());
+        AvatarGroupItem item = items.get(0);
+
+        Assert.assertNull(item.getImageResource());
+        Assert.assertEquals("image2", item.getImage());
     }
 
 }

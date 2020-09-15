@@ -12,9 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
-import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +27,12 @@ import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.server.AbstractStreamResource;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
+
+import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
+import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
 
 /**
  * Extension of the {@link AvatarGroup} component which integrates with the
@@ -42,11 +44,39 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         implements HasSize, HasStyle, HasTheme {
 
+    /**
+     * Callback for creating a stream resource with the image for a specific
+     * user. This allows loading the user image from a dynamic location such as
+     * a database.
+     *
+     * @see StreamResource
+     * @see CollaborationAvatarGroup#setImageProvider(ImageProvider)
+     */
+    @FunctionalInterface
+    public interface ImageProvider {
+        /**
+         * Gets a stream resource that provides the avatar image for the given
+         * user.
+         *
+         * @param user
+         *            the user for which to get a stream resource with the
+         *            image, not <code>null</code>
+         * @return the stream resource to use for the image, or
+         *         <code>null</code> to not show use any avatar image for the
+         *         given user
+         */
+        AbstractStreamResource getImageResource(UserInfo user);
+    }
+
     static final String MAP_NAME = CollaborationAvatarGroup.class.getName();
     static final String KEY = "users";
 
     private Registration topicRegistration;
+    private CollaborationMap map;
+
     private final UserInfo localUser;
+
+    private ImageProvider imageProvider;
 
     /**
      * Creates a new collaboration avatar group component with the provided
@@ -177,19 +207,20 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        CollaborationMap map = topicConnection.getNamedMap(MAP_NAME);
+        map = topicConnection.getNamedMap(MAP_NAME);
 
         updateUsers(map,
                 oldValue -> Stream.concat(oldValue, Stream.of(localUser)));
 
-        map.subscribe(this::onMapChange);
+        map.subscribe(event -> refreshItems());
 
-        return () -> onConnectionDeactivate(map);
+        return this::onConnectionDeactivate;
     }
 
-    private void onConnectionDeactivate(CollaborationMap map) {
+    private void onConnectionDeactivate() {
         updateUsers(map, oldValue -> oldValue.filter(this::isNotLocalUser));
         getContent().setItems(Collections.emptyList());
+        map = null;
     }
 
     private void updateUsers(CollaborationMap map,
@@ -205,8 +236,9 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         }
     }
 
-    private void onMapChange(MapChangeEvent event) {
-        List<UserInfo> users = jsonToUsers((String) event.getValue());
+    private void refreshItems() {
+        List<UserInfo> users = jsonToUsers((String) map.get(KEY));
+
         List<AvatarGroupItem> items = users != null ? users.stream()
                 .filter(this::isNotLocalUser).map(this::userToAvatarGroupItem)
                 .collect(Collectors.toList()) : Collections.emptyList();
@@ -217,12 +249,69 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         AvatarGroupItem item = new AvatarGroupItem();
         item.setName(user.getName());
         item.setAbbreviation(user.getAbbreviation());
-        item.setImage(user.getImage());
+
+        if (imageProvider == null) {
+            item.setImage(user.getImage());
+        } else {
+            item.setImageResource(imageProvider.getImageResource(user));
+        }
+
         item.setColorIndex(user.getColorIndex());
         return item;
     }
 
     private boolean isNotLocalUser(UserInfo user) {
         return !localUser.equals(user);
+    }
+
+    /**
+     * Sets an image provider callback for dynamically loading avatar images for
+     * a given user. The image can be loaded on-demand from a database or using
+     * any other source of IO streams.
+     * <p>
+     * If no image callback is defined, then the image URL defined by
+     * {@link UserInfo#getImage()} is directly passed to the browser. This means
+     * that avatar images need to be available as static files or served
+     * dynamically from a custom servlet. This is the default.
+     * <p>
+     *
+     * Usage example:
+     *
+     * <pre>
+     * collaborationAvatarGroup.setImageProvider(userInfo -> {
+     *     StreamResource streamResource = new StreamResource(
+     *             "avatar_" + userInfo.getId(), () -> {
+     *                 User userEntity = userRepository
+     *                         .findById(userInfo.getId());
+     *                 byte[] profilePicture = userEntity.getProfilePicture();
+     *                 return new ByteArrayInputStream(profilePicture);
+     *             });
+     *     streamResource.setContentType("image/png");
+     *     return streamResource;
+     * });
+     * </pre>
+     *
+     * @param imageProvider
+     *            the image provider to use, or <code>null</code> to use image
+     *            URLs directly from the user info object
+     */
+    public void setImageProvider(ImageProvider imageProvider) {
+        this.imageProvider = imageProvider;
+
+        if (map != null) {
+            refreshItems();
+        }
+    }
+
+    /**
+     * Gets the currently used image provider callback.
+     *
+     * @see #setImageProvider(ImageProvider)
+     *
+     * @return the current image provider callback, or <code>null</code> if no
+     *         callback is set
+     */
+    public ImageProvider getImageProvider() {
+        return imageProvider;
     }
 }
