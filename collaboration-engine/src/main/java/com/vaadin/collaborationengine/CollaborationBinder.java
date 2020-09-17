@@ -22,12 +22,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
+import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.function.SerializableSupplier;
@@ -56,12 +59,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             this.editors = Collections
                     .unmodifiableList(new ArrayList<>(editors));
         }
-
-        public FieldState(Object value, Stream<FocusedEditor> editors) {
-            this.value = value;
-            this.editors = Collections
-                    .unmodifiableList(editors.collect(Collectors.toList()));
-        }
     }
 
     /**
@@ -74,7 +71,9 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         public final UserInfo user;
         public final int fieldIndex;
 
-        public FocusedEditor(UserInfo user, int fieldIndex) {
+        @JsonCreator
+        public FocusedEditor(@JsonProperty("user") UserInfo user,
+                @JsonProperty("fieldIndex") int fieldIndex) {
             this.user = user;
             this.fieldIndex = fieldIndex;
         }
@@ -155,6 +154,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
+    private final Map<String, Class<?>> propertyTypes = new HashMap<>();
 
     /**
      * Creates a new collaboration binder. It uses reflection based on the
@@ -176,13 +176,24 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
                 "User cannot be null");
     }
 
+    @Override
+    protected BindingBuilder<BEAN, ?> configureBinding(
+            BindingBuilder<BEAN, ?> binding,
+            PropertyDefinition<BEAN, ?> definition) {
+        propertyTypes.put(definition.getName(), definition.getType());
+        return super.configureBinding(binding, definition);
+    }
+
     private void onMapChange(MapChangeEvent event) {
         getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
-            setFieldValueFromMap(event.getKey(), field);
+            String propertyName = event.getKey();
 
-            List<FocusedEditor> editors = ((FieldState) event
-                    .getValue()).editors;
-            FieldHighlighter.setEditors(field, editors, localUser);
+            FieldState fieldState = CollaborationBinderUtil.getFieldState(topic,
+                    propertyName, propertyTypes.get(propertyName));
+
+            setFieldValueFromFieldState(field, fieldState);
+
+            FieldHighlighter.setEditors(field, fieldState.editors, localUser);
         });
     }
 
@@ -196,12 +207,18 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             // the connection isn't activated.
             return;
         }
-        FieldState fieldState = (FieldState) getMap(topic).get(propertyName);
-        Object value = fieldState != null ? fieldState.value : null;
-        if (value == null) {
+        setFieldValueFromFieldState(field,
+                CollaborationBinderUtil.getFieldState(topic, propertyName,
+                        propertyTypes.get(propertyName)));
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void setFieldValueFromFieldState(HasValue field,
+            FieldState fieldState) {
+        if (fieldState.value == null) {
             field.clear();
         } else {
-            field.setValue(value);
+            field.setValue(fieldState.value);
         }
     }
 
@@ -229,7 +246,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     @Override
     protected void removeBindingInternal(Binding<BEAN, ?> binding) {
-        fieldToPropertyName.remove(binding.getField());
+        String propertyName = fieldToPropertyName.remove(binding.getField());
+        propertyTypes.remove(propertyName);
         if (connectionContext != null) {
             connectionContext.removeComponent((Component) binding.getField());
         }
@@ -428,7 +446,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
         fieldToPropertyName.forEach(
                 (field, propName) -> setFieldValueFromMap(propName, field));
-
         return this::onConnectionDeactivate;
     }
 

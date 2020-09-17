@@ -1,6 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -8,6 +7,7 @@ import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 
+import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
@@ -76,24 +76,19 @@ public class AbstractCollaborationBinderTest {
     }
 
     protected void setSharedValue(String key, Object value) {
-        CollaborationBinder.FieldState oldState = getFieldState(key);
-        map.put(key, new CollaborationBinder.FieldState(value,
-                oldState != null ? oldState.editors : Collections.emptyList()));
+        CollaborationBinderUtil.setFieldValue(topicConnection, key, value);
     }
 
     protected Object getSharedValue(String key) {
-        CollaborationBinder.FieldState fieldState = getFieldState(key);
-        return fieldState != null ? fieldState.value : null;
+        return getFieldState(key).value;
     }
 
-    protected CollaborationBinder.FieldState getFieldState(String key) {
-        return (CollaborationBinder.FieldState) map.get(key);
+    protected FieldState getFieldState(String key) {
+        return CollaborationBinderUtil.getFieldState(topicConnection, key,
+                String.class);
     }
 
     protected List<UserInfo> getEditors(String key) {
-        if (getFieldState(key) == null) {
-            return Collections.emptyList();
-        }
         return getFieldState(key).editors.stream()
                 .map(focusedEditor -> focusedEditor.user)
                 .collect(Collectors.toList());

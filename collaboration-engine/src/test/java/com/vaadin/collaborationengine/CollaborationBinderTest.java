@@ -3,6 +3,7 @@ package com.vaadin.collaborationengine;
 import java.util.Arrays;
 import java.util.Collections;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -371,5 +372,17 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     @Test(expected = UnsupportedOperationException.class)
     public void setBean_operationNotSupported() {
         client.binder.setBean(new TestBean());
+    }
+
+    @Test
+    public void collaborationMapValueEncodedAsString() {
+        client.bind();
+        client.attach();
+        client.field.setValue("foo");
+
+        Object mapValue = map.get("value");
+        Assert.assertThat(mapValue, CoreMatchers.instanceOf(String.class));
+        Assert.assertThat((String) mapValue,
+                CoreMatchers.containsString("foo"));
     }
 }
