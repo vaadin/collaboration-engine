@@ -12,14 +12,14 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -38,9 +38,32 @@ public class CollaborationEngine {
 
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
+    private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
+    private final TopicActivationHandler topicActivationHandler;
 
     CollaborationEngine() {
         // package-protected to hide from users but to be usable in unit tests
+        this((topicId, isActive) -> {
+            // implement network sync to the topic
+        });
+    }
+
+    CollaborationEngine(TopicActivationHandler topicActivationHandler) {
+        this.topicActivationHandler = topicActivationHandler;
+    }
+
+    private void updateTopicActivation(String topicId, Boolean isActive) {
+        activeTopicsCount.putIfAbsent(topicId, 0);
+        activeTopicsCount.computeIfPresent(topicId, (topic, count) -> {
+            int newCount = isActive ? count + 1 : count - 1;
+            if (newCount <= 0) {
+                activeTopicsCount.remove(topicId);
+                topicActivationHandler.setActive(topicId, false);
+            } else if (isActive && newCount == 1) {
+                topicActivationHandler.setActive(topicId, true);
+            }
+            return newCount;
+        });
     }
 
     /**
@@ -98,6 +121,7 @@ public class CollaborationEngine {
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
 
         TopicConnection connection = new TopicConnection(context, topic,
+                isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return connection::close;
     }

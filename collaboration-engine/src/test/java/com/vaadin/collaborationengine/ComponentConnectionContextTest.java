@@ -9,11 +9,9 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.SpyActivationHandler;
+import com.vaadin.collaborationengine.util.TestComponent;
 import com.vaadin.collaborationengine.util.TestUtils;
-import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.ServiceException;
@@ -383,7 +381,7 @@ public class ComponentConnectionContextTest {
     }
 
     @Test
-    public void serviceDestory_deactivatesConnection() throws ServiceException {
+    public void serviceDestroy_deactivatesConnection() throws ServiceException {
         VaadinService service = ui.getSession().getService();
 
         ComponentConnectionContext context = new ComponentConnectionContext(
@@ -432,14 +430,4 @@ public class ComponentConnectionContextTest {
                 .map(BeaconHandler.class::cast).findFirst().get();
     }
 
-    @Tag("test")
-    private static class TestComponent extends Component {
-        public boolean hasAttachListener() {
-            return hasListener(AttachEvent.class);
-        }
-
-        public boolean hasDetachListener() {
-            return hasListener(DetachEvent.class);
-        }
-    }
 }

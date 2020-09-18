@@ -12,17 +12,18 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.collaborationengine.Topic.ChangeNotifier;
+import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.shared.Registration;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.vaadin.collaborationengine.Topic.ChangeNotifier;
-import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.shared.Registration;
 
 /**
  * API for sending and subscribing to updates between clients collaborating on
@@ -36,12 +37,16 @@ public class TopicConnection {
     private final ConnectionContext context;
     private Registration closeRegistration;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
+
+    private final Consumer<Boolean> topicActivationHandler;
     private final Map<String, List<ChangeNotifier>> subscribersPerMap = new HashMap<>();
 
     TopicConnection(ConnectionContext context, Topic topic,
+            Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.context = context;
+        this.topicActivationHandler = topicActivationHandler;
 
         closeRegistration = context.setActivationHandler(active -> {
             if (active) {
@@ -57,6 +62,7 @@ public class TopicConnection {
             } else {
                 deactivate();
             }
+            topicActivationHandler.accept(active);
         });
     }
 
@@ -181,6 +187,7 @@ public class TopicConnection {
             closeRegistration.remove();
             closeRegistration = null;
         }
+        topicActivationHandler.accept(false);
     }
 
 }
