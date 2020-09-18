@@ -134,7 +134,7 @@ public class CollaborationEngineTest {
             connections[0] = topic;
             return null;
         });
-        connections[0].close();
+        connections[0].deactivateAndClose();
         collaborationEngine.openTopicConnection(context, "foo", otherTopic -> {
             connections[1] = otherTopic;
             return null;

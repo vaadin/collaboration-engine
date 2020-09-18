@@ -12,8 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.shared.Registration;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import com.vaadin.flow.shared.Registration;
 
 class Topic {
 
@@ -37,7 +37,8 @@ class Topic {
     }
 
     private void fireMapChangeEvent(MapChange change) {
-        new ArrayList<>(changeListeners).forEach(l -> l.onEntryChange(change));
+        EventUtil.fireEvents(changeListeners,
+                listener -> listener.onEntryChange(change), true);
     }
 
     Stream<MapChange> getMapData(String mapName) {

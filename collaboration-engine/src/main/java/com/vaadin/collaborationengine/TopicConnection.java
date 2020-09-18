@@ -12,10 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.Topic.ChangeNotifier;
-import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.shared.Registration;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +20,10 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.vaadin.collaborationengine.Topic.ChangeNotifier;
+import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.shared.Registration;
 
 /**
  * API for sending and subscribing to updates between clients collaborating on
@@ -67,12 +67,12 @@ public class TopicConnection {
     }
 
     private void handleChange(MapChange change) {
-        if (!subscribersPerMap.containsKey(change.getMapName())) {
-            return;
-        }
-        for (ChangeNotifier notifier : new ArrayList<>(
-                subscribersPerMap.get(change.getMapName()))) {
-            notifier.onEntryChange(change);
+        try {
+            EventUtil.fireEvents(subscribersPerMap.get(change.getMapName()),
+                    notifier -> notifier.onEntryChange(change), false);
+        } catch (RuntimeException e) {
+            deactivateAndClose();
+            throw e;
         }
     }
 
@@ -177,17 +177,33 @@ public class TopicConnection {
     }
 
     private void deactivate() {
-        deactivateRegistrations.forEach(Registration::remove);
-        deactivateRegistrations.clear();
+        try {
+            EventUtil.fireEvents(deactivateRegistrations, Registration::remove,
+                    false);
+            deactivateRegistrations.clear();
+        } catch (RuntimeException e) {
+            closeWithoutDeactivating();
+            throw e;
+        }
     }
 
-    void close() {
-        deactivate();
-        if (closeRegistration != null) {
-            closeRegistration.remove();
-            closeRegistration = null;
+    void deactivateAndClose() {
+        try {
+            deactivate();
+        } finally {
+            closeWithoutDeactivating();
         }
-        topicActivationHandler.accept(false);
+    }
+
+    void closeWithoutDeactivating() {
+        try {
+            if (closeRegistration != null) {
+                closeRegistration.remove();
+                closeRegistration = null;
+            }
+        } finally {
+            topicActivationHandler.accept(false);
+        }
     }
 
 }

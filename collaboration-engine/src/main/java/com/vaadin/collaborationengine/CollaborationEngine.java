@@ -123,7 +123,7 @@ public class CollaborationEngine {
         TopicConnection connection = new TopicConnection(context, topic,
                 isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
-        return connection::close;
+        return connection::deactivateAndClose;
     }
 
     /**
