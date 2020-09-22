@@ -96,6 +96,14 @@ public abstract class AbstractCollaborativeFormIT
             this.textField = client.$(TextFieldElement.class).first();
         }
 
+        public void clearBinder() {
+            click("set-binder-null");
+        }
+
+        public void rebind() {
+            click("set-binder");
+        }
+
         public void click(String id) {
             client.$(TestBenchElement.class).id(id).click();
         }

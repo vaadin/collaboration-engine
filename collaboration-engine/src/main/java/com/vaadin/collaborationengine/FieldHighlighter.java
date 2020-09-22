@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -70,6 +71,10 @@ class FieldHighlighter {
                     serialize(editors.stream()
                             .filter(editor -> !editor.user.equals(localUser))));
         }
+    }
+
+    static void removeEditors(HasValue<?, ?> field) {
+        setEditors(field, Collections.emptyList(), null);
     }
 
     private static JsonArray serialize(Stream<FocusedEditor> editors) {

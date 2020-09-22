@@ -12,8 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,6 +34,8 @@ import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.shared.Registration;
+
+import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
 
 /**
  * Extension of {@link Binder} for creating collaborative forms with
@@ -415,6 +415,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             SerializableSupplier<BEAN> initialBeanSupplier) {
         if (topicRegistration != null) {
             topicRegistration.remove();
+            fieldToPropertyName.keySet()
+                    .forEach(FieldHighlighter::removeEditors);
             topicRegistration = null;
             connectionContext = null;
             topic = null;

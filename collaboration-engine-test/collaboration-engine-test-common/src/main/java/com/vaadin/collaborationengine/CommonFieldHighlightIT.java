@@ -1,14 +1,14 @@
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserTags;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
 import com.vaadin.collaborationengine.util.FieldOutlineElement;
 import com.vaadin.flow.component.radiobutton.testbench.RadioButtonElement;
+
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserTags;
 
 public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
 
@@ -139,6 +139,23 @@ public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
         assertRadioButtonHighlight(client1, null, 2, null);
         assertRadioButtonHighlight(client2, null, 2, null);
         assertRadioButtonHighlight(client3, null, 1, null);
+    }
+
+    @Test
+    public void clientClearItsBinder_itsFieldsHaveNoHighlighters() {
+        ClientState client2 = new ClientState(addClient());
+        client2.focusTextField();
+        assertUserTags(client1.textField, "User 2");
+
+        client1.clearBinder();
+        assertNoUserTags(client1.textField);
+
+        client1.rebind();
+        assertUserTags(client1.textField, "User 2");
+
+        client2.focusCheckbox();
+        assertNoUserTags(client1.textField);
+        assertUserTags(client1.checkbox, "User 2");
     }
 
     private void assertRadioButtonHighlight(ClientState client,

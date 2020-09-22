@@ -64,7 +64,15 @@ public class CommonCollaborativeFormView extends VerticalLayout {
                 e -> addComponentAtIndex(1, textField));
         attachTextField.setId("attach-text-field");
 
-        add(detachTextField, attachTextField);
+        NativeButton setBinderNull = new NativeButton(
+                "Set binder topic to null",
+                e -> binder.setTopic(null, Person::new));
+        setBinderNull.setId("set-binder-null");
+        NativeButton setBinder = new NativeButton("Bind again",
+                e -> binder.setTopic(TOPIC_ID, Person::new));
+        setBinder.setId("set-binder");
+
+        add(detachTextField, attachTextField, setBinderNull, setBinder);
     }
 
 }
