@@ -1,11 +1,13 @@
 package com.vaadin.collaborationengine.util;
 
-import com.vaadin.testbench.TestBench;
-import com.vaadin.testbench.TestBenchElement;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.junit.Assert;
+
+import com.vaadin.testbench.TestBench;
+import com.vaadin.testbench.TestBenchElement;
 
 public class FieldHighlightUtil {
 

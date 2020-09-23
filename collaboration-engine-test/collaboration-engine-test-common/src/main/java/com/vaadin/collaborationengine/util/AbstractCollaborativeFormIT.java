@@ -121,4 +121,16 @@ public abstract class AbstractCollaborativeFormIT
     public void reset() {
         $("button").id("reset-user-counter").click();
     }
+
+    protected void assertUserTags(TestBenchElement field,
+            String... expectedUsers) {
+        if (expectedUsers.length > 0) {
+            // wait for TomEE server of CDI stack to be ready
+            waitUntil(
+                    driver -> !FieldHighlightUtil.getUserTags(field).isEmpty());
+        }
+        FieldHighlightUtil.assertUserTags(
+                "Unexpected user tags on field " + field, field, expectedUsers);
+    }
+
 }

@@ -1,11 +1,11 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertUserTags;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
+
+import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
 
 public class CommonReattachFieldIT extends AbstractCollaborativeFormIT {
 
