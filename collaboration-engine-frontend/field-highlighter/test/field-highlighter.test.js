@@ -360,6 +360,7 @@ describe('field highlighter', () => {
         wrapper.opened = true;
         setUsers([user2, user3]);
         wrapper.opened = false;
+        overlay._flushAnimation('closing');
         await nextFrame();
         allTags = overlay.content.querySelector('[part="tags"]')
         newTags = allTags.nextElementSibling;
@@ -384,6 +385,20 @@ describe('field highlighter', () => {
         await wrapper.flashPromise;
         expect(wrapper.opened).to.equal(false);
         expect(getComputedStyle(allTags).display).to.equal('flex');
+      });
+
+      it('should not flash tags when reordering same users', async() => {
+        const spy = sinon.spy(wrapper, 'flashTags');
+        FieldHighlighter.setUsers(field, [user3, user2]);
+        await nextFrame();
+        expect(spy.called).to.be.false;
+      });
+
+      it('should not update tags when reordering same users', async() => {
+        const spy = sinon.spy(wrapper, 'updateTagsSync');
+        FieldHighlighter.setUsers(field, [user3, user2]);
+        await nextFrame();
+        expect(spy.called).to.be.false;
       });
     });
 

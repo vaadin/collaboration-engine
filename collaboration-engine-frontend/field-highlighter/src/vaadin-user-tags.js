@@ -193,10 +193,6 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     return this.$.overlay.content.querySelector('[part="tags"]');
   }
 
-  get tags() {
-    return this.wrapper.querySelectorAll('vaadin-user-tag');
-  }
-
   createUserTag(user) {
     const tag = document.createElement('vaadin-user-tag');
     tag.setAttribute('id', `tag-${user.id}`);
@@ -209,37 +205,29 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     return this.wrapper.querySelector(`#tag-${user.id}`);
   }
 
-  getChangedTags({ addedUsers, removedUsers }) {
+  getChangedTags(addedUsers, removedUsers) {
     const removed = removedUsers.map((user) => this.getTagForUser(user));
     const added = addedUsers.map((user) => this.getTagForUser(user) || this.createUserTag(user));
-
-    // Filter out reused tags instances
-    this.tags.forEach((tag) => {
-      const a = added.indexOf(tag);
-      const r = removed.indexOf(tag);
-
-      if (a !== -1 && r !== -1) {
-        removed.splice(r, 1);
-        added.splice(a, 1);
-      }
-    });
-
     return { added, removed };
   }
 
   getChangedUsers(users, splices) {
-    const removedUsers = [];
-    const addedUsers = [];
+    const usersToAdd = [];
+    const usersToRemove = [];
 
     splices.forEach((splice) => {
       for (let i = 0; i < splice.removed.length; i++) {
-        removedUsers.push(splice.removed[i]);
+        usersToRemove.push(splice.removed[i]);
       }
 
       for (let i = splice.addedCount - 1; i >= 0; i--) {
-        addedUsers.push(users[splice.index + i]);
+        usersToAdd.push(users[splice.index + i]);
       }
     });
+
+    // filter out users that are only moved
+    const addedUsers = usersToAdd.filter((u) => !usersToRemove.some((u2) => u.id === u2.id));
+    const removedUsers = usersToRemove.filter((u) => !usersToAdd.some((u2) => u.id === u2.id));
 
     return { addedUsers, removedUsers };
   }
@@ -269,8 +257,12 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
       return;
     }
 
-    const changedUsers = this.getChangedUsers(users, splices);
-    const changedTags = this.getChangedTags(changedUsers);
+    const { addedUsers, removedUsers } = this.getChangedUsers(users, splices);
+    if (addedUsers.length === 0 && removedUsers.length === 0) {
+      return;
+    }
+
+    const changedTags = this.getChangedTags(addedUsers, removedUsers);
 
     if (this.opened && !this.flashing) {
       this.updateTags(users, changedTags);
@@ -278,9 +270,8 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     } else {
       this.updateTagsSync(users, changedTags);
 
-      const added = changedUsers.addedUsers;
-      if (added.length) {
-        const tags = added.map((user) => this.createUserTag(user));
+      if (addedUsers.length) {
+        const tags = addedUsers.map((user) => this.createUserTag(user));
         if (this.flashing) {
           // schedule next flash later
           this.push('_flashQueue', tags);
@@ -302,7 +293,7 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     const newWrapper = wrapper.nextElementSibling;
     added.forEach((tag) => newWrapper.insertBefore(tag, newWrapper.firstChild));
 
-    this.flashPromise = new Promise((resolve) => { 
+    this.flashPromise = new Promise((resolve) => {
       listenOnce(this.$.overlay, 'vaadin-overlay-open').then(() => {
         // animate appearing tags
         added.forEach((tag) => tag.classList.add('show'));
