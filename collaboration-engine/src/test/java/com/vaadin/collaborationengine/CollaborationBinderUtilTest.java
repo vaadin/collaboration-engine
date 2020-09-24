@@ -14,7 +14,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestEnum;
 
 public class CollaborationBinderUtilTest
@@ -103,18 +102,6 @@ public class CollaborationBinderUtilTest
 
         test.accept(Arrays.asList("foo", "bar"), List.class);
         test.accept(new HashSet(Arrays.asList("foo", "bar")), Set.class);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void setFieldValue_unsupportedType_throws() {
-        CollaborationBinderUtil.setFieldValue(topicConnection, "propName",
-                new TestBean());
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void setFieldValue_unsupportedTypeInCollection_throws() {
-        CollaborationBinderUtil.setFieldValue(topicConnection, "propName",
-                Arrays.asList(1, 2));
     }
 
 }

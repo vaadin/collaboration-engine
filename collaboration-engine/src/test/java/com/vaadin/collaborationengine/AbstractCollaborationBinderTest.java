@@ -12,6 +12,8 @@ import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Focusable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
 
@@ -35,7 +37,11 @@ public class AbstractCollaborationBinderTest {
         }
 
         public void attach() {
-            ui.add(field);
+            attach(field);
+        }
+
+        public void attach(Component child) {
+            ui.add(child);
         }
 
         public void detach() {
@@ -43,8 +49,11 @@ public class AbstractCollaborationBinderTest {
         }
 
         public void cleanUp() {
-            ui.getChildren()
-                    .forEach(component -> ((TestField) component).blur());
+            ui.getChildren().forEach(component -> {
+                if (component instanceof Focusable<?>) {
+                    ((Focusable<?>) component).blur();
+                }
+            });
             ui.removeAll();
         }
     }

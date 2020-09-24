@@ -13,16 +13,10 @@
 package com.vaadin.collaborationengine;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.Collection;
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,15 +51,7 @@ public class CollaborationBinderUtil {
             Collections.emptyList());
     private static String EMPTY_FIELD_STATE_JSON;
 
-    private static final List<Class<?>> SUPPORTED_TYPES = Arrays.asList(
-            String.class, Boolean.class, Integer.class, Double.class,
-            BigDecimal.class, LocalDate.class, LocalTime.class,
-            LocalDateTime.class, Enum.class, List.class, Set.class);
-
-    private static final List<Class<?>> SUPPORTED_TYPES_INSIDE_COLLECTION = Arrays
-            .asList(String.class);
-
-    private static final TypeReference EDITORS_TYPE_REF = new TypeReference<List<FocusedEditor>>() {
+    private static final TypeReference<List<FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<FocusedEditor>>() {
     };
 
     static {
@@ -227,7 +213,7 @@ public class CollaborationBinderUtil {
     }
 
     static FieldState getFieldState(TopicConnection topic, String propertyName,
-            Class<?> valueType) {
+            Type valueType) {
         String json = (String) getMap(topic).get(propertyName);
         return jsonToFieldState(json, valueType);
     }
@@ -238,8 +224,6 @@ public class CollaborationBinderUtil {
 
     private static String updateFieldValueInJson(String fieldStateJson,
             Object newValue) {
-
-        throwIfValueTypeNotSupported(newValue);
 
         if (fieldStateJson == null) {
             fieldStateJson = EMPTY_FIELD_STATE_JSON;
@@ -284,8 +268,7 @@ public class CollaborationBinderUtil {
         }
     }
 
-    private static FieldState jsonToFieldState(String json,
-            Class<?> valueType) {
+    private static FieldState jsonToFieldState(String json, Type valueType) {
         if (json == null) {
             return EMPTY_FIELD_STATE;
         }
@@ -293,8 +276,10 @@ public class CollaborationBinderUtil {
         ObjectMapper objectMapper = new CustomMapper();
         try {
             JsonNode jsonNode = objectMapper.readTree(json);
-            Object value = objectMapper.treeToValue(jsonNode.get("value"),
-                    valueType);
+
+            Object value = objectMapper.convertValue(jsonNode.get("value"),
+                    objectMapper.getTypeFactory().constructType(valueType));
+
             List<FocusedEditor> editors = getEditors(objectMapper, jsonNode);
             return new FieldState(value, editors);
         } catch (IOException e) {
@@ -308,39 +293,4 @@ public class CollaborationBinderUtil {
         return objectMapper.readerFor(EDITORS_TYPE_REF)
                 .readValue(jsonNode.get("editors"));
     }
-
-    private static void throwIfValueTypeNotSupported(Object value) {
-        if (value == null) {
-            return;
-        }
-
-        if (!isInstanceOfAny(value, SUPPORTED_TYPES)) {
-            throw new IllegalStateException(
-                    "CollaborationBinder doesn't support the provided value type: "
-                            + value.getClass().getSimpleName()
-                            + ". The supported types are: "
-                            + SUPPORTED_TYPES.stream().map(Class::getSimpleName)
-                                    .collect(Collectors.toList()));
-        }
-
-        if ((value instanceof Collection) && ((Collection) value).stream()
-                .anyMatch(entry -> !isInstanceOfAny(entry,
-                        SUPPORTED_TYPES_INSIDE_COLLECTION))) {
-            throw new IllegalStateException(
-                    "CollaborationBinder doesn't support the provided value type inside a Collection: "
-                            + value.getClass().getSimpleName()
-                            + ". The supported types are: "
-                            + SUPPORTED_TYPES_INSIDE_COLLECTION.stream()
-                                    .map(Class::getSimpleName)
-                                    .collect(Collectors.toList())
-                            + " If you're using a multi select component, you need to change "
-                            + "the component's value type to String and convert the values.");
-        }
-    }
-
-    private static boolean isInstanceOfAny(Object object,
-            List<Class<?>> types) {
-        return types.stream().anyMatch(type -> type.isInstance(object));
-    }
-
 }

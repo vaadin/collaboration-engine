@@ -2,15 +2,22 @@ package com.vaadin.collaborationengine;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
+import com.vaadin.collaborationengine.util.GenericTestField;
 import com.vaadin.collaborationengine.util.TestBean;
+import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.internal.ReflectTools;
 
 public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
@@ -384,5 +391,137 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         Assert.assertThat(mapValue, CoreMatchers.instanceOf(String.class));
         Assert.assertThat((String) mapValue,
                 CoreMatchers.containsString("foo"));
+    }
+
+    @Test
+    public void simpleBinding_typeInfered() {
+        client.bind();
+        Assert.assertEquals(String.class,
+                client.binder.getPropertyType("value"));
+    }
+
+    @Test
+    public void simpleBindingWithNullRepresentation_typeInfered() {
+        client.binder.forField(client.field).withNullRepresentation("foo")
+                .bind("value");
+        Assert.assertEquals(String.class,
+                client.binder.getPropertyType("value"));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void bindingGenericFieldWithConverter_explicitTypeDefinitionRequired() {
+        client.binder.forField(new GenericTestField<>())
+                .withConverter(String::valueOf, Integer::valueOf).bind("value");
+    }
+
+    @Test
+    public void bindingGenericFieldWithConverter_explicitTypeProvided_propertyTypeAsDefined() {
+        client.binder.forField(new GenericTestField<>(), Integer.class)
+                .withConverter(String::valueOf, Integer::valueOf).bind("value");
+        Assert.assertEquals(Integer.class,
+                client.binder.getPropertyType("value"));
+    }
+
+    @Test
+    public void complexTypeWithExplicitDefinition_valueSerializedAndDeserializedProperly() {
+        GenericTestField<List<Double>> field = new GenericTestField<>();
+
+        client.binder.forCollectionField(field, List.class, Double.class)
+                .withNullRepresentation(Collections.emptyList())
+                .withConverter(presentationValue -> presentationValue.stream()
+                        .map(String::valueOf).collect(Collectors.joining(",")),
+                        modelValue -> Stream.of(modelValue.split(","))
+                                .map(Double::valueOf)
+                                .collect(Collectors.toList()))
+                .bind("value");
+        client.attach(field);
+
+        field.setValue(Arrays.asList(1d, 0.1d));
+        FieldState fieldState = CollaborationBinderUtil.getFieldState(
+                topicConnection, "value",
+                ReflectTools.createParameterizedType(List.class, Double.class));
+        Assert.assertEquals(Arrays.asList(1d, 0.1d), fieldState.value);
+
+        CollaborationBinderUtil.setFieldValue(topicConnection, "value",
+                Arrays.asList(0.1d, 1d));
+        Assert.assertEquals(Arrays.asList(0.1d, 1d), field.getValue());
+    }
+
+    @Test
+    public void bindInstanceFields_simpleCase_fieldHasExpectedType() {
+        class Target {
+            private TestField value = new TestField();
+        }
+
+        client.binder.bindInstanceFields(new Target());
+
+        Assert.assertEquals(String.class,
+                client.binder.getPropertyType("value"));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void bindInstanceFields_converterNotExplicitType_throws() {
+        class Target {
+            private GenericTestField<Integer> value = new GenericTestField<>();
+        }
+
+        Target target = new Target();
+        client.binder.forMemberField(target.value)
+                .withConverter(String::valueOf, Integer::valueOf);
+        client.binder.bindInstanceFields(target);
+    }
+
+    @Test
+    public void bindInstanceFields_converterWithExplicitType_fieldHasExpectedType() {
+        class Target {
+            private GenericTestField<Integer> value = new GenericTestField<>();
+        }
+
+        Target target = new Target();
+        client.binder.forMemberField(target.value, Integer.class)
+                .withConverter(String::valueOf, Integer::valueOf);
+        client.binder.bindInstanceFields(target);
+
+        Assert.assertEquals(Integer.class,
+                client.binder.getPropertyType("value"));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void unsupportedExplicitType_throwsFromForField() {
+        client.binder.forField(new GenericTestField<>(), TestBean.class);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void unsupportedPropertyType_throwsWhenBinding() {
+        class BeanWithUnsupportedPropertyType {
+            public void setValue(TestBean value) {
+
+            }
+
+            public TestBean getValue() {
+                return null;
+            }
+        }
+
+        CollaborationBinder<BeanWithUnsupportedPropertyType> binder = new CollaborationBinder<>(
+                BeanWithUnsupportedPropertyType.class, client.user);
+        binder.forField(new GenericTestField<TestBean>()).bind("value");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void unsupportedTypeParameter_rejected() {
+        client.binder.forCollectionField(new GenericTestField<List<TestBean>>(),
+                List.class, TestBean.class);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @SuppressWarnings("rawtypes")
+    public void rawFieldType_rejected() {
+        client.binder.forField(new GenericTestField<List>(), List.class);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void nullFieldType_rejected() {
+        client.binder.forField(client.field, null);
     }
 }
