@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -43,6 +44,11 @@ public class TopicConnectionTest {
         @Override
         public void dispatchAction(Command action) {
             action.execute();
+        }
+
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            return null;
         }
 
         public boolean isClosed() {

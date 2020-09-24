@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -134,21 +135,37 @@ public class TopicConnection {
             }
 
             @Override
-            public boolean replace(String key, Object expectedValue,
-                    Object newValue) {
+            public CompletableFuture<Boolean> replace(String key,
+                    Object expectedValue, Object newValue) {
                 Objects.requireNonNull(key, "Key cannot be null");
+
+                CompletableFuture<Boolean> contextFuture = context
+                        .createCompletableFuture();
+
+                boolean isReplaced;
                 synchronized (topic) {
-                    return topic.applyReplace(new ReplaceChange(name, key,
+                    isReplaced = topic.applyReplace(new ReplaceChange(name, key,
                             expectedValue, newValue));
+
                 }
+                context.dispatchAction(
+                        () -> contextFuture.complete(isReplaced));
+                return contextFuture;
             }
 
             @Override
-            public void put(String key, Object value) {
+            public CompletableFuture<Void> put(String key, Object value) {
                 Objects.requireNonNull(key, "Key cannot be null");
+
+                CompletableFuture<Void> contextFuture = context
+                        .createCompletableFuture();
+
                 synchronized (topic) {
                     topic.applyChange(new PutChange(name, key, value));
                 }
+
+                context.dispatchAction(() -> contextFuture.complete(null));
+                return contextFuture;
             }
 
             @Override

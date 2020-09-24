@@ -1,16 +1,17 @@
 package com.vaadin.collaborationengine;
 
-import java.lang.ref.WeakReference;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
+import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.lang.ref.WeakReference;
+import java.util.concurrent.CompletableFuture;
 
 import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
 
@@ -23,20 +24,7 @@ public class CollaborationEngineTest {
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
-        context = new ConnectionContext() {
-            @Override
-            public Registration setActivationHandler(
-                    ActivationHandler handler) {
-                handler.setActive(true);
-                return null;
-            }
-
-            @Override
-            public void dispatchAction(Command action) {
-                // no impl
-            }
-        };
-
+        context = new EagerConnectionContext();
         connectionCallback = topicConnection -> () -> {
             // no impl
         };
@@ -89,19 +77,7 @@ public class CollaborationEngineTest {
                     return null;
                 });
 
-        ConnectionContext otherContext = new ConnectionContext() {
-            @Override
-            public Registration setActivationHandler(
-                    ActivationHandler handler) {
-                handler.setActive(true);
-                return null;
-            }
-
-            @Override
-            public void dispatchAction(Command action) {
-                // no impl
-            }
-        };
+        ConnectionContext otherContext = new EagerConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
                 topicConnection -> {
                     topics[1] = topicConnection.getTopic();
@@ -206,6 +182,11 @@ public class CollaborationEngineTest {
         @Override
         public void dispatchAction(Command action) {
             action.execute();
+        }
+
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            return new CompletableFuture<>();
         }
     }
 }

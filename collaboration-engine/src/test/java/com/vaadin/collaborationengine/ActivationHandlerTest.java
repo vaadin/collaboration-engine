@@ -1,15 +1,15 @@
 package com.vaadin.collaborationengine;
 
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
-import java.lang.ref.WeakReference;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.flow.server.Command;
+import java.lang.ref.WeakReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ActivationHandlerTest {
 
@@ -146,6 +146,11 @@ public class ActivationHandlerTest {
         @Override
         public void dispatchAction(Command action) {
             action.execute();
+        }
+
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            return new CompletableFuture<>();
         }
     }
 }

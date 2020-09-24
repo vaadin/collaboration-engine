@@ -17,15 +17,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
 
 public class CollaborationMapTest {
 
@@ -58,25 +60,14 @@ public class CollaborationMapTest {
 
     }
 
+    private ToggleableConnectionContext context;
     private TopicConnection connection;
     private CollaborationMap map;
     private MapSubscriberSpy spy;
 
     @Before
     public void init() {
-        ConnectionContext context = new ConnectionContext() {
-            @Override
-            public Registration setActivationHandler(
-                    ActivationHandler handler) {
-                handler.setActive(true);
-                return null;
-            }
-
-            @Override
-            public void dispatchAction(Command action) {
-                action.execute();
-            }
-        };
+        context = new ToggleableConnectionContext();
 
         new CollaborationEngine().openTopicConnection(context, "topic",
                 topicConnection -> {
@@ -132,35 +123,34 @@ public class CollaborationMapTest {
     }
 
     @Test
-    public void mapWithSubscriber_replace_valueChangedAndEventFired() {
+    public void mapWithSubscriber_replace_valueChangedAndEventFired()
+            throws ExecutionException, InterruptedException {
         map.subscribe(spy);
 
         spy.addExpectedEvent("one", null, "first");
-        boolean succeed = map.replace("one", null, "first");
-
-        Assert.assertTrue("Replace should be successful", succeed);
+        Boolean succeeded = map.replace("one", null, "first").get();
+        Assert.assertTrue("Replace should be successful", succeeded);
 
         spy.assertNoExpectedEvents();
-
         Assert.assertEquals("first", map.get("one"));
     }
 
     @Test
-    public void mapWithSubscriber_replaceWrongExpectedValue_noChange() {
+    public void mapWithSubscriber_replaceWrongExpectedValue_noChange()
+            throws ExecutionException, InterruptedException {
         map.subscribe(spy);
 
-        boolean succeeded = map.replace("one", "other", "first");
-
+        Boolean succeeded = map.replace("one", "other", "first").get();
         Assert.assertFalse("Replace should not succeed", succeeded);
         Assert.assertNull("Old value should be present", map.get("one"));
     }
 
     @Test
-    public void mapWithSubscriber_replaceCurrentValue_succeedNoEvent() {
+    public void mapWithSubscriber_replaceCurrentValue_succeedNoEvent()
+            throws ExecutionException, InterruptedException {
         map.subscribe(spy);
 
-        boolean succeeded = map.replace("one", null, null);
-
+        Boolean succeeded = map.replace("one", null, null).get();
         Assert.assertTrue("Replace should succeed", succeeded);
         // spy would have throw if an event was fired
     }
@@ -231,5 +221,45 @@ public class CollaborationMapTest {
         map.put("one", null);
 
         spy.assertNoExpectedEvents();
+    }
+
+    @Test
+    public void put_contextCannotDispatch_unresolved() {
+        context.setAllowDispatch(false);
+        CompletableFuture<Void> put = map.put("one", "first");
+        Assert.assertFalse(put.isDone());
+    }
+
+    @Test
+    public void replace_contextCannotDispatch_unresolved() {
+        map.put("one", "first");
+        context.setAllowDispatch(false);
+        CompletableFuture<Boolean> replace = map.replace("one", "first",
+                "second");
+        Assert.assertFalse(replace.isDone());
+    }
+
+    @Test
+    public void replace_contextCanDispatch_resolved()
+            throws InterruptedException, ExecutionException {
+        map.put("one", "first");
+        Boolean isReplaced = map.replace("one", "first", "second").get();
+        Assert.assertTrue(isReplaced);
+    }
+
+    private class ToggleableConnectionContext extends EagerConnectionContext {
+
+        private boolean allowDispatch = true;
+
+        public void setAllowDispatch(boolean allowDispatch) {
+            this.allowDispatch = allowDispatch;
+        }
+
+        @Override
+        public void dispatchAction(Command action) {
+            if (allowDispatch) {
+                action.execute();
+            }
+        }
     }
 }

@@ -225,15 +225,17 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
 
     private void updateUsers(CollaborationMap map,
             SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
-        while (true) {
-            String oldValue = (String) map.get(KEY);
-            List<UserInfo> oldUsers = jsonToUsers(oldValue);
-            List<UserInfo> newUsers = updater.apply(oldUsers.stream())
-                    .collect(Collectors.toList());
-            if (map.replace(KEY, oldValue, usersToJson(newUsers))) {
-                break;
-            }
-        }
+        String oldValue = (String) map.get(KEY);
+        List<UserInfo> oldUsers = jsonToUsers(oldValue);
+        List<UserInfo> newUsers = updater.apply(oldUsers.stream())
+                .collect(Collectors.toList());
+
+        map.replace(KEY, oldValue, usersToJson(newUsers))
+                .thenAccept(success -> {
+                    if (!success) {
+                        updateUsers(map, updater);
+                    }
+                });
     }
 
     private void refreshItems() {

@@ -176,13 +176,13 @@ public class MainView extends VerticalLayout {
 
     private static <T> void updateMaps(CollaborationMap map, String key,
             T nullValue, Function<T, T> updater) {
-        while (true) {
-            T oldValue = (T) map.get(key);
-            T newValue = updater.apply(oldValue != null ? oldValue : nullValue);
-            if (map.replace(key, oldValue, newValue)) {
-                return;
+        T oldValue = (T) map.get(key);
+        T newValue = updater.apply(oldValue != null ? oldValue : nullValue);
+        map.replace(key, oldValue, newValue).thenAccept(success -> {
+            if (!success) {
+                updateMaps(map, key, nullValue, updater);
             }
-        }
+        });
     }
 
     private static void logEditorFocused(TopicConnection topicConnection,

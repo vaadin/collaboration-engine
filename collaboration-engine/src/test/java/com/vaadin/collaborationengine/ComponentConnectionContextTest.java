@@ -1,12 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import com.vaadin.collaborationengine.util.TestComponent;
@@ -17,6 +10,12 @@ import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.ServiceException;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.lang.ref.WeakReference;
+import java.util.Arrays;
 
 public class ComponentConnectionContextTest {
     private MockUI ui;

@@ -145,9 +145,12 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     public void bind_deactivate_setFieldValue_sharedValueUpdated() {
         client.bind();
         client.attach();
-        client.detach(); // connection is deactivated but the binding remains
+        client.detach();
+
         field.setValue("bar");
-        Assert.assertEquals("bar", getSharedValue("value"));
+        Assert.assertNull(
+                "Binder which has a deactivated connection should not update the map",
+                getSharedValue("value"));
     }
 
     @Test

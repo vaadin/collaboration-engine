@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasValue;
@@ -375,6 +374,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private void onConnectionDeactivate() {
         fieldToPropertyName.values().forEach(this::removeEditor);
+        this.topic = null;
     }
 
     @SuppressWarnings("rawtypes")
@@ -422,15 +422,20 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     @Override
     protected void removeBindingInternal(Binding<BEAN, ?> binding) {
+        // Registration should be removed first, so it can e.g. remove editors
+        // in map.
+        // If the attached component is removed from the context first and the
+        // connection is deactivated, registration removal can't update map
+        // value.
+        Registration registration = bindingRegistrations.remove(binding);
+        if (registration != null) {
+            registration.remove();
+        }
+
         String propertyName = fieldToPropertyName.remove(binding.getField());
         propertyTypes.remove(propertyName);
         if (connectionContext != null) {
             connectionContext.removeComponent((Component) binding.getField());
-        }
-
-        Registration registration = bindingRegistrations.remove(binding);
-        if (registration != null) {
-            registration.remove();
         }
         super.removeBindingInternal(binding);
     }

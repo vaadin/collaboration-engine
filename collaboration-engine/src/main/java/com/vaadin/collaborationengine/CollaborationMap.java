@@ -12,6 +12,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import com.vaadin.flow.shared.Registration;
@@ -46,8 +47,10 @@ public interface CollaborationMap {
      * @param value
      *            the value to set, or <code>null</code> to remove the
      *            association
+     * @return a completable future that is resolved when the data update is
+     *         completed.
      */
-    void put(String key, Object value);
+    CompletableFuture<Void> put(String key, Object value);
 
     /**
      * Atomically replaces the value for a key if and only if the current value
@@ -65,11 +68,13 @@ public interface CollaborationMap {
      * @param newValue
      *            the new value to set, or <code>null</code> to remove the
      *            association
-     * @return <code>true</code> if the expected value was present so that the
-     *         operation could proceed; <code>false</code> if the expected value
-     *         was not present
+     * @return a boolean completable future that is resolved when the data
+     *         update is completed. The resolved value is <code>true</code> if
+     *         the expected value was present so that the operation could
+     *         proceed; <code>false</code> if the expected value was not present
      */
-    boolean replace(String key, Object expectedValue, Object newValue);
+    CompletableFuture<Boolean> replace(String key, Object expectedValue,
+            Object newValue);
 
     /**
      * Gets a stream of the currently available keys. The stream is backed by a

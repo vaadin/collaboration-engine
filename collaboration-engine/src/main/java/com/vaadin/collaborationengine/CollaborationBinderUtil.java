@@ -203,13 +203,13 @@ public class CollaborationBinderUtil {
     private static void updateMapValue(TopicConnection topicConnection,
             String propertyName, Function<String, String> updater) {
         CollaborationMap map = getMap(topicConnection);
-        while (true) {
-            String oldValue = (String) map.get(propertyName);
-            String newValue = updater.apply(oldValue);
-            if (map.replace(propertyName, oldValue, newValue)) {
-                return;
+        String oldValue = (String) map.get(propertyName);
+        String newValue = updater.apply(oldValue);
+        map.replace(propertyName, oldValue, newValue).thenAccept(success -> {
+            if (!success) {
+                updateMapValue(topicConnection, propertyName, updater);
             }
-        }
+        });
     }
 
     static FieldState getFieldState(TopicConnection topic, String propertyName,

@@ -1,11 +1,12 @@
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
+import java.util.concurrent.CompletableFuture;
 
 public class ConnectionContextTest {
 
@@ -56,6 +57,11 @@ public class ConnectionContextTest {
         public void dispatchAction(Command action) {
             isCalled = true;
             action.execute();
+        }
+
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            return new CompletableFuture<>();
         }
 
         void reset() {

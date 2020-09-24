@@ -5,6 +5,8 @@ import com.vaadin.collaborationengine.ConnectionContext;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
+import java.util.concurrent.CompletableFuture;
+
 public class EagerConnectionContext implements ConnectionContext {
 
     @Override
@@ -16,5 +18,10 @@ public class EagerConnectionContext implements ConnectionContext {
     @Override
     public void dispatchAction(Command action) {
         action.execute();
+    }
+
+    @Override
+    public <T> CompletableFuture<T> createCompletableFuture() {
+        return new CompletableFuture<>();
     }
 }

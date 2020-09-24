@@ -5,9 +5,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
@@ -171,5 +173,16 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (localUI != null) {
             localUI.access(action);
         }
+    }
+
+    @Override
+    public <T> CompletableFuture<T> createCompletableFuture() {
+        UI localUI = this.ui;
+        if (localUI == null) {
+            throw new IllegalStateException(
+                    "The topic connection within this context maybe deactivated."
+                            + "Make sure the context has at least one component attached to the UI.");
+        }
+        return new DeadlockDetectingCompletableFuture<>(localUI.getSession());
     }
 }

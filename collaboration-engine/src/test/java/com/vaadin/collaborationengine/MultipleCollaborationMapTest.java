@@ -1,5 +1,10 @@
 package com.vaadin.collaborationengine;
 
+import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -8,13 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
-
 public class MultipleCollaborationMapTest {
 
     private TopicConnection connection;
@@ -22,19 +20,7 @@ public class MultipleCollaborationMapTest {
 
     @Before
     public void init() {
-        ConnectionContext context = new ConnectionContext() {
-            @Override
-            public Registration setActivationHandler(
-                    ActivationHandler handler) {
-                handler.setActive(true);
-                return null;
-            }
-
-            @Override
-            public void dispatchAction(Command action) {
-                action.execute();
-            }
-        };
+        ConnectionContext context = new EagerConnectionContext();
         new CollaborationEngine().openTopicConnection(context, "form",
                 topic -> {
                     this.connection = topic;

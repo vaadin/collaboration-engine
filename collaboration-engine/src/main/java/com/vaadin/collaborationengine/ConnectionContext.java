@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.concurrent.CompletableFuture;
+
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
@@ -41,4 +43,12 @@ public interface ConnectionContext {
      *            the action to be executed in the context
      */
     void dispatchAction(Command action);
+
+    /**
+     * Gets a completable future that needs to be resolved within the current
+     * context.
+     *
+     * @return the {@link CompletableFuture} to be resolved
+     */
+    <T> CompletableFuture<T> createCompletableFuture();
 }
