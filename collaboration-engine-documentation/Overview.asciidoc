@@ -1,17 +1,11 @@
----
-title: Overview
-order: 1
-layout: page
----
-
 [[ce.overview]]
-= Overview
+== Overview
 
 Collaboration Engine is a library for creating collaborative features in web apps,
 allowing end-users to collaborate together to increase productivity
 and achieve better results.
 
-== Central concepts
+=== Central concepts
 
 Collaboration between users is managed by collecting data into "topic" instances that are shared between all users interacting with the same part of the application.
 There is a separate connection (`TopicConnection`) to a topic for each user.
@@ -24,7 +18,7 @@ A topic has multiple named maps which are shared across connections, each map co
 It is strongly recommended that shared values are immutable instances since subscribers are notified only when the shared value is replaced with another instance but not when the contents of an existing value is updated.
 For complex values, a conditional replace operation is available to prevent overwriting concurrent modifications to other parts of the shared data.
 
-== Limitations
+=== Limitations
 This is an early iteration of Collaboration Engine with several limitations that will be addressed in the future.
 The most noticeable limitations include:
 

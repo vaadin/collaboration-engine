@@ -1,11 +1,5 @@
----
-title: Tutorial
-order: 2
-layout: page
----
-
 [[ce.tutorial]]
-= Getting Started with Collaboration Engine
+== Getting Started with Collaboration Engine
 :sectnums:
 
 This tutorial shows basic steps to set up Collaboration Engine in your Vaadin project
@@ -16,13 +10,13 @@ and add the following collaboration features to a simple form:
 * Users can see who is currently editing each field (a feature referred to as field highlight)
 
 [[ce.tutorial.setup]]
-== Prepare the Application
+=== Prepare the Application
 
-=== Set Up a Vaadin Project
+==== Set Up a Vaadin Project
 Download an empty Vaadin 14 project from https://vaadin.com/start/v14
 using any technology stack.
 
-=== Update Project Dependencies
+==== Update Project Dependencies
 In the project's pom.xml file, add the `vaadin-prerelease` repository:
 [source, xml]
 ----
@@ -51,7 +45,7 @@ The latest version of this tutorial might use functionality that is only availab
 You can use the branch selector in the GitHub UI to view the tutorial that corresponds to a specific release tag.
 
 [[ce.tutorial.add-collaborative-feature]]
-== Add Collaboration Features
+=== Add Collaboration Features
 This tutorial will build a form where the users can edit the name and
 date of birth of a person. Let's start by adding the `Person` bean class.
 
@@ -79,7 +73,7 @@ public class Person {
 }
 ----
 
-=== Create a Simple View
+==== Create a Simple View
 
 To start writing the actual application, create a view with a text field
 and a date picker but not yet any collaborative functionality.
@@ -99,7 +93,7 @@ public class TutorialView extends VerticalLayout {
 }
 ----
 
-=== Provide User Information
+==== Provide User Information
 
 The `UserInfo` class represents an end user of a collaborative application.
 It has properties such as `name` and `image`, which will be used to display
@@ -124,7 +118,7 @@ used in the user's avatar as well as in the field highlight when editing a field
 This property is generated automatically based on the user id by default, so we
 don't have to set it explicitly.
 
-=== Add User Avatars
+==== Add User Avatars
 
 To display the avatars of all other users who are currently in the application,
 create a `CollaborationAvatarGroup` component.
@@ -164,7 +158,7 @@ HorizontalLayout allAvatars = new HorizontalLayout(avatarGroup, avatar);
 addComponentAsFirst(allAvatars);
 ----
 
-=== Add Field Collaboration
+==== Add Field Collaboration
 
 To enable collaboration with the text field and date picker components, we'll use a class called
 `CollaborationBinder`. It extends the functionality of the `Binder` class, which
@@ -200,7 +194,7 @@ as separate arguments instead of the property name, do not work with the
 collaboration binder. It needs the property name.
 
 [[ce.tutorial.run]]
-== Run the Application
+=== Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
 The exact steps depend on the chosen tech stack.
 * Open http://localhost:8080/ in multiple browser tabs and test the app: notice the avatars,
