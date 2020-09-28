@@ -112,7 +112,7 @@ it can be removed when the component is detached to avoid leaking memory.
 ----
 TIP: In case there are many registrations, they can be combined by `Registration.combine(registration1, registration2);`.
 
-[[ce.tutorial.run]]
+[[ce.topic-tutorial.run]]
 === Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
 The exact steps depend on the chosen tech stack.
