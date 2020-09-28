@@ -451,6 +451,29 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
+    public void complexTypeWithCallbacks_valueSerializedAndDeserializedProperly() {
+        GenericTestField<TestBean> field = new GenericTestField<>();
+
+        client.binder.forField(field, TestBean::getValue, TestBean::new)
+                // Converter to allow using the existing bean property with the
+                // binder that is already set up
+                .withConverter(TestBean::getValue, TestBean::new).bind("value");
+        client.attach(field);
+
+        Assert.assertEquals(String.class,
+                client.binder.getPropertyType("value"));
+
+        field.setValue(new TestBean("Lorem"));
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(topicConnection, "value", String.class);
+        Assert.assertEquals("Lorem", fieldState.value);
+
+        CollaborationBinderUtil.setFieldValue(topicConnection, "value",
+                "Ipsum");
+        Assert.assertEquals("Ipsum", field.getValue().getValue());
+    }
+
+    @Test
     public void bindInstanceFields_simpleCase_fieldHasExpectedType() {
         class Target {
             private TestField value = new TestField();

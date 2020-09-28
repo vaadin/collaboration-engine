@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasValue;
@@ -42,6 +43,7 @@ import com.vaadin.flow.data.binder.BindingValidationStatusHandler;
 import com.vaadin.flow.data.binder.PropertyDefinition;
 import com.vaadin.flow.data.binder.Setter;
 import com.vaadin.flow.data.converter.Converter;
+import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.internal.ReflectTools;
@@ -69,24 +71,50 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     private static final List<Class<?>> SUPPORTED_PARAMETERIZED_TYPES = Arrays
             .asList(List.class, Set.class);
 
-    /**
-     * Value holder for storing field types using
-     * {@link ComponentUtil#setData(Component, Class, Object)}.
-     */
-    private static class FieldTypeWrapper {
-        private final Type type;
+    private static class FieldConfiguration {
+        private final SerializableFunction<Object, Object> serializer;
+        private final SerializableFunction<Object, Object> deserializer;
+        private final Type deserializationType;
 
-        private FieldTypeWrapper(Type type) {
-            this.type = type;
+        private FieldConfiguration(Type deserializationType,
+                SerializableFunction<Object, Object> serializer,
+                SerializableFunction<Object, Object> deserializer) {
+            this.serializer = Objects.requireNonNull(serializer,
+                    "serializer cannot be null");
+            this.deserializer = Objects.requireNonNull(deserializer,
+                    "deserializer cannot be null");
+            this.deserializationType = Objects
+                    .requireNonNull(deserializationType, "type cannot be null");
+        }
+
+        private FieldConfiguration(Type deserializationType) {
+            this(deserializationType, SerializableFunction.identity(),
+                    SerializableFunction.identity());
         }
 
         private static void set(HasValue<?, ?> field, Type fieldType) {
             throwIfTypeNotSupported(fieldType, null);
+            FieldConfiguration configuration = new FieldConfiguration(
+                    fieldType);
+            configuration.store(field);
+        }
+
+        private static <T> void set(HasValue<?, T> field,
+                SerializableFunction<T, String> serializer,
+                SerializableFunction<String, T> deserializer) {
+
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            FieldConfiguration configuration = new FieldConfiguration(
+                    String.class, (SerializableFunction) serializer,
+                    (SerializableFunction) deserializer);
+            configuration.store(field);
+        }
+
+        private void store(HasValue<?, ?> field) {
             if (field instanceof Component) {
                 Component fieldAsComponent = (Component) field;
-                ComponentUtil.setData(fieldAsComponent, FieldTypeWrapper.class,
-                        new FieldTypeWrapper(fieldType));
-
+                ComponentUtil.setData(fieldAsComponent,
+                        FieldConfiguration.class, this);
             } else {
                 throw new IllegalArgumentException(
                         "CollaborationBinder can only be used with component fields. The provided field is of type "
@@ -94,17 +122,14 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             }
         }
 
-        private static Type getAndClear(HasValue<?, ?> field) {
+        private static FieldConfiguration getAndClear(HasValue<?, ?> field) {
             if (field instanceof Component) {
                 Component fieldAsComponent = (Component) field;
-                FieldTypeWrapper wrapper = ComponentUtil
-                        .getData(fieldAsComponent, FieldTypeWrapper.class);
-                if (wrapper != null) {
-                    Type type = wrapper.type;
-                    ComponentUtil.setData(fieldAsComponent,
-                            FieldTypeWrapper.class, null);
-                    return type;
-                }
+                FieldConfiguration wrapper = ComponentUtil
+                        .getData(fieldAsComponent, FieldConfiguration.class);
+                ComponentUtil.setData(fieldAsComponent,
+                        FieldConfiguration.class, null);
+                return wrapper;
             }
 
             return null;
@@ -145,7 +170,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
         private String propertyName = null;
         private boolean typeIsConverted = false;
-        private Type explicitFieldType;
+        private FieldConfiguration explicitFieldConfiguration;
 
         protected CollaborationBindingBuilderImpl(
                 CollaborationBinder<BEAN> binder, HasValue<?, FIELDVALUE> field,
@@ -153,7 +178,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
                 BindingValidationStatusHandler statusHandler) {
             super(binder, field, converterValidatorChain, statusHandler);
 
-            explicitFieldType = FieldTypeWrapper.getAndClear(field);
+            explicitFieldConfiguration = FieldConfiguration.getAndClear(field);
         }
 
         @Override
@@ -247,7 +272,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
-    private final Map<String, Type> propertyTypes = new HashMap<>();
+    private final Map<String, FieldConfiguration> propertyConfiguration = new HashMap<>();
 
     /**
      * Creates a new collaboration binder. It uses reflection based on the
@@ -275,9 +300,10 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             PropertyDefinition<BEAN, ?> definition) {
         CollaborationBindingBuilderImpl<?, ?, ?> binding = (CollaborationBindingBuilderImpl<?, ?, ?>) baseBinding;
 
-        Type fieldType = findFieldType(binding, definition);
+        FieldConfiguration configuration = findFieldConfiguration(binding,
+                definition);
 
-        propertyTypes.put(definition.getName(), fieldType);
+        propertyConfiguration.put(definition.getName(), configuration);
         return super.configureBinding(baseBinding, definition);
     }
 
@@ -326,12 +352,12 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
                 .anyMatch(candidate -> candidate.isAssignableFrom(type));
     }
 
-    private static Type findFieldType(
+    private static FieldConfiguration findFieldConfiguration(
             CollaborationBindingBuilderImpl<?, ?, ?> builder,
             PropertyDefinition<?, ?> propertyDefinition) {
-        if (builder.explicitFieldType != null) {
-            // Use type defined by developer if available
-            return builder.explicitFieldType;
+        if (builder.explicitFieldConfiguration != null) {
+            // Use explicilty defined config if available
+            return builder.explicitFieldConfiguration;
         }
 
         if (!builder.typeIsConverted) {
@@ -345,7 +371,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             throwIfTypeNotSupported(propertyType,
                     () -> "of property '" + builder.propertyName + "'");
 
-            return propertyType;
+            return new FieldConfiguration(propertyType);
         }
 
         throw new IllegalStateException(
@@ -361,7 +387,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             FieldState fieldState = CollaborationBinderUtil.getFieldState(topic,
                     propertyName, getPropertyType(propertyName));
 
-            setFieldValueFromFieldState(field, fieldState);
+            setFieldValueFromFieldState(field, propertyName, fieldState);
 
             FieldHighlighter.setEditors(field, fieldState.editors, localUser);
         });
@@ -369,7 +395,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     // non-private for testing purposes
     Type getPropertyType(String propertyName) {
-        return propertyTypes.get(propertyName);
+        return propertyConfiguration.get(propertyName).deserializationType;
     }
 
     private void onConnectionDeactivate() {
@@ -383,25 +409,32 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             // the connection isn't activated.
             return;
         }
-        setFieldValueFromFieldState(field,
+        setFieldValueFromFieldState(field, propertyName,
                 CollaborationBinderUtil.getFieldState(topic, propertyName,
                         getPropertyType(propertyName)));
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private void setFieldValueFromFieldState(HasValue field,
-            FieldState fieldState) {
-        if (fieldState.value == null) {
+            String propertyName, FieldState fieldState) {
+        Object stateValue = fieldState.value;
+        if (stateValue == null) {
             field.clear();
         } else {
-            field.setValue(fieldState.value);
+            FieldConfiguration fieldConfiguration = propertyConfiguration
+                    .get(propertyName);
+            field.setValue(fieldConfiguration.deserializer.apply(stateValue));
         }
     }
 
     @SuppressWarnings("rawtypes")
     private void setMapValueFromField(String propertyName, HasValue field) {
-        Object value = field.isEmpty() ? null : field.getValue();
         if (topic != null) {
+            Object value = field.isEmpty() ? null : field.getValue();
+            if (value != null) {
+                value = propertyConfiguration.get(propertyName).serializer
+                        .apply(value);
+            }
             CollaborationBinderUtil.setFieldValue(topic, propertyName, value);
         }
     }
@@ -433,7 +466,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         }
 
         String propertyName = fieldToPropertyName.remove(binding.getField());
-        propertyTypes.remove(propertyName);
+        propertyConfiguration.remove(propertyName);
         if (connectionContext != null) {
             connectionContext.removeComponent((Component) binding.getField());
         }
@@ -666,6 +699,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * parameterized.
      *
      * @see #forField(HasValue, Class)
+     * @see #forField(HasValue, SerializableFunction, SerializableFunction)
      * @see #forCollectionField(HasValue, Class, Class)
      */
     @Override
@@ -688,6 +722,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * property.
      *
      * @see #forField(HasValue)
+     * @see #forField(HasValue, SerializableFunction, SerializableFunction)
      * @see #forCollectionField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
@@ -700,7 +735,44 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      */
     public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forField(
             HasValue<?, FIELDVALUE> field, Class<FIELDVALUE> fieldType) {
-        FieldTypeWrapper.set(field, fieldType);
+        FieldConfiguration.set(field, fieldType);
+        return forField(field);
+    }
+
+    /**
+     * Creates a new binding for the given field and conversion callbacks. The
+     * returned builder may be further configured before invoking
+     * {@link BindingBuilder#bind(String)} which completes the binding. Until
+     * {@code Binding.bind} is called, the binding has no effect.
+     * <p>
+     * The field value will be sent over the network to synchronize the value
+     * with other users also editing the same field. This method allows defining
+     * callbacks to convert between the field value and the value that is sent
+     * over the network. This is necessary when using complex objects that are
+     * not suitable to be sent as-is over the network.
+     *
+     * @see #forField(HasValue)
+     * @see #forField(HasValue, Class)
+     * @see #forCollectionField(HasValue, Class, Class)
+     *
+     * @param <FIELDVALUE>
+     * @param field
+     *            the field to be bound, not <code>null</code>
+     * @param serializer
+     *            a callback that receives a field value (not <code>null</code>)
+     *            and return the value to send over the network (not
+     *            <code>null</code>). The callback cannot be <code>null</code>
+     * @param deserializer
+     *            a callback that receives a value produced by the serializer
+     *            callback (not <code>null</code>) and return the field value to
+     *            use. The callback cannot be <code>null</code>
+     * @return the new binding builder
+     */
+    public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forField(
+            HasValue<?, FIELDVALUE> field,
+            SerializableFunction<FIELDVALUE, String> serializer,
+            SerializableFunction<String, FIELDVALUE> deserializer) {
+        FieldConfiguration.set(field, serializer, deserializer);
         return forField(field);
     }
 
@@ -716,6 +788,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forField(HasValue)
      * @see #forField(HasValue, Class)
+     * @see #forField(HasValue, SerializableFunction, SerializableFunction)
      *
      * @param <FIELDVALUE>
      *            the base type of the collection
@@ -734,7 +807,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             HasValue<?, FIELDVALUE> field,
             Class<? super FIELDVALUE> collectionType,
             Class<ELEMENT> elementType) {
-        FieldTypeWrapper.set(field, ReflectTools
+        FieldConfiguration.set(field, ReflectTools
                 .createParameterizedType(collectionType, elementType));
         return forField(field);
     }
@@ -750,6 +823,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * parameterized.
      *
      * @see #forMemberField(HasValue, Class)
+     * @see #forMemberField(HasValue, SerializableFunction,
+     *      SerializableFunction)
      * @see #forMemberCollectionField(HasValue, Class, Class)
      */
     @Override
@@ -760,9 +835,10 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     /**
-     * Creates a new binding for the given field. The returned builder may be
-     * further configured before invoking {@link #bindInstanceFields(Object)}.
-     * Unlike with the {@link #forField(HasValue)} method, no explicit call to
+     * Creates a new binding for the given field and type. The returned builder
+     * may be further configured before invoking
+     * {@link #bindInstanceFields(Object)}. Unlike with the
+     * {@link #forField(HasValue)} method, no explicit call to
      * {@link BindingBuilder#bind(String)} is needed to complete this binding in
      * the case that the name of the field matches a field name found in the
      * bean.
@@ -774,6 +850,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * property.
      *
      * @see #forMemberField(HasValue)
+     * @see #forMemberField(HasValue, SerializableFunction,
+     *      SerializableFunction)
      * @see #forMemberCollectionField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
@@ -786,8 +864,48 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      */
     public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
             HasValue<?, FIELDVALUE> field, Class<FIELDVALUE> fieldType) {
-        FieldTypeWrapper.set(field, fieldType);
+        FieldConfiguration.set(field, fieldType);
         return forMemberField(field);
+    }
+
+    /**
+     * Creates a new binding for the given field and conversion callbacks. The
+     * returned builder may be further configured before invoking
+     * {@link #bindInstanceFields(Object)}. Unlike with the
+     * {@link #forField(HasValue)} method, no explicit call to
+     * {@link BindingBuilder#bind(String)} is needed to complete this binding in
+     * the case that the name of the field matches a field name found in the
+     * bean.
+     * <p>
+     * The field value will be sent over the network to synchronize the value
+     * with other users also editing the same field. This method allows defining
+     * callbacks to convert between the field value and the value that is sent
+     * over the network. This is necessary when using complex objects that are
+     * not suitable to be sent as-is over the network.
+     *
+     * @see #forMemberField(HasValue)
+     * @see #forMemberField(HasValue, Class)
+     * @see #forMemberCollectionField(HasValue, Class, Class)
+     *
+     * @param <FIELDVALUE>
+     * @param field
+     *            the field to be bound, not <code>null</code>
+     * @param serializer
+     *            a callback that receives a field value (not <code>null</code>)
+     *            and return the value to send over the network (not
+     *            <code>null</code>). The callback cannot be <code>null</code>
+     * @param deserializer
+     *            a callback that receives a value produced by the serializer
+     *            callback (not <code>null</code>) and return the field value to
+     *            use. The callback cannot be <code>null</code>
+     * @return the new binding builder
+     */
+    public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
+            HasValue<?, FIELDVALUE> field,
+            SerializableFunction<FIELDVALUE, String> serializer,
+            SerializableFunction<String, FIELDVALUE> deserializer) {
+        FieldConfiguration.set(field, serializer, deserializer);
+        return forField(field);
     }
 
     /**
@@ -805,6 +923,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forMemberField(HasValue)
      * @see #forMemberField(HasValue, Class)
+     * @see #forMemberField(HasValue, SerializableFunction,
+     *      SerializableFunction)
      *
      * @param <FIELDVALUE>
      *            the base type of the collection
@@ -823,7 +943,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             HasValue<?, FIELDVALUE> field,
             Class<? super FIELDVALUE> collectionType,
             Class<ELEMENT> elementType) {
-        FieldTypeWrapper.set(field, ReflectTools
+        FieldConfiguration.set(field, ReflectTools
                 .createParameterizedType(collectionType, elementType));
         return forMemberField(field);
     }
