@@ -12,3 +12,5 @@ include::Overview.asciidoc[]
 include::Tutorial.asciidoc[]
 
 include::TopicAPI.asciidoc[]
+
+include::CollaborationBinder.asciidoc[]

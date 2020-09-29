@@ -189,10 +189,6 @@ binder.setTopic("tutorial", () -> new Person());
 This piece of code takes care of propagating the field values among users,
 as well as displaying the currently focused user with the field highlight.
 
-NOTE: The other bind variants, which take the getter and the setter methods
-as separate arguments instead of the property name, do not work with the
-collaboration binder. It needs the property name.
-
 [[ce.tutorial.run]]
 === Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
