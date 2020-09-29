@@ -633,7 +633,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
                     .forEach(FieldHighlighter::removeEditors);
             topicRegistration = null;
             connectionContext = null;
-            topic = null;
         }
 
         if (topicId == null) {
