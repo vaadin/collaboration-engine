@@ -129,8 +129,9 @@ public class MainView extends VerticalLayout {
          * detaching the form
          */
         closeConnection = CollaborationEngine.getInstance().openTopicConnection(
-                submitButton, TOPIC_ID, topic -> configureTopicConnection(topic,
-                        username, firstName, lastName));
+                submitButton, TOPIC_ID, user,
+                topic -> configureTopicConnection(topic, username, firstName,
+                        lastName));
     }
 
     private Registration configureTopicConnection(TopicConnection topic,

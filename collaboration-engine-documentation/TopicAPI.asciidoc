@@ -44,10 +44,14 @@ By default, the connection is deactivated until its related component is attache
 
 Open a connection to the `tutorial` topic and define the activation callback
 which will be triggered when the current `TutorialView` component (i.e. `this`) is attached.
+The user who is related to the topic connection must be defined.
 
 [source, java]
 ----
-CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
+//TODO: replace hard-coded ID and username by data from the actual logged in user
+UserInfo localUser = new UserInfo(UUID.randomUUID().toString());
+localUser.setName("Jon Doe");
+CollaborationEngine.getInstance().openTopicConnection(this, "tutorial", localUser,
     topic -> {
         // logic for the connection's activation callback
     });

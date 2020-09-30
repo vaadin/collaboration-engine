@@ -1,12 +1,13 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 public class ConnectionContextTest {
 
@@ -19,14 +20,15 @@ public class ConnectionContextTest {
         CollaborationEngine collaborationEngine = new CollaborationEngine();
         simpleContext = new SimpleConnectionContext();
 
-        collaborationEngine.openTopicConnection(simpleContext, "foo", tc -> {
-            topicConnection = tc;
-            map = tc.getNamedMap("map");
-            map.subscribe(event -> {
-            });
-            return () -> {
-            };
-        });
+        collaborationEngine.openTopicConnection(simpleContext, "foo",
+                SystemUserInfo.get(), tc -> {
+                    topicConnection = tc;
+                    map = tc.getNamedMap("map");
+                    map.subscribe(event -> {
+                    });
+                    return () -> {
+                    };
+                });
     }
 
     @Test

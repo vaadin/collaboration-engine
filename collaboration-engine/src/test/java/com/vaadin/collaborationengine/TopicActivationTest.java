@@ -1,14 +1,15 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.MockUI;
-import com.vaadin.collaborationengine.util.TestComponent;
-import com.vaadin.flow.shared.Registration;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.TestComponent;
+import com.vaadin.flow.shared.Registration;
 
 public class TopicActivationTest {
     private CollaborationEngine collaborationEngine;
@@ -27,7 +28,7 @@ public class TopicActivationTest {
         collaborationEngine = new CollaborationEngine(topicActivationHandler);
 
         topicRegistration = collaborationEngine.openTopicConnection(component,
-                "fooTopic", tc -> null);
+                "fooTopic", SystemUserInfo.get(), tc -> null);
     }
 
     @Test
@@ -41,7 +42,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                tc -> null);
+                SystemUserInfo.get(), tc -> null);
         ui.add(component2);
         // failed if setActive(true) is called again on an activated topic.
     }
@@ -51,7 +52,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                tc -> null);
+                SystemUserInfo.get(), tc -> null);
         ui.add(component2);
 
         ui.remove(component);
@@ -79,7 +80,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                tc -> null);
+                SystemUserInfo.get(), tc -> null);
         ui.add(component2);
 
         topicActivationHandler.assertActivated("fooTopic", true,
@@ -113,7 +114,7 @@ public class TopicActivationTest {
 
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "barTopic",
-                tc -> null);
+                SystemUserInfo.get(), tc -> null);
         ui.add(component2);
         topicActivationHandler.assertActivated("barTopic", true, "");
         topicActivationHandler.assertActivated("fooTopic", null,

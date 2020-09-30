@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Hr;
@@ -19,6 +20,7 @@ import com.vaadin.flow.shared.Registration;
 @Push
 public class MainView extends VerticalLayout {
 
+    private UserInfo user = new UserInfo(UUID.randomUUID().toString());
     private VerticalLayout editor = new VerticalLayout();
     private Button button = new Button("Increase");
     private Span span = new Span();
@@ -48,7 +50,7 @@ public class MainView extends VerticalLayout {
 
     private void openConnection() {
         connectionRegistration = CollaborationEngine.getInstance()
-                .openTopicConnection(editor, MainView.class.getName(),
+                .openTopicConnection(editor, MainView.class.getName(), user,
                         topic -> {
                             CollaborationMap map = topic.getNamedMap("values");
                             if (map.get("value") == null) {

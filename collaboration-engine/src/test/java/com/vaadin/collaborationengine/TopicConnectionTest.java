@@ -14,8 +14,10 @@ package com.vaadin.collaborationengine;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,7 +82,7 @@ public class TopicConnectionTest {
     @Before
     public void setup() {
         connectionRegistration = engine.openTopicConnection(context, "topic",
-                connection -> {
+                SystemUserInfo.get(), connection -> {
                     map = connection.getNamedMap("map");
 
                     return () -> {
@@ -90,6 +92,18 @@ public class TopicConnectionTest {
                     };
                 });
 
+    }
+
+    @Test
+    public void getUserInfo_receiveTheOriginUserInstance() {
+        UserInfo randomUser = new UserInfo(UUID.randomUUID().toString());
+        AtomicReference<TopicConnection> topicConnection = new AtomicReference<>();
+        new CollaborationEngine().openTopicConnection(context, "foo",
+                randomUser, tc -> {
+                    topicConnection.set(tc);
+                    return null;
+                });
+        Assert.assertEquals(randomUser, topicConnection.get().getUserInfo());
     }
 
     @Test

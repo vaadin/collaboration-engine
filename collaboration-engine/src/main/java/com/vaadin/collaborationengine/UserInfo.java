@@ -38,10 +38,18 @@ public class UserInfo {
      */
     @JsonCreator
     public UserInfo(@JsonProperty("id") String userId) {
+        this(userId,
+                CollaborationEngine.getInstance().getUserColorIndex(userId));
+    }
+
+    /*
+     * This constructor is for SystemUserInfo so that userColors in CE won't be
+     * messed up by this user.
+     */
+    protected UserInfo(String userId, int colorIndex) {
         Objects.requireNonNull(userId, "Null user id isn't supported");
         this.id = userId;
-        this.colorIndex = CollaborationEngine.getInstance()
-                .getUserColorIndex(this.id);
+        this.colorIndex = colorIndex;
     }
 
     /**

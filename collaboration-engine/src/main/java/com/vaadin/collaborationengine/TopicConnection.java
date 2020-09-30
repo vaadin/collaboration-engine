@@ -36,17 +36,19 @@ public class TopicConnection {
 
     private final Topic topic;
     private final ConnectionContext context;
+    private final UserInfo localUser;
     private Registration closeRegistration;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
 
     private final Consumer<Boolean> topicActivationHandler;
     private final Map<String, List<ChangeNotifier>> subscribersPerMap = new HashMap<>();
 
-    TopicConnection(ConnectionContext context, Topic topic,
+    TopicConnection(ConnectionContext context, Topic topic, UserInfo localUser,
             Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.context = context;
+        this.localUser = localUser;
         this.topicActivationHandler = topicActivationHandler;
 
         closeRegistration = context.setActivationHandler(active -> {
@@ -79,6 +81,15 @@ public class TopicConnection {
 
     Topic getTopic() {
         return topic;
+    }
+
+    /**
+     * Gets the user who is related to this topic connection.
+     *
+     * @return the related user, not {@code null}
+     */
+    public UserInfo getUserInfo() {
+        return localUser;
     }
 
     private void addRegistration(Registration registration) {

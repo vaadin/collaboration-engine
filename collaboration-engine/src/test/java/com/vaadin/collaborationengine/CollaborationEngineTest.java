@@ -1,17 +1,18 @@
 package com.vaadin.collaborationengine;
 
+import java.lang.ref.WeakReference;
+import java.util.concurrent.CompletableFuture;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.lang.ref.WeakReference;
-import java.util.concurrent.CompletableFuture;
 
 import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
 
@@ -33,7 +34,7 @@ public class CollaborationEngineTest {
     @Test
     public void getInstance_notNull() {
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     Assert.assertNotNull(topicConnection);
                     return null;
                 });
@@ -48,38 +49,45 @@ public class CollaborationEngineTest {
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullComponent_throws() {
         collaborationEngine.openTopicConnection((Component) null, "foo",
-                connectionCallback);
+                SystemUserInfo.get(), connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullContext_throws() {
         collaborationEngine.openTopicConnection((ConnectionContext) null, "foo",
-                connectionCallback);
+                SystemUserInfo.get(), connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullId_throws() {
         collaborationEngine.openTopicConnection(context, null,
+                SystemUserInfo.get(), connectionCallback);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void openTopicConnection_nullUserInfo_throws() {
+        collaborationEngine.openTopicConnection(context, "foo", null,
                 connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullCallback_throws() {
-        collaborationEngine.openTopicConnection(context, "foo", null);
+        collaborationEngine.openTopicConnection(context, "foo",
+                SystemUserInfo.get(), null);
     }
 
     @Test
     public void openTopicConnection_sameTopicId_hasSameTopic() {
         Topic[] topics = new Topic[2];
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topics[0] = topicConnection.getTopic();
                     return null;
                 });
 
         ConnectionContext otherContext = new EagerConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topics[1] = topicConnection.getTopic();
                     return null;
                 });
@@ -90,13 +98,13 @@ public class CollaborationEngineTest {
     public void openTopicConnections_distinctTopicIds_hasDistinctTopics() {
         Topic[] topics = new Topic[2];
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topics[0] = topicConnection.getTopic();
                     return null;
                 });
 
         collaborationEngine.openTopicConnection(context, "baz",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topics[1] = topicConnection.getTopic();
                     return null;
                 });
@@ -106,15 +114,17 @@ public class CollaborationEngineTest {
     @Test
     public void reopenTopicConnection_newTopicConnectionInstance() {
         TopicConnection[] connections = new TopicConnection[2];
-        collaborationEngine.openTopicConnection(context, "foo", topic -> {
-            connections[0] = topic;
-            return null;
-        });
+        collaborationEngine.openTopicConnection(context, "foo",
+                SystemUserInfo.get(), topic -> {
+                    connections[0] = topic;
+                    return null;
+                });
         connections[0].deactivateAndClose();
-        collaborationEngine.openTopicConnection(context, "foo", otherTopic -> {
-            connections[1] = otherTopic;
-            return null;
-        });
+        collaborationEngine.openTopicConnection(context, "foo",
+                SystemUserInfo.get(), otherTopic -> {
+                    connections[1] = otherTopic;
+                    return null;
+                });
         Assert.assertNotSame(
                 "TopicConnection instance should not be reused after closing.",
                 connections[0], connections[1]);
@@ -125,10 +135,11 @@ public class CollaborationEngineTest {
             throws InterruptedException {
         SpyConnectionContext spyContext = new SpyConnectionContext();
         Registration registration = collaborationEngine
-                .openTopicConnection(spyContext, "foo", topic -> {
-                    // no impl
-                    return null;
-                });
+                .openTopicConnection(spyContext, "foo", SystemUserInfo.get(),
+                        topic -> {
+                            // no impl
+                            return null;
+                        });
 
         WeakReference weakRef = new WeakReference(
                 spyContext.getActivationHandler());

@@ -12,14 +12,14 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
-
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -84,16 +84,21 @@ public class CollaborationEngine {
      *            the component which hold UI access, not {@code null}
      * @param topicId
      *            the id of the topic to connect to, not {@code null}
+     * @param localUser
+     *            the user who is related to the topic connection, a
+     *            {@link SystemUserInfo} can be used for non-interaction
+     *            threads. Not {@code null}.
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
      * @return the handle that can be used for closing the connection
      */
     public Registration openTopicConnection(Component component, String topicId,
+            UserInfo localUser,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(component, "Connection context can't be null");
         ConnectionContext context = new ComponentConnectionContext(component);
-        return openTopicConnection(context, topicId,
+        return openTopicConnection(context, topicId, localUser,
                 connectionActivationCallback);
     }
 
@@ -106,22 +111,27 @@ public class CollaborationEngine {
      *            context for the connection
      * @param topicId
      *            the id of the topic to connect to, not {@code null}
+     * @param localUser
+     *            the user who is related to the topic connection, a
+     *            {@link SystemUserInfo} can be used for non-interaction
+     *            threads. Not {@code null}.
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
      * @return the handle that can be used for closing the connection
      */
     public Registration openTopicConnection(ConnectionContext context,
-            String topicId,
+            String topicId, UserInfo localUser,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(context, "Connection context can't be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
+        Objects.requireNonNull(localUser, "User can't be null");
         Objects.requireNonNull(connectionActivationCallback,
                 "Callback for connection activation can't be null");
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
 
         TopicConnection connection = new TopicConnection(context, topic,
-                isActive -> updateTopicActivation(topicId, isActive),
+                localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return connection::deactivateAndClose;
     }

@@ -1,11 +1,13 @@
 package com.vaadin.collaborationengine.util;
 
 import java.lang.ref.WeakReference;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.TopicConnection;
+import com.vaadin.collaborationengine.UserInfo;
 
 public class TestUtils {
 
@@ -33,7 +35,8 @@ public class TestUtils {
     public static void openEagerConnection(String topicId,
             Consumer<TopicConnection> handler) {
         CollaborationEngine.getInstance().openTopicConnection(
-                new EagerConnectionContext(), topicId, topic -> {
+                new EagerConnectionContext(), topicId,
+                new UserInfo(UUID.randomUUID().toString()), topic -> {
                     handler.accept(topic);
                     return null;
                 });

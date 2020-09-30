@@ -264,7 +264,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     }
 
-    private UserInfo localUser;
+    private final UserInfo localUser;
 
     private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
@@ -645,7 +645,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
                     field -> connectionContext.addComponent((Component) field));
 
             topicRegistration = CollaborationEngine.getInstance()
-                    .openTopicConnection(connectionContext, topicId,
+                    .openTopicConnection(connectionContext, topicId, localUser,
                             topic -> bindToTopic(topic, initialBeanSupplier));
         }
 

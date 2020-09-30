@@ -1,8 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
-import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +7,9 @@ import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
+import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
 
 public class JsonUtilTest {
 
@@ -55,4 +55,12 @@ public class JsonUtilTest {
         Assert.assertEquals(5, deserializedUser.getColorIndex());
     }
 
+    @Test
+    public void usersList_toJson_noRedundantData() {
+        List<UserInfo> users = Collections.singletonList(user);
+        String jsonUsers = JsonUtil.usersToJson(users);
+        Assert.assertEquals(
+                "[{\"id\":\"my-id\",\"name\":\"my-name\",\"abbreviation\":\"my-abbreviation\",\"image\":\"my-image\",\"colorIndex\":5}]",
+                jsonUsers);
+    }
 }

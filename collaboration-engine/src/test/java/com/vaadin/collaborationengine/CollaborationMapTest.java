@@ -22,12 +22,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 public class CollaborationMapTest {
 
@@ -68,9 +69,8 @@ public class CollaborationMapTest {
     @Before
     public void init() {
         context = new ToggleableConnectionContext();
-
         new CollaborationEngine().openTopicConnection(context, "topic",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     this.connection = topicConnection;
                     map = connection.getNamedMap("foo");
                     return null;

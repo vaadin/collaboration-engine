@@ -1,15 +1,16 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.TestUtils;
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
+import java.lang.ref.WeakReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.lang.ref.WeakReference;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.server.Command;
+import com.vaadin.flow.shared.Registration;
 
 public class ActivationHandlerTest {
 
@@ -26,7 +27,7 @@ public class ActivationHandlerTest {
     public void openTopicConnection_triggerCallbackOnlyWhenActivated() {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     isCalled.set(true);
                     return null;
                 });
@@ -42,7 +43,7 @@ public class ActivationHandlerTest {
     public void deactivateConnection_subscriberNoLongerReceiveCurrentValue() {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topicConnection.getNamedMap("map")
                             .subscribe(event -> isCalled.set(true));
                     return null;
@@ -53,7 +54,7 @@ public class ActivationHandlerTest {
 
         SpyConnectionContext otherContext = new SpyConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topicConnection.getNamedMap("map").put("bar", "baz");
                     return null;
                 });
@@ -70,7 +71,7 @@ public class ActivationHandlerTest {
     public void deactivateConnection_garbageCollectedTheTopicSubscriber()
             throws InterruptedException {
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     MapSubscriber subscriber = new MapSubscriber() {
                         @Override
                         public void onMapChange(MapChangeEvent event) {
@@ -93,7 +94,7 @@ public class ActivationHandlerTest {
     public void deactivatedConnection_triggerConnectionCallback() {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     topicConnection.getNamedMap("map").subscribe(event -> {
                     });
                     return () -> isCalled.set(true);
@@ -109,7 +110,7 @@ public class ActivationHandlerTest {
     public void reactivatedConnection_triggerConnectionCallbackAgain() {
         AtomicBoolean isCalled = new AtomicBoolean(false);
         collaborationEngine.openTopicConnection(context, "foo",
-                topicConnection -> {
+                SystemUserInfo.get(), topicConnection -> {
                     isCalled.set(true);
                     topicConnection.getNamedMap("").subscribe(event -> {
                     });

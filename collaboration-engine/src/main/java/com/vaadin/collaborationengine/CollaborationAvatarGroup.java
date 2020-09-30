@@ -130,7 +130,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         }
         if (topicId != null) {
             topicRegistration = CollaborationEngine.getInstance()
-                    .openTopicConnection(getContent(), topicId,
+                    .openTopicConnection(getContent(), topicId, localUser,
                             this::onConnectionActivate);
         }
     }

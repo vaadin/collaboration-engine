@@ -15,4 +15,11 @@ public class ReflectionUtils {
                 .map(Method::getName).collect(Collectors.toList());
     }
 
+    public static List<String> getDeclaredMethodNames(Class clazz) {
+        return Arrays.stream(clazz.getDeclaredMethods())
+                .filter(method -> Modifier.isPublic(method.getModifiers())
+                        || Modifier.isProtected(method.getModifiers()))
+                .map(Method::getName).collect(Collectors.toList());
+    }
+
 }
