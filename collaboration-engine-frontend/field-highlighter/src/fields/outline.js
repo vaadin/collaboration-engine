@@ -36,8 +36,9 @@ const getOutlineTarget = (element) => {
     /* c8 ignore next */
     case 'vaadin-radio-button':
       return element.shadowRoot.querySelector('[part="radio"]');
+    /* c8 ignore next */
     default:
-      return element.shadowRoot;
+      return element;
   }
 };
 
@@ -63,7 +64,7 @@ export const initOutline = (field) => {
     applyShadyStyle(root, style);
 
     const outline = document.createElement('vaadin-field-outline');
-    target.appendChild(outline);
+    (target === field ? field.shadowRoot : target).appendChild(outline);
 
     // Mimic :host-context to apply styles
     outline.setAttribute('context', root.tagName.toLowerCase());

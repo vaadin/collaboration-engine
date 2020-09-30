@@ -8,6 +8,7 @@ import { CheckboxGroupObserver } from './fields/vaadin-checkbox-group-observer.j
 import { RadioGroupObserver } from './fields/vaadin-radio-group-observer.js';
 import { FieldObserver } from './fields/vaadin-field-observer.js';
 import { SelectObserver } from './fields/vaadin-select-observer.js';
+import { ListBoxObserver } from './fields/vaadin-list-box-observer.js';
 
 import './vaadin-field-outline.js';
 import './vaadin-user-tags.js';
@@ -60,6 +61,9 @@ export class FieldHighlighter extends ThemableMixin(DirMixin(PolymerElement)) {
         break;
       case 'vaadin-radio-group':
         result = new RadioGroupObserver(field);
+        break;
+      case 'vaadin-list-box':
+        result = new ListBoxObserver(field);
         break;
       default:
         result = new FieldObserver(field);

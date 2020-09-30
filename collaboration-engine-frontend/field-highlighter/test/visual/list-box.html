@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>List-box highlight</title>
+  <script>
+    window.polymerSkipLoadingFontRoboto = true;
+  </script>
+</head>
+
+<body>
+  <style>
+    #test {
+      height: 250px;
+      padding: 20px;
+    }
+  </style>
+
+  <div id="test">
+    <vaadin-list-box selected="0">
+      <vaadin-item focused focus-ring>Option one</vaadin-item>
+      <vaadin-item>Option two</vaadin-item>
+      <vaadin-item>Option three</vaadin-item>
+      <vaadin-item>Option four</vaadin-item>
+    </vaadin-list-box>
+  </div>
+
+  <script type="module">
+    (async () => {
+      const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
+
+      await import('@vaadin/vaadin-item/theme/' + theme + '/vaadin-item.js');
+      await import('@vaadin/vaadin-list-box/theme/' + theme + '/vaadin-list-box.js');
+
+      const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
+
+      const field = document.querySelector('vaadin-list-box');
+      FieldHighlighter.init(field);
+
+      window.requestAnimationFrame(() => {
+        const users = [
+          { id: 'a', name: 'User', colorIndex: 0, fieldIndex: 2 },
+          { id: 'b', name: 'Moderator', colorIndex: 1, fieldIndex: 1 },
+          { id: 'c', name: 'Admin', colorIndex: 2, fieldIndex: 0 }
+        ];
+
+        // Mimic focus to show highlight and badges
+        field.dispatchEvent(new CustomEvent('mouseenter'));
+
+        FieldHighlighter.setUsers(field, users);
+
+        setTimeout(() => {
+          document.getElementById('test').dataset.ready = true;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

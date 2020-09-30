@@ -511,4 +511,62 @@ describe('field components', () => {
       expect(getComputedStyle(getOutline(time.focusElement)).opacity).to.equal('1');
     });
   });
+
+  describe('list-box', () => {
+    let items;
+
+    beforeEach(async () => {
+      field = await fixture(html`
+        <vaadin-list-box>
+          <vaadin-item>Option 1</vaadin-item>
+          <vaadin-item>Option 2</vaadin-item>
+          <vaadin-item>Option 3</vaadin-item>
+        </vaadin-list-box>
+      `);
+      highlighter = FieldHighlighter.init(field);
+      items = field.items;
+      showSpy = sinon.spy();
+      hideSpy = sinon.spy();
+      field.addEventListener('vaadin-highlight-show', showSpy);
+      field.addEventListener('vaadin-highlight-hide', hideSpy);
+    });
+
+    it('should dispatch vaadin-highlight-show event on item focus', () => {
+      items[0].focus();
+      expect(showSpy.callCount).to.equal(1);
+      expect(showSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
+    });
+
+    it('should dispatch vaadin-highlight-hide event on item blur', () => {
+      items[0].focus();
+      items[0].blur();
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
+    });
+
+    it('should dispatch vaadin-highlight-hide event on other item focus', () => {
+      items[0].focus();
+      focusout(items[0], items[1]);
+      items[1].focus();
+      expect(hideSpy.callCount).to.equal(1);
+      expect(hideSpy.firstCall.args[0].detail.fieldIndex).to.equal(0);
+    });
+
+    it('should dispatch second vaadin-highlight-show event on other item focus', () => {
+      items[0].focus();
+      focusout(items[0], items[1]);
+      items[1].focus();
+      expect(showSpy.callCount).to.equal(2);
+      expect(showSpy.getCalls()[1].args[0].detail.fieldIndex).to.equal(1);
+    });
+
+    it('should set outline on multiple items based on the fieldIndex', () => {
+      const user1 = { id: 'a', name: 'foo', fieldIndex: 0 };
+      const user2 = { id: 'b', name: 'var', fieldIndex: 1 };
+      FieldHighlighter.setUsers(field, [user1, user2]);
+      expect(getComputedStyle(getOutline(items[0])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(items[1])).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(items[2])).opacity).to.equal('0');
+    });
+  });
 });

@@ -22,6 +22,13 @@ registerStyles(
       transform: scale(2.5);
       opacity: 0.15;
     }
+
+    :host([context='vaadin-item'])::before {
+      display: block;
+      height: 100%;
+      content: '';
+      box-shadow: inset 0 0 0 2px var(--_active-user-color);
+    }
   `,
   { moduleId: 'material-field-outline' }
 );

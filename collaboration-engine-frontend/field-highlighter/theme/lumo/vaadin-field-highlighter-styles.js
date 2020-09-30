@@ -30,6 +30,10 @@ registerStyles(
       border-radius: 50%;
       box-shadow: 0 0 0 3px var(--lumo-base-color), 0 0 0 5px var(--_active-user-color);
     }
+
+    :host([context='vaadin-item'])::before {
+      box-shadow: inset 0 0 0 2px var(--_active-user-color);
+    }
   `,
   { moduleId: 'lumo-field-outline' }
 );

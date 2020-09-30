@@ -23,6 +23,13 @@ describe('field highlight', () => {
         .assertView(`${theme}-date-time-picker`, locator);
     });
 
+    it(`${theme}-list-box`, function() {
+      return this.browser
+        .url(`list-box.html?theme=${theme}`)
+        .waitForVisible(locator, 15000)
+        .assertView(`${theme}-list-box`, locator);
+    });
+
     it(`${theme}-radio-button`, function() {
       return this.browser
         .url(`radio-button.html?theme=${theme}`)
