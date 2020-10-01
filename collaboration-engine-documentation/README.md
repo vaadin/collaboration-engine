@@ -9,4 +9,5 @@
 * [Topic API Tutorial](./TopicAPI.asciidoc)
 
 ### Reference Documentation
+* [Indicating User Presence with CollaborationAvatarGroup](./CollaborationAvatarGroup.asciidoc)
 * [Collaborative Form Editing with CollaborationBinder](./CollaborationBinder.asciidoc)

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationBinder;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -11,6 +12,9 @@ import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.textfield.TextField;
 
+/**
+ * Code snippets used in CollaborationBinder's reference documentation.
+ */
 public class BinderDocumentation {
 
     private static class Person extends TutorialView.Person {
@@ -45,33 +49,6 @@ public class BinderDocumentation {
 
     private enum MaritalStatus {
         SINGLE, MARRIED;
-    }
-
-    private static class User {
-        private String id;
-        private String name;
-
-        public String getId() {
-            return id;
-        }
-
-        public void setId(String id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
-
-    private static class UserService {
-        private User getCurrentUser() {
-            return new User();
-        }
     }
 
     private static class PersonService {

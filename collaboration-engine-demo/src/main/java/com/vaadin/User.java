@@ -1,0 +1,54 @@
+package com.vaadin;
+
+/**
+ * User entity class used in documentation examples.
+ */
+class User {
+
+    public static class UserService {
+        public User getCurrentUser() {
+            return new User();
+        }
+
+        public User findById(String id) {
+            return new User();
+        }
+    }
+
+    private String id;
+    private String name;
+    private String imageUrl;
+    private byte[] image;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public byte[] getImage() {
+        return image;
+    }
+
+    public void setImage(byte[] image) {
+        this.image = image;
+    }
+}

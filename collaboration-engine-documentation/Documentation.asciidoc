@@ -13,4 +13,6 @@ include::Tutorial.asciidoc[]
 
 include::TopicAPI.asciidoc[]
 
+include::CollaborationAvatarGroup.asciidoc[]
+
 include::CollaborationBinder.asciidoc[]
