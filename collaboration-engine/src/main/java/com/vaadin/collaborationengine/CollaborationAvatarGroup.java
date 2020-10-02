@@ -88,6 +88,10 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * Whenever another collaboration avatar group with the same topic id is
      * attached to another user's UI, this avatar group is updated to include an
      * avatar with that user's information.
+     * <p>
+     * If a {@code null} topic id is provided, the component won't display any
+     * avatars, until connecting to a non-null topic with
+     * {@link #setTopic(String)}.
      *
      * @param localUser
      *            the information of the local user
@@ -102,23 +106,12 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     /**
-     * Creates a new collaboration avatar group component with the provided
-     * local user. The component should be assigned with a topic via
-     * {@link #setTopic(String)} in order to show avatars of collaborating users
-     * of the topic.
-     *
-     * @param localUser
-     *            the information of the local user
-     */
-    public CollaborationAvatarGroup(UserInfo localUser) {
-        this(localUser, null);
-    }
-
-    /**
      * Sets the topic to use with this component. The connection to the previous
      * topic (if any) and existing avatars are removed. Connection to the new
      * topic is opened and avatars of collaborating users in the new topic are
      * populated to this component.
+     * <p>
+     * If the topic id is {@code null}, no avatars will be displayed.
      *
      * @param topicId
      *            the topic id to use, or <code>null</code> to not use any topic

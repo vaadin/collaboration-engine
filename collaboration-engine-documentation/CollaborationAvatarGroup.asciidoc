@@ -12,7 +12,8 @@ of navigating to another view or closing the browser tab, the user's avatar is
 removed from the group.
 
 To get started with `CollaborationAvatarGroup`, provide the `UserInfo` that represents
-the current active user, set a topic to connect to and add the component to your view:
+the current active user and the id of the topic to connect to.
+Then add the component to your view:
 
 [source, java]
 ----
@@ -20,8 +21,7 @@ User userEntity = userService.getCurrentUser();
 UserInfo userInfo = new UserInfo(userEntity.getId());
 
 CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
-        userInfo);
-avatarGroup.setTopic("avatars");
+        userInfo, "avatars");
 add(avatarGroup);
 ----
 

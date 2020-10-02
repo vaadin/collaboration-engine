@@ -242,7 +242,8 @@ public class CollaborationAvatarGroupTest {
         client2.attach();
         client3.attach();
 
-        client1.group = new CollaborationAvatarGroup(new UserInfo("userid"));
+        client1.group = new CollaborationAvatarGroup(new UserInfo("userid"),
+                null);
         client1.setGroupTopic(TOPIC_ID);
         client1.attach();
         Assert.assertEquals(Arrays.asList("name2", "name3"),
