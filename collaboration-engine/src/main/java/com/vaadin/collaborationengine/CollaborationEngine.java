@@ -34,7 +34,7 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationEngine {
 
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
-    static final int USER_COLOR_COUNT = 10;
+    static final int USER_COLOR_COUNT = 7;
 
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
