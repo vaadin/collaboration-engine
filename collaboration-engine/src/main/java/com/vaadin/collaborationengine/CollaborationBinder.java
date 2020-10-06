@@ -699,7 +699,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forField(HasValue, Class)
      * @see #forField(HasValue, SerializableFunction, SerializableFunction)
-     * @see #forCollectionField(HasValue, Class, Class)
+     * @see #forField(HasValue, Class, Class)
      */
     @Override
     public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forField(
@@ -722,7 +722,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forField(HasValue)
      * @see #forField(HasValue, SerializableFunction, SerializableFunction)
-     * @see #forCollectionField(HasValue, Class, Class)
+     * @see #forField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
      *            the value type of the field
@@ -752,7 +752,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forField(HasValue)
      * @see #forField(HasValue, Class)
-     * @see #forCollectionField(HasValue, Class, Class)
+     * @see #forField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
      * @param field
@@ -776,10 +776,10 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     /**
-     * Creates a new binding for the given collection field and types. The
-     * returned builder may be further configured before invoking
-     * {@link BindingBuilder#bind(String)} which completes the binding. Until
-     * {@code Binding.bind} is called, the binding has no effect.
+     * Creates a new binding for the given (multi select) field whose value type
+     * is a collection. The returned builder may be further configured before
+     * invoking {@link BindingBuilder#bind(String)} which completes the binding.
+     * Until {@code Binding.bind} is called, the binding has no effect.
      * <p>
      * The field value will be sent over the network to synchronize the value
      * with other users also editing the same field. This method allows
@@ -790,19 +790,23 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * @see #forField(HasValue, SerializableFunction, SerializableFunction)
      *
      * @param <FIELDVALUE>
-     *            the base type of the collection
+     *            the base type of the collection, e.g. {@code Set} for
+     *            {@code CheckboxGroup<String>}
      * @param <ELEMENT>
-     *            the collection element type
+     *            the type of the elements in the collection, e.g.
+     *            {@code String} for {@code CheckboxGroup<String>}
      * @param field
      *            the field to be bound, not <code>null</code>
      * @param collectionType
-     *            the base type of the collection, not <code>null</code>
+     *            the base type of the collection, e.g. {@code Set.class} for
+     *            {@code CheckboxGroup<String>}, not <code>null</code>
      * @param elementType
-     *            the type of the elements in the collection, not
+     *            the type of the elements in the collection, e.g.
+     *            {@code String.class} for {@code CheckboxGroup<String>}, not
      *            <code>null</code>
      * @return the new binding builder
      */
-    public <FIELDVALUE extends Collection<ELEMENT>, ELEMENT> BindingBuilder<BEAN, FIELDVALUE> forCollectionField(
+    public <FIELDVALUE extends Collection<ELEMENT>, ELEMENT> BindingBuilder<BEAN, FIELDVALUE> forField(
             HasValue<?, FIELDVALUE> field,
             Class<? super FIELDVALUE> collectionType,
             Class<ELEMENT> elementType) {
@@ -824,7 +828,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * @see #forMemberField(HasValue, Class)
      * @see #forMemberField(HasValue, SerializableFunction,
      *      SerializableFunction)
-     * @see #forMemberCollectionField(HasValue, Class, Class)
+     * @see #forMemberField(HasValue, Class, Class)
      */
     @Override
     public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
@@ -851,7 +855,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      * @see #forMemberField(HasValue)
      * @see #forMemberField(HasValue, SerializableFunction,
      *      SerializableFunction)
-     * @see #forMemberCollectionField(HasValue, Class, Class)
+     * @see #forMemberField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
      *            the value type of the field
@@ -884,7 +888,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *
      * @see #forMemberField(HasValue)
      * @see #forMemberField(HasValue, Class)
-     * @see #forMemberCollectionField(HasValue, Class, Class)
+     * @see #forMemberField(HasValue, Class, Class)
      *
      * @param <FIELDVALUE>
      * @param field
@@ -908,9 +912,9 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     /**
-     * Creates a new binding for the given collection field and types. The
-     * returned builder may be further configured before invoking
-     * {@link #bindInstanceFields(Object)}. Unlike with the
+     * Creates a new binding for the given (multi select) field whose value type
+     * is a collection. The returned builder may be further configured before
+     * invoking {@link #bindInstanceFields(Object)}. Unlike with the
      * {@link #forField(HasValue)} method, no explicit call to
      * {@link BindingBuilder#bind(String)} is needed to complete this binding in
      * the case that the name of the field matches a field name found in the
@@ -926,19 +930,23 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *      SerializableFunction)
      *
      * @param <FIELDVALUE>
-     *            the base type of the collection
+     *            the base type of the collection, e.g. {@code Set} for
+     *            {@code CheckboxGroup<String>}
      * @param <ELEMENT>
-     *            the collection element type
+     *            the type of the elements in the collection, e.g.
+     *            {@code String} for {@code CheckboxGroup<String>}
      * @param field
      *            the field to be bound, not <code>null</code>
      * @param collectionType
-     *            the base type of the collection, not <code>null</code>
+     *            the base type of the collection, e.g. {@code Set.class} for
+     *            {@code CheckboxGroup<String>}, not <code>null</code>
      * @param elementType
-     *            the type of the elements in the collection, not
+     *            the type of the elements in the collection, e.g.
+     *            {@code String.class} for {@code CheckboxGroup<String>}, not
      *            <code>null</code>
      * @return the new binding builder
      */
-    public <FIELDVALUE extends Collection<ELEMENT>, ELEMENT> BindingBuilder<BEAN, FIELDVALUE> forMemberCollectionField(
+    public <FIELDVALUE extends Collection<ELEMENT>, ELEMENT> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
             HasValue<?, FIELDVALUE> field,
             Class<? super FIELDVALUE> collectionType,
             Class<ELEMENT> elementType) {

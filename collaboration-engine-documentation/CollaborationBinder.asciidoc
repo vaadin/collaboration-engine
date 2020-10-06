@@ -144,18 +144,18 @@ the field value by default.
 
 ==== Multi Select Fields
 
-When the field's value type is a collection, which usually mean the field is some
-sort of a multi select, you must use the `forCollectionField` method. It requires
-both the type of the collection, as well as the type of the elements inside it.
+When the field's value type is a collection,
+you must provide the type of the collection as well as the
+type of its contents in `forField`.
 
 For example, the value type of `CheckboxGroup` is `Set`.
-In the example below, we must provide the collection type `Set` and the element type `String`.
+In the example below, we must provide the collection type `Set` and the content type `String`.
 [source, java]
 ----
 CheckboxGroup<String> pets = new CheckboxGroup<>();
 pets.setItems("Dog", "Cat", "Parrot");
 
-binder.forCollectionField(pets, Set.class, String.class).bind("pets");
+binder.forField(pets, Set.class, String.class).bind("pets");
 ----
 This is necessary, because `CollaborationBinder` can't automatically infer the
 generic type for deserializing the value.

@@ -429,7 +429,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     public void complexTypeWithExplicitDefinition_valueSerializedAndDeserializedProperly() {
         GenericTestField<List<Double>> field = new GenericTestField<>();
 
-        client.binder.forCollectionField(field, List.class, Double.class)
+        client.binder.forField(field, List.class, Double.class)
                 .withNullRepresentation(Collections.emptyList())
                 .withConverter(presentationValue -> presentationValue.stream()
                         .map(String::valueOf).collect(Collectors.joining(",")),
@@ -536,7 +536,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
     @Test(expected = IllegalStateException.class)
     public void unsupportedTypeParameter_rejected() {
-        client.binder.forCollectionField(new GenericTestField<List<TestBean>>(),
+        client.binder.forField(new GenericTestField<List<TestBean>>(),
                 List.class, TestBean.class);
     }
 

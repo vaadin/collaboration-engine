@@ -87,7 +87,7 @@ public class BinderDocumentation {
         CheckboxGroup<String> pets = new CheckboxGroup<>();
         pets.setItems("Dog", "Cat", "Parrot");
 
-        binder.forCollectionField(pets, Set.class, String.class).bind("pets");
+        binder.forField(pets, Set.class, String.class).bind("pets");
 
         Checkbox married = new Checkbox();
         binder.forField(married, Boolean.class)
