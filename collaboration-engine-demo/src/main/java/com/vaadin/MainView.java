@@ -106,6 +106,7 @@ public class MainView extends VerticalLayout {
         user.setName(username);
         CollaborationAvatarGroup collaboratorsAvatars = new CollaborationAvatarGroup(
                 user, TOPIC_ID);
+        collaboratorsAvatars.setOwnAvatarVisible(false);
 
         Avatar ownAvatar = new Avatar();
         ownAvatar.addClassName("own-avatar");

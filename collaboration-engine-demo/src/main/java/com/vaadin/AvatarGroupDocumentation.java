@@ -25,6 +25,10 @@ public class AvatarGroupDocumentation extends VerticalLayout {
                 userInfo, "avatars");
         add(avatarGroup);
 
+        // Exclude own avatar from the group:
+        avatarGroup.setOwnAvatarVisible(false);
+
+        // Create another component for own avatar:
         Avatar ownAvatar = new Avatar();
         ownAvatar.setName(userEntity.getName());
         ownAvatar.setImage(userEntity.getImageUrl());

@@ -6,9 +6,7 @@ import java.util.UUID;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationBinder;
 import com.vaadin.collaborationengine.UserInfo;
-import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
@@ -50,12 +48,7 @@ public class TutorialView extends VerticalLayout {
 
         CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
                 localUser, "tutorial");
-
-        Avatar avatar = new Avatar(localUser.getName());
-        avatar.setColorIndex(localUser.getColorIndex());
-
-        HorizontalLayout allAvatars = new HorizontalLayout(avatarGroup, avatar);
-        addComponentAsFirst(allAvatars);
+        addComponentAsFirst(avatarGroup);
 
         CollaborationBinder<Person> binder = new CollaborationBinder<>(
                 Person.class, localUser);

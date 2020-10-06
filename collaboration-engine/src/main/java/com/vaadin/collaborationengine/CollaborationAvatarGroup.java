@@ -22,6 +22,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.HasTheme;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
@@ -78,6 +79,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
 
     private ImageProvider imageProvider;
 
+    private boolean ownAvatarVisible;
+
     /**
      * Creates a new collaboration avatar group component with the provided
      * local user and topic id.
@@ -102,6 +105,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     public CollaborationAvatarGroup(UserInfo localUser, String topicId) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
+        this.ownAvatarVisible = true;
         setTopic(topicId);
     }
 
@@ -232,11 +236,15 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void refreshItems() {
+        if (map == null) {
+            return;
+        }
         List<UserInfo> users = jsonToUsers((String) map.get(KEY));
 
         List<AvatarGroupItem> items = users != null ? users.stream()
-                .filter(this::isNotLocalUser).map(this::userToAvatarGroupItem)
-                .collect(Collectors.toList()) : Collections.emptyList();
+                .filter(user -> ownAvatarVisible || isNotLocalUser(user))
+                .map(this::userToAvatarGroupItem).collect(Collectors.toList())
+                : Collections.emptyList();
         getContent().setItems(items);
     }
 
@@ -308,5 +316,34 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      */
     public ImageProvider getImageProvider() {
         return imageProvider;
+    }
+
+    /**
+     * Gets whether the user's own avatar is displayed in the avatar group or
+     * not.
+     *
+     * @return {@code true} if the user's own avatar is included in the group,
+     *         {@code false} if not
+     * @see #setOwnAvatarVisible(boolean)
+     */
+    public boolean isOwnAvatarVisible() {
+        return ownAvatarVisible;
+    }
+
+    /**
+     * Sets whether to display user's own avatar in the avatar group or not. The
+     * default value is {@code true}.
+     * <p>
+     * To display user's own avatar separately from other users, you can set
+     * this to {@code false}, create a separate {@link Avatar} component and
+     * place it anywhere you like in your view.
+     *
+     * @param ownAvatarVisible
+     *            {@code true} to include user's own avatar, {@code false} to
+     *            not include it
+     */
+    public void setOwnAvatarVisible(boolean ownAvatarVisible) {
+        this.ownAvatarVisible = ownAvatarVisible;
+        this.refreshItems();
     }
 }

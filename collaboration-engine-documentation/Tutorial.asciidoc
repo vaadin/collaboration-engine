@@ -120,21 +120,21 @@ don't have to set it explicitly.
 
 ==== Add User Avatars
 
-To display the avatars of all other users who are currently in the application,
+To display the avatars of all users who are currently in the application,
 create a `CollaborationAvatarGroup` component.
 
 [source, java]
 ----
 CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
         localUser, "tutorial");
+addComponentAsFirst(avatarGroup);
 ----
 
 First of all, the components needs our local users information (the `UserInfo`
-object which we created earlier), to know how to render the user's avatar for
-other collaborators.
+object which we created earlier), to know how to render the user's avatar.
 
 As a second constructor argument, the component needs a topic id.
-The Collaboration Engine propagates information only within the group that is
+Collaboration Engine propagates information only within the group that is
 connected to the same topic.
 In our case, there's only one topic to work on, so we can use any hardcoded topic id.
 
@@ -143,20 +143,6 @@ person entities, we'd need to have unique topic ids for each one. For example,
 we could have a topic id "person/123", where "123" would be unique to each person.
 In that case the same `CollaborationAvatarGroup` component could be reused for
 editing different persons by changing the topic with the `setTopic` method.
-
-Since `CollaborationAvatarGroup` displays only the avatars of other users,
-let's create also an avatar component representing the local user.
-Let's also wrap all avatars in a horizontal layout, and add it to
-the top of the view.
-
-[source, java]
-----
-Avatar avatar = new Avatar(localUser.getName());
-avatar.setColorIndex(localUser.getColorIndex());
-
-HorizontalLayout allAvatars = new HorizontalLayout(avatarGroup, avatar);
-addComponentAsFirst(allAvatars);
-----
 
 ==== Add Field Collaboration
 
