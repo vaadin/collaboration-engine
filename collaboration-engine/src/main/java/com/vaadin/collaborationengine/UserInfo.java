@@ -48,7 +48,7 @@ public class UserInfo {
      * This constructor is for SystemUserInfo so that userColors in CE won't be
      * messed up by this user.
      */
-    protected UserInfo(String userId, int colorIndex) {
+    UserInfo(String userId, int colorIndex) {
         Objects.requireNonNull(userId, "Null user id isn't supported");
         this.id = userId;
         this.colorIndex = colorIndex;
