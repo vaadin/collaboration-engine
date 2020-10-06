@@ -50,7 +50,7 @@ public class SystemUserInfo extends UserInfo {
     }
 
     @Override
-    public void setImage(String image) {
+    public void setImage(String imageUrl) {
         throw new UnsupportedOperationException(
                 "The system user cannot be modified.");
     }

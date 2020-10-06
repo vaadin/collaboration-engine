@@ -17,6 +17,8 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
+
 /**
  * User information of a collaborating user, used with various features of the
  * collaboration engine.
@@ -113,12 +115,17 @@ public class UserInfo {
 
     /**
      * Sets the url of the user's image.
+     * <p>
+     * If this user info is given to a {@link CollaborationAvatarGroup}, the
+     * image URL is used to load the user's avatar. Alternatively, the user
+     * images can be loaded from a backend to the avatar group with
+     * {@link CollaborationAvatarGroup#setImageProvider(ImageProvider)}.
      *
-     * @param image
-     *            the image url to set
+     * @param imageUrl
+     *            the image URL to set
      */
-    public void setImage(String image) {
-        this.image = image;
+    public void setImage(String imageUrl) {
+        this.image = imageUrl;
     }
 
     /**
