@@ -16,33 +16,9 @@ and add the following collaboration features to a simple form:
 Download an empty Vaadin 14 project from https://vaadin.com/start/v14
 using any technology stack.
 
-==== Update Project Dependencies
-In the project's pom.xml file, add the `vaadin-prerelease` repository:
-[source, xml]
-----
-<repository>
-    <id>vaadin-prereleases</id>
-    <url>https://maven.vaadin.com/vaadin-prereleases</url>
-    <releases>
-        <enabled>true</enabled>
-    </releases>
-    <snapshots>
-        <enabled>true</enabled>
-    </snapshots>
-</repository>
-----
-add Collaboration Engine as a dependency:
-[source, xml]
-----
-<dependency>
-    <groupId>com.vaadin</groupId>
-    <artifactId>collaboration-engine</artifactId>
-    <version>[[version]]</version>
-</dependency>
-----
-Consult the releases page to find the version number of the latest release, e.g. `1.0.0.alpha2`.
-The latest version of this tutorial might use functionality that is only available in the latest snapshot build, i.e. `1.0-SNAPSHOT`.
-You can use the branch selector in the GitHub UI to view the tutorial that corresponds to a specific release tag.
+[[ce.tutorial.install]]
+==== Install Collaboration Engine
+Collaboration Engine is provided by Vaadin upon request. https://vaadin.com/collaboration[Contact Vaadin] to get access to the package and instructions on how to install it.
 
 [[ce.tutorial.add-collaborative-feature]]
 === Add Collaboration Features
