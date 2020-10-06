@@ -102,8 +102,7 @@ public class MainView extends VerticalLayout {
                 showLogin();
             }
         });
-        UserInfo user = new UserInfo(UUID.randomUUID().toString());
-        user.setName(username);
+        UserInfo user = new UserInfo(UUID.randomUUID().toString(), username);
         CollaborationAvatarGroup collaboratorsAvatars = new CollaborationAvatarGroup(
                 user, TOPIC_ID);
         collaboratorsAvatars.setOwnAvatarVisible(false);

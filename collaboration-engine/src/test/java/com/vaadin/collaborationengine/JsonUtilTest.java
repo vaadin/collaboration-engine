@@ -17,10 +17,8 @@ public class JsonUtilTest {
 
     @Before
     public void init() {
-        user = new UserInfo("my-id");
-        user.setName("my-name");
+        user = new UserInfo("my-id", "my-name", "my-image");
         user.setAbbreviation("my-abbreviation");
-        user.setImage("my-image");
         user.setColorIndex(5);
     }
 

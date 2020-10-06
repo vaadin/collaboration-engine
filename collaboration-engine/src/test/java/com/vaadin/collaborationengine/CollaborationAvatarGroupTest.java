@@ -44,10 +44,9 @@ public class CollaborationAvatarGroupTest {
 
         Client(int index, String topicId) {
             this.ui = new MockUI();
-            this.user = new UserInfo(UUID.randomUUID().toString());
-            user.setName("name" + index);
+            this.user = new UserInfo(UUID.randomUUID().toString(),
+                    "name" + index, "image" + index);
             user.setAbbreviation("abbreviation" + index);
-            user.setImage("image" + index);
             user.setColorIndex(index);
             group = new CollaborationAvatarGroup(user, topicId);
         }

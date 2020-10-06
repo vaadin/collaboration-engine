@@ -63,13 +63,13 @@ public class BinderDocumentation {
 
     private UserService userService;
     private PersonService personService;
-    private CollaborationBinder binder;
+    private CollaborationBinder<Person> binder;
 
     public BinderDocumentation() {
         User userEntity = userService.getCurrentUser();
 
-        UserInfo userInfo = new UserInfo(userEntity.getId());
-        userInfo.setName(userEntity.getName());
+        UserInfo userInfo = new UserInfo(userEntity.getId(),
+                userEntity.getName());
 
         CollaborationBinder<Person> binder = new CollaborationBinder<>(
                 Person.class, userInfo);

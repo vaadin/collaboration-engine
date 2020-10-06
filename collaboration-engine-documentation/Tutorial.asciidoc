@@ -101,22 +101,20 @@ information of who is currently present in the view or editing a field.
 
 In a real application, this kind of profile information should come from the
 application's backend based on the currently logged in user.
-For the sake of this tutorial, let's just use the same hard-coded name for
-each user. Let's also generate a random UUID as the unique user identifier
-(required by the `UserInfo` constructor).
+For the sake of this tutorial, let's just use the same hard-coded user id and
+name for each user. 
+
 [source, java]
 ----
-UserInfo localUser = new UserInfo(UUID.randomUUID().toString());
-localUser.setName("Jon Doe");
+UserInfo localUser = new UserInfo("johndoe", "John Doe");
 ----
 The name will be displayed to other users when editing a field, and
 the user's avatar will contain the abbreviation of the name (as we don't
 provide a user image in this example).
 
-NOTE: `UserInfo` has also a `colorIndex` property. It defines which color will be
+NOTE: `UserInfo` also has a `colorIndex` property. It defines which color will be
 used in the user's avatar as well as in the field highlight when editing a field.
-This property is generated automatically based on the user id by default, so we
-don't have to set it explicitly.
+This property is generated automatically, so we don't have to set it explicitly.
 
 ==== Add User Avatars
 

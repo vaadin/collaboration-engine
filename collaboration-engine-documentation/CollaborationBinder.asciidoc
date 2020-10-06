@@ -22,8 +22,8 @@ that another user is editing a field with the field highlight.
 ----
 User userEntity = userService.getCurrentUser();
 
-UserInfo userInfo = new UserInfo(userEntity.getId());
-userInfo.setName(userEntity.getName());
+UserInfo userInfo = new UserInfo(userEntity.getId(),
+        userEntity.getName());
 
 CollaborationBinder<Person> binder = new CollaborationBinder<>(
         Person.class, userInfo);

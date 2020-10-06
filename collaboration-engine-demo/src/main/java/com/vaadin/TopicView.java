@@ -20,10 +20,9 @@ public class TopicView extends VerticalLayout {
         checkbox = new Checkbox("Is it Friday?");
         add(checkbox);
 
-        // TODO: replace hard-coded ID and username by data from the actual
-        // logged in user
-        UserInfo localUser = new UserInfo("johndoe");
-        localUser.setName("John Doe");
+        // TODO: replace hard-coded ID and name with data from the actual logged
+        // in user
+        UserInfo localUser = new UserInfo("johndoe", "John Doe");
 
         CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
                 localUser, topic -> {
