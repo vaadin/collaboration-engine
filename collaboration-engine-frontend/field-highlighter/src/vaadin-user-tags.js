@@ -270,7 +270,8 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     } else {
       this.updateTagsSync(users, changedTags);
 
-      if (addedUsers.length) {
+      // Avoid adding to queue if window is not visible.
+      if (addedUsers.length && document.visibilityState !== "hidden") {
         const tags = addedUsers.map((user) => this.createUserTag(user));
         if (this.flashing) {
           // schedule next flash later
