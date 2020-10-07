@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,11 +35,11 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationMapTest {
 
     private static class MapSubscriberSpy implements MapSubscriber {
-        private final Map<String, Object> expectedOld = new HashMap<>();
-        private final Map<String, Object> expectedNew = new HashMap<>();
+        private final Map<String, String> expectedOld = new HashMap<>();
+        private final Map<String, String> expectedNew = new HashMap<>();
 
-        public void addExpectedEvent(String key, Object oldValue,
-                Object newValue) {
+        public void addExpectedEvent(String key, String oldValue,
+                String newValue) {
             Assert.assertFalse("Should not expect same value again",
                     expectedOld.containsKey(key));
 
@@ -50,8 +52,10 @@ public class CollaborationMapTest {
             String key = event.getKey();
             Assert.assertTrue("Event should be expected for key " + key,
                     expectedOld.containsKey(key));
-            Assert.assertEquals(expectedOld.remove(key), event.getOldValue());
-            Assert.assertEquals(expectedNew.remove(key), event.getValue());
+            Assert.assertEquals(expectedOld.remove(key),
+                    event.getOldValue(String.class));
+            Assert.assertEquals(expectedNew.remove(key),
+                    event.getValue(String.class));
         }
 
         public void assertNoExpectedEvents() {
@@ -108,7 +112,7 @@ public class CollaborationMapTest {
 
         spy.assertNoExpectedEvents();
 
-        Assert.assertEquals("first", map.get("one"));
+        Assert.assertEquals("first", map.get("one", String.class));
     }
 
     @Test
@@ -132,7 +136,7 @@ public class CollaborationMapTest {
         Assert.assertTrue("Replace should be successful", succeeded);
 
         spy.assertNoExpectedEvents();
-        Assert.assertEquals("first", map.get("one"));
+        Assert.assertEquals("first", map.get("one", String.class));
     }
 
     @Test
@@ -142,7 +146,8 @@ public class CollaborationMapTest {
 
         Boolean succeeded = map.replace("one", "other", "first").get();
         Assert.assertFalse("Replace should not succeed", succeeded);
-        Assert.assertNull("Old value should be present", map.get("one"));
+        Assert.assertNull("Old value should be present",
+                map.get("one", String.class));
     }
 
     @Test
@@ -245,6 +250,35 @@ public class CollaborationMapTest {
         map.put("one", "first");
         Boolean isReplaced = map.replace("one", "first", "second").get();
         Assert.assertTrue(isReplaced);
+    }
+
+    @Test
+    public void replace_mapValueImmutable() {
+        List<String> data = Arrays.asList("foo", "bar");
+        ArrayNode jsonNode = (ArrayNode) JsonUtil.toJsonNode(data);
+        map.replace("key", null, jsonNode);
+
+        data.set(0, "qux");
+        jsonNode.add("lorem");
+
+        List<String> mapData = map.get("key", MockJson.LIST_STRING_TYPE_REF);
+        Assert.assertEquals(
+                "Map data shouldn't be changed by the original instances.",
+                mapData, Arrays.asList("foo", "bar"));
+    }
+
+    @Test
+    public void get_mapValueImmutable() {
+        List<String> data = Arrays.asList("foo", "bar");
+        map.put("key", data);
+
+        ArrayNode mapDataNode = map.get("key", ArrayNode.class);
+        mapDataNode.set(0, new TextNode("baz"));
+
+        Assert.assertTrue(
+                "The returned value shouldn't affect map data in the topic.",
+                data.containsAll(
+                        map.get("key", MockJson.LIST_STRING_TYPE_REF)));
     }
 
     private class ToggleableConnectionContext extends EagerConnectionContext {

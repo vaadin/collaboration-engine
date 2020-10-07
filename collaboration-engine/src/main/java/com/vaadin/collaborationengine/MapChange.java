@@ -12,21 +12,23 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * A single change that is emitted from the map data of a {@link Topic}.
  *
  * @author Vaadin Ltd
  */
 public class MapChange extends AbstractMapChange {
-    private final Object oldValue;
+    private final JsonNode oldValue;
 
-    public MapChange(String mapName, String key, Object oldValue,
-            Object newValue) {
+    public MapChange(String mapName, String key, JsonNode oldValue,
+            JsonNode newValue) {
         super(mapName, key, newValue);
         this.oldValue = oldValue;
     }
 
-    public Object getOldValue() {
+    public JsonNode getOldValue() {
         return oldValue;
     }
 }

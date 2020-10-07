@@ -1,7 +1,8 @@
 package com.vaadin.collaborationengine;
 
-import java.util.Objects;
 import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Hr;
@@ -53,17 +54,17 @@ public class MainView extends VerticalLayout {
                 .openTopicConnection(editor, MainView.class.getName(), user,
                         topic -> {
                             CollaborationMap map = topic.getNamedMap("values");
-                            if (map.get("value") == null) {
+                            if (map.get("value", JsonNode.class) == null) {
                                 map.put("value", 0);
                             }
 
-                            map.subscribe(event -> span.setText(
-                                    Objects.toString(event.getValue())));
+                            map.subscribe(event -> span
+                                    .setText(event.getValue(String.class)));
 
                             return button.addClickListener(e -> {
                                 Thread update = new Thread(() -> {
-                                    Integer newState = (Integer) map
-                                            .get("value") + 1;
+                                    Integer newState = map.get("value",
+                                            Integer.class) + 1;
                                     map.put("value", newState);
                                 });
                                 update.start();

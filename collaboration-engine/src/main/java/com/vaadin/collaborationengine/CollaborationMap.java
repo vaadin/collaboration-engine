@@ -15,6 +15,8 @@ package com.vaadin.collaborationengine;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -25,21 +27,47 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 public interface CollaborationMap {
+
     /**
-     * Gets the current map value for the given key.
+     * Gets the map value for the given key as an instance of the given class.
      *
      * @param key
      *            the string key for which to get a value, not <code>null</code>
+     * @param type
+     *            the expected type
      * @return the value associated with the key, or <code>null</code> if no
      *         value is present
+     * @throws JsonConversionException
+     *             if the value in the map cannot be converted to an instance of
+     *             the given class
+     *
      */
-    Object get(String key);
+    <T> T get(String key, Class<T> type);
+
+    /**
+     * Gets the map value for the given key as an instance corresponding to the
+     * given type reference.
+     *
+     * @param key
+     *            the string key for which to get a value, not <code>null</code>
+     * @param type
+     *            the type reference of the expected type to get
+     * @return the value associated with the key, or <code>null</code> if no
+     *         value is present
+     * @throws JsonConversionException
+     *             if the value in the map cannot be converted to an instance of
+     *             the given type reference
+     */
+    <T> T get(String key, TypeReference<T> type);
 
     /**
      * Associates the given value with the given key. This method can also be
      * used to remove an association by passing <code>null</code> as the value.
      * Subscribers are notified if the new value isn't <code>equals()</code>
      * with the old value.
+     * <p>
+     * The given value must be JSON-serializable so it can be sent over the
+     * network when Collaboration Engine is hosted in a standalone server.
      *
      * @param key
      *            the string key for which to make an association, not
@@ -49,6 +77,8 @@ public interface CollaborationMap {
      *            association
      * @return a completable future that is resolved when the data update is
      *         completed.
+     * @throws JsonConversionException
+     *             if the given value isn't serializable as JSON string
      */
     CompletableFuture<Void> put(String key, Object value);
 
@@ -57,6 +87,9 @@ public interface CollaborationMap {
      * is as expected. Subscribers are notified if the new value isn't
      * <code>equals()</code> with the old value. <code>equals()</code> is also
      * used to compare the current value with the expected value.
+     * <p>
+     * The given value must be JSON-serializable so it can be sent over the
+     * network when Collaboration Engine is hosted in a standalone server.
      *
      * @param key
      *            the string key for which to make an association, not
@@ -72,6 +105,8 @@ public interface CollaborationMap {
      *         update is completed. The resolved value is <code>true</code> if
      *         the expected value was present so that the operation could
      *         proceed; <code>false</code> if the expected value was not present
+     * @throws JsonConversionException
+     *             if the given value isn't serializable as JSON string
      */
     CompletableFuture<Boolean> replace(String key, Object expectedValue,
             Object newValue);

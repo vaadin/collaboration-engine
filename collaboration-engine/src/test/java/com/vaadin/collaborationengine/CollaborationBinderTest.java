@@ -1,12 +1,13 @@
 package com.vaadin.collaborationengine;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.hamcrest.CoreMatchers;
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -17,7 +18,8 @@ import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.data.binder.Binder;
-import com.vaadin.flow.internal.ReflectTools;
+
+import static com.vaadin.collaborationengine.util.TestUtils.assertNullNode;
 
 public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
@@ -25,9 +27,9 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     public void bind_setFieldValue_sharedValueNotUpdated() {
         client.bind();
         field.setValue("foo");
-        Assert.assertNull(
+        assertNullNode(
                 "Collaborative value shouldn't be updated in inactivated connection",
-                getSharedValue("value"));
+                getFieldState("value").value);
     }
 
     @Test
@@ -35,7 +37,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.bind();
         client.attach();
         field.setValue("foo");
-        Assert.assertEquals("foo", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
@@ -43,13 +45,13 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach();
         client.bind();
         field.setValue("foo");
-        Assert.assertEquals("foo", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
     public void bind_setSharedValue_fieldNotUpdated() {
         client.bind();
-        setSharedValue("value", "foo");
+        setSharedValue("value", MockJson.FOO);
         Assert.assertNull(
                 "Field shouldn't be updated in inactivated connection",
                 field.getValue());
@@ -59,7 +61,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     public void bind_activate_setSharedValue_fieldUpdated() {
         client.bind();
         client.attach();
-        setSharedValue("value", "foo");
+        setSharedValue("value", MockJson.FOO);
         Assert.assertEquals("foo", field.getValue());
     }
 
@@ -74,8 +76,8 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     public void bind_activate_setSharedValueNull_fieldHasEmptyValue() {
         client.bind();
         client.attach();
-        setSharedValue("value", "foo");
-        setSharedValue("value", null);
+        setSharedValue("value", MockJson.FOO);
+        setSharedValue("value", NullNode.getInstance());
         Assert.assertEquals(field.getEmptyValue(), field.getValue());
     }
 
@@ -84,7 +86,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.bind();
         client.attach();
         client.binder.reset(new TestBean("foo"));
-        Assert.assertEquals("foo", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
         Assert.assertEquals("foo", field.getValue());
     }
 
@@ -120,11 +122,11 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         binding.unbind();
 
         field.setValue("foo");
-        Assert.assertNull(
+        assertNullNode(
                 "Map shouldn't have changed after setting the field value",
-                getSharedValue("value"));
+                getFieldState("value").value);
 
-        setSharedValue("value", "bar");
+        setSharedValue("value", MockJson.BAZ);
         Assert.assertEquals(
                 "Field value shouldn't have changed after updating the map",
                 "foo", field.getValue());
@@ -148,9 +150,9 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.detach();
 
         field.setValue("bar");
-        Assert.assertNull(
+        assertNullNode(
                 "Binder which has a deactivated connection should not update the map",
-                getSharedValue("value"));
+                getFieldState("value").value);
     }
 
     @Test
@@ -159,7 +161,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach();
         field.setValue("foo");
 
-        client2.binder.bind(client2.field, "value");
+        client2.binder.forField(client2.field).bind("value");
 
         Assert.assertNull(
                 "The second client should not receive value when in-activated",
@@ -278,7 +280,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
         client.binder.setTopic("topic", () -> new TestBean("a"));
 
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("a", getSharedValue("value", String.class));
     }
 
     @Test
@@ -288,7 +290,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.bind();
         client.attach();
 
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("a", getSharedValue("value", String.class));
     }
 
     @Test
@@ -296,31 +298,31 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         // Prevent attach from using the regular topic
         client.binder.setTopic("another", () -> null);
 
-        setSharedValue("value", "a");
+        setSharedValue("value", MockJson.FOO);
 
         client.bind();
         client.attach();
 
         client.binder.setTopic("topic", () -> new TestBean("b"));
 
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
     public void setTopicWhenDetached_initializedTopic_topicValueRetained() {
-        setSharedValue("value", "a");
+        setSharedValue("value", MockJson.FOO);
 
         client.binder.setTopic("topic", () -> new TestBean("b"));
 
         client.bind();
         client.attach();
 
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
     public void setTopic_initializedTopic_supplierNotCalled() {
-        setSharedValue("value", "a");
+        setSharedValue("value", MockJson.FOO);
 
         client.binder.setTopic("topic", () -> {
             throw new AssertionError();
@@ -337,11 +339,11 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
         client.binder.setTopic("another", () -> null);
 
-        setSharedValue("value", "a");
+        setSharedValue("value", MockJson.FOO);
         Assert.assertTrue(client.field.isEmpty());
 
         client.field.setValue("b");
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
@@ -351,11 +353,11 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
         client.binder.setTopic(null, () -> null);
 
-        setSharedValue("value", "a");
+        setSharedValue("value", MockJson.FOO);
         Assert.assertTrue(client.field.isEmpty());
 
         client.field.setValue("b");
-        Assert.assertEquals("a", getSharedValue("value"));
+        Assert.assertEquals("foo", getSharedValue("value", String.class));
     }
 
     @Test
@@ -385,30 +387,44 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
-    public void collaborationMapValueEncodedAsString() {
+    public void collaborationMapValue_set_get() {
         client.bind();
         client.attach();
         client.field.setValue("foo");
 
-        Object mapValue = map.get("value");
-        Assert.assertThat(mapValue, CoreMatchers.instanceOf(String.class));
-        Assert.assertThat((String) mapValue,
-                CoreMatchers.containsString("foo"));
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(map.getConnection(), "value");
+
+        String mapValue = JsonUtil.toInstance(fieldState.value, String.class);
+        Assert.assertEquals("foo", mapValue);
     }
 
     @Test
-    public void simpleBinding_typeInfered() {
+    public void simpleBinding_typeInferred() {
         client.bind();
         Assert.assertEquals(String.class,
                 client.binder.getPropertyType("value"));
     }
 
     @Test
-    public void simpleBindingWithNullRepresentation_typeInfered() {
+    public void simpleBindingWithNullRepresentation_typeInferred() {
         client.binder.forField(client.field).withNullRepresentation("foo")
                 .bind("value");
         Assert.assertEquals(String.class,
                 client.binder.getPropertyType("value"));
+    }
+
+    @Test
+    public void bindLocalDate_oneClientSets_otherClientReceives() {
+        client.bindLocalDate();
+        client.attach(client.localDateField);
+
+        client2.bindLocalDate();
+        client2.attach(client2.localDateField);
+
+        LocalDate localDate = LocalDate.of(2020, 10, 16);
+        client.localDateField.setValue(localDate);
+        Assert.assertEquals(localDate, client2.localDateField.getValue());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -437,16 +453,18 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
                                 .map(Double::valueOf)
                                 .collect(Collectors.toList()))
                 .bind("value");
+
         client.attach(field);
 
         field.setValue(Arrays.asList(1d, 0.1d));
-        FieldState fieldState = CollaborationBinderUtil.getFieldState(
-                topicConnection, "value",
-                ReflectTools.createParameterizedType(List.class, Double.class));
-        Assert.assertEquals(Arrays.asList(1d, 0.1d), fieldState.value);
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(topicConnection, "value");
+
+        Assert.assertEquals(Arrays.asList(1d, 0.1d), JsonUtil
+                .toInstance(fieldState.value, MockJson.LIST_DOUBLE_TYPE_REF));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value",
-                Arrays.asList(0.1d, 1d));
+                JsonUtil.toJsonNode(Arrays.asList(0.1d, 1d)));
         Assert.assertEquals(Arrays.asList(0.1d, 1d), field.getValue());
     }
 
@@ -465,11 +483,12 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
         field.setValue(new TestBean("Lorem"));
         FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "value", String.class);
-        Assert.assertEquals("Lorem", fieldState.value);
+                .getFieldState(topicConnection, "value");
+        Assert.assertEquals("Lorem",
+                JsonUtil.toInstance(fieldState.value, String.class));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value",
-                "Ipsum");
+                JsonUtil.toJsonNode("Ipsum"));
         Assert.assertEquals("Ipsum", field.getValue().getValue());
     }
 

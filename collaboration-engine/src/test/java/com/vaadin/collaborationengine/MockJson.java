@@ -1,0 +1,59 @@
+package com.vaadin.collaborationengine;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Set;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import com.vaadin.collaborationengine.util.TestEnum;
+
+public class MockJson {
+    public static final JsonNode FOO = JsonUtil.toJsonNode("foo");
+    public static final JsonNode BAZ = JsonUtil.toJsonNode("baz");
+    public static final JsonNode QUX = JsonUtil.toJsonNode("qux");
+
+    public static final TypeReference<List<String>> LIST_STRING_TYPE_REF = new TypeReference<List<String>>() {
+    };
+    public static final TypeReference<List<Boolean>> LIST_BOOLEAN_TYPE_REF = new TypeReference<List<Boolean>>() {
+    };
+    public static final TypeReference<List<Integer>> LIST_INTEGER_TYPE_REF = new TypeReference<List<Integer>>() {
+    };
+    public static final TypeReference<List<Double>> LIST_DOUBLE_TYPE_REF = new TypeReference<List<Double>>() {
+    };
+
+    public static final TypeReference<List<BigDecimal>> LIST_BIG_DECIMAL_TYPE_REF = new TypeReference<List<BigDecimal>>() {
+    };
+    public static final TypeReference<List<LocalDate>> LIST_LOCAL_DATE_TYPE_REF = new TypeReference<List<LocalDate>>() {
+    };
+    public static final TypeReference<List<LocalTime>> LIST_LOCAL_TIME_TYPE_REF = new TypeReference<List<LocalTime>>() {
+    };
+    public static final TypeReference<List<LocalDateTime>> LIST_LOCAL_DATE_TIME_TYPE_REF = new TypeReference<List<LocalDateTime>>() {
+    };
+    public static final TypeReference<List<TestEnum>> LIST_TEST_ENUM_TYPE_REF = new TypeReference<List<TestEnum>>() {
+    };
+
+    public static final TypeReference<Set<String>> SET_STRING_TYPE_REF = new TypeReference<Set<String>>() {
+    };
+    public static final TypeReference<Set<Boolean>> SET_BOOLEAN_TYPE_REF = new TypeReference<Set<Boolean>>() {
+    };
+    public static final TypeReference<Set<Integer>> SET_INTEGER_TYPE_REF = new TypeReference<Set<Integer>>() {
+    };
+    public static final TypeReference<Set<Double>> SET_DOUBLE_TYPE_REF = new TypeReference<Set<Double>>() {
+    };
+
+    public static final TypeReference<Set<BigDecimal>> SET_BIG_DECIMAL_TYPE_REF = new TypeReference<Set<BigDecimal>>() {
+    };
+    public static final TypeReference<Set<LocalDate>> SET_LOCAL_DATE_TYPE_REF = new TypeReference<Set<LocalDate>>() {
+    };
+    public static final TypeReference<Set<LocalTime>> SET_LOCAL_TIME_TYPE_REF = new TypeReference<Set<LocalTime>>() {
+    };
+    public static final TypeReference<Set<LocalDateTime>> SET_LOCAL_DATE_TIME_TYPE_REF = new TypeReference<Set<LocalDateTime>>() {
+    };
+    public static final TypeReference<Set<TestEnum>> SET_TEST_ENUM_TYPE_REF = new TypeReference<Set<TestEnum>>() {
+    };
+}

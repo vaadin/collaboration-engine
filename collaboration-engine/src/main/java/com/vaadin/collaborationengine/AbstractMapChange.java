@@ -14,6 +14,8 @@ package com.vaadin.collaborationengine;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * A change of the map data in a {@link Topic}
  *
@@ -22,9 +24,9 @@ import java.util.Objects;
 public class AbstractMapChange {
     private final String mapName;
     private final String key;
-    private final Object value;
+    private final JsonNode value;
 
-    public AbstractMapChange(String mapName, String key, Object value) {
+    public AbstractMapChange(String mapName, String key, JsonNode value) {
         Objects.requireNonNull(mapName, "Map name can not be null.");
         Objects.requireNonNull(key, "Key can not be null.");
         this.mapName = mapName;
@@ -40,7 +42,7 @@ public class AbstractMapChange {
         return key;
     }
 
-    public Object getValue() {
+    public JsonNode getValue() {
         return value;
     }
 }

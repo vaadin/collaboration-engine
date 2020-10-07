@@ -34,6 +34,8 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
@@ -137,10 +139,12 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     static final class FieldState {
-        public final Object value;
+        public final JsonNode value;
         public final List<FocusedEditor> editors;
 
-        public FieldState(Object value, List<FocusedEditor> editors) {
+        @JsonCreator
+        public FieldState(@JsonProperty("value") JsonNode value,
+                @JsonProperty("editors") List<FocusedEditor> editors) {
             this.value = value;
             this.editors = Collections
                     .unmodifiableList(new ArrayList<>(editors));
@@ -385,7 +389,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             String propertyName = event.getKey();
 
             FieldState fieldState = CollaborationBinderUtil.getFieldState(topic,
-                    propertyName, getPropertyType(propertyName));
+                    propertyName);
 
             setFieldValueFromFieldState(field, propertyName, fieldState);
 
@@ -410,20 +414,22 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             return;
         }
         setFieldValueFromFieldState(field, propertyName,
-                CollaborationBinderUtil.getFieldState(topic, propertyName,
-                        getPropertyType(propertyName)));
+                CollaborationBinderUtil.getFieldState(topic, propertyName));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void setFieldValueFromFieldState(HasValue field,
             String propertyName, FieldState fieldState) {
-        Object stateValue = fieldState.value;
-        if (stateValue == null) {
+        JsonNode stateValue = fieldState.value;
+        if (stateValue instanceof NullNode) {
             field.clear();
         } else {
             FieldConfiguration fieldConfiguration = propertyConfiguration
                     .get(propertyName);
-            field.setValue(fieldConfiguration.deserializer.apply(stateValue));
+            Object stateValueObj = JsonUtil.toInstance(stateValue,
+                    fieldConfiguration.deserializationType);
+            field.setValue(
+                    fieldConfiguration.deserializer.apply(stateValueObj));
         }
     }
 
@@ -667,9 +673,9 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     private void initializeBindingsWithoutFieldState(
             SerializableSupplier<BEAN> initialBeanSupplier) {
         CollaborationMap map = getMap(topic);
-
         List<String> propertiesWithoutFieldState = fieldToPropertyName.values()
-                .stream().filter(propertyName -> map.get(propertyName) == null)
+                .stream().filter(propertyName -> map.get(propertyName,
+                        JsonNode.class) == null)
                 .collect(Collectors.toList());
 
         if (propertiesWithoutFieldState.isEmpty()) {

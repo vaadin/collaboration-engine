@@ -22,6 +22,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import com.vaadin.collaborationengine.Topic.ChangeNotifier;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
@@ -158,7 +161,8 @@ public class TopicConnection {
                 boolean isReplaced;
                 synchronized (topic) {
                     isReplaced = topic.applyReplace(new ReplaceChange(name, key,
-                            expectedValue, newValue));
+                            JsonUtil.toJsonNode(expectedValue),
+                            JsonUtil.toJsonNode(newValue)));
 
                 }
                 context.dispatchAction(
@@ -174,7 +178,8 @@ public class TopicConnection {
                         .createCompletableFuture();
 
                 synchronized (topic) {
-                    topic.applyChange(new PutChange(name, key, value));
+                    topic.applyChange(new PutChange(name, key,
+                            JsonUtil.toJsonNode(value)));
                 }
 
                 context.dispatchAction(() -> contextFuture.complete(null));
@@ -192,7 +197,16 @@ public class TopicConnection {
             }
 
             @Override
-            public Object get(String key) {
+            public <T> T get(String key, Class<T> type) {
+                return JsonUtil.toInstance(get(key), type);
+            }
+
+            @Override
+            public <T> T get(String key, TypeReference<T> type) {
+                return JsonUtil.toInstance(get(key), type);
+            }
+
+            private JsonNode get(String key) {
                 Objects.requireNonNull(key, "Key cannot be null");
                 synchronized (topic) {
                     return topic.getMapValue(name, key);

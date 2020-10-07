@@ -12,8 +12,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -21,15 +19,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
+
+import static com.vaadin.collaborationengine.JsonUtil.EDITORS_TYPE_REF;
 
 /**
  * Utility methods for {@link CollaborationBinder}.
@@ -38,32 +35,11 @@ import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
  */
 public class CollaborationBinderUtil {
 
-    private static class CustomMapper extends ObjectMapper {
-        public CustomMapper() {
-            registerModule(new JavaTimeModule());
-        }
-    }
-
     private static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
             .getName();
 
-    private static final FieldState EMPTY_FIELD_STATE = new FieldState(null,
-            Collections.emptyList());
-    private static String EMPTY_FIELD_STATE_JSON;
-
-    private static final TypeReference<List<FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<FocusedEditor>>() {
-    };
-
-    static {
-        try {
-            EMPTY_FIELD_STATE_JSON = new CustomMapper()
-                    .writeValueAsString(EMPTY_FIELD_STATE);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(
-                    "Failed to encode the empty field state as a JSON string.",
-                    e);
-        }
-    }
+    private static final FieldState EMPTY_FIELD_STATE = new FieldState(
+            NullNode.getInstance(), Collections.emptyList());
 
     private CollaborationBinderUtil() {
         // Utility methods only
@@ -94,7 +70,7 @@ public class CollaborationBinderUtil {
         Objects.requireNonNull(propertyName, "Property name can't be null.");
 
         updateMapValue(topicConnection, propertyName,
-                state -> updateFieldValueInJson(state, value));
+                state -> withFieldValue(state, value));
     }
 
     /**
@@ -155,14 +131,11 @@ public class CollaborationBinderUtil {
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
 
-        updateMapValue(topicConnection, propertyName,
-                jsonString -> updateEditorsInJson(jsonString,
-                        editors -> Stream.concat(
-                                editors.filter(
-                                        focusedEditor -> !focusedEditor.user
-                                                .equals(user)),
-                                Stream.of(
-                                        new FocusedEditor(user, fieldIndex)))));
+        updateMapValue(topicConnection, propertyName, jsonNode -> withEditors(
+                jsonNode,
+                editors -> Stream.concat(editors.filter(
+                        focusedEditor -> !focusedEditor.user.equals(user)),
+                        Stream.of(new FocusedEditor(user, fieldIndex)))));
     }
 
     /**
@@ -196,15 +169,15 @@ public class CollaborationBinderUtil {
         Objects.requireNonNull(user, "User can't be null.");
 
         updateMapValue(topicConnection, propertyName,
-                jsonString -> updateEditorsInJson(jsonString, editors -> editors
+                jsonNode -> withEditors(jsonNode, editors -> editors
                         .filter(editor -> !editor.user.equals(user))));
     }
 
     private static void updateMapValue(TopicConnection topicConnection,
-            String propertyName, Function<String, String> updater) {
+            String propertyName, Function<ObjectNode, ObjectNode> updater) {
         CollaborationMap map = getMap(topicConnection);
-        String oldValue = (String) map.get(propertyName);
-        String newValue = updater.apply(oldValue);
+        ObjectNode oldValue = map.get(propertyName, ObjectNode.class);
+        JsonNode newValue = updater.apply(oldValue);
         map.replace(propertyName, oldValue, newValue).thenAccept(success -> {
             if (!success) {
                 updateMapValue(topicConnection, propertyName, updater);
@@ -212,85 +185,41 @@ public class CollaborationBinderUtil {
         });
     }
 
-    static FieldState getFieldState(TopicConnection topic, String propertyName,
-            Type valueType) {
-        String json = (String) getMap(topic).get(propertyName);
-        return jsonToFieldState(json, valueType);
+    static FieldState getFieldState(TopicConnection topic,
+            String propertyName) {
+        FieldState fieldState = getMap(topic).get(propertyName,
+                FieldState.class);
+        return fieldState == null ? EMPTY_FIELD_STATE : fieldState;
     }
 
     static CollaborationMap getMap(TopicConnection topic) {
         return topic.getNamedMap(COLLABORATION_BINDER_MAP_NAME);
     }
 
-    private static String updateFieldValueInJson(String fieldStateJson,
+    private static ObjectNode withFieldValue(ObjectNode fieldState,
             Object newValue) {
-
-        if (fieldStateJson == null) {
-            fieldStateJson = EMPTY_FIELD_STATE_JSON;
+        if (fieldState == null) {
+            fieldState = (ObjectNode) JsonUtil.toJsonNode(EMPTY_FIELD_STATE);
         }
 
-        ObjectMapper objectMapper = new CustomMapper();
-        try {
-            ObjectNode jsonNode = (ObjectNode) objectMapper
-                    .readTree(fieldStateJson);
-
-            jsonNode.set("value", objectMapper.valueToTree(newValue));
-
-            return objectMapper.writeValueAsString(jsonNode);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to update the field value.", e);
-        }
+        ObjectNode jsonNode = fieldState.deepCopy();
+        jsonNode.set("value", JsonUtil.toJsonNode(newValue));
+        return jsonNode;
     }
 
-    private static String updateEditorsInJson(String fieldStateJson,
+    private static ObjectNode withEditors(ObjectNode fieldState,
             Function<Stream<FocusedEditor>, Stream<FocusedEditor>> updater) {
-
-        if (fieldStateJson == null) {
-            fieldStateJson = EMPTY_FIELD_STATE_JSON;
+        if (fieldState == null) {
+            fieldState = (ObjectNode) JsonUtil.toJsonNode(EMPTY_FIELD_STATE);
         }
 
-        ObjectMapper objectMapper = new CustomMapper();
-        try {
-            ObjectNode jsonNode = (ObjectNode) objectMapper
-                    .readTree(fieldStateJson);
+        ObjectNode fieldStateNode = fieldState.deepCopy();
+        List<FocusedEditor> editors = JsonUtil
+                .toInstance(fieldStateNode.get("editors"), EDITORS_TYPE_REF);
 
-            List<FocusedEditor> editors = getEditors(objectMapper, jsonNode);
-
-            List<FocusedEditor> newEditors = updater.apply(editors.stream())
-                    .collect(Collectors.toList());
-
-            jsonNode.set("editors", objectMapper.valueToTree(newEditors));
-
-            return objectMapper.writeValueAsString(jsonNode);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to update the field editors.",
-                    e);
-        }
-    }
-
-    private static FieldState jsonToFieldState(String json, Type valueType) {
-        if (json == null) {
-            return EMPTY_FIELD_STATE;
-        }
-
-        ObjectMapper objectMapper = new CustomMapper();
-        try {
-            JsonNode jsonNode = objectMapper.readTree(json);
-
-            Object value = objectMapper.convertValue(jsonNode.get("value"),
-                    objectMapper.getTypeFactory().constructType(valueType));
-
-            List<FocusedEditor> editors = getEditors(objectMapper, jsonNode);
-            return new FieldState(value, editors);
-        } catch (IOException e) {
-            throw new RuntimeException(
-                    "Failed to parse the field state from a JSON string.", e);
-        }
-    }
-
-    private static List<FocusedEditor> getEditors(ObjectMapper objectMapper,
-            JsonNode jsonNode) throws IOException {
-        return objectMapper.readerFor(EDITORS_TYPE_REF)
-                .readValue(jsonNode.get("editors"));
+        List<FocusedEditor> newEditors = updater.apply(editors.stream())
+                .collect(Collectors.toList());
+        fieldStateNode.set("editors", JsonUtil.toJsonNode(newEditors));
+        return fieldStateNode;
     }
 }

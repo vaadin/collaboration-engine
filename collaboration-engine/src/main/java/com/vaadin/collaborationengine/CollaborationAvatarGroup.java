@@ -32,9 +32,6 @@ import com.vaadin.flow.server.AbstractStreamResource;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
 
-import static com.vaadin.collaborationengine.JsonUtil.jsonToUsers;
-import static com.vaadin.collaborationengine.JsonUtil.usersToJson;
-
 /**
  * Extension of the {@link AvatarGroup} component which integrates with the
  * {@link CollaborationEngine}. It updates the avatars in real time based on the
@@ -70,7 +67,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     static final String MAP_NAME = CollaborationAvatarGroup.class.getName();
-    static final String KEY = "users";
+    static final String MAP_KEY = "users";
 
     private Registration topicRegistration;
     private CollaborationMap map;
@@ -222,24 +219,25 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
 
     private void updateUsers(CollaborationMap map,
             SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
-        String oldValue = (String) map.get(KEY);
-        List<UserInfo> oldUsers = jsonToUsers(oldValue);
-        List<UserInfo> newUsers = updater.apply(oldUsers.stream())
+        List<UserInfo> oldUsers = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
+
+        Stream<UserInfo> oldUsersStream = oldUsers == null ? Stream.empty()
+                : oldUsers.stream();
+        List<UserInfo> newUsers = updater.apply(oldUsersStream)
                 .collect(Collectors.toList());
 
-        map.replace(KEY, oldValue, usersToJson(newUsers))
-                .thenAccept(success -> {
-                    if (!success) {
-                        updateUsers(map, updater);
-                    }
-                });
+        map.replace(MAP_KEY, oldUsers, newUsers).thenAccept(success -> {
+            if (!success) {
+                updateUsers(map, updater);
+            }
+        });
     }
 
     private void refreshItems() {
         if (map == null) {
             return;
         }
-        List<UserInfo> users = jsonToUsers((String) map.get(KEY));
+        List<UserInfo> users = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
 
         List<AvatarGroupItem> items = users != null ? users.stream()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))

@@ -108,7 +108,7 @@ it can be removed when the component is detached to avoid leaking memory.
         fieldValues.subscribe(event -> {
             if ("isFriday".equals(event.getKey())) {
                 checkbox.setValue(
-                        Boolean.TRUE.equals(event.getValue()));
+                        Boolean.TRUE.equals(event.getValue(Boolean.class)));
             }
         });
 

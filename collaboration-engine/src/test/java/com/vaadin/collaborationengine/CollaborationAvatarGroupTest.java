@@ -96,9 +96,9 @@ public class CollaborationAvatarGroupTest {
         Stream.of(client1, client2, client3, clientInOtherTopic)
                 .forEach(Client::cleanUp);
         TestUtils.clearMap(TOPIC_ID, CollaborationAvatarGroup.MAP_NAME,
-                CollaborationAvatarGroup.KEY);
+                CollaborationAvatarGroup.MAP_KEY);
         TestUtils.clearMap(TOPIC_ID_2, CollaborationAvatarGroup.MAP_NAME,
-                CollaborationAvatarGroup.KEY);
+                CollaborationAvatarGroup.MAP_KEY);
 
         UI.setCurrent(null);
     }
@@ -272,16 +272,17 @@ public class CollaborationAvatarGroupTest {
     }
 
     @Test
-    public void collaborationMapValueEncodedAsString() {
+    public void collaborationMapValueEncodedAsJsonNode() {
         client1.attach();
         AtomicBoolean done = new AtomicBoolean(false);
         TestUtils.openEagerConnection(TOPIC_ID, topicConnection -> {
-            Object mapValue = topicConnection
+            List<UserInfo> mapValue = topicConnection
                     .getNamedMap(CollaborationAvatarGroup.MAP_NAME)
-                    .get(CollaborationAvatarGroup.KEY);
-            Assert.assertThat(mapValue, CoreMatchers.instanceOf(String.class));
-            Assert.assertThat((String) mapValue,
-                    CoreMatchers.containsString(client1.user.getId()));
+                    .get(CollaborationAvatarGroup.MAP_KEY,
+                            JsonUtil.LIST_USER_TYPE_REF);
+            List<String> ids = mapValue.stream().map(UserInfo::getId)
+                    .collect(Collectors.toList());
+            Assert.assertTrue(ids.contains(client1.user.getId()));
             done.set(true);
         });
         Assert.assertTrue("Topic connection callback has not run", done.get());

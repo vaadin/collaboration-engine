@@ -30,8 +30,8 @@ public class MultipleCollaborationMapTest {
     @Test
     public void namedMap_put_newElementAdded() {
         namedMapData.put("firstName", "foo");
-        Assert.assertEquals("foo",
-                connection.getNamedMap("values").get("firstName"));
+        Assert.assertEquals("foo", connection.getNamedMap("values")
+                .get("firstName", String.class));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class MultipleCollaborationMapTest {
 
         connection.getNamedMap("values").put("foo", "bar");
         Assert.assertEquals("foo", mapChangeEvent.get().getKey());
-        Assert.assertEquals("bar", mapChangeEvent.get().getValue());
+        Assert.assertEquals("bar", mapChangeEvent.get().getValue(String.class));
     }
 
     @Test

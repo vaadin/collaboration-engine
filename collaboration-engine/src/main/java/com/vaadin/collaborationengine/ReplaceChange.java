@@ -12,6 +12,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * A change that will be applied to the map data of a {@link Topic} only when
  * this change has the latest snapshot of the changing data.
@@ -19,15 +21,15 @@ package com.vaadin.collaborationengine;
  * @author Vaadin Ltd
  */
 public class ReplaceChange extends AbstractMapChange {
-    private final Object expectedValue;
+    private final JsonNode expectedValue;
 
-    public ReplaceChange(String mapName, String key, Object expectedValue,
-            Object newValue) {
+    public ReplaceChange(String mapName, String key, JsonNode expectedValue,
+            JsonNode newValue) {
         super(mapName, key, newValue);
         this.expectedValue = expectedValue;
     }
 
-    public Object getExpectedValue() {
+    public JsonNode getExpectedValue() {
         return expectedValue;
     }
 

@@ -39,8 +39,8 @@ public class TopicView extends VerticalLayout {
 
                     fieldValues.subscribe(event -> {
                         if ("isFriday".equals(event.getKey())) {
-                            checkbox.setValue(
-                                    Boolean.TRUE.equals(event.getValue()));
+                            checkbox.setValue(Boolean.TRUE
+                                    .equals(event.getValue(Boolean.class)));
                         }
                     });
 

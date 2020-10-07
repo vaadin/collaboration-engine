@@ -15,6 +15,9 @@ package com.vaadin.collaborationengine;
 import java.util.EventObject;
 import java.util.Objects;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * Event that is fired when the value in a collaboration map changes.
  *
@@ -23,8 +26,8 @@ import java.util.Objects;
 public class MapChangeEvent extends EventObject {
 
     private final String key;
-    private final Object oldValue;
-    private final Object value;
+    private final JsonNode oldValue;
+    private final JsonNode value;
 
     /**
      * Creates a new map change event.
@@ -58,23 +61,65 @@ public class MapChangeEvent extends EventObject {
     }
 
     /**
-     * Gets the old value.
+     * Gets the old value as an instance of the given class.
      *
+     * @param type
+     *            the expected type of the returned instance
+     * @param <T>
+     *            the type of the value from <code>type</code> parameter, e.g.
+     *            <code>String</code>
      * @return the old map value, or <code>null</code> if no value was present
      *         previously
      */
-    public Object getOldValue() {
-        return oldValue;
+    public <T> T getOldValue(Class<T> type) {
+        return JsonUtil.toInstance(oldValue, type);
     }
 
     /**
-     * Gets the new value.
+     * Gets the old value as an instance corresponding to the given type
+     * reference.
      *
+     * @param typeRef
+     *            the expected type reference of the returned instance
+     * @param <T>
+     *            the type reference of the value from <code>typeRef</code>
+     *            parameter, e.g. <code>List<String>></code>
+     * @return the old map value, or <code>null</code> if no value was present
+     *         previously
+     */
+    public <T> T getOldValue(TypeReference<T> typeRef) {
+        return JsonUtil.toInstance(oldValue, typeRef);
+    }
+
+    /**
+     * Gets the new value as an instance of the given class.
+     *
+     * @param type
+     *            the expected type of the returned instance
+     * @param <T>
+     *            the type of the value from <code>type</code> parameter, e.g.
+     *            <code>String</code>
      * @return the new map value, or <code>null</code> if the association was
      *         removed
      */
-    public Object getValue() {
-        return value;
+    public <T> T getValue(Class<T> type) {
+        return JsonUtil.toInstance(value, type);
+    }
+
+    /**
+     * Gets the new value as an instance corresponding to the given type
+     * reference.
+     *
+     * @param typeRef
+     *            the expected type reference of the returned instance
+     * @param <T>
+     *            the type reference of the value from `typeRef` parameter, e.g.
+     *            <code>List<String>></code>
+     * @return the new map value, or <code>null</code> if the association was
+     *         removed
+     */
+    public <T> T getValue(TypeReference<T> typeRef) {
+        return JsonUtil.toInstance(value, typeRef);
     }
 
 }

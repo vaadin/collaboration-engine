@@ -4,6 +4,9 @@ import java.lang.ref.WeakReference;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.node.NullNode;
+import org.junit.Assert;
+
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.TopicConnection;
@@ -40,6 +43,10 @@ public class TestUtils {
                     handler.accept(topic);
                     return null;
                 });
+    }
+
+    public static void assertNullNode(String message, Object value) {
+        Assert.assertEquals(message, NullNode.class, value.getClass());
     }
 
 }

@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -11,6 +12,7 @@ import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
+import com.vaadin.collaborationengine.util.TestLocalDateField;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Focusable;
@@ -22,6 +24,7 @@ public class AbstractCollaborationBinderTest {
     public static class BinderTestClient {
         UserInfo user = new UserInfo(UUID.randomUUID().toString());
         TestField field = new TestField();
+        TestLocalDateField localDateField = new TestLocalDateField();
 
         CollaborationBinder<TestBean> binder;
         private final UI ui;
@@ -33,7 +36,11 @@ public class AbstractCollaborationBinderTest {
         }
 
         public Binder.Binding<TestBean, String> bind() {
-            return binder.bind(field, "value");
+            return binder.forField(field).bind("value");
+        }
+
+        public Binder.Binding<TestBean, LocalDate> bindLocalDate() {
+            return binder.forField(localDateField).bind("localDate");
         }
 
         public void attach() {
@@ -46,6 +53,7 @@ public class AbstractCollaborationBinderTest {
 
         public void detach() {
             ui.remove(field);
+            ui.remove(localDateField);
         }
 
         public void cleanUp() {
@@ -88,13 +96,12 @@ public class AbstractCollaborationBinderTest {
         CollaborationBinderUtil.setFieldValue(topicConnection, key, value);
     }
 
-    protected Object getSharedValue(String key) {
-        return getFieldState(key).value;
+    protected <T> T getSharedValue(String key, Class<T> type) {
+        return JsonUtil.toInstance(getFieldState(key).value, type);
     }
 
     protected FieldState getFieldState(String key) {
-        return CollaborationBinderUtil.getFieldState(topicConnection, key,
-                String.class);
+        return CollaborationBinderUtil.getFieldState(topicConnection, key);
     }
 
     protected List<UserInfo> getEditors(String key) {

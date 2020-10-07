@@ -1,6 +1,5 @@
 package com.vaadin;
 
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -157,8 +156,8 @@ public class MainView extends VerticalLayout {
                     }
                 });
 
-        topic.getNamedMap(ACTIVITY_LOG_MAP_NAME).subscribe(
-                event -> log.setText(Objects.toString(event.getValue(), "")));
+        topic.getNamedMap(ACTIVITY_LOG_MAP_NAME)
+                .subscribe(event -> log.setText(event.getValue(String.class)));
 
         log(topic, username + " joined");
 
@@ -172,16 +171,16 @@ public class MainView extends VerticalLayout {
 
     private static void log(TopicConnection topic, String message) {
         MainView.<String> updateMaps(topic.getNamedMap(ACTIVITY_LOG_MAP_NAME),
-                "", "", oldLog -> message + "\n" + oldLog);
+                "log", String.class, "", oldLog -> message + "\n" + oldLog);
     }
 
     private static <T> void updateMaps(CollaborationMap map, String key,
-            T nullValue, Function<T, T> updater) {
-        T oldValue = (T) map.get(key);
-        T newValue = updater.apply(oldValue != null ? oldValue : nullValue);
+            Class<T> type, T nullValue, Function<T, T> updater) {
+        T oldValue = map.get(key, type);
+        T newValue = updater.apply(oldValue == null ? nullValue : oldValue);
         map.replace(key, oldValue, newValue).thenAccept(success -> {
             if (!success) {
-                updateMaps(map, key, nullValue, updater);
+                updateMaps(map, key, type, nullValue, updater);
             }
         });
     }

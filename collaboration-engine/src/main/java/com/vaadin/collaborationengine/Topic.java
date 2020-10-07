@@ -20,6 +20,9 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+
 import com.vaadin.flow.shared.Registration;
 
 class Topic {
@@ -29,7 +32,7 @@ class Topic {
         void onEntryChange(MapChange mapChange);
     }
 
-    private final Map<String, Map<String, Object>> namedMapData = new HashMap<>();
+    private final Map<String, Map<String, JsonNode>> namedMapData = new HashMap<>();
     private final List<ChangeNotifier> changeListeners = new ArrayList<>();
 
     Registration subscribe(ChangeNotifier changeNotifier) {
@@ -42,7 +45,7 @@ class Topic {
     }
 
     Stream<MapChange> getMapData(String mapName) {
-        Map<String, Object> mapData = namedMapData.get(mapName);
+        Map<String, JsonNode> mapData = namedMapData.get(mapName);
         if (mapData == null) {
             return Stream.empty();
         }
@@ -50,12 +53,12 @@ class Topic {
                 entry.getKey(), null, entry.getValue()));
     }
 
-    Object getMapValue(String mapName, String key) {
-        Map<String, Object> map = namedMapData.get(mapName);
-        if (map == null) {
+    JsonNode getMapValue(String mapName, String key) {
+        Map<String, JsonNode> map = namedMapData.get(mapName);
+        if (map == null || !map.containsKey(key)) {
             return null;
         }
-        return map.get(key);
+        return map.get(key).deepCopy();
     }
 
     void applyChange(PutChange change) {
@@ -66,9 +69,10 @@ class Topic {
         String mapName = change.getMapName();
         String key = change.getKey();
 
-        Map<String, Object> map = namedMapData.computeIfAbsent(mapName,
+        Map<String, JsonNode> map = namedMapData.computeIfAbsent(mapName,
                 name -> new HashMap<>());
-        Object oldValue = map.get(key);
+        JsonNode oldValue = map.containsKey(key) ? map.get(key)
+                : NullNode.getInstance();
 
         if (condition != null && !condition.test(oldValue)) {
             return false;
@@ -77,11 +81,12 @@ class Topic {
             return true;
         }
 
-        Object newValue = change.getValue();
-        if (newValue == null) {
+        JsonNode newValue = change.getValue() == null ? NullNode.getInstance()
+                : change.getValue();
+        if (newValue instanceof NullNode) {
             map.remove(key);
         } else {
-            map.put(key, newValue);
+            map.put(key, newValue.deepCopy());
         }
         fireMapChangeEvent(new MapChange(mapName, key, oldValue, newValue));
         return true;

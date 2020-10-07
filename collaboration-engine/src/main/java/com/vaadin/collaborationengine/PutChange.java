@@ -14,6 +14,8 @@ package com.vaadin.collaborationengine;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 /**
  * A change that put a value to the map data of a {@link Topic}
  *
@@ -21,7 +23,7 @@ import java.util.Objects;
  */
 public class PutChange extends AbstractMapChange {
 
-    public PutChange(String mapName, String key, Object value) {
+    public PutChange(String mapName, String key, JsonNode value) {
         super(mapName, key, value);
     }
 

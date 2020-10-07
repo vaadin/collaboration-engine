@@ -12,40 +12,80 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.Collections;
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 class JsonUtil {
+
+    public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
+    };
+    public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
+    };
+
+    private static class CustomMapper extends ObjectMapper {
+        public CustomMapper() {
+            registerModule(new JavaTimeModule());
+        }
+    }
 
     private JsonUtil() {
     }
 
-    static String usersToJson(List<UserInfo> users) {
-        ObjectMapper objectMapper = new ObjectMapper();
+    static CustomMapper createCustomMapper() {
+        return new CustomMapper();
+    }
+
+    static JsonNode toJsonNode(Object value) {
+        ObjectMapper mapper = createCustomMapper();
         try {
-            return objectMapper.writeValueAsString(users);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(
-                    "Failed to encode the list of users as a JSON string.", e);
+            return mapper.valueToTree(value);
+        } catch (IllegalArgumentException e) {
+            throw new JsonConversionException(
+                    "Failed to encode the object to JSON node. "
+                            + "Make sure the value contains a supported type.",
+                    e);
         }
     }
 
-    static List<UserInfo> jsonToUsers(String json) {
-        if (json == null) {
-            return Collections.emptyList();
+    static <T> T toInstance(JsonNode jsonNode, Class<T> type) {
+        if (jsonNode == null) {
+            return null;
         }
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = createCustomMapper();
         try {
-            return objectMapper.readValue(json,
-                    new TypeReference<List<UserInfo>>() {
-                    });
+            return objectMapper.treeToValue(jsonNode, type);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(
-                    "Failed to parse the list of users from a JSON string.", e);
+            throw new JsonConversionException(
+                    "Failed to parse the JSON node to " + type.getName(), e);
         }
     }
+
+    static <T> T toInstance(JsonNode jsonNode, TypeReference<T> type) {
+        return (T) toInstance(jsonNode, type.getType());
+    }
+
+    static Object toInstance(JsonNode jsonNode, Type type) {
+        if (jsonNode == null) {
+            return null;
+        }
+        ObjectMapper mapper = createCustomMapper();
+        JavaType javaType = mapper.getTypeFactory().constructType(type);
+        try {
+            return mapper.readValue(mapper.treeAsTokens(jsonNode), javaType);
+        } catch (IOException e) {
+            throw new JsonConversionException(
+                    "Failed to parse the JSON node to "
+                            + javaType.getTypeName(),
+                    e);
+        }
+    }
+
 }
