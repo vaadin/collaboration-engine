@@ -54,13 +54,15 @@ public class TopicConnection {
         closeRegistration = context.setActivationHandler(active -> {
             if (active) {
                 synchronized (this.topic) {
-                    Registration callbackRegistration = connectionActivationCallback
-                            .apply(this);
-                    addRegistration(callbackRegistration);
+                    context.dispatchAction(() -> {
+                        Registration callbackRegistration = connectionActivationCallback
+                                .apply(this);
+                        addRegistration(callbackRegistration);
 
-                    Registration changeRegistration = this.topic
-                            .subscribe(this::handleChange);
-                    addRegistration(changeRegistration);
+                        Registration changeRegistration = this.topic
+                                .subscribe(this::handleChange);
+                        addRegistration(changeRegistration);
+                    });
                 }
             } else {
                 deactivate();

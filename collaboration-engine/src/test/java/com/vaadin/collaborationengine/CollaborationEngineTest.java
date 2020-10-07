@@ -2,6 +2,8 @@ package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -25,6 +27,7 @@ public class CollaborationEngineTest {
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
+
         context = new EagerConnectionContext();
         connectionCallback = topicConnection -> () -> {
             // no impl
@@ -174,6 +177,45 @@ public class CollaborationEngineTest {
     @Test(expected = NullPointerException.class)
     public void nullUserId_throws() {
         new UserInfo(null);
+    }
+
+    @Test
+    public void openConnection_callbackRunThroughDispatch() {
+        AtomicBoolean callbackRun = new AtomicBoolean();
+        AtomicReference<Command> pendingAction = new AtomicReference<>();
+
+        collaborationEngine.openTopicConnection(new ConnectionContext() {
+            @Override
+            public Registration setActivationHandler(
+                    ActivationHandler handler) {
+                handler.setActive(true);
+                return null;
+            }
+
+            @Override
+            public void dispatchAction(Command action) {
+                boolean updated = pendingAction.compareAndSet(null, action);
+                Assert.assertTrue(
+                        "There should not be a previous pending action",
+                        updated);
+            }
+
+            @Override
+            public <T> CompletableFuture<T> createCompletableFuture() {
+                return new CompletableFuture<>();
+            }
+        }, "topic", SystemUserInfo.get(), connection -> {
+            boolean previouslyRun = callbackRun.getAndSet(true);
+            Assert.assertFalse("Callback should have been run only once",
+                    previouslyRun);
+            return null;
+        });
+
+        Assert.assertFalse(callbackRun.get());
+
+        pendingAction.get().execute();
+
+        Assert.assertTrue(callbackRun.get());
     }
 
     class SpyConnectionContext implements ConnectionContext {
