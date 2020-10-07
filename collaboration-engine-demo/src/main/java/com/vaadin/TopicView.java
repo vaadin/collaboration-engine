@@ -3,6 +3,7 @@ package com.vaadin;
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.UserInfo;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
@@ -20,9 +21,10 @@ public class TopicView extends VerticalLayout {
         checkbox = new Checkbox("Is it Friday?");
         add(checkbox);
 
-        // TODO: replace hard-coded ID and name with data from the actual logged
+        // TODO: replace generated ID and name with data from the actual logged
         // in user
-        UserInfo localUser = new UserInfo("johndoe", "John Doe");
+        String userId = System.identityHashCode(UI.getCurrent()) + "";
+        UserInfo localUser = new UserInfo(userId, "User " + userId);
 
         CollaborationEngine.getInstance().openTopicConnection(this, "tutorial",
                 localUser, topic -> {

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationBinder;
 import com.vaadin.collaborationengine.UserInfo;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
@@ -42,7 +43,8 @@ public class TutorialView extends VerticalLayout {
         DatePicker dateOfBirthField = new DatePicker("Date of birth");
         add(nameField, dateOfBirthField);
 
-        UserInfo localUser = new UserInfo("johndoe", "Jon Doe");
+        String userId = System.identityHashCode(UI.getCurrent()) + "";
+        UserInfo localUser = new UserInfo(userId, "User " + userId);
 
         CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
                 localUser, "tutorial");

@@ -77,12 +77,13 @@ information of who is currently present in the view or editing a field.
 
 In a real application, this kind of profile information should come from the
 application's backend based on the currently logged in user.
-For the sake of this tutorial, let's just use the same hard-coded user id and
-name for each user. 
+For the sake of this tutorial, let's generate the user's id based on the UI instance
+and use the generated id in the user's name as well.
 
 [source, java]
 ----
-UserInfo localUser = new UserInfo("johndoe", "John Doe");
+String userId = System.identityHashCode(UI.getCurrent()) + "";
+UserInfo localUser = new UserInfo(userId, "User " + userId);
 ----
 The name will be displayed to other users when editing a field, and
 the user's avatar will contain the abbreviation of the name (as we don't

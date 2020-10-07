@@ -48,8 +48,10 @@ The user who is related to the topic connection must be defined.
 
 [source, java]
 ----
-//TODO: replace hard-coded ID and name with data from the actual logged in user
-UserInfo localUser = new UserInfo("johndoe", "John Doe");
+//TODO: replace generated ID and name with data from the actual logged in user
+String userId = System.identityHashCode(UI.getCurrent()) + "";
+UserInfo localUser = new UserInfo(userId, "User " + userId);
+
 CollaborationEngine.getInstance().openTopicConnection(this, "tutorial", localUser,
     topic -> {
         // logic for the connection's activation callback
