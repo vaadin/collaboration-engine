@@ -559,6 +559,19 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     /**
+     * @deprecated This operation, along with {@link #setBean(Object)}, is not
+     *             supported by the collaboration binder. Instead of
+     *             {@link #setBean(Object)}, you can provide the bean for
+     *             populating the fields using {@link #setTopic}, and write the
+     *             values back to the bean using {@link #writeBean}.
+     */
+    @Override
+    @Deprecated
+    public BEAN getBean() {
+        return super.getBean();
+    }
+
+    /**
      * @deprecated This operation is not supported by the collaboration binder.
      *             You can instead provide the bean for populating the fields
      *             using {@link #setTopic} to avoid overriding currently edited
