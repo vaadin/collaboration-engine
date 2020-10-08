@@ -39,7 +39,7 @@ class JsonUtil {
     private JsonUtil() {
     }
 
-    static CustomMapper createCustomMapper() {
+    static ObjectMapper createCustomMapper() {
         return new CustomMapper();
     }
 

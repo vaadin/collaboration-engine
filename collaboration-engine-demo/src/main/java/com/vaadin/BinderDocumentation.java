@@ -80,9 +80,11 @@ public class BinderDocumentation {
         ComboBox<Person> supervisor = new ComboBox<>();
         supervisor.setItems(personService.findAllSupervisors());
 
-        binder.forField(supervisor, person -> String.valueOf(person.getId()),
-                id -> personService.findById(Long.parseLong(id)))
-                .bind("supervisor");
+        binder.setSerializer(Person.class,
+                person -> String.valueOf(person.getId()),
+                id -> personService.findById(Long.parseLong(id)));
+
+        binder.bind(supervisor, "supervisor");
 
         CheckboxGroup<String> pets = new CheckboxGroup<>();
         pets.setItems("Dog", "Cat", "Parrot");

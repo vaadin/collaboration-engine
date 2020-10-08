@@ -111,16 +111,14 @@ the person's supervisor:
 ComboBox<Person> supervisor = new ComboBox<>();
 supervisor.setItems(personService.findAllSupervisors());
 
-binder.forField(supervisor, person -> String.valueOf(person.getId()),
-        id -> personService.findById(Long.parseLong(id)))
-        .bind("supervisor");
+binder.setSerializer(Person.class,
+        person -> String.valueOf(person.getId()),
+        id -> personService.findById(Long.parseLong(id)));
+
+binder.bind(supervisor, "supervisor");
 ----
 The person ids are stored as `longs` in this case, and the serialized value needs to be a `String`.
 In this case, we need to do a bit of converting between strings and longs.
-
-Providing a custom serializer and deserializer can also solve all the other cases described below.
-However, as long as the field value type is supported by Collaboration Engine,
-we can just provide the type information instead, as we'll examine next.
 
 ==== Converters
 

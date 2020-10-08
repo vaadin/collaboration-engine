@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -400,18 +402,13 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
-    public void simpleBinding_typeInferred() {
-        client.bind();
-        Assert.assertEquals(String.class,
-                client.binder.getPropertyType("value"));
-    }
-
-    @Test
     public void simpleBindingWithNullRepresentation_typeInferred() {
         client.binder.forField(client.field).withNullRepresentation("foo")
                 .bind("value");
-        Assert.assertEquals(String.class,
-                client.binder.getPropertyType("value"));
+        client.attach();
+
+        setSharedValue("value", "foo");
+        Assert.assertEquals("foo", client.field.getValue());
     }
 
     @Test
@@ -435,10 +432,13 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
 
     @Test
     public void bindingGenericFieldWithConverter_explicitTypeProvided_propertyTypeAsDefined() {
-        client.binder.forField(new GenericTestField<>(), Integer.class)
+        GenericTestField<Integer> field = new GenericTestField<>();
+        client.binder.forField(field, Integer.class)
                 .withConverter(String::valueOf, Integer::valueOf).bind("value");
-        Assert.assertEquals(Integer.class,
-                client.binder.getPropertyType("value"));
+        client.attach(field);
+
+        setSharedValue("value", Integer.valueOf(42));
+        Assert.assertEquals(42, field.getValue().intValue());
     }
 
     @Test
@@ -469,21 +469,113 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
-    public void complexTypeWithCallbacks_valueSerializedAndDeserializedProperly() {
-        GenericTestField<TestBean> field = new GenericTestField<>();
+    public void collectionTypeWithElementSerializer_valueSerializedAndDeserializedProperly() {
+        GenericTestField<List<TestBean>> field = new GenericTestField<>();
 
-        client.binder.forField(field, TestBean::getValue, TestBean::new)
-                // Converter to allow using the existing bean property with the
-                // binder that is already set up
-                .withConverter(TestBean::getValue, TestBean::new).bind("value");
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                TestBean::new);
+
+        client.binder.forField(field, List.class, TestBean.class)
+                .withNullRepresentation(Collections.emptyList())
+                .bind("testBeans");
+
         client.attach(field);
 
-        Assert.assertEquals(String.class,
-                client.binder.getPropertyType("value"));
+        field.setValue(Arrays.asList(new TestBean("one"), new TestBean("two")));
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(topicConnection, "testBeans");
+
+        Assert.assertEquals(Arrays.asList("one", "two"), JsonUtil
+                .toInstance(fieldState.value, MockJson.LIST_STRING_TYPE_REF));
+
+        CollaborationBinderUtil.setFieldValue(topicConnection, "testBeans",
+                JsonUtil.toJsonNode(Arrays.asList("three", "four")));
+
+        List<TestBean> value = field.getValue();
+        Assert.assertEquals(2, value.size());
+        Assert.assertEquals("three", value.get(0).getValue());
+        Assert.assertEquals("four", value.get(1).getValue());
+    }
+
+    @Test
+    public void collectionTypeWithConverterAndElementSerializer_valueSerializedAndDeserializedProperly() {
+        GenericTestField<List<TestBean>> field = new GenericTestField<>();
+
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                TestBean::new);
+
+        client.binder.forField(field, List.class, TestBean.class)
+                .withNullRepresentation(Collections.emptyList())
+                .withConverter(
+                        presentationValue -> presentationValue.stream()
+                                .map(TestBean::getValue)
+                                .collect(Collectors.joining(",")),
+                        modelValue -> Stream.of(modelValue.split(","))
+                                .map(TestBean::new)
+                                .collect(Collectors.toList()))
+                .bind("value");
+
+        client.attach(field);
+
+        field.setValue(Arrays.asList(new TestBean("one"), new TestBean("two")));
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(topicConnection, "value");
+
+        Assert.assertEquals(Arrays.asList("one", "two"), JsonUtil
+                .toInstance(fieldState.value, MockJson.LIST_STRING_TYPE_REF));
+
+        CollaborationBinderUtil.setFieldValue(topicConnection, "value",
+                JsonUtil.toJsonNode(Arrays.asList("three", "four")));
+
+        List<TestBean> value = field.getValue();
+        Assert.assertEquals(2, value.size());
+        Assert.assertEquals("three", value.get(0).getValue());
+        Assert.assertEquals("four", value.get(1).getValue());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void collectionTypeWithComplexTypeWithoutSerializer_rejected() {
+        GenericTestField<List<TestBean>> field = new GenericTestField<>();
+        client.binder.forField(field, List.class, TestBean.class).bind("value");
+    }
+
+    @Test
+    public void complexTypeWithSerializer_valueSerializedAndDeserializedProperly() {
+        GenericTestField<TestBean> field = new GenericTestField<>();
+
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                TestBean::new);
+
+        client.binder.forField(field).bind("testBean");
+        client.attach(field);
+
+        field.setValue(new TestBean("Lorem"));
+        FieldState fieldState = CollaborationBinderUtil
+                .getFieldState(topicConnection, "testBean");
+        Assert.assertEquals(TextNode.class, fieldState.value.getClass());
+        Assert.assertEquals("Lorem",
+                JsonUtil.toInstance(fieldState.value, String.class));
+
+        CollaborationBinderUtil.setFieldValue(topicConnection, "testBean",
+                JsonUtil.toJsonNode("Ipsum"));
+        Assert.assertEquals("Ipsum", field.getValue().getValue());
+    }
+
+    @Test
+    public void complexTypeWithConverterAndSerializer_valueSerializedAndDeserializedProperly() {
+        GenericTestField<TestBean> field = new GenericTestField<>();
+
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                TestBean::new);
+
+        client.binder.forField(field, TestBean.class)
+                .withConverter(TestBean::getValue, TestBean::new).bind("value");
+        client.attach(field);
 
         field.setValue(new TestBean("Lorem"));
         FieldState fieldState = CollaborationBinderUtil
                 .getFieldState(topicConnection, "value");
+        Assert.assertEquals(TextNode.class, fieldState.value.getClass());
         Assert.assertEquals("Lorem",
                 JsonUtil.toInstance(fieldState.value, String.class));
 
@@ -492,16 +584,91 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         Assert.assertEquals("Ipsum", field.getValue().getValue());
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void setSerializer_builtInType_throws() {
+        client.binder.setSerializer(Integer.class, String::valueOf,
+                Integer::valueOf);
+    }
+
     @Test
-    public void bindInstanceFields_simpleCase_fieldHasExpectedType() {
+    public void emptyField_serializerNotCalled() {
+        GenericTestField<TestBean> field = new GenericTestField<>();
+
+        ArrayList<TestBean> serializedValues = new ArrayList<>();
+
+        client.binder.setSerializer(TestBean.class, value -> {
+            serializedValues.add(value);
+            return value.getValue();
+        }, TestBean::new);
+
+        client.binder.bind(field, "testBean");
+        client.attach(field);
+
+        // Just to verify that the serializer is actually set up correctly
+        field.setValue(new TestBean("foo"));
+        Assert.assertEquals(Arrays.asList(new TestBean("foo")),
+                serializedValues);
+
+        field.setValue(null);
+        Assert.assertEquals("Serializer should not have been run again",
+                Arrays.asList(new TestBean("foo")), serializedValues);
+        Assert.assertNull("Shared value should be cleared",
+                getSharedValue("testBean", String.class));
+    }
+
+    @Test
+    public void mapValueCleared_deserializerNotCalled() {
+        GenericTestField<TestBean> field = new GenericTestField<>();
+
+        ArrayList<String> deserializedValues = new ArrayList<>();
+
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                value -> {
+                    deserializedValues.add(value);
+                    return new TestBean(value);
+                });
+
+        client.binder.bind(field, "testBean");
+        client.attach(field);
+
+        // Just to verify that the deserializer is actually set up correctly
+        setSharedValue("testBean", "foo");
+        Assert.assertEquals(Arrays.asList("foo"), deserializedValues);
+
+        setSharedValue("testBean", null);
+
+        Assert.assertEquals("Serializer should not have been run again",
+                Arrays.asList("foo"), deserializedValues);
+        Assert.assertNull("Field should be cleared", field.getValue());
+    }
+
+    @Test
+    public void setSerializer_replaceExisting_throws() {
+        client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                TestBean::new);
+
+        try {
+            client.binder.setSerializer(TestBean.class, TestBean::getValue,
+                    TestBean::new);
+            Assert.fail("Redefining existing serializer should not be allowed");
+        } catch (IllegalStateException expected) {
+            // All is fine
+        }
+    }
+
+    @Test
+    public void bindInstanceFields_simpleCase_jsonHandlerInferred() {
         class Target {
             private TestField value = new TestField();
         }
 
-        client.binder.bindInstanceFields(new Target());
+        Target target = new Target();
+        client.binder.bindInstanceFields(target);
+        client.attach(target.value);
 
-        Assert.assertEquals(String.class,
-                client.binder.getPropertyType("value"));
+        setSharedValue("value", "foo");
+
+        Assert.assertEquals("foo", target.value.getValue());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -517,7 +684,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
-    public void bindInstanceFields_converterWithExplicitType_fieldHasExpectedType() {
+    public void bindInstanceFields_converterWithExplicitType_jsonHandlerInferred() {
         class Target {
             private GenericTestField<Integer> value = new GenericTestField<>();
         }
@@ -527,8 +694,11 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
                 .withConverter(String::valueOf, Integer::valueOf);
         client.binder.bindInstanceFields(target);
 
-        Assert.assertEquals(Integer.class,
-                client.binder.getPropertyType("value"));
+        client.attach(target.value);
+
+        setSharedValue("value", Integer.valueOf(42));
+
+        Assert.assertEquals(Integer.valueOf(42), target.value.getValue());
     }
 
     @Test(expected = IllegalStateException.class)
