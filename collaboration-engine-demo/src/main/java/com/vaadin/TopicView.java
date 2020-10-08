@@ -6,13 +6,11 @@ import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
 
-@Push
 // Use "" instead in the tutorial text to make it open for /
-@Route("topic")
+@Route(value = "topic", layout = MainView.class)
 public class TopicView extends VerticalLayout {
 
     private final Checkbox checkbox;

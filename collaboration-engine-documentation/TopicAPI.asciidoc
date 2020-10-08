@@ -14,23 +14,21 @@ to use the high-level APIs as described in the link:Tutorial.asciidoc[Getting St
 Follow the preparation steps in the
 link:Tutorial.asciidoc#ce.tutorial.setup[Getting Started Tutorial].
 
-[[ce.topic-tutorial.add-collaborative-feature]]
-=== Add Collaborative Features
+[[ce.topic-tutorial.add-collaboration-features]]
+=== Add Collaboration Features
 This tutorial will build a view with a checkbox where the user can choose whether they are in a Friday mood.
 
 ==== Create a Simple View
 
 First, create the view with a checkbox but not yet any collaborative functionality.
-The view is annotated with `@Push` so that updates from other users can be pushed out.
 
 [source, java]
 ----
-@Push
-@Route("")
+@Route(value = "", layout = MainView.class)
 public class TopicView extends VerticalLayout {
   private final Checkbox checkbox;
 
-  public TutorialView() {
+  public TopicView() {
       checkbox = new Checkbox("Is it Friday?");
       add(checkbox);
   }
@@ -43,7 +41,7 @@ Sharing data between multiple users happens through a `TopicConnection` instance
 By default, the connection is deactivated until its related component is attached to the UI.
 
 Open a connection to the `tutorial` topic and define the activation callback
-which will be triggered when the current `TutorialView` component (i.e. `this`) is attached.
+which will be triggered when the current `TopicView` component (i.e. `this`) is attached.
 The user who is related to the topic connection must be defined.
 
 [source, java]
@@ -124,5 +122,4 @@ TIP: In case there are many registrations, they can be combined by `Registration
 [[ce.topic-tutorial.run]]
 === Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
-The exact steps depend on the chosen tech stack.
 * Open http://localhost:8080/ in multiple browser tabs to see how a change made in one tab is automatically shown in the other tabs.

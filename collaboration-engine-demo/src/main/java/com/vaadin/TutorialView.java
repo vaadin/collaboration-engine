@@ -8,13 +8,11 @@ import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 
-@Push
 // Use "" instead in the tutorial text to make it open for /
-@Route("tutorial")
+@Route(value = "tutorial", layout = MainView.class)
 public class TutorialView extends VerticalLayout {
 
     public static class Person {

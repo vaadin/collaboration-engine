@@ -13,12 +13,24 @@ and add the following collaboration features to a simple form:
 === Prepare the Application
 
 ==== Set Up a Vaadin Project
-Download an empty Vaadin 14 project from https://vaadin.com/start/v14
-using any technology stack.
+Download a new Vaadin 14 project from https://start.vaadin.com/?preset=lts.
 
 [[ce.tutorial.install]]
 ==== Install Collaboration Engine
 Collaboration Engine is provided by Vaadin upon request. https://vaadin.com/collaboration[Contact Vaadin] to get access to the package and instructions on how to install it.
+
+==== Enable Server Push
+
+Add `@Push` annotation on top of your root layout.
+This enables the server to propagate updates between clients in real time.
+By default, when creating a new project from start.vaadin.com,
+the root layout is `MainView.java`.
+
+[source, java]
+----
+@Push
+public class MainView extends AppLayout {
+----
 
 [[ce.tutorial.add-collaborative-feature]]
 === Add Collaboration Features
@@ -53,12 +65,10 @@ public class Person {
 
 To start writing the actual application, create a view with a text field
 and a date picker but not yet any collaborative functionality.
-The view is annotated with `@Push` so that the server can push updates from one user to the others.
 
 [source, java]
 ----
-@Push
-@Route("")
+@Route(value = "", layout = MainView.class)
 public class TutorialView extends VerticalLayout {
 
     public TutorialView() {
@@ -153,7 +163,6 @@ as well as displaying the currently focused user with the field highlight.
 [[ce.tutorial.run]]
 === Run the Application
 * Follow instructions in the application's `README.md` file to start the application.
-The exact steps depend on the chosen tech stack.
 * Open http://localhost:8080/ in multiple browser tabs and test the app: notice the avatars,
 focus the fields and notice the field highlight, enter new values and notice how the fields
 update in the other tabs
