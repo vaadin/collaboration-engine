@@ -55,8 +55,12 @@ UserInfo localUser = new UserInfo(userId, "User " + userId);
 CollaborationEngine.getInstance().openTopicConnection(this, "tutorial", localUser,
     topic -> {
         // logic for the connection's activation callback
+        return null;
     });
 ----
+
+The activation callback should return a registration that is run when the connection is deactivated.
+Since we are not yet registering any own listeners that need cleanup, we can just return `null`.
 
 ==== Define a category in the Topic
 The topic stores collaborative data in named maps. In the activation callback, get a map by its name:
