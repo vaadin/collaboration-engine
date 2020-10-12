@@ -7,14 +7,20 @@ and achieve better results.
 
 === Central concepts
 
+==== Topics
 Collaboration between users is managed by collecting data into "topic" instances that are shared between all users interacting with the same part of the application.
-There is a separate connection (`TopicConnection`) to a topic for each user.
-The connection can be used to update the collaboration state and to subscribe to changes to the state.
-A topic connection can be opened through a shared `CollaborationEngine` instance.
-The default instance is available using the static method `CollaborationEngine.getInstance()`.
-A topic is identified by a free-form string.
+A topic can be compared to a chat room - it has a name that is unique in the context of the application and participating members will receive all updates made to any topic that they're participating in.
 
-A topic has multiple named maps which are shared across connections, each map contains many <String-key, value> pairs.
+==== Helpers for specific use cases
+There is a high level API for the specific use case of editing a form together.
+`CollaborationBinder` enhances the regular Vaadin `Binder` to share the current value of each field with all other users configured to use the same topic.
+There is also a `CollaborationAvatarGroup` component that shows the avatar of each user who is present in a given topic, e.g. all the users currently looking at or editing the same item.
+
+==== Low level API
+The low level Topic API allows synchronizing arbitrary data between users.
+It is used internally by `CollaborationBinder` and `CollaborationAvatarGroup` but can also be used separately to create custom collaborative user experiences.
+The entry point to using the Topic API is by opening a `TopicConnection` through `CollaborationEngine.getInstance()`.
+A topic has multiple named maps which are shared across connections. Each map contains many <String-key, value> pairs.
 It is strongly recommended that shared values are immutable instances since subscribers are notified only when the shared value is replaced with another instance but not when the contents of an existing value is updated.
 For complex values, a conditional replace operation is available to prevent overwriting concurrent modifications to other parts of the shared data.
 
@@ -23,7 +29,6 @@ This is an early iteration of Collaboration Engine with several limitations that
 The most noticeable limitations include:
 
 * Missing support for complex data structures with nested arrays and maps.
-* There is not yet any high-level API for interacting with specific types of components or implementing specific use cases.
 * Topic data is not persisted between server restarts.
   Applications can manually persist topic data and repopulate after a restart if necessary.
 * There is no support for collaboration between multiple nodes or pods in a cluster of application servers.
