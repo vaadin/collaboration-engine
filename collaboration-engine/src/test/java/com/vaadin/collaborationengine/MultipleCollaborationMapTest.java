@@ -70,9 +70,9 @@ public class MultipleCollaborationMapTest {
                     }
                 });
             }
-            tempVal.set(0);
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.SECONDS);
+            tempVal.set(0);
             resultList.add(count[0]);
             count[0] = 0;
         }
