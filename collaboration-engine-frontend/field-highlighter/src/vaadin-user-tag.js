@@ -14,10 +14,10 @@ export class UserTag extends ThemableMixin(DirMixin(PolymerElement)) {
         :host {
           display: block;
           box-sizing: border-box;
-          margin: 0;
+          margin: 0 0 var(--vaadin-user-tag-offset);
           opacity: 0;
-          height: 0;
-          transition: all 0.2s ease-in-out;
+          height: 1.3rem;
+          transition: opacity 0.2s ease-in-out;
           background-color: var(--vaadin-user-tag-color);
           color: #fff;
           cursor: default;
@@ -27,9 +27,7 @@ export class UserTag extends ThemableMixin(DirMixin(PolymerElement)) {
         }
 
         :host(.show) {
-          margin-bottom: var(--vaadin-user-tag-offset);
           opacity: 1;
-          height: 1.3rem;
         }
 
         :host(:last-of-type) {
@@ -54,6 +52,9 @@ export class UserTag extends ThemableMixin(DirMixin(PolymerElement)) {
   static get properties() {
     return {
       name: {
+        type: String
+      },
+      uid: {
         type: String
       },
       colorIndex: {

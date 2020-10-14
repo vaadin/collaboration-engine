@@ -1,43 +1,53 @@
 package com.vaadin.collaborationengine.util;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.Assert;
+import org.openqa.selenium.TimeoutException;
 
 import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.TestBenchElement;
 
-public class FieldHighlightUtil {
+public abstract class FieldHighlightUtil extends AbstractCollaborativeViewTest {
 
-    private FieldHighlightUtil() {
-    }
-
-    public static void assertNoUserTags(TestBenchElement... fields) {
+    public void assertNoUserTags(TestBenchElement... fields) {
         for (TestBenchElement field : fields) {
             assertUserTags(field);
         }
     }
 
-    public static void assertUserTags(TestBenchElement field,
+    public void assertUserTags(TestBenchElement field,
             String... expectedUsers) {
         assertUserTags("Unexpected user tags on field " + field, field,
                 expectedUsers);
     }
 
-    public static void assertUserTags(String message, TestBenchElement field,
+    public void assertUserTags(String message, TestBenchElement field,
             String... expectedUsers) {
-        List<UserTagElement> userTags = getUserTags(field);
 
-        validateColorIndices(userTags);
+        try {
+            // Fix timing issues by waiting for the tags to update
+            waitUntil(d -> Arrays.equals(getUserTagNames(field), expectedUsers),
+                    3);
+        } catch (TimeoutException e) {
+            // Continue to assertion to get valuable error message
+        }
 
-        String[] names = userTags.stream().map(UserTagElement::getName)
-                .toArray(String[]::new);
-        Assert.assertArrayEquals(message, expectedUsers, names);
+        Assert.assertArrayEquals(message, expectedUsers,
+                getUserTagNames(field));
+
+        validateColorIndices(getUserTags(field));
     }
 
-    private static void validateColorIndices(List<UserTagElement> userTags) {
+    public String[] getUserTagNames(TestBenchElement field) {
+        return getUserTags(field).stream().map(UserTagElement::getName)
+                .toArray(String[]::new);
+    }
+
+    private void validateColorIndices(List<UserTagElement> userTags) {
         userTags.stream().map(UserTagElement::getColorIndex)
                 .forEach(colorIndex -> Assert.assertTrue(
                         "Invalid color index on a user tag. "
@@ -47,7 +57,7 @@ public class FieldHighlightUtil {
                                 && colorIndex < 10));
     }
 
-    public static List<UserTagElement> getUserTags(TestBenchElement field) {
+    public List<UserTagElement> getUserTags(TestBenchElement field) {
         if (!field.$("vaadin-user-tags").exists()) {
             return Collections.emptyList();
         }

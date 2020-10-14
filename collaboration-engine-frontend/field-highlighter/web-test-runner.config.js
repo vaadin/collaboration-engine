@@ -5,9 +5,14 @@ module.exports = {
     include: ['**/src/**/*'],
     threshold: {
       statements: 99,
-      branches: 90,
-      functions: 100,
+      branches: 88,
+      functions: 98,
       lines: 99
     }
+  },
+  testFramework: {
+    config: {
+      timeout: '3000',
+    },
   },
 };

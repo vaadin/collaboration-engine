@@ -1,7 +1,6 @@
 package com.vaadin.collaborationengine;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.getUserTags;
 
 import java.util.Arrays;
 import java.util.List;

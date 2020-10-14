@@ -5,8 +5,6 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
 
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
-
 public class CommonReattachFieldIT extends AbstractCollaborativeFormIT {
 
     @Test

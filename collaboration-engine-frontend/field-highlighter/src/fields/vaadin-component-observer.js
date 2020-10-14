@@ -32,7 +32,7 @@ export class ComponentObserver {
         return;
       }
       this._mouse = true;
-      this._tags.opened = true;
+      this._tags.show();
     });
 
     component.addEventListener('mouseleave', (event) => {
@@ -42,7 +42,7 @@ export class ComponentObserver {
       }
       this._mouse = false;
       if (!this._hasFocus) {
-        this._tags.opened = false;
+        this._tags.hide();
       }
     });
 
@@ -52,7 +52,7 @@ export class ComponentObserver {
       if (this._debouncer && this._debouncer.isActive()) {
         this._debouncer.cancel();
       } else {
-        this._tags.opened = true;
+        this._tags.show();
       }
     });
 
@@ -61,7 +61,7 @@ export class ComponentObserver {
 
       if (!this._mouse) {
         this._debouncer = Debouncer.debounce(this._debouncer, timeOut.after(1), () => {
-          this._tags.opened = false;
+          this._tags.hide();
         });
       }
     });
@@ -73,7 +73,7 @@ export class ComponentObserver {
       }
       this._mouse = false;
       if (!component.hasAttribute('focused')) {
-        this._tags.opened = false;
+        this._tags.hide();
       }
     });
   }

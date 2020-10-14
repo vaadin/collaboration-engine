@@ -286,7 +286,7 @@ describe('field highlighter', () => {
       let tags;
 
       beforeEach(() => {
-        wrapper.opened = true;
+        wrapper.show();
       });
 
       afterEach(() => {
@@ -353,30 +353,25 @@ describe('field highlighter', () => {
     });
 
     describe('user tags closed', () => {
-      let allTags;
-      let newTags;
+      let tags;
 
       beforeEach(async () => {
-        wrapper.opened = true;
+        wrapper.show();
         setUsers([user2, user3]);
-        wrapper.opened = false;
+        wrapper.hide();
         overlay._flushAnimation('closing');
         await nextFrame();
-        allTags = overlay.content.querySelector('[part="tags"]')
-        newTags = allTags.nextElementSibling;
+        tags = overlay.content.querySelector('[part="tags"]')
       })
 
-      it('should render and hide all tags when user is added', async() => {
-        FieldHighlighter.addUser(field, user1);
+      it('should render and hide all tags except new ones', async() => {
+        FieldHighlighter.setUsers(field, [user1, user2, user3]);
         await oneEvent(overlay, 'vaadin-overlay-open');
-        expect(allTags.querySelectorAll('vaadin-user-tag').length).to.equal(3);
-        expect(getComputedStyle(allTags).display).to.equal('none');
-      });
-
-      it('should open overlay with one tag when user is added', async() => {
-        FieldHighlighter.addUser(field, user1);
-        await oneEvent(overlay, 'vaadin-overlay-open');
-        expect(newTags.querySelectorAll('vaadin-user-tag').length).to.equal(1);
+        const allTags = tags.querySelectorAll('vaadin-user-tag');
+        expect(tags.querySelectorAll('vaadin-user-tag').length).to.equal(3);
+        expect(getComputedStyle(allTags[0]).display).to.equal('block');
+        expect(getComputedStyle(allTags[1]).display).to.equal('none');
+        expect(getComputedStyle(allTags[2]).display).to.equal('none');
       });
 
       it('should close overlay and restore tags after a timeout', async() => {
@@ -384,7 +379,6 @@ describe('field highlighter', () => {
         await oneEvent(overlay, 'vaadin-overlay-open');
         await wrapper.flashPromise;
         expect(wrapper.opened).to.equal(false);
-        expect(getComputedStyle(allTags).display).to.equal('flex');
       });
 
       it('should not flash tags when reordering same users', async() => {

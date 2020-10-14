@@ -3,14 +3,39 @@ import '@vaadin/vaadin-lumo-styles/color.js';
 import '@vaadin/vaadin-lumo-styles/spacing.js';
 import '@vaadin/vaadin-lumo-styles/style.js';
 import '@vaadin/vaadin-lumo-styles/typography.js';
-import '@vaadin/vaadin-lumo-styles/mixins/menu-overlay.js';
 
-registerStyles('vaadin-user-tags-overlay', css``, {
-  moduleId: 'lumo-user-tags-overlay',
-  include: ['lumo-menu-overlay-core']
-});
+registerStyles(
+  'vaadin-user-tags-overlay',
+  css`
+    [part='overlay'] {
+      will-change: opacity, transform;
+    }
 
-// TODO: Lumo colors
+    :host([opening]) [part='overlay'] {
+      animation: 0.1s lumo-user-tags-enter ease-out both;
+    }
+
+    @keyframes lumo-user-tags-enter {
+      0% {
+        opacity: 0;
+      }
+    }
+
+    :host([closing]) [part='overlay'] {
+      animation: 0.1s lumo-user-tags-exit both;
+    }
+
+    @keyframes lumo-user-tags-exit {
+      100% {
+        opacity: 0;
+      }
+    }
+  `,
+  {
+    moduleId: 'lumo-user-tags-overlay'
+  }
+);
+
 registerStyles(
   'vaadin-user-tag',
   css`

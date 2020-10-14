@@ -7,8 +7,6 @@ import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
 import com.vaadin.collaborationengine.util.FieldOutlineElement;
 import com.vaadin.flow.component.radiobutton.testbench.RadioButtonElement;
 
-import static com.vaadin.collaborationengine.util.FieldHighlightUtil.assertNoUserTags;
-
 public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
 
     @Test

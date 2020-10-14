@@ -9,7 +9,7 @@ import { OverlayElement } from '@vaadin/vaadin-overlay/vaadin-overlay.js';
 import './vaadin-user-tag.js';
 
 const DURATION = 200;
-const DELAY = 200;
+const DELAY = 2000;
 
 const listenOnce = (elem, type) => {
   return new Promise((resolve) => {
@@ -106,9 +106,8 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
           align-items: flex-start;
         }
       </style>
-      <vaadin-user-tags-overlay modeless id="overlay" opened="[[opened]]">
+      <vaadin-user-tags-overlay modeless id="overlay" opened="[[opened]]" on-vaadin-overlay-open="_onOverlayOpen">
         <template>
-          <div part="tags"></div>
           <div part="tags"></div>
         </template>
       </vaadin-user-tags-overlay>
@@ -117,6 +116,11 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
 
   static get properties() {
     return {
+      hasFocus: {
+        type: Boolean,
+        value: false,
+        observer: '_hasFocusChanged'
+      },
       opened: {
         type: Boolean,
         value: false,
@@ -167,6 +171,12 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     }
   }
 
+  _hasFocusChanged(hasFocus) {
+    if (hasFocus && this.flashing) {
+      this.stopFlash();
+    }
+  }
+
   _setPosition() {
     if (!this.opened) {
       return;
@@ -197,6 +207,7 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     const tag = document.createElement('vaadin-user-tag');
     tag.setAttribute('id', `tag-${user.id}`);
     tag.name = user.name;
+    tag.uid = user.id;
     tag.colorIndex = user.colorIndex;
     return tag;
   }
@@ -234,7 +245,12 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
 
   applyTagsStart({ added, removed }) {
     const wrapper = this.wrapper;
-    removed.forEach((tag) => tag && tag.classList.remove('show'));
+    removed.forEach((tag) => {
+      if (tag) {
+        tag.classList.add('removing');
+        tag.classList.remove('show');
+      }
+    });
     added.forEach((tag) => wrapper.insertBefore(tag, wrapper.firstChild));
   }
 
@@ -264,23 +280,44 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
 
     const changedTags = this.getChangedTags(addedUsers, removedUsers);
 
-    if (this.opened && !this.flashing) {
-      this.updateTags(users, changedTags);
-      return;
-    } else {
-      this.updateTagsSync(users, changedTags);
-
-      // Avoid adding to queue if window is not visible.
-      if (addedUsers.length && document.visibilityState !== "hidden") {
-        const tags = addedUsers.map((user) => this.createUserTag(user));
-        if (this.flashing) {
-          // schedule next flash later
-          this.push('_flashQueue', tags);
-        } else {
-          this.flashTags(tags);
+    // check if flash queue contains pending tags for removed users
+    if (this._flashQueue.length > 0) {
+      for (let i = 0; i < removedUsers.length; i++) {
+        if (changedTags.removed[i] === null) {
+          for (let j = 0; j < this._flashQueue.length; j++) {
+            if (this._flashQueue[j].some(tag => tag.uid === removedUsers[i].id)) {
+              this.splice('_flashQueue', i, 1);
+            }
+          }
         }
       }
     }
+
+    if (this.opened && this.hasFocus) {
+      this.updateTags(users, changedTags);
+      return;
+    } else if (addedUsers.length && document.visibilityState !== 'hidden') {
+      // Avoid adding to queue if window is not visible.
+      const tags = changedTags.added;
+      if (this.flashing) {
+        // schedule next flash later
+        this.push('_flashQueue', tags);
+      } else {
+        this.flashTags(tags);
+      }
+      this.set('users', users);
+    } else {
+      this.updateTagsSync(users, changedTags);
+    }
+  }
+
+  _onOverlayOpen() {
+    // animate all tags except removing ones
+    Array.from(this.wrapper.children).forEach((tag) => {
+      if (!tag.classList.contains('removing')) {
+        tag.classList.add('show');
+      }
+    });
   }
 
   flashTags(added) {
@@ -288,32 +325,39 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     const wrapper = this.wrapper;
 
     // hide existing tags
-    wrapper.style.display = 'none';
+    const hidden = Array.from(wrapper.children);
+    hidden.forEach((tag) => (tag.style.display = 'none'));
 
-    // render clones of new tags
-    const newWrapper = wrapper.nextElementSibling;
-    added.forEach((tag) => newWrapper.insertBefore(tag, newWrapper.firstChild));
+    // render new tags
+    added.forEach((tag) => {
+      wrapper.insertBefore(tag, wrapper.firstChild);
+    });
 
     this.flashPromise = new Promise((resolve) => {
       listenOnce(this.$.overlay, 'vaadin-overlay-open').then(() => {
-        // animate appearing tags
-        added.forEach((tag) => tag.classList.add('show'));
-
         this._debounceFlashStart = Debouncer.debounce(this._debounceFlashStart, timeOut.after(DURATION + DELAY), () => {
           // animate disappearing
-          added.forEach((tag) => tag.classList.remove('show'));
-
+          if (!this.hasFocus) {
+            added.forEach((tag) => tag.classList.remove('show'));
+          }
           this._debounceFlashEnd = Debouncer.debounce(this._debounceFlashEnd, timeOut.after(DURATION), () => {
-            // wait for overlay closing animation to complete
-            listenOnce(this.$.overlay, 'animationend').then(() => {
-              added.forEach((tag) => tag.parentNode.removeChild(tag));
-              // show all tags
-              wrapper.style.display = 'flex';
+            // show all tags
+            const finishFlash = () => {
+              hidden.forEach((tag) => (tag.style.display = 'block'));
               this.flashing = false;
               resolve();
-            });
+            };
 
-            this.opened = false;
+            if (this.hasFocus) {
+              finishFlash();
+            } else {
+              // wait for overlay closing animation to complete
+              listenOnce(this.$.overlay, 'animationend').then(() => {
+                finishFlash();
+              });
+
+              this.opened = false;
+            }
           });
         });
       });
@@ -326,6 +370,12 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     });
 
     this.opened = true;
+  }
+
+  stopFlash() {
+    this._debounceFlashStart && this._debounceFlashStart.flush();
+    this._debounceFlashEnd && this._debounceFlashEnd.flush();
+    this.$.overlay._flushAnimation('closing');
   }
 
   updateTags(users, changed) {
@@ -346,6 +396,16 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
     this.applyTagsStart(changed);
     this.set('users', users);
     this.applyTagsEnd(changed);
+  }
+
+  show() {
+    this.hasFocus = true;
+    this.opened = true;
+  }
+
+  hide() {
+    this.hasFocus = false;
+    this.opened = false;
   }
 
   render() {
