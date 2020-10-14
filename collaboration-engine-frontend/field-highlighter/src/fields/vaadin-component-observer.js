@@ -32,7 +32,11 @@ export class ComponentObserver {
         return;
       }
       this._mouse = true;
-      this._tags.show();
+      this._mouseDebouncer = Debouncer.debounce(this._mouseDebouncer, timeOut.after(200), () => {
+        if (this._mouse) {
+          this._tags.show();
+        }
+      });
     });
 
     component.addEventListener('mouseleave', (event) => {

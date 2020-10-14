@@ -194,6 +194,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         expect(overlay.opened).to.equal(true);
       });
 
@@ -201,6 +202,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         field.dispatchEvent(new CustomEvent('mouseleave'));
         expect(overlay.opened).to.equal(false);
       });
@@ -209,6 +211,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         field.dispatchEvent(new CustomEvent('focusin'));
         field.dispatchEvent(new CustomEvent('mouseleave'));
         expect(overlay.opened).to.equal(true);
@@ -219,6 +222,7 @@ describe('field highlighter', () => {
         await nextFrame();
         field.dispatchEvent(new CustomEvent('focusin'));
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         field.dispatchEvent(new CustomEvent('focusout'));
         expect(overlay.opened).to.equal(true);
       });
@@ -227,6 +231,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         const leave = new CustomEvent('mouseleave');
         leave.relatedTarget = overlay;
         field.dispatchEvent(leave);
@@ -237,6 +242,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         overlay.dispatchEvent(new CustomEvent('mouseleave'));
         expect(overlay.opened).to.equal(false);
       });
@@ -245,6 +251,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         const leave = new CustomEvent('mouseleave');
         leave.relatedTarget = field;
         overlay.dispatchEvent(leave);
@@ -256,6 +263,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         expect(spy.callCount).to.equal(1);
       });
 
@@ -264,6 +272,7 @@ describe('field highlighter', () => {
         addUser(user1);
         await nextFrame();
         field.dispatchEvent(new CustomEvent('mouseenter'));
+        highlighter.observer._mouseDebouncer.flush();
         // Emulate second mouseenter from overlay
         const enter = new CustomEvent('mouseenter');
         enter.relatedTarget = overlay;
