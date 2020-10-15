@@ -85,13 +85,12 @@ The `UserInfo` class represents an end user of a collaborative application.
 It has properties such as `name` and `image`, which will be used to display
 information of who is currently present in the view or editing a field.
 
-In a real application, this kind of profile information should come from the
-application's backend based on the currently logged in user.
-For the sake of this tutorial, let's generate the user's id based on the UI instance
-and use the generated id in the user's name as well.
+The user id should be the unique identifier of the currently logged in user.
+For this tutorial we've replaced the user-based id with an id based on the UI instance. This allows simulating multiple users by opening the view in multiple browser tabs.
 
 [source, java]
 ----
+// TODO: In a real application, use the user id of the logged in user instead
 String userId = System.identityHashCode(UI.getCurrent()) + "";
 UserInfo localUser = new UserInfo(userId, "User " + userId);
 ----
