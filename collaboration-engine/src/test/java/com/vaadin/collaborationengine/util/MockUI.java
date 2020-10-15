@@ -2,12 +2,15 @@ package com.vaadin.collaborationengine.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.DefaultDeploymentConfiguration;
 import com.vaadin.flow.server.VaadinSession;
 
 public class MockUI extends UI {
@@ -23,6 +26,12 @@ public class MockUI extends UI {
             @Override
             public Lock getLockInstance() {
                 return lock;
+            }
+
+            @Override
+            public DeploymentConfiguration getConfiguration() {
+                return new DefaultDeploymentConfiguration(Object.class,
+                        new Properties());
             }
         });
     }

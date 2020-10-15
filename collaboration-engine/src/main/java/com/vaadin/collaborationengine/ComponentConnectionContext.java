@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.LoggerFactory;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -32,6 +35,8 @@ public class ComponentConnectionContext implements ConnectionContext {
     private ActivationHandler activationHandler;
     private Registration beaconListener;
     private Registration destroyListener;
+
+    private static AtomicBoolean pushCheckDone = new AtomicBoolean(false);
 
     /**
      * Creates an empty component connection context.
@@ -99,6 +104,7 @@ public class ComponentConnectionContext implements ConnectionContext {
             if (attachedComponents.size() == 1) {
                 // First attach
                 this.ui = componentUi;
+                checkForPush(ui);
 
                 BeaconHandler beaconHandler = BeaconHandler
                         .ensureInstalled(this.ui);
@@ -184,5 +190,16 @@ public class ComponentConnectionContext implements ConnectionContext {
                             + "Make sure the context has at least one component attached to the UI.");
         }
         return new DeadlockDetectingCompletableFuture<>(localUI.getSession());
+    }
+
+    private void checkForPush(UI ui) {
+        boolean checkedBefore = pushCheckDone.getAndSet(true);
+        if (!checkedBefore
+                && !ui.getSession().getConfiguration().isProductionMode()
+                && !ui.getPushConfiguration().getPushMode().isEnabled()) {
+            LoggerFactory.getLogger(ComponentConnectionContext.class).warn(
+                    "Collaboration Engine is used without server push, so updates can't be propagated in real time. "
+                            + "Add @Push annotation on your root layout or individual views to fix this.");
+        }
     }
 }
