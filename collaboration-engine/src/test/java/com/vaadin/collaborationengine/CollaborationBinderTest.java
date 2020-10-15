@@ -497,6 +497,12 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         Assert.assertEquals("four", value.get(1).getValue());
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void listTypeWithoutCollectionAndElementType_rejected() {
+        GenericTestField<List<TestBean>> field = new GenericTestField<>();
+        client.binder.forField(field).bind("testBeans");
+    }
+
     @Test
     public void collectionTypeWithConverterAndElementSerializer_valueSerializedAndDeserializedProperly() {
         GenericTestField<List<TestBean>> field = new GenericTestField<>();

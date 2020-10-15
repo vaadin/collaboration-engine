@@ -346,13 +346,31 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
         }
 
         if (!builder.typeIsConverted) {
+            Class<?> propertyType = propertyDefinition.getType();
+
+            if (isAssignableFromAny(SUPPORTED_COLLECTION_TYPES, propertyType)) {
+                /*
+                 * Property is a Collection but it did not have explicit
+                 * collection and element types defined
+                 */
+                throw new IllegalStateException(
+                        "Cannot configure JSON serializer for '"
+                                + builder.propertyName + "' with type '"
+                                + propertyType.getName() + "'. For collection "
+                                + "types, you have to specify the type of the "
+                                + "collection and the type of the elements in "
+                                + "the collection. Use "
+                                + "CollaborationBinder::forField(field, "
+                                + "collectionType, elementType) to specify "
+                                + "these. For example, if you are binding a "
+                                + "List of String, you should call "
+                                + "forField(field, List.class, String.class).");
+            }
             /*
              * Can use the property type as long as there is no converter. A
              * converter would imply that the bean type is not the same as the
              * field type.
              */
-            Class<?> propertyType = propertyDefinition.getType();
-
             return getTypeConfiguration(propertyType)
                     .orElseThrow(() -> new IllegalStateException(
                             "Cannot configure JSON serializer for "
