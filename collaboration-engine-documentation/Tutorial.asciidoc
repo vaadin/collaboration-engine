@@ -19,6 +19,7 @@ Download a new Vaadin 14 project from https://start.vaadin.com/?preset=lts.
 ==== Install Collaboration Engine
 Collaboration Engine is provided by Vaadin upon request. https://vaadin.com/collaboration[Contact Vaadin] to get access to the package and instructions on how to install it.
 
+[[ce.tutorial.push]]
 ==== Enable Server Push
 
 Add `@Push` annotation on top of your root layout.
@@ -118,15 +119,12 @@ First of all, the components needs our local users information (the `UserInfo`
 object which we created earlier), to know how to render the user's avatar.
 
 As a second constructor argument, the component needs a topic id.
-Collaboration Engine propagates information only within the group that is
-connected to the same topic.
-In our case, there's only one topic to work on, so we can use any hardcoded topic id.
+A topic can be compared to a chat room - it has an id that is unique in the context of the application. Participating members will receive all updates made to any topic that they're participating in.
+Topic ids are freeform strings that the developer may choose, like "app" or "contract-126-address". In our case, there's only one topic to work on, so we can use any hardcoded topic id.
 
-NOTE: If we'd expand our application so that there would be multiple editable
-person entities, we'd need to have unique topic ids for each one. For example,
-we could have a topic id "person/123", where "123" would be unique to each person.
-In that case the same `CollaborationAvatarGroup` component could be reused for
-editing different persons by changing the topic with the `setTopic` method.
+NOTE: If we'd expand our application so that there would be a view for editing person entities, we'd need to have unique topic ids for each entity.
+For example, we could have a topic id "person/123", where "123" would be unique to each person.
+In that case the same `CollaborationAvatarGroup` component could be reused for editing different persons by changing the topic with the `setTopic` method.
 
 ==== Add Field Collaboration
 
