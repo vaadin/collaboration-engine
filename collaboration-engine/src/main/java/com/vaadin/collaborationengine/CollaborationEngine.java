@@ -39,6 +39,7 @@ public class CollaborationEngine {
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
+    private Statistics statistics = new Statistics();
     private final TopicActivationHandler topicActivationHandler;
 
     CollaborationEngine() {
@@ -133,6 +134,7 @@ public class CollaborationEngine {
         TopicConnection connection = new TopicConnection(context, topic,
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
+        statistics.registerUser(localUser.getId());
         return connection::deactivateAndClose;
     }
 
@@ -148,5 +150,15 @@ public class CollaborationEngine {
         Integer colorIndex = userColors.computeIfAbsent(userId,
                 id -> userColors.size() % USER_COLOR_COUNT);
         return colorIndex.intValue();
+    }
+
+    /**
+     * Gets the internal statistics class. Package protected for testing
+     * purposes.
+     * 
+     * @return statistics
+     */
+    Statistics getStatistics() {
+        return statistics;
     }
 }
