@@ -74,7 +74,7 @@ public class CollaborationMapTest {
     public void init() {
         context = new ToggleableConnectionContext();
         new CollaborationEngine().openTopicConnection(context, "topic",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     this.connection = topicConnection;
                     map = connection.getNamedMap("foo");
                     return null;

@@ -82,7 +82,7 @@ public class TopicConnectionTest {
     @Before
     public void setup() {
         connectionRegistration = engine.openTopicConnection(context, "topic",
-                SystemUserInfo.get(), connection -> {
+                SystemUserInfo.getInstance(), connection -> {
                     map = connection.getNamedMap("map");
 
                     return () -> {

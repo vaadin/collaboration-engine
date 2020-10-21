@@ -18,19 +18,19 @@ public class UserInfoTest {
 
     @Before
     public void init() {
-        systemUserInfo = SystemUserInfo.get();
+        systemUserInfo = SystemUserInfo.getInstance();
     }
 
     @Test
     public void systemUser_alwaysGetSameInstance() {
-        SystemUserInfo systemUserInfo1 = SystemUserInfo.get();
+        SystemUserInfo systemUserInfo1 = SystemUserInfo.getInstance();
         assertSame(systemUserInfo1, systemUserInfo);
     }
 
     @Test
     public void systemUser_alwaysHasZeroColorIndex() {
         for (int i = 0; i < 20; i++) {
-            assertEquals(0, SystemUserInfo.get().getColorIndex());
+            assertEquals(0, SystemUserInfo.getInstance().getColorIndex());
         }
     }
 

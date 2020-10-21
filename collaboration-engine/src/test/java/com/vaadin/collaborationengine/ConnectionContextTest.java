@@ -21,7 +21,7 @@ public class ConnectionContextTest {
         simpleContext = new SimpleConnectionContext();
 
         collaborationEngine.openTopicConnection(simpleContext, "foo",
-                SystemUserInfo.get(), tc -> {
+                SystemUserInfo.getInstance(), tc -> {
                     topicConnection = tc;
                     map = tc.getNamedMap("map");
                     map.subscribe(event -> {

@@ -28,7 +28,7 @@ public class TopicActivationTest {
         collaborationEngine = new CollaborationEngine(topicActivationHandler);
 
         topicRegistration = collaborationEngine.openTopicConnection(component,
-                "fooTopic", SystemUserInfo.get(), tc -> null);
+                "fooTopic", SystemUserInfo.getInstance(), tc -> null);
     }
 
     @Test
@@ -42,7 +42,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                SystemUserInfo.get(), tc -> null);
+                SystemUserInfo.getInstance(), tc -> null);
         ui.add(component2);
         // failed if setActive(true) is called again on an activated topic.
     }
@@ -52,7 +52,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                SystemUserInfo.get(), tc -> null);
+                SystemUserInfo.getInstance(), tc -> null);
         ui.add(component2);
 
         ui.remove(component);
@@ -80,7 +80,7 @@ public class TopicActivationTest {
         ui.add(component);
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "fooTopic",
-                SystemUserInfo.get(), tc -> null);
+                SystemUserInfo.getInstance(), tc -> null);
         ui.add(component2);
 
         topicActivationHandler.assertActivated("fooTopic", true,
@@ -114,7 +114,7 @@ public class TopicActivationTest {
 
         TestComponent component2 = new TestComponent();
         collaborationEngine.openTopicConnection(component2, "barTopic",
-                SystemUserInfo.get(), tc -> null);
+                SystemUserInfo.getInstance(), tc -> null);
         ui.add(component2);
         topicActivationHandler.assertActivated("barTopic", true, "");
         topicActivationHandler.assertActivated("fooTopic", null,

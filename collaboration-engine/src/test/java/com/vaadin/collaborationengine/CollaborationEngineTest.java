@@ -37,7 +37,7 @@ public class CollaborationEngineTest {
     @Test
     public void getInstance_notNull() {
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     Assert.assertNotNull(topicConnection);
                     return null;
                 });
@@ -52,19 +52,19 @@ public class CollaborationEngineTest {
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullComponent_throws() {
         collaborationEngine.openTopicConnection((Component) null, "foo",
-                SystemUserInfo.get(), connectionCallback);
+                SystemUserInfo.getInstance(), connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullContext_throws() {
         collaborationEngine.openTopicConnection((ConnectionContext) null, "foo",
-                SystemUserInfo.get(), connectionCallback);
+                SystemUserInfo.getInstance(), connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullId_throws() {
         collaborationEngine.openTopicConnection(context, null,
-                SystemUserInfo.get(), connectionCallback);
+                SystemUserInfo.getInstance(), connectionCallback);
     }
 
     @Test(expected = NullPointerException.class)
@@ -76,21 +76,21 @@ public class CollaborationEngineTest {
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullCallback_throws() {
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), null);
+                SystemUserInfo.getInstance(), null);
     }
 
     @Test
     public void openTopicConnection_sameTopicId_hasSameTopic() {
         Topic[] topics = new Topic[2];
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     topics[0] = topicConnection.getTopic();
                     return null;
                 });
 
         ConnectionContext otherContext = new EagerConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     topics[1] = topicConnection.getTopic();
                     return null;
                 });
@@ -101,13 +101,13 @@ public class CollaborationEngineTest {
     public void openTopicConnections_distinctTopicIds_hasDistinctTopics() {
         Topic[] topics = new Topic[2];
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     topics[0] = topicConnection.getTopic();
                     return null;
                 });
 
         collaborationEngine.openTopicConnection(context, "baz",
-                SystemUserInfo.get(), topicConnection -> {
+                SystemUserInfo.getInstance(), topicConnection -> {
                     topics[1] = topicConnection.getTopic();
                     return null;
                 });
@@ -118,13 +118,13 @@ public class CollaborationEngineTest {
     public void reopenTopicConnection_newTopicConnectionInstance() {
         TopicConnection[] connections = new TopicConnection[2];
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), topic -> {
+                SystemUserInfo.getInstance(), topic -> {
                     connections[0] = topic;
                     return null;
                 });
         connections[0].deactivateAndClose();
         collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.get(), otherTopic -> {
+                SystemUserInfo.getInstance(), otherTopic -> {
                     connections[1] = otherTopic;
                     return null;
                 });
@@ -138,8 +138,8 @@ public class CollaborationEngineTest {
             throws InterruptedException {
         SpyConnectionContext spyContext = new SpyConnectionContext();
         Registration registration = collaborationEngine
-                .openTopicConnection(spyContext, "foo", SystemUserInfo.get(),
-                        topic -> {
+                .openTopicConnection(spyContext, "foo",
+                        SystemUserInfo.getInstance(), topic -> {
                             // no impl
                             return null;
                         });
@@ -204,7 +204,7 @@ public class CollaborationEngineTest {
             public <T> CompletableFuture<T> createCompletableFuture() {
                 return new CompletableFuture<>();
             }
-        }, "topic", SystemUserInfo.get(), connection -> {
+        }, "topic", SystemUserInfo.getInstance(), connection -> {
             boolean previouslyRun = callbackRun.getAndSet(true);
             Assert.assertFalse("Callback should have been run only once",
                     previouslyRun);

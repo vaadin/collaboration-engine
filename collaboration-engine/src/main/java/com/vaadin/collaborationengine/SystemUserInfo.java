@@ -33,7 +33,7 @@ public class SystemUserInfo extends UserInfo {
      *
      * @return the system user info instance, not {@code null}
      */
-    public static SystemUserInfo get() {
+    public static SystemUserInfo getInstance() {
         return instance;
     }
 
