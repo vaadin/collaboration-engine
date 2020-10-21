@@ -21,13 +21,13 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  * @author Vaadin Ltd
  */
-public class PutChange extends AbstractMapChange {
+class PutChange extends AbstractMapChange {
 
-    public PutChange(String mapName, String key, JsonNode value) {
+    PutChange(String mapName, String key, JsonNode value) {
         super(mapName, key, value);
     }
 
-    public PutChange(ReplaceChange replaceChange) {
+    PutChange(ReplaceChange replaceChange) {
         super(replaceChange.getMapName(), replaceChange.getKey(),
                 replaceChange.getValue());
         Objects.requireNonNull(replaceChange, "Change can not be null.");

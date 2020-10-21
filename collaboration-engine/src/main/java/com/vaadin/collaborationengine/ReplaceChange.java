@@ -20,16 +20,16 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  * @author Vaadin Ltd
  */
-public class ReplaceChange extends AbstractMapChange {
+class ReplaceChange extends AbstractMapChange {
     private final JsonNode expectedValue;
 
-    public ReplaceChange(String mapName, String key, JsonNode expectedValue,
+    ReplaceChange(String mapName, String key, JsonNode expectedValue,
             JsonNode newValue) {
         super(mapName, key, newValue);
         this.expectedValue = expectedValue;
     }
 
-    public JsonNode getExpectedValue() {
+    JsonNode getExpectedValue() {
         return expectedValue;
     }
 
