@@ -24,6 +24,7 @@ const getOutlineTarget = (element) => {
     case 'vaadin-email-field':
     case 'vaadin-number-field':
     case 'vaadin-integer-field':
+    case 'vaadin-big-decimal-field':
     case 'vaadin-select-text-field':
     case 'vaadin-date-picker-text-field':
     case 'vaadin-time-picker-text-field':
