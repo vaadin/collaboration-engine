@@ -15,19 +15,32 @@ package com.vaadin.collaborationengine;
 import java.time.YearMonth;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 class Statistics {
-    private Map<YearMonth, Set<String>> userIdsPerMonth = new ConcurrentSkipListMap<>();
+    private Map<YearMonth, Set<String>> userIdsPerMonth;
 
-    void registerUser(String userId) {
+    public Statistics() {
+        Map<YearMonth, List<String>> userIdsFromFile = FileHandler.readStats();
+        userIdsPerMonth = new ConcurrentSkipListMap<>();
+        for (Entry<YearMonth, List<String>> entry : userIdsFromFile
+                .entrySet()) {
+            Set<String> set = Collections
+                    .synchronizedSet(new LinkedHashSet<>(entry.getValue()));
+            userIdsPerMonth.put(entry.getKey(), set);
+        }
+    }
+
+    synchronized void registerUser(String userId) {
         Set<String> users = userIdsPerMonth.computeIfAbsent(getCurrentMonth(),
                 yearMonth -> Collections
                         .synchronizedSet(new LinkedHashSet<>()));
         if (users.add(userId)) {
-            // Will be used to write into file
+            FileHandler.writeStats(userIdsPerMonth);
         }
     }
 
