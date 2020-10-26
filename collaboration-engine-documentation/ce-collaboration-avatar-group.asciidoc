@@ -1,3 +1,9 @@
+---
+title: CollaborationAvatarGroup
+order: 4
+layout: page
+---
+
 [[ce.indicating-user-presence]]
 == Indicating User Presence with CollaborationAvatarGroup
 :sectnums:

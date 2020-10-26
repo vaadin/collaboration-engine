@@ -1,3 +1,9 @@
+---
+title: Tutorial
+order: 2
+layout: page
+---
+
 [[ce.tutorial]]
 == Getting Started with Collaboration Engine
 :sectnums:
