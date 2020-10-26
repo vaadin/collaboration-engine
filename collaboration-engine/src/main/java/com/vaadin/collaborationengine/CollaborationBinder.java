@@ -49,6 +49,7 @@ import com.vaadin.flow.data.converter.Converter;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
+import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
 import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
@@ -263,6 +264,13 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
     private final Map<String, JsonHandler<?>> propertyJsonHandlers = new HashMap<>();
     private final Map<Class<?>, JsonHandler<?>> typeConfigurations = new HashMap<>();
+
+    static {
+        UsageStatistics.markAsUsed(
+                CollaborationEngine.COLLABORATION_ENGINE_NAME
+                        + "/CollaborationBinder",
+                CollaborationEngine.COLLABORATION_ENGINE_VERSION);
+    }
 
     /**
      * Creates a new collaboration binder. It uses reflection based on the

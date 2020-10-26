@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -33,6 +34,8 @@ import com.vaadin.flow.shared.Registration;
 @JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
+    static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
+    static final String COLLABORATION_ENGINE_VERSION = "1.0";
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
     static final int USER_COLOR_COUNT = 7;
 
@@ -41,6 +44,11 @@ public class CollaborationEngine {
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
     private Statistics statistics = new Statistics();
     private final TopicActivationHandler topicActivationHandler;
+
+    static {
+        UsageStatistics.markAsUsed(COLLABORATION_ENGINE_NAME,
+                COLLABORATION_ENGINE_VERSION);
+    }
 
     CollaborationEngine() {
         // package-protected to hide from users but to be usable in unit tests

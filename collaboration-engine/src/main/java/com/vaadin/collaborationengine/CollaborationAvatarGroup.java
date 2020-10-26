@@ -28,6 +28,7 @@ import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.server.AbstractStreamResource;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.shared.Registration;
@@ -77,6 +78,13 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     private ImageProvider imageProvider;
 
     private boolean ownAvatarVisible;
+
+    static {
+        UsageStatistics.markAsUsed(
+                CollaborationEngine.COLLABORATION_ENGINE_NAME
+                        + "/CollaborationAvatarGroup",
+                CollaborationEngine.COLLABORATION_ENGINE_VERSION);
+    }
 
     /**
      * Creates a new collaboration avatar group component with the provided
