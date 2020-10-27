@@ -1,18 +1,20 @@
 package com.vaadin.collaborationengine;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -21,10 +23,9 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 
-public class StatisticsTest {
-    private YearMonth configuredYearMonth = YearMonth.of(2020, 5);
+public class LicenseHandlerTest {
 
-    public class StatisticsWithMonthControl extends Statistics {
+    public class LicenseHandlerWithMonthControl extends LicenseHandler {
 
         @Override
         protected YearMonth getCurrentMonth() {
@@ -36,17 +37,30 @@ public class StatisticsTest {
         }
     }
 
-    private StatisticsWithMonthControl statistics;
+    private YearMonth configuredYearMonth = YearMonth.of(2020, 5);
+    private LicenseHandlerWithMonthControl licenseHandler;
+    private CollaborationEngine ce;
 
     @Before
     public void init() throws IOException {
         FileHandler.setDataDirectory(Paths.get(System.getProperty("user.home"),
                 ".vaadin", "ce-tests"));
+        if (!FileHandler.getDataDirPath().toFile().exists()) {
+            Files.createDirectories(FileHandler.getDataDirPath());
+        }
 
         // Delete the stats file before each run to make sure we can test with a
         // clean state
         Files.deleteIfExists(FileHandler.getStatsFilePath());
-        statistics = new StatisticsWithMonthControl();
+
+        // Set quota to 3
+        writeToLicenseFile("{\"quota\":3,\"endDate\":\"2222-01-01\"}");
+
+        licenseHandler = new LicenseHandlerWithMonthControl();
+
+        ce = new CollaborationEngine(true, (topicId, isActive) -> {
+            // NO-OP
+        });
     }
 
     @After
@@ -56,19 +70,19 @@ public class StatisticsTest {
 
     @Test
     public void registerUser_addUsers_usersAdded() {
-        Assert.assertTrue(this.statistics.getStatistics().isEmpty());
-        this.statistics.registerUser("steve");
+        Assert.assertTrue(this.licenseHandler.getStatistics().isEmpty());
+        this.licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = this.statistics
+        Map<YearMonth, Set<String>> statistics = this.licenseHandler
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
         Assert.assertEquals(1, statistics.get(configuredYearMonth).size());
         Assert.assertTrue(
                 statistics.get(configuredYearMonth).contains("steve"));
-        this.statistics.registerUser("bob");
+        this.licenseHandler.registerUser("bob");
 
-        statistics = this.statistics.getStatistics();
+        statistics = this.licenseHandler.getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
         Assert.assertEquals(2, statistics.get(configuredYearMonth).size());
@@ -79,10 +93,10 @@ public class StatisticsTest {
 
     @Test
     public void registerUser_addSameUserTwice_userAddedOnlyOnce() {
-        statistics.registerUser("steve");
-        statistics.registerUser("bob");
-        statistics.registerUser("steve");
-        Map<YearMonth, Set<String>> statistics = this.statistics
+        licenseHandler.registerUser("steve");
+        licenseHandler.registerUser("bob");
+        licenseHandler.registerUser("steve");
+        Map<YearMonth, Set<String>> statistics = this.licenseHandler
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
@@ -94,12 +108,12 @@ public class StatisticsTest {
 
     @Test
     public void registerUser_monthChanges_userIsReAdded() {
-        statistics.registerUser("steve");
-        statistics.registerUser("bob");
-        statistics.setCurrentMonth(2020, 6);
-        statistics.registerUser("steve");
+        licenseHandler.registerUser("steve");
+        licenseHandler.registerUser("bob");
+        licenseHandler.setCurrentMonth(2020, 6);
+        licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = this.statistics
+        Map<YearMonth, Set<String>> statistics = this.licenseHandler
                 .getStatistics();
         YearMonth firstMonth = YearMonth.of(2020, 5);
         YearMonth secondMonth = YearMonth.of(2020, 6);
@@ -114,10 +128,9 @@ public class StatisticsTest {
 
     @Test
     public void openTopicConnection_userRegistered() {
-        CollaborationEngine engine = new CollaborationEngine();
-        engine.openTopicConnection(new EagerConnectionContext(), "foo",
+        ce.openTopicConnection(new EagerConnectionContext(), "foo",
                 new UserInfo("steve"), topicConnection -> null);
-        Map<YearMonth, Set<String>> statistics = engine.getStatistics()
+        Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.keySet().contains(YearMonth.now()));
@@ -129,52 +142,25 @@ public class StatisticsTest {
     @Test
     public void noStatsFile_initStatistics_hasEmptyMap() throws IOException {
         Files.deleteIfExists(FileHandler.getStatsFilePath());
-        Statistics stats = new Statistics();
+        LicenseHandler stats = new LicenseHandler();
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(FileHandler.getStatsFilePath()));
         Assert.assertEquals(Collections.emptyMap(), stats.getStatistics());
     }
 
     @Test
-    public void noCollaborationEngineDirectory_initStatistics_hasEmptyMap()
-            throws IOException {
-        if (Files.exists(FileHandler.getDataDirPath())) {
-            deleteDirectoryRecursively(FileHandler.getDataDirPath());
-        }
-        Statistics stats = new Statistics();
-        Assert.assertFalse(
-                "Expected the Collaboration Engine directory not to exist.",
-                Files.exists(FileHandler.getDataDirPath()));
-        Assert.assertEquals(Collections.emptyMap(), stats.getStatistics());
-    }
-
-    @Test
     public void noStatsFile_registerUser_statsFileCreated() throws IOException {
         Files.deleteIfExists(FileHandler.getStatsFilePath());
-        statistics.setCurrentMonth(2020, 2);
-        statistics.registerUser("steve");
+        licenseHandler.setCurrentMonth(2020, 2);
+        licenseHandler.registerUser("steve");
         assertStatsFileContent("{\"statistics\":{\"2020-02\":[\"steve\"]}}");
-    }
-
-    @Test
-    public void noCollaborationEngineDirectory_registerUser_folderAndStatsFileCreated()
-            throws IOException {
-        if (Files.exists(FileHandler.getDataDirPath())) {
-            deleteDirectoryRecursively(FileHandler.getDataDirPath());
-        }
-        Assert.assertFalse(
-                "Expected the Collaboration Engine directory not to exist.",
-                Files.exists(FileHandler.getDataDirPath()));
-        statistics.setCurrentMonth(2020, 1);
-        statistics.registerUser("bob");
-        assertStatsFileContent("{\"statistics\":{\"2020-01\":[\"bob\"]}}");
     }
 
     @Test
     public void statsFileHasData_initStatistics_readsDataFromFile()
             throws IOException {
         writeToStatsFile("{\"statistics\":{\"2000-01\":[\"bob\"]}}");
-        Statistics stats = new Statistics();
+        LicenseHandler stats = new LicenseHandler();
 
         Assert.assertEquals(1, stats.getStatistics().size());
         Assert.assertEquals(Collections.singleton("bob"),
@@ -185,7 +171,7 @@ public class StatisticsTest {
     public void statsFileHasData_initStatistics_registerUser_allDataIncludedInFile()
             throws IOException {
         writeToStatsFile("{\"statistics\":{\"2002-01\":[\"bob\"]}}");
-        StatisticsWithMonthControl stats = new StatisticsWithMonthControl();
+        LicenseHandlerWithMonthControl stats = new LicenseHandlerWithMonthControl();
         stats.setCurrentMonth(2002, 1);
         stats.registerUser("steve");
         Assert.assertEquals(1, stats.getStatistics().size());
@@ -197,19 +183,20 @@ public class StatisticsTest {
 
     @Test
     public void registerMultipleUsersAndMonths_writeToFile_readFromFile() {
-        statistics.setCurrentMonth(2020, 2);
-        statistics.registerUser("steve");
-        statistics.registerUser("bob");
-        statistics.registerUser("steve");
+        licenseHandler.setCurrentMonth(2020, 2);
+        licenseHandler.registerUser("steve");
+        licenseHandler.registerUser("bob");
+        licenseHandler.registerUser("steve");
 
-        statistics.setCurrentMonth(2020, 3);
-        statistics.registerUser("steve");
+        licenseHandler.setCurrentMonth(2020, 3);
+        licenseHandler.registerUser("steve");
 
         assertStatsFileContent(
                 "{\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
                         + "\"2020-03\":[\"steve\"]}}");
 
-        Map<YearMonth, Set<String>> newStats = new Statistics().getStatistics();
+        Map<YearMonth, Set<String>> newStats = new LicenseHandler()
+                .getStatistics();
         Assert.assertEquals(2, newStats.size());
         Assert.assertEquals(new LinkedHashSet<>(Arrays.asList("steve", "bob")),
                 newStats.get(YearMonth.of(2020, 2)));
@@ -218,10 +205,91 @@ public class StatisticsTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void statsFileHasInvalidData_initStatistics_throws()
+    public void statsFileHasInvalidData_initLicenseHandler_throws()
             throws IOException {
         writeToStatsFile("I'm invalid");
-        new Statistics();
+        new LicenseHandler();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void noLicenseFile_initCollaborationEngine_throws()
+            throws IOException {
+        Files.deleteIfExists(FileHandler.getLicenseFilePath());
+        new CollaborationEngine(true, (topicId, isActive) -> {
+            // NO-OP
+        });
+    }
+
+    @Test
+    public void licenseFileHasInvalidData_initLicenseHandler_throws()
+            throws IOException {
+        for (String invalidLicenseContent : Arrays.asList("", "not json",
+                // Missing quota:
+                "{\"endDate\":\"2222-01-01\"}",
+                // Missing endDate:
+                "{\"quota\":100}",
+                // Invalid quota:
+                "{\"quota\":\"not a number\",\"endDate\":\"2222-01-01\"}",
+                // Invalid date:
+                "{\"quota\":100,\"endDate\":\"not a date\"}")) {
+
+            writeToLicenseFile(invalidLicenseContent);
+            try {
+                new LicenseHandler();
+                Assert.fail(
+                        "Expected to throw because of invalid license file content: '"
+                                + invalidLicenseContent + "'.");
+            } catch (IllegalStateException e) {
+                // Expected
+            }
+        }
+    }
+
+    @Test
+    public void registerUser_quotaExceeded_userNotRegistered() {
+        List<String> userIds = generateIds(5);
+        userIds.forEach(licenseHandler::registerUser);
+
+        Set<String> expected = new HashSet<>(userIds.subList(0, 3));
+
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(expected, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()));
+    }
+
+    @Test
+    public void openTopicConnection_quotaExceeded_connectionNotActivated() {
+        List<String> usersWithConnectionActivated = new ArrayList<>();
+
+        generateIds(5).forEach(userId -> {
+            ce.openTopicConnection(new EagerConnectionContext(), "topic",
+                    new UserInfo(userId), topicConnection -> {
+                        usersWithConnectionActivated.add(userId);
+                        return null;
+                    });
+        });
+
+        Assert.assertEquals(Arrays.asList("0", "1", "2"),
+                usersWithConnectionActivated);
+    }
+
+    @Test
+    public void openTopicConnection_quotaExceededButUserHasSeat_connectionActivated() {
+        List<String> userIds = generateIds(5);
+        userIds.forEach(userId -> {
+            ce.openTopicConnection(new EagerConnectionContext(), "topic",
+                    new UserInfo(userId), topicConnection -> null);
+        });
+
+        AtomicBoolean connectionActivated = new AtomicBoolean(false);
+        ce.openTopicConnection(new EagerConnectionContext(), "topic",
+                new UserInfo(userIds.get(0)), topicConnection -> {
+                    Assert.assertFalse(connectionActivated.get());
+                    connectionActivated.set(true);
+                    return null;
+                });
+
+        Assert.assertTrue(connectionActivated.get());
     }
 
     private void assertStatsFileContent(String expected) {
@@ -241,8 +309,12 @@ public class StatisticsTest {
         Files.write(FileHandler.getStatsFilePath(), content.getBytes());
     }
 
-    private void deleteDirectoryRecursively(Path path) throws IOException {
-        Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile)
-                .forEach(File::delete);
+    private void writeToLicenseFile(String content) throws IOException {
+        Files.write(FileHandler.getLicenseFilePath(), content.getBytes());
+    }
+
+    private List<String> generateIds(int count) {
+        return IntStream.range(0, count).mapToObj(String::valueOf)
+                .collect(Collectors.toList());
     }
 }

@@ -36,13 +36,18 @@ public class CollaborationEngine {
 
     static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
     static final String COLLABORATION_ENGINE_VERSION = "1.0";
+
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
+
     static final int USER_COLOR_COUNT = 7;
 
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
-    private Statistics statistics = new Statistics();
+
+    private final boolean licenseCheckingEnabled;
+    private final LicenseHandler licenseHandler;
+
     private final TopicActivationHandler topicActivationHandler;
 
     static {
@@ -52,13 +57,17 @@ public class CollaborationEngine {
 
     CollaborationEngine() {
         // package-protected to hide from users but to be usable in unit tests
-        this((topicId, isActive) -> {
+        this(false, (topicId, isActive) -> {
             // implement network sync to the topic
         });
     }
 
-    CollaborationEngine(TopicActivationHandler topicActivationHandler) {
+    CollaborationEngine(boolean licenseCheckingEnabled,
+            TopicActivationHandler topicActivationHandler) {
+        this.licenseCheckingEnabled = licenseCheckingEnabled;
         this.topicActivationHandler = topicActivationHandler;
+        this.licenseHandler = licenseCheckingEnabled ? new LicenseHandler()
+                : null;
     }
 
     private void updateTopicActivation(String topicId, Boolean isActive) {
@@ -137,12 +146,23 @@ public class CollaborationEngine {
         Objects.requireNonNull(localUser, "User can't be null");
         Objects.requireNonNull(connectionActivationCallback,
                 "Callback for connection activation can't be null");
+
+        if (licenseCheckingEnabled) {
+            boolean hasSeat = licenseHandler.registerUser(localUser.getId());
+
+            if (!hasSeat) {
+                // User quota exceeded, don't open the connection.
+                return () -> {
+                    // Nothing to do for closing the connection.
+                };
+            }
+        }
+
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
 
         TopicConnection connection = new TopicConnection(context, topic,
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
-        statistics.registerUser(localUser.getId());
         return connection::deactivateAndClose;
     }
 
@@ -161,12 +181,12 @@ public class CollaborationEngine {
     }
 
     /**
-     * Gets the internal statistics class. Package protected for testing
+     * Gets the internal license handler. Package protected for testing
      * purposes.
-     * 
-     * @return statistics
+     *
+     * @return the license handler
      */
-    Statistics getStatistics() {
-        return statistics;
+    LicenseHandler getLicenseHandler() {
+        return licenseHandler;
     }
 }

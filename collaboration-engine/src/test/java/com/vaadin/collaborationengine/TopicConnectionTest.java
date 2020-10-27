@@ -65,7 +65,7 @@ public class TopicConnectionTest {
 
     private final Set<String> activeTopics = new HashSet<>();
 
-    private final CollaborationEngine engine = new CollaborationEngine(
+    private final CollaborationEngine engine = new CollaborationEngine(false,
             (topicId, isActive) -> {
                 if (isActive) {
                     activeTopics.add(topicId);

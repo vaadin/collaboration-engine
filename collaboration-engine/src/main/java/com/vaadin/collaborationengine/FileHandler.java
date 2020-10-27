@@ -20,13 +20,17 @@ import java.time.YearMonth;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
 
 class FileHandler {
 
@@ -35,11 +39,15 @@ class FileHandler {
 
     private static final String STATISTICS_JSON_KEY = "statistics";
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private static Path dataDirPath;
     private static Path statsFilePath;
+    private static Path licenseFilePath;
 
     static {
         setDataDirectory(DEFAULT_DATA_DIR);
+        MAPPER.registerModule(new JavaTimeModule());
     }
 
     private FileHandler() {
@@ -48,6 +56,7 @@ class FileHandler {
     static void setDataDirectory(Path dataDirectory) {
         dataDirPath = dataDirectory;
         statsFilePath = Paths.get(dataDirPath.toString(), "ce-statistics.json");
+        licenseFilePath = Paths.get(dataDirPath.toString(), "ce-license.json");
     }
 
     static Path getDataDirPath() {
@@ -58,50 +67,72 @@ class FileHandler {
         return statsFilePath;
     }
 
-    static Map<YearMonth, List<String>> readStats() {
-        try {
-            if (!statsFilePath.toFile().exists()) {
-                return Collections.emptyMap();
-            }
+    static Path getLicenseFilePath() {
+        return licenseFilePath;
+    }
 
-            byte[] fileContent = Files.readAllBytes(statsFilePath);
+    static Map<YearMonth, List<String>> readStats() {
+        JsonNode json = readFileAsJson(statsFilePath)
+                .orElse(MAPPER.createObjectNode());
+        JsonNode statisticsJson = json.get(STATISTICS_JSON_KEY);
+        if (statisticsJson == null) {
+            return Collections.emptyMap();
+        }
+        return MAPPER.convertValue(statisticsJson,
+                new TypeReference<Map<YearMonth, List<String>>>() {
+                });
+    }
+
+    static void writeStats(Map<YearMonth, Set<String>> userIdsPerMonth) {
+        ObjectNode json = MAPPER.createObjectNode();
+        json.set(STATISTICS_JSON_KEY, MAPPER.valueToTree(userIdsPerMonth));
+        writeJsonToFile(json, statsFilePath);
+    }
+
+    static LicenseInfo readLicenseFile() {
+        JsonNode licenseJson = readFileAsJson(licenseFilePath)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Failed to read the license file at '" + licenseFilePath
+                                + "'."));
+        try {
+            return MAPPER.treeToValue(licenseJson, LicenseInfo.class);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException(
+                    "Failed to parse the license information from file '"
+                            + licenseFilePath + "'.",
+                    e);
+        }
+    }
+
+    private static Optional<JsonNode> readFileAsJson(Path filePath) {
+        try {
+            if (!filePath.toFile().exists()) {
+                return Optional.empty();
+            }
+            byte[] fileContent = Files.readAllBytes(filePath);
             if (fileContent.length == 0) {
-                return Collections.emptyMap();
+                return Optional.empty();
             }
             ObjectMapper mapper = new ObjectMapper();
             mapper.registerModule(new JavaTimeModule());
 
-            JsonNode json = mapper.readTree(Files.readAllBytes(statsFilePath));
-            JsonNode statisticsJson = json.get(STATISTICS_JSON_KEY);
-            if (statisticsJson == null) {
-                return Collections.emptyMap();
-            }
-            return mapper.convertValue(statisticsJson,
-                    new TypeReference<Map<YearMonth, List<String>>>() {
-                    });
+            return Optional.of(mapper.readTree(Files.readAllBytes(filePath)));
         } catch (IOException e) {
             throw new IllegalStateException(
-                    "Collaboration Engine wasn't able to read the statistics file at '"
-                            + statsFilePath
+                    "Collaboration Engine wasn't able to read the file at '"
+                            + filePath
                             + "'. Check that the file is readable by the app, and not locked.",
                     e);
         }
     }
 
-    static void writeStats(Map<YearMonth, Set<String>> userIdsPerMonth) {
-        ObjectMapper mapper = new ObjectMapper();
-
-        ObjectNode json = mapper.createObjectNode();
-        json.set(STATISTICS_JSON_KEY, mapper.valueToTree(userIdsPerMonth));
+    private static void writeJsonToFile(JsonNode json, Path filePath) {
         try {
-            if (!dataDirPath.toFile().exists()) {
-                Files.createDirectories(dataDirPath);
-            }
-            mapper.writeValue(statsFilePath.toFile(), json);
+            MAPPER.writeValue(filePath.toFile(), json);
         } catch (IOException e) {
             throw new IllegalStateException(
-                    "Collaboration Engine wasn't able to write to the statistics file at '"
-                            + statsFilePath
+                    "Collaboration Engine wasn't able to write to the file at '"
+                            + filePath
                             + "'. Check that the file is readable by the app, and not locked.",
                     e);
         }
