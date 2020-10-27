@@ -38,13 +38,14 @@ class LicenseHandler {
         }
     }
 
-    private Map<YearMonth, Set<String>> userIdsPerMonth;
-
+    private final FileHandler fileHandler = new FileHandler();
     private final LicenseInfo license;
 
+    private Map<YearMonth, Set<String>> userIdsPerMonth;
+
     LicenseHandler() {
-        license = FileHandler.readLicenseFile();
-        Map<YearMonth, List<String>> userIdsFromFile = FileHandler.readStats();
+        license = fileHandler.readLicenseFile();
+        Map<YearMonth, List<String>> userIdsFromFile = fileHandler.readStats();
         userIdsPerMonth = copyMap(userIdsFromFile);
     }
 
@@ -67,7 +68,7 @@ class LicenseHandler {
             return false;
         } else {
             users.add(userId);
-            FileHandler.writeStats(userIdsPerMonth);
+            fileHandler.writeStats(userIdsPerMonth);
             return true;
         }
     }

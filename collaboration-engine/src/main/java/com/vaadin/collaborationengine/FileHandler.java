@@ -37,65 +37,55 @@ class FileHandler {
     static final Path DEFAULT_DATA_DIR = Paths.get(
             System.getProperty("user.home"), ".vaadin", "collaboration-engine");
 
+    static Path dataDirPath = DEFAULT_DATA_DIR;
+
     private static final String STATISTICS_JSON_KEY = "statistics";
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static Path dataDirPath;
-    private static Path statsFilePath;
-    private static Path licenseFilePath;
+    private final Path statsFilePath;
+    private final Path licenseFilePath;
 
-    static {
-        setDataDirectory(DEFAULT_DATA_DIR);
-        MAPPER.registerModule(new JavaTimeModule());
+    FileHandler() {
+        objectMapper.registerModule(new JavaTimeModule());
+        statsFilePath = createStatsFilePath(dataDirPath);
+        licenseFilePath = createLicenseFilePath(dataDirPath);
     }
 
-    private FileHandler() {
+    static Path createStatsFilePath(Path dirPath) {
+        return Paths.get(dirPath.toString(), "ce-statistics.json");
     }
 
-    static void setDataDirectory(Path dataDirectory) {
-        dataDirPath = dataDirectory;
-        statsFilePath = Paths.get(dataDirPath.toString(), "ce-statistics.json");
-        licenseFilePath = Paths.get(dataDirPath.toString(), "ce-license.json");
+    static Path createLicenseFilePath(Path dirPath) {
+        return Paths.get(dirPath.toString(), "ce-license.json");
     }
 
-    static Path getDataDirPath() {
-        return dataDirPath;
-    }
-
-    static Path getStatsFilePath() {
-        return statsFilePath;
-    }
-
-    static Path getLicenseFilePath() {
-        return licenseFilePath;
-    }
-
-    static Map<YearMonth, List<String>> readStats() {
+    Map<YearMonth, List<String>> readStats() {
         JsonNode json = readFileAsJson(statsFilePath)
-                .orElse(MAPPER.createObjectNode());
+                .orElse(objectMapper.createObjectNode());
         JsonNode statisticsJson = json.get(STATISTICS_JSON_KEY);
         if (statisticsJson == null) {
             return Collections.emptyMap();
         }
-        return MAPPER.convertValue(statisticsJson,
+        return objectMapper.convertValue(statisticsJson,
                 new TypeReference<Map<YearMonth, List<String>>>() {
                 });
     }
 
-    static void writeStats(Map<YearMonth, Set<String>> userIdsPerMonth) {
-        ObjectNode json = MAPPER.createObjectNode();
-        json.set(STATISTICS_JSON_KEY, MAPPER.valueToTree(userIdsPerMonth));
+    void writeStats(Map<YearMonth, Set<String>> userIdsPerMonth) {
+        ObjectNode json = objectMapper.createObjectNode();
+        json.set(STATISTICS_JSON_KEY,
+                objectMapper.valueToTree(userIdsPerMonth));
         writeJsonToFile(json, statsFilePath);
     }
 
-    static LicenseInfo readLicenseFile() {
+    LicenseInfo readLicenseFile() {
         JsonNode licenseJson = readFileAsJson(licenseFilePath)
                 .orElseThrow(() -> new IllegalStateException(
                         "Failed to read the license file at '" + licenseFilePath
                                 + "'."));
         try {
-            return MAPPER.treeToValue(licenseJson, LicenseInfo.class);
+            return objectMapper.treeToValue(licenseJson, LicenseInfo.class);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(
                     "Failed to parse the license information from file '"
@@ -104,7 +94,7 @@ class FileHandler {
         }
     }
 
-    private static Optional<JsonNode> readFileAsJson(Path filePath) {
+    private Optional<JsonNode> readFileAsJson(Path filePath) {
         try {
             if (!filePath.toFile().exists()) {
                 return Optional.empty();
@@ -126,9 +116,9 @@ class FileHandler {
         }
     }
 
-    private static void writeJsonToFile(JsonNode json, Path filePath) {
+    private void writeJsonToFile(JsonNode json, Path filePath) {
         try {
-            MAPPER.writeValue(filePath.toFile(), json);
+            objectMapper.writeValue(filePath.toFile(), json);
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Collaboration Engine wasn't able to write to the file at '"

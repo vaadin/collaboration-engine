@@ -2,6 +2,7 @@ package com.vaadin.collaborationengine;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -37,21 +38,28 @@ public class LicenseHandlerTest {
         }
     }
 
+    private Path statsFilePath;
+    private Path licenseFilePath;
+
     private YearMonth configuredYearMonth = YearMonth.of(2020, 5);
     private LicenseHandlerWithMonthControl licenseHandler;
     private CollaborationEngine ce;
 
     @Before
     public void init() throws IOException {
-        FileHandler.setDataDirectory(Paths.get(System.getProperty("user.home"),
-                ".vaadin", "ce-tests"));
-        if (!FileHandler.getDataDirPath().toFile().exists()) {
-            Files.createDirectories(FileHandler.getDataDirPath());
+        FileHandler.dataDirPath = Paths.get(System.getProperty("user.home"),
+                ".vaadin", "ce-tests");
+        if (!FileHandler.dataDirPath.toFile().exists()) {
+            Files.createDirectories(FileHandler.dataDirPath);
         }
+        statsFilePath = FileHandler
+                .createStatsFilePath(FileHandler.dataDirPath);
+        licenseFilePath = FileHandler
+                .createLicenseFilePath(FileHandler.dataDirPath);
 
         // Delete the stats file before each run to make sure we can test with a
         // clean state
-        Files.deleteIfExists(FileHandler.getStatsFilePath());
+        Files.deleteIfExists(statsFilePath);
 
         // Set quota to 3
         writeToLicenseFile("{\"quota\":3,\"endDate\":\"2222-01-01\"}");
@@ -65,7 +73,7 @@ public class LicenseHandlerTest {
 
     @After
     public void cleanUp() {
-        FileHandler.setDataDirectory(FileHandler.DEFAULT_DATA_DIR);
+        FileHandler.dataDirPath = FileHandler.DEFAULT_DATA_DIR;
     }
 
     @Test
@@ -141,16 +149,16 @@ public class LicenseHandlerTest {
 
     @Test
     public void noStatsFile_initStatistics_hasEmptyMap() throws IOException {
-        Files.deleteIfExists(FileHandler.getStatsFilePath());
+        Files.deleteIfExists(statsFilePath);
         LicenseHandler stats = new LicenseHandler();
         Assert.assertFalse("Expected the stats file not to exist.",
-                Files.exists(FileHandler.getStatsFilePath()));
+                Files.exists(statsFilePath));
         Assert.assertEquals(Collections.emptyMap(), stats.getStatistics());
     }
 
     @Test
     public void noStatsFile_registerUser_statsFileCreated() throws IOException {
-        Files.deleteIfExists(FileHandler.getStatsFilePath());
+        Files.deleteIfExists(statsFilePath);
         licenseHandler.setCurrentMonth(2020, 2);
         licenseHandler.registerUser("steve");
         assertStatsFileContent("{\"statistics\":{\"2020-02\":[\"steve\"]}}");
@@ -214,7 +222,7 @@ public class LicenseHandlerTest {
     @Test(expected = IllegalStateException.class)
     public void noLicenseFile_initCollaborationEngine_throws()
             throws IOException {
-        Files.deleteIfExists(FileHandler.getLicenseFilePath());
+        Files.deleteIfExists(licenseFilePath);
         new CollaborationEngine(true, (topicId, isActive) -> {
             // NO-OP
         });
@@ -295,22 +303,20 @@ public class LicenseHandlerTest {
     private void assertStatsFileContent(String expected) {
         String fileContent = null;
         try {
-            fileContent = new String(
-                    Files.readAllBytes(FileHandler.getStatsFilePath()));
+            fileContent = new String(Files.readAllBytes(statsFilePath));
         } catch (IOException e) {
-            Assert.fail("Failed to read the file at "
-                    + FileHandler.getStatsFilePath());
+            Assert.fail("Failed to read the file at " + statsFilePath);
         }
         Assert.assertEquals("Unexpected statistics file content", expected,
                 fileContent);
     }
 
     private void writeToStatsFile(String content) throws IOException {
-        Files.write(FileHandler.getStatsFilePath(), content.getBytes());
+        Files.write(statsFilePath, content.getBytes());
     }
 
     private void writeToLicenseFile(String content) throws IOException {
-        Files.write(FileHandler.getLicenseFilePath(), content.getBytes());
+        Files.write(licenseFilePath, content.getBytes());
     }
 
     private List<String> generateIds(int count) {
