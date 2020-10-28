@@ -22,7 +22,6 @@ registerStyles(
       left: 0;
       right: 0;
       bottom: 0;
-      opacity: 0.5;
       box-shadow: 0 0 0 2px var(--_active-user-color);
       border-radius: var(--lumo-border-radius);
       transition: box-shadow 0.3s;
@@ -40,6 +39,20 @@ registerStyles(
     :host([context='vaadin-item'])::before {
       box-shadow: inset 0 0 0 2px var(--_active-user-color);
     }
+
+    :host([context='vaadin-text-area']) {
+      display: none;
+    }
   `,
   { moduleId: 'lumo-field-outline' }
+);
+
+registerStyles(
+  'vaadin-text-area',
+  css`
+    :host([has-highlighter]) [part="input-field"] {
+      box-shadow: 0 0 0 2px var(--_active-user-color);
+    }
+  `,
+  { moduleId: 'lumo-text-area-outline' }
 );

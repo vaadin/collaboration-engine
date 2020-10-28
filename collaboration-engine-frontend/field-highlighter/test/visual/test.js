@@ -44,6 +44,13 @@ describe('field highlight', () => {
         .assertView(`${theme}-radio-group`, locator);
     });
 
+    it(`${theme}-text-area`, function() {
+      return this.browser
+        .url(`text-area.html?theme=${theme}`)
+        .waitForVisible(locator, 15000)
+        .assertView(`${theme}-text-area`, locator);
+    });
+
     it(`${theme}-text-field`, function() {
       return this.browser
         .url(`text-field.html?theme=${theme}`)

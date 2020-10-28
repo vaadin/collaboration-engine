@@ -54,15 +54,26 @@ export class FieldOutline extends ThemableMixin(DirMixin(PolymerElement)) {
     super.ready();
 
     this.setAttribute('part', 'outline');
+
+    this._field = this.getRootNode().host;
   }
 
   _userChanged(user) {
+    const prop = '--_active-user-color';
     if (user) {
       this.setAttribute('has-active-user', '');
-      setCustomProperty(this, '--_active-user-color', `var(--vaadin-user-color-${user.colorIndex})`);
+      const value = `var(--vaadin-user-color-${user.colorIndex})`;
+
+      setCustomProperty(this, prop, value);
+      if (this._field) {
+        setCustomProperty(this._field, prop, value);
+      }
     } else {
       this.removeAttribute('has-active-user');
-      setCustomProperty(this, '--_active-user-color', 'transparent');
+      setCustomProperty(this, prop, 'transparent');
+      if (this._field) {
+        setCustomProperty(this._field, prop, 'transparent');
+      }
     }
   }
 }

@@ -9,16 +9,16 @@ dependencies:
 devDependencies:
   '@bundled-es-modules/chai': 4.2.2
   '@open-wc/testing-helpers': 1.8.9
-  '@vaadin/vaadin-checkbox': 2.4.0
-  '@vaadin/vaadin-combo-box': 5.3.0
-  '@vaadin/vaadin-date-picker': 4.3.0
-  '@vaadin/vaadin-date-time-picker': 1.3.0
+  '@vaadin/vaadin-checkbox': 2.5.0
+  '@vaadin/vaadin-combo-box': 5.4.1
+  '@vaadin/vaadin-date-picker': 4.4.1
+  '@vaadin/vaadin-date-time-picker': 1.4.0
   '@vaadin/vaadin-item': 2.3.0
   '@vaadin/vaadin-list-box': 1.4.0
   '@vaadin/vaadin-radio-button': 1.4.0
-  '@vaadin/vaadin-select': 2.3.0
-  '@vaadin/vaadin-text-field': 2.7.0
-  '@vaadin/vaadin-time-picker': 2.3.0
+  '@vaadin/vaadin-select': 2.4.0
+  '@vaadin/vaadin-text-field': 2.8.1
+  '@vaadin/vaadin-time-picker': 2.4.0
   '@web/test-runner': 0.7.20
   '@webcomponents/webcomponentsjs': 2.4.4
   es-dev-server: 1.57.3
@@ -26,7 +26,7 @@ devDependencies:
   hermione-esm: 0.3.0
   hermione-sauce: 0.1.0
   sinon: 9.0.3
-lockfileVersion: 5.1
+lockfileVersion: 5.2
 packages:
   /@babel/code-frame/7.10.4:
     dependencies:
@@ -1540,7 +1540,7 @@ packages:
     dev: true
     resolution:
       integrity: sha512-C94F07OOb5Ciq2BY4CklIQG+WJFA6QoTFDQl8JJloJgPI12b9kmyP8uRgfq4VAHHusqKqIvA8AB6VZuGg5lagg==
-  /@vaadin/vaadin-checkbox/2.4.0:
+  /@vaadin/vaadin-checkbox/2.5.0:
     dependencies:
       '@polymer/polymer': 3.4.1
       '@vaadin/vaadin-control-state-mixin': 2.2.3
@@ -1550,8 +1550,8 @@ packages:
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-cRWek/v6UT05V0vuK5oPh3I7jSKIyNY8jo2RSyFrSBcFnvSvjk7tRayiIxDs1QigfZaTKSs8Hnga50Ri9nJZ0w==
-  /@vaadin/vaadin-combo-box/5.3.0:
+      integrity: sha512-56DsET7CTvqVsVPNKuGdUuCY+uxyUydRZSf6V6yyaRSNFA3zKWJQ6ixzIxiXSR91fnpVXA75j1+GnLsnVfvV3A==
+  /@vaadin/vaadin-combo-box/5.4.1:
     dependencies:
       '@polymer/iron-a11y-announcer': 3.1.0
       '@polymer/iron-a11y-keys-behavior': 3.0.1
@@ -1564,18 +1564,18 @@ packages:
       '@vaadin/vaadin-lumo-styles': 1.6.0
       '@vaadin/vaadin-material-styles': 1.3.2
       '@vaadin/vaadin-overlay': 3.5.1
-      '@vaadin/vaadin-text-field': 2.7.0
+      '@vaadin/vaadin-text-field': 2.8.1
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-wk7JhoCotcEpyFZix2ZB6ieeuKBEc7JeFJIHt3N5mVAl6TB7Z2VV9GoDUP6Wlf392MrSODXfpq25MbwSPiq3cQ==
+      integrity: sha512-nFQd/3cRWhmsZhJ188wdW2zOiXaVXuj1DoykbAfm6m5qk9sMxtllH2NEbwLz03koesE6t8Hrl9bptUVzCqCnOA==
   /@vaadin/vaadin-control-state-mixin/2.2.3:
     dependencies:
       '@polymer/polymer': 3.4.1
     dev: true
     resolution:
       integrity: sha512-a0a+Hh99fQ5ueKTmY6F0i94jOfdOwKFS9ppNs0amfQwO+Js5ZC84naLnyVMVtY87K98FQ1vEYqpzxDYZy6duPw==
-  /@vaadin/vaadin-custom-field/1.2.0:
+  /@vaadin/vaadin-custom-field/1.3.0:
     dependencies:
       '@polymer/polymer': 3.4.1
       '@vaadin/vaadin-element-mixin': 2.4.1
@@ -1584,8 +1584,8 @@ packages:
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-ppT+fQt5Ji97g4ImFWpe/V+DNcSuwofcPg7JqXpvRc9Nhlx5/fs+gsId125xQtYQ6ZHmMo4I2+AWiNQgXjdlwQ==
-  /@vaadin/vaadin-date-picker/4.3.0:
+      integrity: sha512-NQquU6RlR7TBgdPLSCZ9Zc1WMRvi/h8y8tQ4OGuxplnEFbKM3Koc9viV9lsRheiTzMMVteip5WsS7bVaMEDkDg==
+  /@vaadin/vaadin-date-picker/4.4.1:
     dependencies:
       '@polymer/iron-a11y-announcer': 3.1.0
       '@polymer/iron-a11y-keys-behavior': 3.0.1
@@ -1598,24 +1598,24 @@ packages:
       '@vaadin/vaadin-lumo-styles': 1.6.0
       '@vaadin/vaadin-material-styles': 1.3.2
       '@vaadin/vaadin-overlay': 3.5.1
-      '@vaadin/vaadin-text-field': 2.7.0
+      '@vaadin/vaadin-text-field': 2.8.1
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-eZIxgbWIjEDMK0nwBkXKAtHVknaEcyNWm9LQiiYmspqBHLlIvitBG6VvXm7EZzIBzzGg+rkow1dIc1Tn0sFsYg==
-  /@vaadin/vaadin-date-time-picker/1.3.0:
+      integrity: sha512-BVUrrnCIdPt6jkIC5RHsjsjDR5KanEAGNxJ9gBM70pQsvZEBksmKo1RJwXvra1uXHLHl8gyz4W+p3MRUDqX1fA==
+  /@vaadin/vaadin-date-time-picker/1.4.0:
     dependencies:
       '@polymer/polymer': 3.4.1
-      '@vaadin/vaadin-custom-field': 1.2.0
-      '@vaadin/vaadin-date-picker': 4.3.0
+      '@vaadin/vaadin-custom-field': 1.3.0
+      '@vaadin/vaadin-date-picker': 4.4.1
       '@vaadin/vaadin-element-mixin': 2.4.1
       '@vaadin/vaadin-lumo-styles': 1.6.0
       '@vaadin/vaadin-material-styles': 1.3.2
       '@vaadin/vaadin-themable-mixin': 1.6.1
-      '@vaadin/vaadin-time-picker': 2.3.0
+      '@vaadin/vaadin-time-picker': 2.4.0
     dev: true
     resolution:
-      integrity: sha512-t+jBtpku686Xk2LaWDMnONqeTy71XOoepHkaU6M70T+TE9nDqauJRsjH3SuhzCqJOaXK/fSJJPhqPzSOrQGioQ==
+      integrity: sha512-fCtCqd9UYKcYjzltxLra7tgEkerQsYUiMZD2Hz4TYU8Tnb/LCt2A/9wQgtbxSapctqKLWfgQ7TgkMy51nRQtlA==
   /@vaadin/vaadin-development-mode-detector/2.0.4:
     resolution:
       integrity: sha512-S+PaFrZpK8uBIOnIHxjntTrgumd5ztuCnZww96ydGKXgo9whXfZsbMwDuD/102a/IuPUMyF+dh/n3PbWzJ6igA==
@@ -1687,7 +1687,7 @@ packages:
     dev: true
     resolution:
       integrity: sha512-uYTZ6ZsnDF/D7sRB5uc+yi/0AM1q2Qd27HW1nzJTxtbmPSo63CG/2urUnnUfQmD3W++juA4JiWyH74kMorWmQA==
-  /@vaadin/vaadin-select/2.3.0:
+  /@vaadin/vaadin-select/2.4.0:
     dependencies:
       '@polymer/iron-media-query': 3.0.1
       '@polymer/iron-resizable-behavior': 3.0.1
@@ -1700,12 +1700,12 @@ packages:
       '@vaadin/vaadin-lumo-styles': 1.6.0
       '@vaadin/vaadin-material-styles': 1.3.2
       '@vaadin/vaadin-overlay': 3.5.1
-      '@vaadin/vaadin-text-field': 2.7.0
+      '@vaadin/vaadin-text-field': 2.8.1
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-TKX43i9yncl9ujfdcO822mcEMW3rT8kbX1Qk59FIXHDwEBbOg7mz+BmWr/LctF7ot4AlC/4olCuLO7/NXtOiAA==
-  /@vaadin/vaadin-text-field/2.7.0:
+      integrity: sha512-JUCsg/rBIyDcjnZmrXCu+G7a7QJtKquix/WI6L56yG8zgX5EP6p6Wt15G0bohDXGO0xvW+i8NCCO65EftjqnUw==
+  /@vaadin/vaadin-text-field/2.8.1:
     dependencies:
       '@polymer/polymer': 3.4.1
       '@vaadin/vaadin-control-state-mixin': 2.2.3
@@ -1715,27 +1715,27 @@ packages:
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-FINnn0wxoPEdrXPlYxBgj+p3+NF0YkmYkh6XH6zD39TA2+8uMrM8GG6HdqDUVLtDt8Hv/UrUJKf8tht1Qhs53A==
+      integrity: sha512-SD+D9fzkLBdVwCJx451HuGqUTHxQKjl82rPu2wqF5VlDsW2TiCcQHfvQYFVJH65ynFVok1dyJQvQgaY4qtnwuQ==
   /@vaadin/vaadin-themable-mixin/1.6.1:
     dependencies:
       '@polymer/polymer': 3.4.1
       lit-element: 2.4.0
     resolution:
       integrity: sha512-UXjOlEfMEk/QxpBjpiO0QTjPOSiO88bhhtV+0UTfpqk8ILvJYO+6vbwcja33xY5Wi9sTAXtHixAjM0LthyXglQ==
-  /@vaadin/vaadin-time-picker/2.3.0:
+  /@vaadin/vaadin-time-picker/2.4.0:
     dependencies:
       '@polymer/iron-a11y-keys-behavior': 3.0.1
       '@polymer/polymer': 3.4.1
-      '@vaadin/vaadin-combo-box': 5.3.0
+      '@vaadin/vaadin-combo-box': 5.4.1
       '@vaadin/vaadin-control-state-mixin': 2.2.3
       '@vaadin/vaadin-element-mixin': 2.4.1
       '@vaadin/vaadin-lumo-styles': 1.6.0
       '@vaadin/vaadin-material-styles': 1.3.2
-      '@vaadin/vaadin-text-field': 2.7.0
+      '@vaadin/vaadin-text-field': 2.8.1
       '@vaadin/vaadin-themable-mixin': 1.6.1
     dev: true
     resolution:
-      integrity: sha512-0WU5/Mw6yu+i+U96lcDCurLh8zFlmtGlDySirv59t5rL9a16Cs9aslEf6+50o9NiUSQcXyRDM5PduXZnxV2j7w==
+      integrity: sha512-HMl1cK2IH3aqkvnJ2MB8ABmMt6ezte4Qfx95UbzuES9+QBM6lFMdigcbCLT+I7MXN5syMXUbD10hoZ3heu59cw==
   /@vaadin/vaadin-usage-statistics/2.1.0:
     dependencies:
       '@vaadin/vaadin-development-mode-detector': 2.0.4
@@ -7676,10 +7676,10 @@ specifiers:
   '@open-wc/testing-helpers': ^1.8.0
   '@polymer/iron-a11y-announcer': ^3.0.0
   '@polymer/polymer': ^3.2.0
-  '@vaadin/vaadin-checkbox': ^2.3.0
-  '@vaadin/vaadin-combo-box': ^5.2.0
-  '@vaadin/vaadin-date-picker': ^4.2.0
-  '@vaadin/vaadin-date-time-picker': ^1.2.0
+  '@vaadin/vaadin-checkbox': ^2.5.0
+  '@vaadin/vaadin-combo-box': ^5.4.0
+  '@vaadin/vaadin-date-picker': ^4.4.0
+  '@vaadin/vaadin-date-time-picker': ^1.4.0
   '@vaadin/vaadin-element-mixin': ^2.4.1
   '@vaadin/vaadin-item': ^2.3.0
   '@vaadin/vaadin-list-box': ^1.4.0
@@ -7687,10 +7687,10 @@ specifiers:
   '@vaadin/vaadin-material-styles': ^1.3.2
   '@vaadin/vaadin-overlay': ^3.4.0
   '@vaadin/vaadin-radio-button': ^1.4.0
-  '@vaadin/vaadin-select': ^2.2.0
-  '@vaadin/vaadin-text-field': ^2.6.0
+  '@vaadin/vaadin-select': ^2.4.0
+  '@vaadin/vaadin-text-field': ^2.8.0
   '@vaadin/vaadin-themable-mixin': ^1.6.1
-  '@vaadin/vaadin-time-picker': ^2.3.0
+  '@vaadin/vaadin-time-picker': ^2.4.0
   '@web/test-runner': ^0.7.20
   '@webcomponents/webcomponentsjs': ^2.2.0
   es-dev-server: ^1.55.0
