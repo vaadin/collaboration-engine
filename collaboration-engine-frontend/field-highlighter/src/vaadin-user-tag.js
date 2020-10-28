@@ -1,3 +1,9 @@
+/**
+@license
+Copyright (C) 2020 Vaadin Ltd
+This program is available under Commercial Vaadin Runtime License 1.0 (CVRLv1).
+For the full License, see http://vaadin.com/license/cvrl-1
+*/
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';

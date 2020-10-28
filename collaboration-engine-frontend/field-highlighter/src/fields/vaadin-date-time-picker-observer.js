@@ -1,3 +1,9 @@
+/**
+@license
+Copyright (C) 2020 Vaadin Ltd
+This program is available under Commercial Vaadin Runtime License 1.0 (CVRLv1).
+For the full License, see http://vaadin.com/license/cvrl-1
+*/
 import { ComponentObserver } from './vaadin-component-observer.js';
 import { DatePickerObserver } from './vaadin-date-picker-observer.js';
 import { FieldObserver } from './vaadin-field-observer.js';

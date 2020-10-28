@@ -75,10 +75,14 @@
                             <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.basedir}/src/main/resources/META-INF/resources/frontend/field-highlighter</outputDirectory>
+                            <outputDirectory>
+                                ${project.basedir}/src/main/resources/META-INF/resources/frontend/field-highlighter
+                            </outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${basedir}/../collaboration-engine-frontend/field-highlighter</directory>
+                                    <directory>
+                                        ${basedir}/../collaboration-engine-frontend/field-highlighter
+                                    </directory>
                                     <filtering>true</filtering>
                                     <includes>
                                         <include>src/**</include>
@@ -97,7 +101,9 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <directory>${project.basedir}/src/main/resources/META-INF/resources/frontend/field-highlighter/</directory>
+                            <directory>
+                                ${project.basedir}/src/main/resources/META-INF/resources/frontend/field-highlighter/
+                            </directory>
                             <followSymlinks>false</followSymlinks>
                         </fileset>
                     </filesets>

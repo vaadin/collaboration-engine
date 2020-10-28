@@ -1,3 +1,9 @@
+/**
+@license
+Copyright (C) 2020 Vaadin Ltd
+This program is available under Commercial Vaadin Runtime License 1.0 (CVRLv1).
+For the full License, see http://vaadin.com/license/cvrl-1
+*/
 import { css, registerStyles } from '@vaadin/vaadin-themable-mixin/register-styles.js';
 import '@vaadin/vaadin-lumo-styles/color.js';
 import '@vaadin/vaadin-lumo-styles/spacing.js';

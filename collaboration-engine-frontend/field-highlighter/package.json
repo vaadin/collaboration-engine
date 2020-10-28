@@ -2,7 +2,7 @@
   "name": "@vaadin/field-highlighter",
   "version": "0.0.0",
   "author": "Vaadin Ltd",
-  "license": "https://vaadin.com/license/cval-3.0",
+  "license": "https://vaadin.com/license/cvrl-1.0",
   "main": "src/vaadin-field-highlighter.js",
   "scripts": {
     "start": "es-dev-server --node-resolve",

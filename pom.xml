@@ -15,6 +15,13 @@
         <version>2.0.2</version>
     </parent>
 
+    <licenses>
+        <license>
+            <name>Commercial Vaadin Runtime License version 1.0</name>
+            <url>http://vaadin.com/license/cvrl-1</url>
+        </license>
+    </licenses>
+
     <modules>
         <!-- Only the modules that should be included in releases should be
             here. Others should be listed down in the default profile. -->
@@ -25,7 +32,8 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <project.reporting.outputEncoding>UTF-8
+        </project.reporting.outputEncoding>
 
         <vaadin.version>14.3.0</vaadin.version>
         <avatar.version>1.0.1</avatar.version>

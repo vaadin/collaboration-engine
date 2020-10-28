@@ -1,3 +1,9 @@
+/**
+@license
+Copyright (C) 2020 Vaadin Ltd
+This program is available under Commercial Vaadin Runtime License 1.0 (CVRLv1).
+For the full License, see http://vaadin.com/license/cvrl-1
+*/
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { IronA11yAnnouncer } from '@polymer/iron-a11y-announcer/iron-a11y-announcer.js';
 import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
