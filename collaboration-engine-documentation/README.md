@@ -2,12 +2,12 @@
  
 ## Table of contents 
 
-* [Overview](./ce-overview.asciidoc)
+* [Overview](overview.asciidoc)
 
 ### Tutorials
-* [Getting Started Tutorial](./ce-tutorial.asciidoc)
-* [Topic API Tutorial](./ce-topic-api.asciidoc)
+* [Getting Started Tutorial](tutorial.asciidoc)
+* [Topic API Tutorial](topic-api.asciidoc)
 
 ### Reference Documentation
-* [Indicating User Presence with CollaborationAvatarGroup](./ce-collaboration-avatar-group.asciidoc)
-* [Collaborative Form Editing with CollaborationBinder](./ce-collaboration-binder.asciidoc)
+* [Indicating User Presence with CollaborationAvatarGroup](collaboration-avatar-group.asciidoc)
+* [Collaborative Form Editing with CollaborationBinder](collaboration-binder.asciidoc)
