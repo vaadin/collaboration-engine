@@ -1,7 +1,7 @@
 // This is on purpose not included to documentation with lack of header.
 
 [[ce.install]]
-== Installing Vaadin Collaboration Engine
+= Installing Vaadin Collaboration Engine
 :sectnums:
 
 

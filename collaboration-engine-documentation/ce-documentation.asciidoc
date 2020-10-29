@@ -7,12 +7,12 @@
 :toc-title: Table of content
 :description:
 
-include::ce-overview.asciidoc[]
+include::ce-overview.asciidoc[leveloffset=+1]
 
-include::ce-tutorial.asciidoc[]
+include::ce-tutorial.asciidoc[leveloffset=+1]
 
-include::ce-topic-api.asciidoc[]
+include::ce-topic-api.asciidoc[leveloffset=+1]
 
-include::ce-collaboration-avatar-group.asciidoc[]
+include::ce-collaboration-avatar-group.asciidoc[leveloffset=+1]
 
-include::ce-collaboration-binder.asciidoc[]
+include::ce-collaboration-binder.asciidoc[leveloffset=+1]
