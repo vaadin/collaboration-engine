@@ -1,6 +1,5 @@
 = Collaboration Engine
-1.0.0 Alpha 11 documentation
-:revdate: 2020-09-24
+1.0.0
 :sectnums:
 :toc:
 :toclevels: 4
