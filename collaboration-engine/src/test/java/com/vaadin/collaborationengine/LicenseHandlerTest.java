@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,23 +27,28 @@ import com.vaadin.collaborationengine.util.EagerConnectionContext;
 
 public class LicenseHandlerTest {
 
-    public class LicenseHandlerWithMonthControl extends LicenseHandler {
+    public static class MockedLicenseHandler extends LicenseHandler {
 
-        @Override
-        protected YearMonth getCurrentMonth() {
-            return configuredYearMonth;
+        private LocalDate configuredCurrentDate = LocalDate.of(2020, 5, 1);
+
+        protected void setCurrentDate(LocalDate currentDate) {
+            configuredCurrentDate = currentDate;
         }
 
-        protected void setCurrentMonth(int year, int month) {
-            configuredYearMonth = YearMonth.of(year, month);
+        @Override
+        public LocalDate getCurrentDate() {
+            return configuredCurrentDate;
+        }
+
+        public YearMonth getCurrentMonth() {
+            return YearMonth.from(configuredCurrentDate);
         }
     }
 
     private Path statsFilePath;
     private Path licenseFilePath;
 
-    private YearMonth configuredYearMonth = YearMonth.of(2020, 5);
-    private LicenseHandlerWithMonthControl licenseHandler;
+    private MockedLicenseHandler licenseHandler;
     private CollaborationEngine ce;
 
     @Before
@@ -64,7 +70,7 @@ public class LicenseHandlerTest {
         // Set quota to 3
         writeToLicenseFile("{\"quota\":3,\"endDate\":\"2222-01-01\"}");
 
-        licenseHandler = new LicenseHandlerWithMonthControl();
+        licenseHandler = new MockedLicenseHandler();
 
         ce = new CollaborationEngine(true, (topicId, isActive) -> {
             // NO-OP
@@ -84,19 +90,24 @@ public class LicenseHandlerTest {
         Map<YearMonth, Set<String>> statistics = this.licenseHandler
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
-        Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
-        Assert.assertEquals(1, statistics.get(configuredYearMonth).size());
         Assert.assertTrue(
-                statistics.get(configuredYearMonth).contains("steve"));
+                statistics.containsKey(this.licenseHandler.getCurrentMonth()));
+        Assert.assertEquals(1,
+                statistics.get(this.licenseHandler.getCurrentMonth()).size());
+        Assert.assertTrue(statistics.get(this.licenseHandler.getCurrentMonth())
+                .contains("steve"));
         this.licenseHandler.registerUser("bob");
 
         statistics = this.licenseHandler.getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
-        Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
-        Assert.assertEquals(2, statistics.get(configuredYearMonth).size());
         Assert.assertTrue(
-                statistics.get(configuredYearMonth).contains("steve"));
-        Assert.assertTrue(statistics.get(configuredYearMonth).contains("bob"));
+                statistics.containsKey(this.licenseHandler.getCurrentMonth()));
+        Assert.assertEquals(2,
+                statistics.get(this.licenseHandler.getCurrentMonth()).size());
+        Assert.assertTrue(statistics.get(this.licenseHandler.getCurrentMonth())
+                .contains("steve"));
+        Assert.assertTrue(statistics.get(this.licenseHandler.getCurrentMonth())
+                .contains("bob"));
     }
 
     @Test
@@ -107,8 +118,10 @@ public class LicenseHandlerTest {
         Map<YearMonth, Set<String>> statistics = this.licenseHandler
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
-        Assert.assertTrue(statistics.keySet().contains(configuredYearMonth));
-        Set<String> usersInMonth = statistics.get(configuredYearMonth);
+        Assert.assertTrue(
+                statistics.containsKey(this.licenseHandler.getCurrentMonth()));
+        Set<String> usersInMonth = statistics
+                .get(this.licenseHandler.getCurrentMonth());
         Assert.assertEquals(2, usersInMonth.size());
         Assert.assertTrue(usersInMonth.contains("steve"));
         Assert.assertTrue(usersInMonth.contains("bob"));
@@ -118,7 +131,7 @@ public class LicenseHandlerTest {
     public void registerUser_monthChanges_userIsReAdded() {
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
-        licenseHandler.setCurrentMonth(2020, 6);
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 6, 1));
         licenseHandler.registerUser("steve");
 
         Map<YearMonth, Set<String>> statistics = this.licenseHandler
@@ -126,7 +139,7 @@ public class LicenseHandlerTest {
         YearMonth firstMonth = YearMonth.of(2020, 5);
         YearMonth secondMonth = YearMonth.of(2020, 6);
         Assert.assertEquals(2, statistics.keySet().size());
-        Assert.assertTrue(statistics.keySet().contains(firstMonth));
+        Assert.assertTrue(statistics.containsKey(firstMonth));
         Assert.assertEquals(2, statistics.get(firstMonth).size());
         Assert.assertTrue(statistics.get(firstMonth).contains("steve"));
         Assert.assertTrue(statistics.get(firstMonth).contains("bob"));
@@ -141,7 +154,7 @@ public class LicenseHandlerTest {
         Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
                 .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
-        Assert.assertTrue(statistics.keySet().contains(YearMonth.now()));
+        Assert.assertTrue(statistics.containsKey(YearMonth.now()));
         Set<String> currentMonth = statistics.get(YearMonth.now());
         Assert.assertEquals(1, currentMonth.size());
         Assert.assertTrue(currentMonth.contains("steve"));
@@ -150,58 +163,71 @@ public class LicenseHandlerTest {
     @Test
     public void noStatsFile_initStatistics_hasEmptyMap() throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler stats = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler();
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
-        Assert.assertEquals(Collections.emptyMap(), stats.getStatistics());
+        Assert.assertEquals(Collections.emptyMap(),
+                licenseHandler.getStatistics());
+    }
+
+    @Test
+    public void noStatsFile_initStatistics_hasNullGracePeriodStart()
+            throws IOException {
+        Files.deleteIfExists(statsFilePath);
+        LicenseHandler licenseHandler = new LicenseHandler();
+        Assert.assertFalse("Expected the stats file not to exist.",
+                Files.exists(statsFilePath));
+        Assert.assertNull("Grace period start should have been unset",
+                licenseHandler.statistics.gracePeriodStart);
     }
 
     @Test
     public void noStatsFile_registerUser_statsFileCreated() throws IOException {
         Files.deleteIfExists(statsFilePath);
-        licenseHandler.setCurrentMonth(2020, 2);
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 2, 1));
         licenseHandler.registerUser("steve");
-        assertStatsFileContent("{\"statistics\":{\"2020-02\":[\"steve\"]}}");
+        assertStatsFileContent(
+                "{\"statistics\":{\"2020-02\":[\"steve\"]},\"gracePeriodStart\":null}");
     }
 
     @Test
     public void statsFileHasData_initStatistics_readsDataFromFile()
             throws IOException {
         writeToStatsFile("{\"statistics\":{\"2000-01\":[\"bob\"]}}");
-        LicenseHandler stats = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler();
 
-        Assert.assertEquals(1, stats.getStatistics().size());
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(Collections.singleton("bob"),
-                stats.getStatistics().get(YearMonth.of(2000, 1)));
+                licenseHandler.getStatistics().get(YearMonth.of(2000, 1)));
     }
 
     @Test
     public void statsFileHasData_initStatistics_registerUser_allDataIncludedInFile()
             throws IOException {
-        writeToStatsFile("{\"statistics\":{\"2002-01\":[\"bob\"]}}");
-        LicenseHandlerWithMonthControl stats = new LicenseHandlerWithMonthControl();
-        stats.setCurrentMonth(2002, 1);
-        stats.registerUser("steve");
-        Assert.assertEquals(1, stats.getStatistics().size());
+        writeToStatsFile("{\"statistics\":{\"2020-01\":[\"bob\"]}}");
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler();
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 1, 1));
+        licenseHandler.registerUser("steve");
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(new HashSet<>(Arrays.asList("bob", "steve")),
-                stats.getStatistics().get(YearMonth.of(2002, 1)));
+                licenseHandler.getStatistics().get(YearMonth.of(2020, 1)));
         assertStatsFileContent(
-                "{\"statistics\":{\"2002-01\":[\"bob\",\"steve\"]}}");
+                "{\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},\"gracePeriodStart\":null}");
     }
 
     @Test
     public void registerMultipleUsersAndMonths_writeToFile_readFromFile() {
-        licenseHandler.setCurrentMonth(2020, 2);
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 2, 1));
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
         licenseHandler.registerUser("steve");
 
-        licenseHandler.setCurrentMonth(2020, 3);
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 3, 1));
         licenseHandler.registerUser("steve");
 
         assertStatsFileContent(
                 "{\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
-                        + "\"2020-03\":[\"steve\"]}}");
+                        + "\"2020-03\":[\"steve\"]},\"gracePeriodStart\":null}");
 
         Map<YearMonth, Set<String>> newStats = new LicenseHandler()
                 .getStatistics();
@@ -254,40 +280,26 @@ public class LicenseHandlerTest {
     }
 
     @Test
-    public void registerUser_quotaExceeded_userNotRegistered() {
-        List<String> userIds = generateIds(5);
-        userIds.forEach(licenseHandler::registerUser);
-
-        Set<String> expected = new HashSet<>(userIds.subList(0, 3));
-
-        Assert.assertEquals(1, licenseHandler.getStatistics().size());
-        Assert.assertEquals(expected, licenseHandler.getStatistics()
-                .get(licenseHandler.getCurrentMonth()));
-    }
-
-    @Test
-    public void openTopicConnection_quotaExceeded_connectionNotActivated() {
+    public void openTopicConnection_effectiveQuotaExceeded_connectionNotActivated() {
+        List<String> users = generateIds(35);
         List<String> usersWithConnectionActivated = new ArrayList<>();
 
-        generateIds(5).forEach(userId -> {
-            ce.openTopicConnection(new EagerConnectionContext(), "topic",
-                    new UserInfo(userId), topicConnection -> {
-                        usersWithConnectionActivated.add(userId);
-                        return null;
-                    });
-        });
+        users.forEach(
+                userId -> ce.openTopicConnection(new EagerConnectionContext(),
+                        "topic", new UserInfo(userId), topicConnection -> {
+                            usersWithConnectionActivated.add(userId);
+                            return null;
+                        }));
 
-        Assert.assertEquals(Arrays.asList("0", "1", "2"),
-                usersWithConnectionActivated);
+        Assert.assertEquals(users.subList(0, 30), usersWithConnectionActivated);
     }
 
     @Test
-    public void openTopicConnection_quotaExceededButUserHasSeat_connectionActivated() {
-        List<String> userIds = generateIds(5);
-        userIds.forEach(userId -> {
-            ce.openTopicConnection(new EagerConnectionContext(), "topic",
-                    new UserInfo(userId), topicConnection -> null);
-        });
+    public void openTopicConnection_effectiveQuotaExceededButUserHasSeat_connectionActivated() {
+        List<String> userIds = generateIds(35);
+        userIds.forEach(userId -> ce.openTopicConnection(
+                new EagerConnectionContext(), "topic", new UserInfo(userId),
+                topicConnection -> null));
 
         AtomicBoolean connectionActivated = new AtomicBoolean(false);
         ce.openTopicConnection(new EagerConnectionContext(), "topic",
@@ -298,6 +310,161 @@ public class LicenseHandlerTest {
                 });
 
         Assert.assertTrue(connectionActivated.get());
+    }
+
+    @Test
+    public void registerUser_normalQuotaFullNoGraceNewUserEnters_graceStartedAndAccessGranted() {
+        registerUsers(3);
+        Assert.assertNull("Grace period was expected to not have started",
+                licenseHandler.statistics.gracePeriodStart);
+        boolean wasAccessGranted = licenseHandler.registerUser("bob");
+        Assert.assertTrue(
+                "Was not able to register a new person with the grace period",
+                wasAccessGranted);
+        Assert.assertNotNull(
+                "Grace period was not automatically started from going over the limit",
+                licenseHandler.statistics.gracePeriodStart);
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(4, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void registerUser_graceOngoingNewUserEnters_accessGranted() {
+        registerUsers(4);
+        Assert.assertNotNull("Grace period was expected to be ongoing",
+                licenseHandler.statistics.gracePeriodStart);
+        boolean wasAccessGranted = licenseHandler.registerUser("bob");
+        Assert.assertTrue(
+                "Was not able to register a new person with the grace period",
+                wasAccessGranted);
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(5, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void registerUser_normalQuotaFullNoGraceExistingUserEnters_accessGrantedNoGracePeriod() {
+        List<String> users = registerUsers(3);
+        Assert.assertNull("Grace period was expected to not have started",
+                licenseHandler.statistics.gracePeriodStart);
+        boolean wasAccessGranted = licenseHandler.registerUser(users.get(0));
+        Assert.assertTrue("Was not able to register an existing user",
+                wasAccessGranted);
+        Assert.assertNull("Grace period was expected to not have started",
+                licenseHandler.statistics.gracePeriodStart);
+    }
+
+    @Test
+    public void registerUser_tenTimesQuotaAvailableInGrace_accessGranted() {
+        List<String> users = generateIds(30);
+        for (String user : users) {
+            Assert.assertTrue("User wasn't given access",
+                    licenseHandler.registerUser(user));
+        }
+        Assert.assertEquals(30, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void registerUser_usersExceedingGraceQuota_accessDenied() {
+        registerUsers(30);
+        boolean wasAccessGranted = licenseHandler.registerUser("steve");
+        Assert.assertFalse("User should have been denied access",
+                wasAccessGranted);
+        Assert.assertEquals(30, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void registerUser_graceQuotaFullNormalQuotaUserReturns_accessGranted() {
+        List<String> users = registerUsers(30);
+        boolean wasAccessGranted = licenseHandler.registerUser(users.get(1));
+        Assert.assertTrue("User should have been given access",
+                wasAccessGranted);
+        Assert.assertEquals(30, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void registerUser_graceQuotaFullGraceQuotaUserReturns_accessGranted() {
+        List<String> users = registerUsers(30);
+        boolean wasAccessGranted = licenseHandler.registerUser(users.get(7));
+        Assert.assertTrue("User should have been given access",
+                wasAccessGranted);
+        Assert.assertEquals(30, licenseHandler.getStatistics()
+                .get(licenseHandler.getCurrentMonth()).size());
+    }
+
+    @Test
+    public void unSetGracePeriodReadFromFile_gracePeriodIsNull()
+            throws IOException {
+        writeToStatsFile(
+                "{\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\""
+                        + "]}," + "\"gracePeriodStart\":null}");
+        LicenseHandler licenseHandler = new LicenseHandler();
+        Assert.assertNull(licenseHandler.statistics.gracePeriodStart);
+    }
+
+    @Test
+    public void setGracePeriodReadFromFile_gracePeriodIsSet()
+            throws IOException {
+        writeToStatsFile(
+                "{\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\","
+                        + "\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\","
+                        + "\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"]},"
+                        + "\"gracePeriodStart\":\"2020-10-28\"}");
+        LicenseHandler licenseHandler = new LicenseHandler();
+        Assert.assertEquals(LocalDate.of(2020, 10, 28),
+                licenseHandler.statistics.gracePeriodStart);
+    }
+
+    @Test
+    public void registerUser_lastDayOfGracePeriodNewUserEnters_accessGranted()
+            throws IOException {
+        LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(30);
+        Assert.assertTrue("User should have been given access",
+                licenseHandler.registerUser("dean"));
+    }
+
+    @Test
+    public void registerUser_gracePeriodExpiredNewUserEnters_accessDenied()
+            throws IOException {
+        LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(31);
+        Assert.assertFalse("User should have been denied access",
+                licenseHandler.registerUser("dean"));
+    }
+
+    @Test
+    public void registerUser_gracePeriodExpiredNormalQuotaUserEnters_accessGranted()
+            throws IOException {
+        LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(31);
+        Assert.assertTrue("User should have been given access",
+                licenseHandler.registerUser("userId-2"));
+    }
+
+    @Test
+    public void registerUser_gracePeriodExpiredGraceQuotaUserEnters_accessDenied()
+            throws IOException {
+        LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(31);
+        Assert.assertFalse("User should have been denied access",
+                licenseHandler.registerUser("userId-7"));
+    }
+
+    private LicenseHandler getLicenseHandlerWithGracePeriod(
+            int daysSinceGracePeriodStarted) throws IOException {
+        LocalDate dateNow = LocalDate.of(2020, 6, 10);
+        LocalDate graceStart = dateNow.minusDays(daysSinceGracePeriodStarted);
+
+        writeToStatsFile("{\"statistics\":" + "{\""
+                + YearMonth.from(dateNow).minusMonths(1)
+                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"], \""
+                + YearMonth.from(dateNow)
+                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"] },"
+                + "\"gracePeriodStart\":\"" + graceStart + "\"}");
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler();
+        licenseHandler.setCurrentDate(dateNow);
+        return licenseHandler;
     }
 
     private void assertStatsFileContent(String expected) {
@@ -322,5 +489,11 @@ public class LicenseHandlerTest {
     private List<String> generateIds(int count) {
         return IntStream.range(0, count).mapToObj(String::valueOf)
                 .collect(Collectors.toList());
+    }
+
+    private List<String> registerUsers(int i) {
+        List<String> users = generateIds(i);
+        users.forEach(licenseHandler::registerUser);
+        return users;
     }
 }

@@ -12,21 +12,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.YearMonth;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 
 class FileHandler {
 
@@ -35,8 +34,6 @@ class FileHandler {
 
     static Path dataDirPath = DEFAULT_DATA_DIR;
 
-    private static final String STATISTICS_JSON_KEY = "statistics";
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Path statsFilePath;
@@ -44,6 +41,11 @@ class FileHandler {
 
     FileHandler() {
         objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setVisibility(PropertyAccessor.FIELD,
+                Visibility.NON_PRIVATE);
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+        objectMapper.setDateFormat(df);
+
         statsFilePath = createStatsFilePath(dataDirPath);
         licenseFilePath = createLicenseFilePath(dataDirPath);
     }
@@ -56,23 +58,16 @@ class FileHandler {
         return Paths.get(dirPath.toString(), "ce-license.json");
     }
 
-    Map<YearMonth, List<String>> readStats() {
-        JsonNode json = readFileAsJson(statsFilePath)
-                .orElse(objectMapper.createObjectNode());
-        JsonNode statisticsJson = json.get(STATISTICS_JSON_KEY);
-        if (statisticsJson == null) {
-            return Collections.emptyMap();
+    void writeStats(StatisticsInfo stats) {
+        try {
+            objectMapper.writeValue(statsFilePath.toFile(), stats);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Collaboration Engine wasn't able to write statistics into file at '"
+                            + statsFilePath
+                            + "'. Check that the file is readable by the app, and not locked.",
+                    e);
         }
-        return objectMapper.convertValue(statisticsJson,
-                new TypeReference<Map<YearMonth, List<String>>>() {
-                });
-    }
-
-    void writeStats(Map<YearMonth, Set<String>> userIdsPerMonth) {
-        ObjectNode json = objectMapper.createObjectNode();
-        json.set(STATISTICS_JSON_KEY,
-                objectMapper.valueToTree(userIdsPerMonth));
-        writeJsonToFile(json, statsFilePath);
     }
 
     LicenseInfo readLicenseFile() {
@@ -88,6 +83,20 @@ class FileHandler {
                             + licenseFilePath + "'.",
                     e);
         }
+    }
+
+    StatisticsInfo readStatsFile() {
+        return readFileAsJson(statsFilePath).map(statsJson -> {
+            try {
+                return objectMapper.treeToValue(statsJson,
+                        StatisticsInfo.class);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException(
+                        "Failed to parse the license information from file '"
+                                + licenseFilePath + "'.",
+                        e);
+            }
+        }).orElseGet(() -> new StatisticsInfo(Collections.emptyMap(), null));
     }
 
     private Optional<JsonNode> readFileAsJson(Path filePath) {
@@ -106,18 +115,6 @@ class FileHandler {
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Collaboration Engine wasn't able to read the file at '"
-                            + filePath
-                            + "'. Check that the file is readable by the app, and not locked.",
-                    e);
-        }
-    }
-
-    private void writeJsonToFile(JsonNode json, Path filePath) {
-        try {
-            objectMapper.writeValue(filePath.toFile(), json);
-        } catch (IOException e) {
-            throw new IllegalStateException(
-                    "Collaboration Engine wasn't able to write to the file at '"
                             + filePath
                             + "'. Check that the file is readable by the app, and not locked.",
                     e);
