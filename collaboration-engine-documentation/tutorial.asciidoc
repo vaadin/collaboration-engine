@@ -6,7 +6,6 @@ layout: page
 
 [[ce.tutorial]]
 = Getting Started with Collaboration Engine
-:sectnums:
 
 This tutorial shows basic steps to set up Collaboration Engine in your Vaadin project
 and add the following collaboration features to a simple form:
