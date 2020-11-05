@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,6 +33,14 @@ public class CollaborationEngineTest {
         connectionCallback = topicConnection -> () -> {
             // no impl
         };
+    }
+
+    @Test
+    public void correctVersionPassedToUsageStatistics() {
+        String artifactVersion = System
+                .getProperty("collaboration-engine.version");
+        Assert.assertThat(artifactVersion, CoreMatchers
+                .startsWith(CollaborationEngine.COLLABORATION_ENGINE_VERSION));
     }
 
     @Test

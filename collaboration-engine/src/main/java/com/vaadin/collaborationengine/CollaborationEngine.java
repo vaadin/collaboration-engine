@@ -31,7 +31,7 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationEngine {
 
     static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
-    static final String COLLABORATION_ENGINE_VERSION = "1.0";
+    static final String COLLABORATION_ENGINE_VERSION = "2.0";
 
     private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
 
