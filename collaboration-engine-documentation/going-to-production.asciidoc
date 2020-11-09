@@ -1,0 +1,137 @@
+---
+title: Licensing and taking app to production
+order: 4
+layout: page
+---
+
+
+[[ce.production]]
+= Taking your app into production
+
+Using Collaboration Engine adds a few extra steps when you https://vaadin.com/docs/flow/production/tutorial-production-mode-basic.html[take your app to production].
+
+You need to:
+
+. obtain a license file with an end-user quota,
+. configure where Collaboration Engine files are stored and
+. store the license file in the right location
+
+[[ce.production.obtain-license]]
+== Obtain a license file with an end-user quota
+
+First, you need to have a subscription with a large enough user limit to meet your needs.
+Vaadin will provide the license file to you.
+If you do not have a license yet, https://vaadin.com/collaboration/#contact[request a license via the web page] to get in contact with Vaadin.
+
+The license file name is `ce-license.json`. 
+It defines how many unique end-users can use collaborative features per month and the license’s expiration date.
+
+[[ce.production.configure-data-dir]]
+== Configure where Collaboration Engine files are stored
+
+You need to configure which directory should be used by Collaboration Engine to store files.
+In version 2.0, the only file that Collaboration Engine uses is the `ce-license.json`, but in upcoming versions the directory will be used to e.g. store automatic usage statistics and topic data.
+You can configure the directory path by either:
+
+. adding the path to your code or 
+. passing it in as a parameter on the server startup.
+
+Configuring the data directory in the code as a servlet parameter:
+```java 
+@WebServlet(initParams = {
+        @WebInitParam(name = "ce.data.dir", value = "~/.vaadin/ce/") })
+public class MyServlet extends VaadinServlet {
+}
+```
+
+Configuring the data directory when starting up the server:
+
+```
+mvn jetty:run -Dce.data.dir=~/.vaadin/ce
+```
+
+See https://vaadin.com/docs/v14/flow/advanced/tutorial-flow-runtime-configuration.html[Changing the Application Behavior with Runtime Configuration] for more information.
+
+The directory should be both readable and writable by the operating system user running the Vaadin application.
+
+[[ce.production.files-to-server]]
+== Store the license file in the right location
+
+After obtaining the license file and the data directory, you need to put the license file in that directory on the server.
+For example, if you configured the folder to be `~/collaboration-engine`, then place the license file so that `~/collaboration-engine/ce-license.json` can be read by the application.
+
+Collaboration Engine will use the file to verify you have a proper license. 
+The app does not require an internet connection to Vaadin servers to verify the license.
+
+[[ce.production.monthly-quota]]
+= Monthly end-user quota
+
+Your license includes a quota for how many end-users are supported, for example, a limit of 1.000 end-users.
+Collaboration Engine counts how many end-users use its features during each calendar month.
+The count of end-users will start over on the 1st of each month.
+
+[[ce.production.end-user]]
+== Definition of an end-user
+
+When you use any Collaboration Engine features, you have to provide a `UserInfo` object with a unique ID.
+
+```java
+String userId = "steve@example.com";
+String name = "Steve";
+UserInfo userInfo = new UserInfo(userId, name);
+CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
+        userInfo, "app");
+add(avatarGroup);
+```
+
+Collaboration Engine records the ID of each user that accesses collaborative features in the ongoing month and counts towards your quota for the current month. 
+Each user ID is counted only once per month.
+
+[[ce.production.over-quota]]
+== What happens if I go over the quota?
+
+When you exceed the limit the first time, nothing will change from the end-user's perspective.
+Collaboration Engine will start a 30 day grace period, during which the quota is ten times bigger.
+The grace period gives you time to react to exceeding your limit without impacting your application in any way.
+For example, if you have obtained a license for a 500 end-user quota, your effective quota will be 5.000 end-users during the grace period.
+After 30 days, your effective quota will go back to 500, and you won’t get another grace period until the next billing period.
+
+If the number of monthly users exceeds the 10x quota during the grace period, or the normal quota after the grace period is over, the collaborative features will be disabled for the exceeding users.
+Your app will still continue to work, but `CollaborationAvatarGroup` will only show the user's own avatar, and forms built with `CollaborationBinder` will not show edits made by other end-users.
+The end-users who are registered within the allowed quota will have collaborative features available throughout the month.
+
+For example, you have a quota for 500 end-users, you have used your grace period, and 520 end-users have used collaborative features this month.
+The first 500 end-users can collaborate throughout the month. Users 501-520 can use the app, but the app will work like Collaboration Engine would not be in use. They can only see their own presence and edits.
+When the calendar month changes, counting starts over, and the first 500 end-users will again get full access for the whole month.
+
+[[ce.production.when-in-grace]]
+== What should I do when I have entered the grace period?
+
+It seems that you have a higher demand than expected when obtaining the license.
+We recommend that you get a new license with a higher quota to have collaborative features available for all your users before the grace period expires.
+https://vaadin.com/collaboration/#contact[Contact Vaadin] to get a new license file with a higher quota.
+You can change your quota at any point in time.
+When you replace the license file with the new one, Collaboration Engine will mark your grace period as unused.
+If you exceed your new quota in the future, you will receive a new 30 day grace period.
+
+[[ce.production.restrict-usage]]
+== Can I restrict collaborative features to a subset of my end-users?
+
+Yes. Collaboration Engine will only count those end-users whose `UserInfo` objects are passed to collaborative features. You can limit usage to a subset of your users in two different ways.
+
+. Only use Collaboration Engine in views that you have restricted with user access. For example, if you only use collaborative features in the admin views, only those users who access the admin views will be counted.
+. Check the details of the user before initializing the collaboration features. For example, by checking the role or privileges or the user, you can decide in code if the users should have collaborative features enabled or not.
+
+An example of how to enable collaboration by checking user permissions:
+```java
+User userEntity = userService.getCurrentUser();
+if (userEntity.getRoles().contains(Role.ADMIN)) {
+    UserInfo userInfo = new UserInfo(userEntity.getId(),
+            userEntity.getName(), userEntity.getImageUrl());
+
+    CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
+            userInfo, "avatars");
+
+    add(avatarGroup);
+}
+```

@@ -1,5 +1,7 @@
 package com.vaadin;
 
+import java.util.List;
+
 /**
  * User entity class used in documentation examples.
  */
@@ -19,6 +21,7 @@ class User {
     private String name;
     private String imageUrl;
     private byte[] image;
+    private List<Role> roles;
 
     public String getId() {
         return id;
@@ -50,5 +53,13 @@ class User {
 
     public void setImage(byte[] image) {
         this.image = image;
+    }
+
+    public List<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<Role> roles) {
+        this.roles = roles;
     }
 }
