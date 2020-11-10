@@ -483,7 +483,8 @@ public class LicenseHandlerTest {
     }
 
     private void writeToLicenseFile(String content) throws IOException {
-        Files.write(licenseFilePath, content.getBytes());
+        String wrappedContent = String.format("{\"content\":%s}", content);
+        Files.write(licenseFilePath, wrappedContent.getBytes());
     }
 
     private List<String> generateIds(int count) {

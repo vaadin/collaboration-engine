@@ -76,7 +76,8 @@ class FileHandler {
                         "Failed to read the license file at '" + licenseFilePath
                                 + "'."));
         try {
-            return objectMapper.treeToValue(licenseJson, LicenseInfo.class);
+            return objectMapper.treeToValue(licenseJson.get("content"),
+                    LicenseInfo.class);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(
                     "Failed to parse the license information from file '"
