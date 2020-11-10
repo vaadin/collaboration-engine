@@ -38,6 +38,7 @@
         <vaadin.version>14.3.0</vaadin.version>
         <avatar.version>1.0.1</avatar.version>
         <jackson.version>2.11.2</jackson.version>
+        <junit.version>4.12</junit.version>
 
         <jetty.version>9.4.28.v20200408</jetty.version>
     </properties>
@@ -51,6 +52,11 @@
                 <scope>import</scope>
                 <version>${vaadin.version}</version>
             </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+        </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -167,6 +173,7 @@
                 <module>collaboration-engine-demo</module>
                 <module>collaboration-engine-buildtools</module>
                 <module>collaboration-engine-test</module>
+                <module>collaboration-engine-license-generator</module>
             </modules>
         </profile>
     </profiles>
