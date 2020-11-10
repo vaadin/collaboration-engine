@@ -8,8 +8,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
@@ -102,17 +102,11 @@ class FileHandler {
 
     private Optional<JsonNode> readFileAsJson(Path filePath) {
         try {
-            if (!filePath.toFile().exists()) {
+            File file = filePath.toFile();
+            if (!file.exists()) {
                 return Optional.empty();
             }
-            byte[] fileContent = Files.readAllBytes(filePath);
-            if (fileContent.length == 0) {
-                return Optional.empty();
-            }
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.registerModule(new JavaTimeModule());
-
-            return Optional.of(mapper.readTree(Files.readAllBytes(filePath)));
+            return Optional.of(objectMapper.readTree(file));
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Collaboration Engine wasn't able to read the file at '"
