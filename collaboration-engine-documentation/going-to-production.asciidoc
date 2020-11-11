@@ -33,21 +33,79 @@ You need to configure which directory should be used by Collaboration Engine to 
 In version 2.0, the only file that Collaboration Engine uses is the `ce-license.json`, but in upcoming versions the directory will be used to e.g. store automatic usage statistics and topic data.
 You can configure the directory path by either:
 
-. adding the path to your code or 
+. configuring the data directory in project files or
 . passing it in as a parameter on the server startup.
 
-Configuring the data directory in the code as a servlet parameter:
-```java 
-@WebServlet(initParams = {
-        @WebInitParam(name = "ce.data.dir", value = "~/.vaadin/ce/") })
-public class MyServlet extends VaadinServlet {
-}
+If both are present, then the server startup parameter will be used.
+
+=== Configuring the data directory in project files
+
+Storing the path into the project files is a good way if you only deploy into one environment and the folder is always the same.
+
+==== Spring Boot applications
+
+If you have a Spring Boot application, you can configure the path in `pom.xml` for the `spring-boot-maven-plugin` plugin as a system property.
+
+```xml
+<project>
+  ...
+  <build>
+    ...
+    <plugins>
+      ...
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <configuration>
+          ...
+          <systemPropertyVariables>
+            <vaadin.ce.dataDir>~/collaboration-engine</vaadin.ce.dataDir>
+          </systemPropertyVariables>
+        </configuration>
+        ...
+      </plugin>
+      ...
+    </plugins>
+    ...
+  </build>
+  ...
+</project>
 ```
 
-Configuring the data directory when starting up the server:
+==== WAR applications
 
+If you build your app as a war file, you should include a `web.xml` file to your project as `src/main/webapp/WEB-INF/web.xml` with the following content:
+
+```xml
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+    <context-param>
+        <param-name>ce.dataDir</param-name>
+        <param-value>~/collaboration-engine</param-value>
+    </context-param>
+
+</web-app>
 ```
-mvn jetty:run -Dce.data.dir=~/.vaadin/ce
+
+=== Configuring the data directory on server startup
+
+As another option, you can pass the data directory as a parameter on server startup.
+
+==== Spring Boot applications
+```
+mvn spring-boot:run -Dspring-boot.run.jvmArguments=-Dvaadin.ce.dataDir=~/collaboration-engine
+```
+
+==== Other servlet containers
+You can pass the data directory parameter in as a context parameter to the servlet container. Refer to your servlet container's manual on how to provide it. The context parameters that needs to be set is `vaadin.ce.dataDir` and the value should be the directory path.
+
+Here is an example on how you would pass the context parameter in when using Jetty.
+```
+mvn jetty:run -Dvaadin.ce.dataDir=~/collaboration-engine
 ```
 
 See https://vaadin.com/docs/v14/flow/advanced/tutorial-flow-runtime-configuration.html[Changing the Application Behavior with Runtime Configuration] for more information.

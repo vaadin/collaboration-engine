@@ -1,13 +1,9 @@
 package com.vaadin;
 
-import javax.servlet.annotation.WebInitParam;
-import javax.servlet.annotation.WebServlet;
-
 import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.server.VaadinServlet;
 
 /**
  * Code snippets used in licensing/production documentation.
@@ -19,11 +15,6 @@ public class ProductionDocumentation extends VerticalLayout {
     public ProductionDocumentation() {
         definitionOfEndUser();
         checkUserPermissions();
-    }
-
-    @WebServlet(initParams = {
-            @WebInitParam(name = "ce.data.dir", value = "~/.vaadin/ce/") })
-    public class MyServlet extends VaadinServlet {
     }
 
     private void definitionOfEndUser() {

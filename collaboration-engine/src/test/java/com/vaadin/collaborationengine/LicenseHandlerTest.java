@@ -18,7 +18,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,18 +49,17 @@ public class LicenseHandlerTest {
 
     private MockedLicenseHandler licenseHandler;
     private CollaborationEngine ce;
+    private Path testDataDir = Paths.get(System.getProperty("user.home"),
+            ".vaadin", "ce-tests");
 
     @Before
     public void init() throws IOException {
-        FileHandler.dataDirPath = Paths.get(System.getProperty("user.home"),
-                ".vaadin", "ce-tests");
-        if (!FileHandler.dataDirPath.toFile().exists()) {
-            Files.createDirectories(FileHandler.dataDirPath);
+        FileHandler.setDataDirectorySupplier(() -> testDataDir);
+        if (!testDataDir.toFile().exists()) {
+            Files.createDirectories(testDataDir);
         }
-        statsFilePath = FileHandler
-                .createStatsFilePath(FileHandler.dataDirPath);
-        licenseFilePath = FileHandler
-                .createLicenseFilePath(FileHandler.dataDirPath);
+        statsFilePath = FileHandler.createStatsFilePath(testDataDir);
+        licenseFilePath = FileHandler.createLicenseFilePath(testDataDir);
 
         // Delete the stats file before each run to make sure we can test with a
         // clean state
@@ -75,11 +73,6 @@ public class LicenseHandlerTest {
         ce = new CollaborationEngine(true, (topicId, isActive) -> {
             // NO-OP
         });
-    }
-
-    @After
-    public void cleanUp() {
-        FileHandler.dataDirPath = FileHandler.DEFAULT_DATA_DIR;
     }
 
     @Test

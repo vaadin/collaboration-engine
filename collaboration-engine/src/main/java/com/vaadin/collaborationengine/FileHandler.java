@@ -16,6 +16,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -28,11 +29,7 @@ import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 
 class FileHandler {
-
-    static final Path DEFAULT_DATA_DIR = Paths.get(
-            System.getProperty("user.home"), ".vaadin", "collaboration-engine");
-
-    static Path dataDirPath = DEFAULT_DATA_DIR;
+    private static Supplier<Path> dataDirPathSupplier;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -45,9 +42,9 @@ class FileHandler {
                 Visibility.NON_PRIVATE);
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
         objectMapper.setDateFormat(df);
-
-        statsFilePath = createStatsFilePath(dataDirPath);
-        licenseFilePath = createLicenseFilePath(dataDirPath);
+        Path path = dataDirPathSupplier.get();
+        statsFilePath = createStatsFilePath(path);
+        licenseFilePath = createLicenseFilePath(path);
     }
 
     static Path createStatsFilePath(Path dirPath) {
@@ -56,6 +53,10 @@ class FileHandler {
 
     static Path createLicenseFilePath(Path dirPath) {
         return Paths.get(dirPath.toString(), "ce-license.json");
+    }
+
+    static void setDataDirectorySupplier(Supplier<Path> dataDirectorySupplier) {
+        dataDirPathSupplier = dataDirectorySupplier;
     }
 
     void writeStats(StatisticsInfo stats) {
