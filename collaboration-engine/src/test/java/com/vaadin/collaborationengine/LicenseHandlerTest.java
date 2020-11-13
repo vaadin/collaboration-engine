@@ -20,8 +20,11 @@ import java.util.stream.IntStream;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 
 public class LicenseHandlerTest {
@@ -52,6 +55,11 @@ public class LicenseHandlerTest {
     private Path testDataDir = Paths.get(System.getProperty("user.home"),
             ".vaadin", "ce-tests");
 
+    private LicenseGenerator licenseGenerator = new LicenseGenerator();
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Before
     public void init() throws IOException {
         FileHandler.setDataDirectorySupplier(() -> testDataDir);
@@ -66,13 +74,12 @@ public class LicenseHandlerTest {
         Files.deleteIfExists(statsFilePath);
 
         // Set quota to 3
-        writeToLicenseFile("{\"quota\":3,\"endDate\":\"2222-01-01\"}");
+        writeToLicenseFile(3, LocalDate.of(2222, 1, 1));
 
         licenseHandler = new MockedLicenseHandler();
 
-        ce = new CollaborationEngine(true, (topicId, isActive) -> {
-            // NO-OP
-        });
+        ce = new CollaborationEngine();
+        ce.enableLicenseCheckingAndEnforceQuota();
     }
 
     @Test
@@ -238,38 +245,106 @@ public class LicenseHandlerTest {
         new LicenseHandler();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void noLicenseFile_initCollaborationEngine_throws()
-            throws IOException {
-        Files.deleteIfExists(licenseFilePath);
-        new CollaborationEngine(true, (topicId, isActive) -> {
-            // NO-OP
-        });
+    @Test
+    public void dataDirNotConfigured_openTopicConnection_throws() {
+        FileHandler.setDataDirectorySupplier(() -> null);
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("Missing required configuration property");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
     }
 
     @Test
-    public void licenseFileHasInvalidData_initLicenseHandler_throws()
-            throws IOException {
-        for (String invalidLicenseContent : Arrays.asList("", "not json",
-                // Missing quota:
-                "{\"endDate\":\"2222-01-01\"}",
-                // Missing endDate:
-                "{\"quota\":100}",
-                // Invalid quota:
-                "{\"quota\":\"not a number\",\"endDate\":\"2222-01-01\"}",
-                // Invalid date:
-                "{\"quota\":100,\"endDate\":\"not a date\"}")) {
+    public void noDataDir_openTopicConnection_throws() {
+        FileHandler.setDataDirectorySupplier(
+                () -> Paths.get(System.getProperty("user.home"), ".vaadin",
+                        "ce-tests", "non-existing", "dir"));
 
-            writeToLicenseFile(invalidLicenseContent);
-            try {
-                new LicenseHandler();
-                Assert.fail(
-                        "Expected to throw because of invalid license file content: '"
-                                + invalidLicenseContent + "'.");
-            } catch (IllegalStateException e) {
-                // Expected
-            }
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("failed to find the license file");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
+    public void noLicenseFile_openTopicConnection_throws() throws IOException {
+        Files.deleteIfExists(licenseFilePath);
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("failed to find the license file");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
+    public void licenseFileMissingContent_openTopicConnection_throws()
+            throws IOException {
+        writeToLicenseFile("{checksum:\"foo\"}");
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("license file is not valid");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
+    public void licenseFileMissingChecksum_openTopicConnection_throws()
+            throws IOException {
+        String license = licenseGenerator.generateLicense("Foo", 100,
+                LocalDate.of(2020, 3, 4));
+        int index = license.indexOf(",\"checksum\":");
+        String licenseWithoutChecksum = license
+                .replace(license.substring(index, index + 58), "");
+        writeToLicenseFile(licenseWithoutChecksum);
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("license file is not valid");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
+    public void licenseFileTampered_openTopicConnection_throws()
+            throws IOException {
+        String license = licenseGenerator.generateLicense("Foo", 100,
+                LocalDate.of(2020, 3, 4));
+
+        String tamperedLicense = license.replace("\"quota\":100",
+                "\"quota\":200");
+
+        writeToLicenseFile(tamperedLicense);
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("license file is not valid");
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
+    public void licenseFileInvalid_openManyTopicConnections_throwsEveryTime()
+            throws IOException {
+        writeToLicenseFile("{checksum:\"foo\"}");
+
+        try {
+            ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                    new UserInfo("user-id"), topicConnection -> null);
+        } catch (IllegalStateException e) {
+            // expected
         }
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("license file is not valid");
+
+        // open a second connection
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
     }
 
     @Test
@@ -476,8 +551,14 @@ public class LicenseHandlerTest {
     }
 
     private void writeToLicenseFile(String content) throws IOException {
-        String wrappedContent = String.format("{\"content\":%s}", content);
-        Files.write(licenseFilePath, wrappedContent.getBytes());
+        Files.write(licenseFilePath, content.getBytes());
+    }
+
+    private void writeToLicenseFile(int quota, LocalDate endDate)
+            throws IOException {
+        String licenseJson = licenseGenerator.generateLicense("Test company",
+                quota, endDate);
+        writeToLicenseFile(licenseJson);
     }
 
     private List<String> generateIds(int count) {

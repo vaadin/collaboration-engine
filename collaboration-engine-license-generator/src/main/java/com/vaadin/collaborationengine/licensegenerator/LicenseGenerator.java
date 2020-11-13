@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine.licensegenerator;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -18,7 +19,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.commons.codec.binary.Base64;
 
 import com.vaadin.flow.internal.MessageDigestUtil;
 
@@ -124,8 +124,6 @@ public class LicenseGenerator {
 
     private final ObjectMapper mapper;
 
-    private final Base64 encoder = new Base64();
-
     /**
      * Creates the license-generator.
      */
@@ -168,7 +166,7 @@ public class LicenseGenerator {
     private String calculateContentChecksum(LicenseInfo content) {
         String json = serializeToJson(content);
         byte[] checksum = MessageDigestUtil.sha256(json);
-        return encoder.encodeAsString(checksum);
+        return Base64.getEncoder().encodeToString(checksum);
     }
 
     private String serializeToJson(Object object) {

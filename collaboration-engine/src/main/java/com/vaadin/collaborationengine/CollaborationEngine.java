@@ -41,8 +41,9 @@ public class CollaborationEngine {
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
 
-    private final boolean licenseCheckingEnabled;
-    private final LicenseHandler licenseHandler;
+    private boolean licenseCheckingEnabled = false;
+    private boolean licenseTermsEnforced = false;
+    private LicenseHandler licenseHandler;
 
     private final TopicActivationHandler topicActivationHandler;
 
@@ -53,17 +54,13 @@ public class CollaborationEngine {
 
     CollaborationEngine() {
         // package-protected to hide from users but to be usable in unit tests
-        this(false, (topicId, isActive) -> {
+        this((topicId, isActive) -> {
             // implement network sync to the topic
         });
     }
 
-    CollaborationEngine(boolean licenseCheckingEnabled,
-            TopicActivationHandler topicActivationHandler) {
-        this.licenseCheckingEnabled = licenseCheckingEnabled;
+    CollaborationEngine(TopicActivationHandler topicActivationHandler) {
         this.topicActivationHandler = topicActivationHandler;
-        this.licenseHandler = licenseCheckingEnabled ? new LicenseHandler()
-                : null;
     }
 
     private void updateTopicActivation(String topicId, Boolean isActive) {
@@ -144,6 +141,14 @@ public class CollaborationEngine {
                 "Callback for connection activation can't be null");
 
         if (licenseCheckingEnabled) {
+            synchronized (this) {
+                if (licenseHandler == null) {
+                    licenseHandler = new LicenseHandler();
+                }
+            }
+        }
+
+        if (licenseTermsEnforced) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
             if (!hasSeat) {
@@ -160,6 +165,25 @@ public class CollaborationEngine {
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return connection::deactivateAndClose;
+    }
+
+    /**
+     * Marks that license should be validated.
+     */
+    void enableLicenseChecking() {
+        licenseCheckingEnabled = true;
+    }
+
+    /**
+     * Marks that the license should be validated and restrictions enforced.
+     *
+     * TODO: Remove this once enabling the enforcements for real. At that point,
+     * we don't need the separate licenseTermsEnforced flag. We can just use
+     * licenseCheckingEnabled.
+     */
+    void enableLicenseCheckingAndEnforceQuota() {
+        enableLicenseChecking();
+        licenseTermsEnforced = true;
     }
 
     /**

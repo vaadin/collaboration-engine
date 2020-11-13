@@ -25,8 +25,7 @@ public class TopicActivationTest {
         component = new TestComponent();
 
         topicActivationHandler = new SpyTopicActivationHandler();
-        collaborationEngine = new CollaborationEngine(false,
-                topicActivationHandler);
+        collaborationEngine = new CollaborationEngine(topicActivationHandler);
 
         topicRegistration = collaborationEngine.openTopicConnection(component,
                 "fooTopic", SystemUserInfo.getInstance(), tc -> null);

@@ -18,10 +18,12 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 class LicenseHandler {
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     static class LicenseInfo {
         final int quota;
         final LocalDate endDate;
@@ -31,6 +33,21 @@ class LicenseHandler {
                 @JsonProperty(value = "endDate", required = true) LocalDate endDate) {
             this.quota = quota;
             this.endDate = endDate;
+        }
+    }
+
+    static class LicenseInfoWrapper {
+
+        final LicenseInfo content;
+
+        final String checksum;
+
+        @JsonCreator
+        LicenseInfoWrapper(
+                @JsonProperty(value = "content", required = true) LicenseInfo content,
+                @JsonProperty(value = "checksum", required = true) String checksum) {
+            this.content = content;
+            this.checksum = checksum;
         }
     }
 
