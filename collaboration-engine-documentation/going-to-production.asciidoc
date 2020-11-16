@@ -40,72 +40,73 @@ If both are present, then the server startup parameter will be used.
 
 === Configuring the data directory in project files
 
-Storing the path into the project files is a good way if you only deploy into one environment and the folder is always the same.
+Storing the path into the project files is a good way if you always deploy your application into the same environment and the folder does not change.
+You can provide the path as a system property within a `VaadinServiceInitListener`.
+How you register the listener depends on if you use Spring or not.
 
-==== Spring Boot applications
+==== Spring applications
 
-If you have a Spring Boot application, you can configure the path in `pom.xml` for the `spring-boot-maven-plugin` plugin as a system property.
+If you have a Spring application, you should register the `VaadinServiceInitListener` by marking it as a `@Component`.
 
-```xml
-<project>
-  ...
-  <build>
-    ...
-    <plugins>
-      ...
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${spring-boot.version}</version>
-        <configuration>
-          ...
-          <systemPropertyVariables>
-            <vaadin.ce.dataDir>~/collaboration-engine</vaadin.ce.dataDir>
-          </systemPropertyVariables>
-        </configuration>
-        ...
-      </plugin>
-      ...
-    </plugins>
-    ...
-  </build>
-  ...
-</project>
+.com.company.myapp.MyVaadinInitListener.java
+```java
+@Component
+public class MyVaadinInitListener implements VaadinServiceInitListener {
+    @Override
+    public void serviceInit(ServiceInitEvent event) {
+        System.setProperty("vaadin.ce.dataDir",
+                "/Users/steve/vaadin/collaboration-engine/");
+    }
+}
 ```
 
-==== WAR applications
+==== Other applications
 
-If you build your app as a war file, you should include a `web.xml` file to your project as `src/main/webapp/WEB-INF/web.xml` with the following content:
+The code for non-Spring applications is similar, but instead of registering the listener with `@Component`, you need to register it via Java SPI loading facility.
+You do this by providing a file, `src/main/resources/META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener` with a fully-qualified class name to your listener as content, for example, `com.company.myapp.MyVaadinInitListener`.
 
-```xml
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
-                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
-         version="3.1">
-    <context-param>
-        <param-name>ce.dataDir</param-name>
-        <param-value>~/collaboration-engine</param-value>
-    </context-param>
+image:images/service-init-listener.png[The location of the configuration file]
 
-</web-app>
+.com.company.myapp.MyVaadinInitListener.java
+```java
+public class MyVaadinInitListener implements VaadinServiceInitListener {
+    @Override
+    public void serviceInit(ServiceInitEvent event) {
+        System.setProperty("vaadin.ce.dataDir",
+                "/Users/steve/vaadin/collaboration-engine/");
+    }
+}
+```
+
+.src/main/resources/META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener
+```
+com.company.myapp.MyVaadinInitListener
 ```
 
 === Configuring the data directory on server startup
 
-As another option, you can pass the data directory as a parameter on server startup.
+As another option, you can pass the data directory as a parameter on server startup. 
+This option assumes that you have already a production-ready build available and want to run the package on the server.
+Read https://vaadin.com/docs/flow/production/tutorial-production-mode-basic.html[Preparing Your Application for Production] to learn more about building your application for production.
 
 ==== Spring Boot applications
+
 ```
-mvn spring-boot:run -Dspring-boot.run.jvmArguments=-Dvaadin.ce.dataDir=~/collaboration-engine
+java -Dvaadin.ce.dataDir=/Users/peppe/.vaadin/collaboration-engine -jar ce-dx-test-1.0-SNAPSHOT.jar
 ```
+
+Note that the system property should be before the `-jar` parameter.
 
 ==== Other servlet containers
-You can pass the data directory parameter in as a context parameter to the servlet container. Refer to your servlet container's manual on how to provide it. The context parameters that needs to be set is `vaadin.ce.dataDir` and the value should be the directory path.
+
+You can pass the data directory parameter in as a context parameter to the servlet container.
+Refer to your servlet container's manual on how to provide it.
+The context parameters that needs to be set is `vaadin.ce.dataDir` and the value should be the directory path.
 
 Here is an example on how you would pass the context parameter in when using Jetty.
+
 ```
-mvn jetty:run -Dvaadin.ce.dataDir=~/collaboration-engine
+mvn jetty:run -Dvaadin.ce.dataDir=/Users/steve/vaadin/collaboration-engine/
 ```
 
 See https://vaadin.com/docs/v14/flow/advanced/tutorial-flow-runtime-configuration.html[Changing the Application Behavior with Runtime Configuration] for more information.
@@ -116,7 +117,7 @@ The directory should be both readable and writable by the operating system user 
 == Store the license file in the right location
 
 After obtaining the license file and the data directory, you need to put the license file in that directory on the server.
-For example, if you configured the folder to be `~/collaboration-engine`, then place the license file so that `~/collaboration-engine/ce-license.json` can be read by the application.
+For example, if you configured the folder to be `/Users/steve/vaadin/collaboration-engine/`, then place the license file so that `/Users/steve/vaadin/collaboration-engine/ce-license.json` can be read by the application.
 
 Collaboration Engine will use the file to verify you have a proper license. 
 The app does not require an internet connection to Vaadin servers to verify the license.
@@ -142,7 +143,7 @@ CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
 add(avatarGroup);
 ```
 
-Collaboration Engine records the ID of each user that accesses collaborative features in the ongoing month and counts towards your quota for the current month. 
+Collaboration Engine records the ID of each user that accesses collaborative features in the ongoing month and counts towards your quota for the current month.
 Each user ID is counted only once per month.
 
 [[ce.production.over-quota]]

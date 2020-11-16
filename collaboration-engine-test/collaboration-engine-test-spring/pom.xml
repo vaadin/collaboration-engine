@@ -74,10 +74,6 @@
                 <configuration>
                     <wait>500</wait>
                     <maxAttempts>240</maxAttempts>
-                    <systemPropertyVariables>
-                        <vaadin.ce.dataDir>~/collaboration-engine
-                        </vaadin.ce.dataDir>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
 

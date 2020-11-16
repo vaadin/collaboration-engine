@@ -4,6 +4,8 @@ import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.server.ServiceInitEvent;
+import com.vaadin.flow.server.VaadinServiceInitListener;
 
 /**
  * Code snippets used in licensing/production documentation.
@@ -15,6 +17,14 @@ public class ProductionDocumentation extends VerticalLayout {
     public ProductionDocumentation() {
         definitionOfEndUser();
         checkUserPermissions();
+    }
+
+    public class MyVaadinInitListener implements VaadinServiceInitListener {
+        @Override
+        public void serviceInit(ServiceInitEvent event) {
+            System.setProperty("vaadin.ce.dataDir",
+                    "/Users/steve/vaadin/collaboration-engine/");
+        }
     }
 
     private void definitionOfEndUser() {
