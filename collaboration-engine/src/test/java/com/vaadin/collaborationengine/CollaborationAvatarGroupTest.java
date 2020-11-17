@@ -3,7 +3,6 @@ package com.vaadin.collaborationengine;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,8 +43,8 @@ public class CollaborationAvatarGroupTest {
 
         Client(int index, String topicId) {
             this.ui = new MockUI();
-            this.user = new UserInfo(UUID.randomUUID().toString(),
-                    "name" + index, "image" + index);
+            this.user = new UserInfo("id" + index, "name" + index,
+                    "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
             group = new CollaborationAvatarGroup(user, topicId);
@@ -83,17 +82,23 @@ public class CollaborationAvatarGroupTest {
 
     private Client clientInOtherTopic;
 
+    private Client clientInMultipleTabs1;
+    private Client clientInMultipleTabs2;
+
     @Before
     public void init() {
         client1 = new Client(1);
         client2 = new Client(2);
         client3 = new Client(3);
         clientInOtherTopic = new Client(4, TOPIC_ID_2);
+        clientInMultipleTabs1 = new Client(5);
+        clientInMultipleTabs2 = new Client(5);
     }
 
     @After
     public void cleanUp() {
-        Stream.of(client1, client2, client3, clientInOtherTopic)
+        Stream.of(client1, client2, client3, clientInOtherTopic,
+                clientInMultipleTabs1, clientInMultipleTabs2)
                 .forEach(Client::cleanUp);
         TestUtils.clearMap(TOPIC_ID, CollaborationAvatarGroup.MAP_NAME,
                 CollaborationAvatarGroup.MAP_KEY);
@@ -122,6 +127,16 @@ public class CollaborationAvatarGroupTest {
                 client1.getItemNames());
         Assert.assertEquals(Arrays.asList("name1", "name2"),
                 client2.getItemNames());
+    }
+
+    @Test
+    public void attachSameUserTwice_avatarDisplayedOnce() {
+        clientInMultipleTabs1.attach();
+        clientInMultipleTabs2.attach();
+        Assert.assertEquals(Arrays.asList("name5"),
+                clientInMultipleTabs1.getItemNames());
+        Assert.assertEquals(Arrays.asList("name5"),
+                clientInMultipleTabs2.getItemNames());
     }
 
     @Test
@@ -196,6 +211,25 @@ public class CollaborationAvatarGroupTest {
         List<String> expected = Arrays.asList("name2", "name3", "name1");
         Assert.assertEquals(expected, client1.getItemNames());
         Assert.assertEquals(expected, client2.getItemNames());
+    }
+
+    @Test
+    public void attachSameUserTwice_detachOne_avatarNotRemoved() {
+        clientInMultipleTabs1.attach();
+        clientInMultipleTabs2.attach();
+        clientInMultipleTabs2.detach();
+        Assert.assertEquals(Arrays.asList("name5"),
+                clientInMultipleTabs1.getItemNames());
+    }
+
+    @Test
+    public void attachSameUserTwice_detachBoth_avatarRemoved() {
+        client1.attach();
+        clientInMultipleTabs1.attach();
+        clientInMultipleTabs2.attach();
+        clientInMultipleTabs1.detach();
+        clientInMultipleTabs2.detach();
+        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
     }
 
     @Test

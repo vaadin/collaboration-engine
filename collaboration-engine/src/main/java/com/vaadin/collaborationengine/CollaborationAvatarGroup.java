@@ -216,7 +216,11 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void onConnectionDeactivate() {
-        updateUsers(map, oldValue -> oldValue.filter(this::isNotLocalUser));
+        updateUsers(map, oldValue -> {
+            List<UserInfo> users = oldValue.collect(Collectors.toList());
+            users.remove(localUser);
+            return users.stream();
+        });
         getContent().setItems(Collections.emptyList());
         map = null;
     }
@@ -243,7 +247,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         }
         List<UserInfo> users = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
 
-        List<AvatarGroupItem> items = users != null ? users.stream()
+        List<AvatarGroupItem> items = users != null ? users.stream().distinct()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))
                 .map(this::userToAvatarGroupItem).collect(Collectors.toList())
                 : Collections.emptyList();
