@@ -33,7 +33,16 @@ import com.vaadin.flow.internal.MessageDigestUtil;
 
 class FileHandler {
 
+    /**
+     * When querying properties from Vaadin's
+     * {@link com.vaadin.flow.function.DeploymentConfiguration}, they are looked
+     * within the `vaadin.` namespace. When querying, we should therefore not
+     * include the prefix. However, when instructing people on how to set the
+     * parameter, we should include the prefix.
+     */
     static final String DATA_DIR_CONFIG_PROPERTY = "ce.dataDir";
+    static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
+            + DATA_DIR_CONFIG_PROPERTY;
 
     private static Supplier<Path> dataDirPathSupplier;
 
@@ -156,7 +165,7 @@ class FileHandler {
     private RuntimeException createDataDirNotConfiguredException() {
         return new IllegalStateException(
                 "Missing required configuration property '"
-                        + DATA_DIR_CONFIG_PROPERTY
+                        + DATA_DIR_PUBLIC_PROPERTY
                         + "'. Using Collaboration Engine in production requires having a valid license file "
                         + "and configuring the directory where that file is stored e.g. as a system property. "
                         + "Instructions can be found in the Vaadin documentation.");
@@ -169,7 +178,7 @@ class FileHandler {
                         + ". Using Collaboration Engine in production requires a valid license file. "
                         + "Instructions for obtaining a license can be found in the Vaadin documentation. "
                         + "If you already have a license, make sure that the '"
-                        + DATA_DIR_CONFIG_PROPERTY
+                        + DATA_DIR_PUBLIC_PROPERTY
                         + "' property is pointing to the correct directory "
                         + "and that the directory contains the license file.");
     }
