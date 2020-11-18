@@ -52,17 +52,22 @@ public class TopicConnection {
 
         closeRegistration = context.setActivationHandler(active -> {
             if (active) {
-                synchronized (this.topic) {
-                    context.dispatchAction(() -> {
-                        Registration callbackRegistration = connectionActivationCallback
-                                .apply(this);
-                        addRegistration(callbackRegistration);
+                context.dispatchAction(() -> {
+                    Registration callbackRegistration = connectionActivationCallback
+                            .apply(this);
+                    addRegistration(callbackRegistration);
 
-                        Registration changeRegistration = this.topic
+                    Registration changeRegistration;
+                    synchronized (this.topic) {
+                        changeRegistration = this.topic
                                 .subscribe(this::handleChange);
-                        addRegistration(changeRegistration);
+                    }
+                    addRegistration(() -> {
+                        synchronized (this.topic) {
+                            changeRegistration.remove();
+                        }
                     });
-                }
+                });
             } else {
                 deactivate();
             }
