@@ -96,7 +96,7 @@ Read https://vaadin.com/docs/flow/production/tutorial-production-mode-basic.html
 ==== Spring Boot applications
 
 ```
-java -Dvaadin.ce.dataDir=/Users/steve/.vaadin/collaboration-engine -jar ce-dx-test-1.0-SNAPSHOT.jar
+java -Dvaadin.ce.dataDir=/Users/steve/.vaadin/collaboration-engine -jar my-app-1.0-SNAPSHOT.jar
 ```
 
 Note that the system property should be before the `-jar` parameter.
