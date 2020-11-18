@@ -29,7 +29,7 @@ It defines how many unique end-users can use collaborative features per month an
 [[ce.production.configure-data-dir]]
 == Configure where Collaboration Engine files are stored
 
-You need to configure which directory should be used by Collaboration Engine to store files.
+You need to configure which directory should be used by Collaboration Engine to store files by setting the `vaadin.ce.dataDir` property.
 In version 2.0, the only file that Collaboration Engine uses is the `ce-license.json`, but in upcoming versions the directory will be used to e.g. store automatic usage statistics and topic data.
 You can configure the directory path by either:
 
@@ -46,26 +46,25 @@ How you register the listener depends on if you use Spring or not.
 
 ==== Spring applications
 
-If you have a Spring application, you should register the `VaadinServiceInitListener` by marking it as a `@Component`.
+If you have a Spring application, you can set `vaadin.ce.dataDir` as a system property in the `main` method.
 
-.com.company.myapp.MyVaadinInitListener.java
+.com.company.myapp.Application.java
 ```java
-@Component
-public class MyVaadinInitListener implements VaadinServiceInitListener {
-    @Override
-    public void serviceInit(ServiceInitEvent event) {
+@SpringBootApplication
+public class Application extends SpringBootServletInitializer {
+
+    public static void main(String[] args) {
         System.setProperty("vaadin.ce.dataDir",
                 "/Users/steve/vaadin/collaboration-engine/");
+        SpringApplication.run(Application.class, args);
     }
+
 }
 ```
 
 ==== Other applications
 
-The code for non-Spring applications is similar, but instead of registering the listener with `@Component`, you need to register it via Java SPI loading facility.
-You do this by providing a file, `src/main/resources/META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener` with a fully-qualified class name to your listener as content, for example, `com.company.myapp.MyVaadinInitListener`.
-
-image:images/service-init-listener.png[The location of the configuration file]
+If you have a non-Spring application, you should register a `VaadinServiceInitListener` that sets the system property.
 
 .com.company.myapp.MyVaadinInitListener.java
 ```java
@@ -77,6 +76,11 @@ public class MyVaadinInitListener implements VaadinServiceInitListener {
     }
 }
 ```
+
+To use the listener, you need to register it via Java SPI loading facility.
+You do this by providing a file, `src/main/resources/META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener` with a fully-qualified class name to your listener as content, for example, `com.company.myapp.MyVaadinInitListener`.
+
+image:images/service-init-listener.png[The location of the configuration file]
 
 .src/main/resources/META-INF/services/com.vaadin.flow.server.VaadinServiceInitListener
 ```
@@ -92,7 +96,7 @@ Read https://vaadin.com/docs/flow/production/tutorial-production-mode-basic.html
 ==== Spring Boot applications
 
 ```
-java -Dvaadin.ce.dataDir=/Users/peppe/.vaadin/collaboration-engine -jar ce-dx-test-1.0-SNAPSHOT.jar
+java -Dvaadin.ce.dataDir=/Users/steve/.vaadin/collaboration-engine -jar ce-dx-test-1.0-SNAPSHOT.jar
 ```
 
 Note that the system property should be before the `-jar` parameter.
