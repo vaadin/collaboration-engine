@@ -21,6 +21,7 @@ public class MultipleCollaborationMapTest {
 
     @Before
     public void init() {
+        TestUtil.setDummyCollaborationEngineConfig();
         TestUtils.openEagerConnection("form", topic -> {
             this.connection = topic;
             namedMapData = topic.getNamedMap("values");

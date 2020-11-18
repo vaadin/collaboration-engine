@@ -17,9 +17,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 
 class LicenseHandler {
 
@@ -74,13 +78,29 @@ class LicenseHandler {
         }
     }
 
-    private final FileHandler fileHandler = new FileHandler();
+    private final FileHandler fileHandler;
     private final LicenseInfo license;
     final StatisticsInfo statistics;
 
-    LicenseHandler() {
-        license = fileHandler.readLicenseFile();
-        statistics = fileHandler.readStatsFile();
+    LicenseHandler(CollaborationEngineConfig config) {
+        if (config.licenseCheckingEnabled) {
+            fileHandler = new FileHandler(config);
+            license = fileHandler.readLicenseFile();
+            statistics = fileHandler.readStatsFile();
+        } else {
+            fileHandler = null;
+            license = null;
+            statistics = null;
+            if (config.dataDirPath == null) {
+                LoggerFactory.getLogger(CollaborationEngine.class).warn(
+                        "Collaboration Engine is used in development/trial mode. "
+                                + "Note that in order to make a production build, "
+                                + "you need to obtain a license from Vaadin and configure the '"
+                                + FileHandler.DATA_DIR_PUBLIC_PROPERTY
+                                + "' property, which is currently not configured. "
+                                + "More info in Vaadin documentation.");
+            }
+        }
     }
 
     /**

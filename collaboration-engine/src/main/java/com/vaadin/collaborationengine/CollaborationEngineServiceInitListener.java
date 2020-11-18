@@ -8,8 +8,10 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinServiceInitListener;
@@ -28,14 +30,14 @@ public class CollaborationEngineServiceInitListener
         DeploymentConfiguration config = event.getSource()
                 .getDeploymentConfiguration();
 
-        if (config.isProductionMode()) {
-            CollaborationEngine.getInstance().enableLicenseChecking();
-
-            FileHandler.setDataDirectorySupplier(() -> {
-                String dataDirectory = config.getStringProperty(
-                        FileHandler.DATA_DIR_CONFIG_PROPERTY, null);
-                return dataDirectory != null ? Paths.get(dataDirectory) : null;
-            });
-        }
+        CollaborationEngine.getInstance().setConfigProvider(() -> {
+            boolean licenseCheckingEnabled = config.isProductionMode();
+            String dataDirectory = config.getStringProperty(
+                    FileHandler.DATA_DIR_CONFIG_PROPERTY, null);
+            Path dataDirPath = dataDirectory != null ? Paths.get(dataDirectory)
+                    : null;
+            return new CollaborationEngineConfig(licenseCheckingEnabled, false,
+                    dataDirPath);
+        });
     }
 }

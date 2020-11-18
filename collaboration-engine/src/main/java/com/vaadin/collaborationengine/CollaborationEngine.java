@@ -8,9 +8,11 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -30,6 +32,22 @@ import com.vaadin.flow.shared.Registration;
 @JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
+    static class CollaborationEngineConfig {
+        final boolean licenseCheckingEnabled;
+
+        // TODO: Remove this flag when enabling the enforcements for real. At
+        // that point, we need only the licenseCheckingEnabled flag.
+        final boolean licenseTermsEnforced;
+        final Path dataDirPath;
+
+        CollaborationEngineConfig(boolean licenseCheckingEnabled,
+                boolean licenseTermsEnforced, Path dataDirPath) {
+            this.licenseCheckingEnabled = licenseCheckingEnabled;
+            this.licenseTermsEnforced = licenseTermsEnforced;
+            this.dataDirPath = dataDirPath;
+        }
+    }
+
     static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
     static final String COLLABORATION_ENGINE_VERSION = "2.0";
 
@@ -41,8 +59,8 @@ public class CollaborationEngine {
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
 
-    private boolean licenseCheckingEnabled = false;
-    private boolean licenseTermsEnforced = false;
+    private Supplier<CollaborationEngineConfig> configProvider;
+    private CollaborationEngineConfig config;
     private LicenseHandler licenseHandler;
 
     private final TopicActivationHandler topicActivationHandler;
@@ -140,15 +158,24 @@ public class CollaborationEngine {
         Objects.requireNonNull(connectionActivationCallback,
                 "Callback for connection activation can't be null");
 
-        if (licenseCheckingEnabled) {
-            synchronized (this) {
-                if (licenseHandler == null) {
-                    licenseHandler = new LicenseHandler();
-                }
+        if (configProvider == null) {
+            throw new IllegalStateException(
+                    "Collaboration Engine is missing required configuration "
+                            + "that should be provided by a VaadinServiceInitListener. "
+                            + "Collaboration Engine is supported only in a Vaadin application, "
+                            + "where VaadinService initialization is expected to happen before usage.");
+        }
+
+        synchronized (this) {
+            if (config == null) {
+                config = configProvider.get();
+            }
+            if (licenseHandler == null) {
+                licenseHandler = new LicenseHandler(config);
             }
         }
 
-        if (licenseTermsEnforced) {
+        if (config.licenseTermsEnforced) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
             if (!hasSeat) {
@@ -167,23 +194,8 @@ public class CollaborationEngine {
         return connection::deactivateAndClose;
     }
 
-    /**
-     * Marks that license should be validated.
-     */
-    void enableLicenseChecking() {
-        licenseCheckingEnabled = true;
-    }
-
-    /**
-     * Marks that the license should be validated and restrictions enforced.
-     *
-     * TODO: Remove this once enabling the enforcements for real. At that point,
-     * we don't need the separate licenseTermsEnforced flag. We can just use
-     * licenseCheckingEnabled.
-     */
-    void enableLicenseCheckingAndEnforceQuota() {
-        enableLicenseChecking();
-        licenseTermsEnforced = true;
+    void setConfigProvider(Supplier<CollaborationEngineConfig> configProvider) {
+        this.configProvider = configProvider;
     }
 
     /**

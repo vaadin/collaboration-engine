@@ -18,6 +18,7 @@ public class ConnectionContextTest {
     @Before
     public void init() {
         CollaborationEngine collaborationEngine = new CollaborationEngine();
+        TestUtil.setDummyCollaborationEngineConfig(collaborationEngine);
         simpleContext = new SimpleConnectionContext();
 
         collaborationEngine.openTopicConnection(simpleContext, "foo",

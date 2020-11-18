@@ -87,6 +87,7 @@ public class CollaborationAvatarGroupTest {
 
     @Before
     public void init() {
+        TestUtil.setDummyCollaborationEngineConfig();
         client1 = new Client(1);
         client2 = new Client(2);
         client3 = new Client(3);

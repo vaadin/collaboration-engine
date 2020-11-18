@@ -74,6 +74,7 @@ public class AbstractCollaborationBinderTest {
 
     @Before
     public void init() {
+        TestUtil.setDummyCollaborationEngineConfig();
         client = new BinderTestClient();
         field = client.field;
 

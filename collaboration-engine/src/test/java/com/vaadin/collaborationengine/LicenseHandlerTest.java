@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 
@@ -32,6 +33,10 @@ public class LicenseHandlerTest {
     public static class MockedLicenseHandler extends LicenseHandler {
 
         private LocalDate configuredCurrentDate = LocalDate.of(2020, 5, 1);
+
+        MockedLicenseHandler(CollaborationEngineConfig config) {
+            super(config);
+        }
 
         protected void setCurrentDate(LocalDate currentDate) {
             configuredCurrentDate = currentDate;
@@ -54,6 +59,8 @@ public class LicenseHandlerTest {
     private CollaborationEngine ce;
     private Path testDataDir = Paths.get(System.getProperty("user.home"),
             ".vaadin", "ce-tests");
+    private CollaborationEngineConfig config = new CollaborationEngineConfig(
+            true, true, testDataDir);
 
     private LicenseGenerator licenseGenerator = new LicenseGenerator();
 
@@ -62,7 +69,6 @@ public class LicenseHandlerTest {
 
     @Before
     public void init() throws IOException {
-        FileHandler.setDataDirectorySupplier(() -> testDataDir);
         if (!testDataDir.toFile().exists()) {
             Files.createDirectories(testDataDir);
         }
@@ -76,10 +82,10 @@ public class LicenseHandlerTest {
         // Set quota to 3
         writeToLicenseFile(3, LocalDate.of(2222, 1, 1));
 
-        licenseHandler = new MockedLicenseHandler();
+        licenseHandler = new MockedLicenseHandler(config);
 
         ce = new CollaborationEngine();
-        ce.enableLicenseCheckingAndEnforceQuota();
+        ce.setConfigProvider(() -> config);
     }
 
     @Test
@@ -163,7 +169,7 @@ public class LicenseHandlerTest {
     @Test
     public void noStatsFile_initStatistics_hasEmptyMap() throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler licenseHandler = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler(config);
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertEquals(Collections.emptyMap(),
@@ -174,7 +180,7 @@ public class LicenseHandlerTest {
     public void noStatsFile_initStatistics_hasNullGracePeriodStart()
             throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler licenseHandler = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler(config);
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertNull("Grace period start should have been unset",
@@ -194,7 +200,7 @@ public class LicenseHandlerTest {
     public void statsFileHasData_initStatistics_readsDataFromFile()
             throws IOException {
         writeToStatsFile("{\"statistics\":{\"2000-01\":[\"bob\"]}}");
-        LicenseHandler licenseHandler = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler(config);
 
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(Collections.singleton("bob"),
@@ -205,7 +211,7 @@ public class LicenseHandlerTest {
     public void statsFileHasData_initStatistics_registerUser_allDataIncludedInFile()
             throws IOException {
         writeToStatsFile("{\"statistics\":{\"2020-01\":[\"bob\"]}}");
-        MockedLicenseHandler licenseHandler = new MockedLicenseHandler();
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(config);
         licenseHandler.setCurrentDate(LocalDate.of(2020, 1, 1));
         licenseHandler.registerUser("steve");
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
@@ -229,7 +235,7 @@ public class LicenseHandlerTest {
                 "{\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
                         + "\"2020-03\":[\"steve\"]},\"gracePeriodStart\":null}");
 
-        Map<YearMonth, Set<String>> newStats = new LicenseHandler()
+        Map<YearMonth, Set<String>> newStats = new LicenseHandler(config)
                 .getStatistics();
         Assert.assertEquals(2, newStats.size());
         Assert.assertEquals(new LinkedHashSet<>(Arrays.asList("steve", "bob")),
@@ -242,12 +248,13 @@ public class LicenseHandlerTest {
     public void statsFileHasInvalidData_initLicenseHandler_throws()
             throws IOException {
         writeToStatsFile("I'm invalid");
-        new LicenseHandler();
+        new LicenseHandler(config);
     }
 
     @Test
     public void dataDirNotConfigured_openTopicConnection_throws() {
-        FileHandler.setDataDirectorySupplier(() -> null);
+        ce.setConfigProvider(
+                () -> new CollaborationEngineConfig(true, true, null));
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage("Missing required configuration property");
@@ -258,9 +265,9 @@ public class LicenseHandlerTest {
 
     @Test
     public void noDataDir_openTopicConnection_throws() {
-        FileHandler.setDataDirectorySupplier(
-                () -> Paths.get(System.getProperty("user.home"), ".vaadin",
-                        "ce-tests", "non-existing", "dir"));
+        ce.setConfigProvider(() -> new CollaborationEngineConfig(true, true,
+                Paths.get(System.getProperty("user.home"), ".vaadin",
+                        "ce-tests", "non-existing", "dir")));
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
@@ -470,7 +477,7 @@ public class LicenseHandlerTest {
         writeToStatsFile(
                 "{\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\""
                         + "]}," + "\"gracePeriodStart\":null}");
-        LicenseHandler licenseHandler = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler(config);
         Assert.assertNull(licenseHandler.statistics.gracePeriodStart);
     }
 
@@ -482,7 +489,7 @@ public class LicenseHandlerTest {
                         + "\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\","
                         + "\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"]},"
                         + "\"gracePeriodStart\":\"2020-10-28\"}");
-        LicenseHandler licenseHandler = new LicenseHandler();
+        LicenseHandler licenseHandler = new LicenseHandler(config);
         Assert.assertEquals(LocalDate.of(2020, 10, 28),
                 licenseHandler.statistics.gracePeriodStart);
     }
@@ -530,7 +537,7 @@ public class LicenseHandlerTest {
                 + YearMonth.from(dateNow)
                 + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"] },"
                 + "\"gracePeriodStart\":\"" + graceStart + "\"}");
-        MockedLicenseHandler licenseHandler = new MockedLicenseHandler();
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(config);
         licenseHandler.setCurrentDate(dateNow);
         return licenseHandler;
     }

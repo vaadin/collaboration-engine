@@ -69,6 +69,7 @@ public class TopicConnectionTest {
 
     @Before
     public void setup() {
+        TestUtil.setDummyCollaborationEngineConfig(engine);
         connectionRegistration = engine.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), connection -> {
                     map = connection.getNamedMap("map");
@@ -86,11 +87,10 @@ public class TopicConnectionTest {
     public void getUserInfo_receiveTheOriginUserInstance() {
         UserInfo randomUser = new UserInfo(UUID.randomUUID().toString());
         AtomicReference<TopicConnection> topicConnection = new AtomicReference<>();
-        new CollaborationEngine().openTopicConnection(context, "foo",
-                randomUser, tc -> {
-                    topicConnection.set(tc);
-                    return null;
-                });
+        engine.openTopicConnection(context, "foo", randomUser, tc -> {
+            topicConnection.set(tc);
+            return null;
+        });
         Assert.assertEquals(randomUser, topicConnection.get().getUserInfo());
     }
 

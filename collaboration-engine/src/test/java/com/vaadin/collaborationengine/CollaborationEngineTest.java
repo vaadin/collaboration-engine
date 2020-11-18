@@ -28,6 +28,7 @@ public class CollaborationEngineTest {
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
+        TestUtil.setDummyCollaborationEngineConfig(collaborationEngine);
 
         context = new EagerConnectionContext();
         connectionCallback = topicConnection -> () -> {

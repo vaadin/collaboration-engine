@@ -12,12 +12,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -26,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfoWrapper;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
@@ -44,29 +43,22 @@ class FileHandler {
     static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
             + DATA_DIR_CONFIG_PROPERTY;
 
-    private static Supplier<Path> dataDirPathSupplier;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final Path statsFilePath;
     private final Path licenseFilePath;
 
-    FileHandler() {
+    FileHandler(CollaborationEngineConfig config) {
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.setVisibility(PropertyAccessor.FIELD,
                 Visibility.NON_PRIVATE);
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        objectMapper.setDateFormat(df);
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
 
-        if (dataDirPathSupplier == null) {
-            throw createServiceInitNotCalledException();
-        }
-        Path path = dataDirPathSupplier.get();
-        if (path == null) {
+        if (config.dataDirPath == null) {
             throw createDataDirNotConfiguredException();
         }
-        statsFilePath = createStatsFilePath(path);
-        licenseFilePath = createLicenseFilePath(path);
+        statsFilePath = createStatsFilePath(config.dataDirPath);
+        licenseFilePath = createLicenseFilePath(config.dataDirPath);
     }
 
     static Path createStatsFilePath(Path dirPath) {
@@ -75,10 +67,6 @@ class FileHandler {
 
     static Path createLicenseFilePath(Path dirPath) {
         return Paths.get(dirPath.toString(), "ce-license.json");
-    }
-
-    static void setDataDirectorySupplier(Supplier<Path> dataDirectorySupplier) {
-        dataDirPathSupplier = dataDirectorySupplier;
     }
 
     void writeStats(StatisticsInfo stats) {
@@ -152,14 +140,6 @@ class FileHandler {
                             + "'. Check that the file is readable by the app, and not locked.",
                     e);
         }
-    }
-
-    private RuntimeException createServiceInitNotCalledException() {
-        return new IllegalStateException(
-                "Collaboration Engine is missing required configuration "
-                        + "that should be provided by a VaadinServiceInitListener. "
-                        + "Collaboration Engine is supported only in a Vaadin application, "
-                        + "where VaadinService initialization is expected to happen before usage.");
     }
 
     private RuntimeException createDataDirNotConfiguredException() {
