@@ -1,17 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>collaboration-engine-test-cdi</artifactId>
+    <name>IT for CDI</name>
+    <packaging>war</packaging>
+
     <parent>
         <artifactId>collaboration-engine-test</artifactId>
         <groupId>com.vaadin</groupId>
         <version>2.0-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>collaboration-engine-test-cdi</artifactId>
-    <name>IT for CDI</name>
-    <packaging>war</packaging>
 
     <properties>
-        <drivers.downloader.phase>pre-integration-test</drivers.downloader.phase>
+        <drivers.downloader.phase>pre-integration-test
+        </drivers.downloader.phase>
     </properties>
 
     <dependencyManagement>
@@ -63,7 +67,8 @@
                     <reloadOnUpdate>true</reloadOnUpdate>
                     <systemVariables>
                         <openejb.system.apps>true</openejb.system.apps>
-                        <tomee.serialization.class.blacklist>-</tomee.serialization.class.blacklist>
+                        <tomee.serialization.class.blacklist>-
+                        </tomee.serialization.class.blacklist>
                     </systemVariables>
                 </configuration>
             </plugin>

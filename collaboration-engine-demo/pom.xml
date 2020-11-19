@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>collaboration-engine-demo</artifactId>
     <name>Collaboration Engine Demo</name>
@@ -15,7 +15,8 @@
 
     <properties>
         <failOnMissingWebXml>false</failOnMissingWebXml>
-        <drivers.downloader.phase>pre-integration-test</drivers.downloader.phase>
+        <drivers.downloader.phase>pre-integration-test
+        </drivers.downloader.phase>
     </properties>
 
     <repositories>
@@ -103,7 +104,8 @@
                     <scanIntervalSeconds>2</scanIntervalSeconds>
                     <!-- Use war output directory to get the webpack files -->
                     <webAppConfig>
-                        <allowDuplicateFragmentNames>true</allowDuplicateFragmentNames>
+                        <allowDuplicateFragmentNames>true
+                        </allowDuplicateFragmentNames>
                     </webAppConfig>
                 </configuration>
             </plugin>
@@ -158,6 +160,5 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 </project>
