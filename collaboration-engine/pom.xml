@@ -50,7 +50,7 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>collaboration-engine-license-generator</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
             <!-- Only for generating licenses in unit tests -->
             <scope>test</scope>
         </dependency>
@@ -110,7 +110,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <!-- Used in unit test to verify that the correct version is passed to UsageStatistics -->
-                        <collaboration-engine.version>${version}
+                        <collaboration-engine.version>${project.version}
                         </collaboration-engine.version>
                     </systemPropertyVariables>
                 </configuration>
