@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -57,8 +58,16 @@ class FileHandler {
         if (config.dataDirPath == null) {
             throw createDataDirNotConfiguredException();
         }
+        if (Files.exists(config.dataDirPath)
+                && !Files.isWritable(config.dataDirPath)) {
+            throw createDataDirNotWritableException(config.dataDirPath);
+        }
+
         statsFilePath = createStatsFilePath(config.dataDirPath);
         licenseFilePath = createLicenseFilePath(config.dataDirPath);
+        if (Files.exists(statsFilePath) && !Files.isWritable(statsFilePath)) {
+            throw createStatsFileNotWritableException();
+        }
     }
 
     static Path createStatsFilePath(Path dirPath) {
@@ -171,5 +180,26 @@ class FileHandler {
                         + "If you have made any changes to the file, please revert those changes. "
                         + "If that's not possible, contact Vaadin to get a new copy of the license file.",
                 cause);
+    }
+
+    private RuntimeException createDataDirNotWritableException(
+            Path dataDirFilePath) {
+        return new IllegalStateException("Collaboration Engine doesn't have "
+                + "write permissions for the data directory at '"
+                + dataDirFilePath
+                + "'. Collaboration Engine needs to be able to write files "
+                + "into the folder to function. Make sure that the the system "
+                + "user, running the Java environment, has write permissions "
+                + "to the directory.");
+    }
+
+    private RuntimeException createStatsFileNotWritableException() {
+        return new IllegalStateException("Collaboration Engine doesn't have "
+                + "write permissions for the statistics file at '"
+                + statsFilePath
+                + "'. Collaboration Engine needs to be able to write into the "
+                + "file to function. Make sure that the the system user, "
+                + "running the Java environment, has write permissions to the "
+                + "file.");
     }
 }
