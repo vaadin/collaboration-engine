@@ -25,8 +25,10 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
+import com.vaadin.collaborationengine.ConnectionContextTest.SimpleConnectionContext;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockUI;
 
 public class LicenseHandlerTest {
 
@@ -525,6 +527,69 @@ public class LicenseHandlerTest {
         LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(31);
         Assert.assertFalse("User should have been denied access",
                 licenseHandler.registerUser("userId-7"));
+    }
+
+    @Test
+    public void requestAccess_actionIsDispatched() {
+        UserInfo user = new UserInfo("steve");
+        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        ce.requestAccess(spyContext, user, result -> {
+        });
+        Assert.assertTrue(spyContext.isCalled);
+    }
+
+    @Test
+    public void requestAccess_uiIsAccessed() {
+        UserInfo user = new UserInfo("steve");
+        MockUI ui = new MockUI();
+        ce.requestAccess(ui, user, result -> {
+        });
+        Assert.assertFalse(ui.getAccessTasks().isEmpty());
+    }
+
+    @Test
+    public void requestAccess_licenseTermsNotEnforced_resolvesWithTrue() {
+        UserInfo user = new UserInfo("steve");
+        AtomicBoolean result = new AtomicBoolean(false);
+        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        ce.setConfigProvider(
+                () -> new CollaborationEngineConfig(false, false, null));
+        ce.requestAccess(spyContext, user, result::set);
+        Assert.assertTrue(result.get());
+    }
+
+    @Test
+    public void requestAccess_userHasAccess_resolvesWithTrue() {
+        UserInfo user = new UserInfo("steve");
+        AtomicBoolean result = new AtomicBoolean(false);
+        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        ce.requestAccess(spyContext, user, result::set);
+        Assert.assertTrue(result.get());
+    }
+
+    @Test
+    public void requestAccess_userDoesNotHaveAccess_resolvesWithFalse()
+            throws IOException {
+        writeToLicenseFile(1, LocalDate.of(2020, 1, 1));
+        UserInfo user = new UserInfo("steve");
+        AtomicBoolean result = new AtomicBoolean(true);
+        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        ce.requestAccess(spyContext, user, result::set);
+        Assert.assertFalse(result.get());
+    }
+
+    @Test
+    public void requestAccess_invalidLicense_throwsException()
+            throws IOException {
+        writeToLicenseFile("{checksum:\"foo\"}");
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("license file is not valid");
+
+        UserInfo user = new UserInfo("steve");
+        AtomicBoolean result = new AtomicBoolean(false);
+        ConnectionContext spyContext = new EagerConnectionContext();
+        ce.requestAccess(spyContext, user, result::set);
     }
 
     @Test

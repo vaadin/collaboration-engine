@@ -12,9 +12,12 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.UsageStatistics;
@@ -166,15 +169,7 @@ public class CollaborationEngine {
                             + "where VaadinService initialization is expected to happen before usage.");
         }
 
-        synchronized (this) {
-            if (config == null) {
-                config = configProvider.get();
-            }
-            if (licenseHandler == null) {
-                licenseHandler = new LicenseHandler(config);
-            }
-        }
-
+        ensureConfigAndLicenseHandlerInitialization();
         if (config.licenseTermsEnforced) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
@@ -192,6 +187,64 @@ public class CollaborationEngine {
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return connection::deactivateAndClose;
+    }
+
+    /**
+     * Requests access for a user to the Collaboration Engine, then the provided
+     * callback will be invoked with a boolean which will be {@code true} if the
+     * access is granted.
+     * <p>
+     * This method can be used to check if the user has access to the
+     * Collaboration Engine, e.g. if the license is not expired and there is
+     * quota for that user; depending on the response, it's then possible to
+     * adapt the UI enabling or disabling collaboration features.
+     *
+     * @param ui
+     *            the UI which will be accessed to execute the callback
+     * @param user
+     *            the user requesting access
+     * @param accessCallback
+     *            the callback to accept the response
+     */
+    public void requestAccess(UI ui, UserInfo user,
+            Consumer<Boolean> accessCallback) {
+        Objects.requireNonNull(ui, "The UI cannot be null");
+        ComponentConnectionContext context = new ComponentConnectionContext(ui);
+        requestAccess(context, user, accessCallback);
+    }
+
+    /**
+     * Requests access for a user to the Collaboration Engine, then the provided
+     * callback will be invoked with a boolean which will be {@code true} if the
+     * access is granted.
+     * <p>
+     * This method can be used to check if the user has access to the
+     * Collaboration Engine, e.g. if the license is not expired and there is
+     * quota for that user; depending on the response, it's then possible to
+     * adapt the UI enabling or disabling collaboration features.
+     *
+     * @param context
+     *            context for the connection
+     * @param user
+     *            the user requesting access
+     * @param accessCallback
+     *            the callback to accept the response
+     */
+    public void requestAccess(ConnectionContext context, UserInfo user,
+            Consumer<Boolean> accessCallback) {
+        Objects.requireNonNull(context, "ConnectionContext cannot be null");
+        Objects.requireNonNull(user, "UserInfo cannot be null");
+        Objects.requireNonNull(accessCallback, "The callback cannot be null");
+
+        // Will handle remote connection here
+
+        AtomicBoolean hasAccess = new AtomicBoolean(true);
+        ensureConfigAndLicenseHandlerInitialization();
+        if (config.licenseTermsEnforced) {
+            hasAccess.set(licenseHandler.registerUser(user.getId()));
+        }
+
+        context.dispatchAction(() -> accessCallback.accept(hasAccess.get()));
     }
 
     void setConfigProvider(Supplier<CollaborationEngineConfig> configProvider) {
@@ -220,5 +273,15 @@ public class CollaborationEngine {
      */
     LicenseHandler getLicenseHandler() {
         return licenseHandler;
+    }
+
+    private synchronized void ensureConfigAndLicenseHandlerInitialization() {
+        if (config == null) {
+            config = configProvider.get();
+        }
+        if (licenseHandler == null) {
+            // Will throw if config is invalid
+            licenseHandler = new LicenseHandler(config);
+        }
     }
 }

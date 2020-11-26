@@ -178,7 +178,7 @@ public class CollaborationEngineTest {
         int offset = firstUser.getColorIndex();
 
         for (int i = 0; i < 12; i++) {
-            UserInfo user = new UserInfo("userId-" + i);
+            UserInfo user = new UserInfo("user-color-test-id-" + i);
             Assert.assertEquals(user.getColorIndex(),
                     (offset + i + 1) % USER_COLOR_COUNT);
         }
