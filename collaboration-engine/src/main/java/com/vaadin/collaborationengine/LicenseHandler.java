@@ -17,11 +17,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.LoggerFactory;
 
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 
@@ -87,6 +86,16 @@ class LicenseHandler {
             fileHandler = new FileHandler(config);
             license = fileHandler.readLicenseFile();
             statistics = fileHandler.readStatsFile();
+            if (license.endDate.isBefore(getCurrentDate())) {
+                LoggerFactory.getLogger(CollaborationEngine.class)
+                        .warn("Your Collaboration Engine license has expired. "
+                                + "Your application will still continue to "
+                                + "work, but the collaborative features will be "
+                                + "disabled. Please contact Vaadin about "
+                                + "obtaining a new, up-to-date license for "
+                                + "your application. "
+                                + "https://vaadin.com/collaboration");
+            }
         } else {
             fileHandler = null;
             license = null;
@@ -115,6 +124,11 @@ class LicenseHandler {
      */
     synchronized boolean registerUser(String userId) {
         LocalDate currentDate = getCurrentDate();
+
+        if (license.endDate.isBefore(currentDate)) {
+            return false;
+        }
+
         Set<String> users = statistics.statistics.computeIfAbsent(
                 YearMonth.from(currentDate),
                 yearMonth -> new LinkedHashSet<>());

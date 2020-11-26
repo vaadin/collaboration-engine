@@ -32,7 +32,7 @@ public class LicenseHandlerTest {
 
     public static class MockedLicenseHandler extends LicenseHandler {
 
-        private LocalDate configuredCurrentDate = LocalDate.of(2020, 5, 1);
+        private LocalDate configuredCurrentDate = null;
 
         MockedLicenseHandler(CollaborationEngineConfig config) {
             super(config);
@@ -44,11 +44,12 @@ public class LicenseHandlerTest {
 
         @Override
         public LocalDate getCurrentDate() {
-            return configuredCurrentDate;
+            return configuredCurrentDate != null ? configuredCurrentDate
+                    : LocalDate.of(2020, 5, 1);
         }
 
         public YearMonth getCurrentMonth() {
-            return YearMonth.from(configuredCurrentDate);
+            return YearMonth.from(getCurrentDate());
         }
     }
 
@@ -524,6 +525,27 @@ public class LicenseHandlerTest {
         LicenseHandler licenseHandler = getLicenseHandlerWithGracePeriod(31);
         Assert.assertFalse("User should have been denied access",
                 licenseHandler.registerUser("userId-7"));
+    }
+
+    @Test
+    public void registerUser_licenseLastDayValid_accessGranted()
+            throws IOException {
+        LocalDate dateNow = LocalDate.of(2020, 6, 10);
+        writeToLicenseFile(3, dateNow);
+        licenseHandler = new MockedLicenseHandler(config);
+        licenseHandler.setCurrentDate(dateNow);
+        Assert.assertTrue("User should have been given access",
+                licenseHandler.registerUser("userId-1"));
+    }
+
+    @Test
+    public void registerUser_licenseExpired_accessDenied() throws IOException {
+        LocalDate dateNow = LocalDate.of(2020, 6, 11);
+        writeToLicenseFile(3, LocalDate.of(2020, 6, 10));
+        licenseHandler = new MockedLicenseHandler(config);
+        licenseHandler.setCurrentDate(dateNow);
+        Assert.assertFalse("User should have been denied access",
+                licenseHandler.registerUser("userId-1"));
     }
 
     private LicenseHandler getLicenseHandlerWithGracePeriod(
