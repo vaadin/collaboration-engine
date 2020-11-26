@@ -1,0 +1,7 @@
+This file indicates that production mode should be activated in this child
+module. This is the only way to optionally activate a profile that is defined in
+a shared parent module.
+
+More info:
+https://stackoverflow.com/questions/1504850/maven-activate-child-profile-based-on-property
+https://stackoverflow.com/a/1502322
