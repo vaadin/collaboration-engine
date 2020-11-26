@@ -63,7 +63,7 @@ public class LicenseHandlerTest {
     private Path testDataDir = Paths.get(System.getProperty("user.home"),
             ".vaadin", "ce-tests");
     private CollaborationEngineConfig config = new CollaborationEngineConfig(
-            true, true, testDataDir);
+            true, testDataDir);
 
     private LicenseGenerator licenseGenerator = new LicenseGenerator();
 
@@ -256,8 +256,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void dataDirNotConfigured_openTopicConnection_throws() {
-        ce.setConfigProvider(
-                () -> new CollaborationEngineConfig(true, true, null));
+        ce.setConfigProvider(() -> new CollaborationEngineConfig(true, null));
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage("Missing required configuration property");
@@ -268,7 +267,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void noDataDir_openTopicConnection_throws() {
-        ce.setConfigProvider(() -> new CollaborationEngineConfig(true, true,
+        ce.setConfigProvider(() -> new CollaborationEngineConfig(true,
                 Paths.get(System.getProperty("user.home"), ".vaadin",
                         "ce-tests", "non-existing", "dir")));
 
@@ -548,12 +547,11 @@ public class LicenseHandlerTest {
     }
 
     @Test
-    public void requestAccess_licenseTermsNotEnforced_resolvesWithTrue() {
+    public void requestAccess_licenseCheckingNotEnabled_resolvesWithTrue() {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
-        ce.setConfigProvider(
-                () -> new CollaborationEngineConfig(false, false, null));
+        ce.setConfigProvider(() -> new CollaborationEngineConfig(false, null));
         ce.requestAccess(spyContext, user, result::set);
         Assert.assertTrue(result.get());
     }

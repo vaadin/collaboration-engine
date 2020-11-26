@@ -37,16 +37,11 @@ public class CollaborationEngine {
 
     static class CollaborationEngineConfig {
         final boolean licenseCheckingEnabled;
-
-        // TODO: Remove this flag when enabling the enforcements for real. At
-        // that point, we need only the licenseCheckingEnabled flag.
-        final boolean licenseTermsEnforced;
         final Path dataDirPath;
 
         CollaborationEngineConfig(boolean licenseCheckingEnabled,
-                boolean licenseTermsEnforced, Path dataDirPath) {
+                Path dataDirPath) {
             this.licenseCheckingEnabled = licenseCheckingEnabled;
-            this.licenseTermsEnforced = licenseTermsEnforced;
             this.dataDirPath = dataDirPath;
         }
     }
@@ -170,7 +165,7 @@ public class CollaborationEngine {
         }
 
         ensureConfigAndLicenseHandlerInitialization();
-        if (config.licenseTermsEnforced) {
+        if (config.licenseCheckingEnabled) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
             if (!hasSeat) {
@@ -240,7 +235,7 @@ public class CollaborationEngine {
 
         AtomicBoolean hasAccess = new AtomicBoolean(true);
         ensureConfigAndLicenseHandlerInitialization();
-        if (config.licenseTermsEnforced) {
+        if (config.licenseCheckingEnabled) {
             hasAccess.set(licenseHandler.registerUser(user.getId()));
         }
 

@@ -36,7 +36,7 @@ public class CollaborationEngineServiceInitListener
                     FileHandler.DATA_DIR_CONFIG_PROPERTY, null);
             Path dataDirPath = dataDirectory != null ? Paths.get(dataDirectory)
                     : null;
-            return new CollaborationEngineConfig(licenseCheckingEnabled, false,
+            return new CollaborationEngineConfig(licenseCheckingEnabled,
                     dataDirPath);
         });
     }

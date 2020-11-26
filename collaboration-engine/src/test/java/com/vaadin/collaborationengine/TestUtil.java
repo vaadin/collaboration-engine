@@ -17,7 +17,6 @@ public class TestUtil {
      * VaadinServiceInitListener.
      */
     static void setDummyCollaborationEngineConfig(CollaborationEngine ce) {
-        ce.setConfigProvider(
-                () -> new CollaborationEngineConfig(false, false, null));
+        ce.setConfigProvider(() -> new CollaborationEngineConfig(false, null));
     }
 }
