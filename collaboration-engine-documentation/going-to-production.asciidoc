@@ -126,6 +126,27 @@ For example, if you configured the folder to be `/Users/steve/vaadin/collaborati
 Collaboration Engine will use the file to verify you have a proper license. 
 The app does not require an internet connection to Vaadin servers to verify the license.
 
+== Providing a data directory for a Docker container
+It is recommended to provide the data directory to a Docker container on runtime by either using a https://docs.docker.com/storage/volumes/[volume] or a https://docs.docker.com/storage/bind-mounts/[bind mount]. 
+It is not recommended to copy the license file into the container image, as the data directory will be erased every time you deploy a new version of your application.
+
+If you are deploying to a cloud provider, the odds are that you do not have access to the host file system to be able to make use of bind mounts. 
+Consult the documentation for your cloud provider to get instructions on how to set up and provide a volume to your application.
+
+While a volume is preferred, if you have access to the host's file system or want to test the Docker image locally, you can do it with a bind mount with the following steps:
+
+1. Set up a data directory on the host's file system. For example `/Users/steve/.vaadin/collaboration-engine`.
+2. Copy the `ce-license.json` file into the folder above.
+3. Pick a suitable folder within your Docker image where the host folder will be mounted. For example `/usr/app/ce`.
+4. Configure your `Dockerfile` to start up the server with the `vaadin.ce.dataDir` parameter pointing to the internal folder. For example `CMD java -Dvaadin.ce.dataDir=/usr/app/ce -jar /usr/app/app.jar`
+5. Build the Docker image, for example `$ docker build --tag my-app .` in the project directory.
+6. Start up the Docker container by giving the `-v` parameter mapping the host folder to the image folder. For example `$ docker run --name=myapp -dp 8080:8080 -v /Users/steve/.vaadin/collaboration-engine:/usr/app/ce myapp`
+
+When using volumes, you would replace the absolute path to the directory with the name of the volume, for example
+```
+$ docker run --name=myapp -dp 8080:8080 -v myapp-volume:/usr/app/ce myapp
+```
+
 [[ce.production.monthly-quota]]
 = Monthly end-user quota
 
