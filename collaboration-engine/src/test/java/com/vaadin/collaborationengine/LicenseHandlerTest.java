@@ -2,7 +2,6 @@ package com.vaadin.collaborationengine;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -15,22 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.ConnectionContextTest.SimpleConnectionContext;
-import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 
-public class LicenseHandlerTest {
+public class LicenseHandlerTest extends AbstractLicenseTest {
 
     public static class MockedLicenseHandler extends LicenseHandler {
 
@@ -55,40 +48,12 @@ public class LicenseHandlerTest {
         }
     }
 
-    private Path statsFilePath;
-    private Path licenseFilePath;
-
     private MockedLicenseHandler licenseHandler;
-    private CollaborationEngine ce;
-    private Path testDataDir = Paths.get(System.getProperty("user.home"),
-            ".vaadin", "ce-tests");
-    private CollaborationEngineConfig config = new CollaborationEngineConfig(
-            true, testDataDir);
 
-    private LicenseGenerator licenseGenerator = new LicenseGenerator();
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Before
+    @Override
     public void init() throws IOException {
-        if (!testDataDir.toFile().exists()) {
-            Files.createDirectories(testDataDir);
-        }
-        statsFilePath = FileHandler.createStatsFilePath(testDataDir);
-        licenseFilePath = FileHandler.createLicenseFilePath(testDataDir);
-
-        // Delete the stats file before each run to make sure we can test with a
-        // clean state
-        Files.deleteIfExists(statsFilePath);
-
-        // Set quota to 3
-        writeToLicenseFile(3, LocalDate.of(2222, 1, 1));
-
+        super.init();
         licenseHandler = new MockedLicenseHandler(config);
-
-        ce = new CollaborationEngine();
-        ce.setConfigProvider(() -> config);
     }
 
     @Test
@@ -358,7 +323,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void openTopicConnection_effectiveQuotaExceeded_connectionNotActivated() {
-        List<String> users = generateIds(35);
+        List<String> users = generateIds(GRACE_QUOTA + 5);
         List<String> usersWithConnectionActivated = new ArrayList<>();
 
         users.forEach(
@@ -368,12 +333,13 @@ public class LicenseHandlerTest {
                             return null;
                         }));
 
-        Assert.assertEquals(users.subList(0, 30), usersWithConnectionActivated);
+        Assert.assertEquals(users.subList(0, GRACE_QUOTA),
+                usersWithConnectionActivated);
     }
 
     @Test
     public void openTopicConnection_effectiveQuotaExceededButUserHasSeat_connectionActivated() {
-        List<String> userIds = generateIds(35);
+        List<String> userIds = generateIds(GRACE_QUOTA + 5);
         userIds.forEach(userId -> ce.openTopicConnection(
                 new EagerConnectionContext(), "topic", new UserInfo(userId),
                 topicConnection -> null));
@@ -391,7 +357,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void registerUser_normalQuotaFullNoGraceNewUserEnters_graceStartedAndAccessGranted() {
-        registerUsers(3);
+        registerUsers(QUOTA);
         Assert.assertNull("Grace period was expected to not have started",
                 licenseHandler.statistics.gracePeriodStart);
         boolean wasAccessGranted = licenseHandler.registerUser("bob");
@@ -408,7 +374,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void registerUser_graceOngoingNewUserEnters_accessGranted() {
-        registerUsers(4);
+        registerUsers(QUOTA + 1);
         Assert.assertNotNull("Grace period was expected to be ongoing",
                 licenseHandler.statistics.gracePeriodStart);
         boolean wasAccessGranted = licenseHandler.registerUser("bob");
@@ -422,7 +388,7 @@ public class LicenseHandlerTest {
 
     @Test
     public void registerUser_normalQuotaFullNoGraceExistingUserEnters_accessGrantedNoGracePeriod() {
-        List<String> users = registerUsers(3);
+        List<String> users = registerUsers(QUOTA);
         Assert.assertNull("Grace period was expected to not have started",
                 licenseHandler.statistics.gracePeriodStart);
         boolean wasAccessGranted = licenseHandler.registerUser(users.get(0));
@@ -434,42 +400,43 @@ public class LicenseHandlerTest {
 
     @Test
     public void registerUser_tenTimesQuotaAvailableInGrace_accessGranted() {
-        List<String> users = generateIds(30);
+        List<String> users = generateIds(GRACE_QUOTA);
         for (String user : users) {
             Assert.assertTrue("User wasn't given access",
                     licenseHandler.registerUser(user));
         }
-        Assert.assertEquals(30, licenseHandler.getStatistics()
+        Assert.assertEquals(GRACE_QUOTA, licenseHandler.getStatistics()
                 .get(licenseHandler.getCurrentMonth()).size());
     }
 
     @Test
     public void registerUser_usersExceedingGraceQuota_accessDenied() {
-        registerUsers(30);
+        registerUsers(GRACE_QUOTA);
         boolean wasAccessGranted = licenseHandler.registerUser("steve");
         Assert.assertFalse("User should have been denied access",
                 wasAccessGranted);
-        Assert.assertEquals(30, licenseHandler.getStatistics()
+        Assert.assertEquals(GRACE_QUOTA, licenseHandler.getStatistics()
                 .get(licenseHandler.getCurrentMonth()).size());
     }
 
     @Test
     public void registerUser_graceQuotaFullNormalQuotaUserReturns_accessGranted() {
-        List<String> users = registerUsers(30);
+        List<String> users = registerUsers(GRACE_QUOTA);
         boolean wasAccessGranted = licenseHandler.registerUser(users.get(1));
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
-        Assert.assertEquals(30, licenseHandler.getStatistics()
+        Assert.assertEquals(GRACE_QUOTA, licenseHandler.getStatistics()
                 .get(licenseHandler.getCurrentMonth()).size());
     }
 
     @Test
     public void registerUser_graceQuotaFullGraceQuotaUserReturns_accessGranted() {
-        List<String> users = registerUsers(30);
-        boolean wasAccessGranted = licenseHandler.registerUser(users.get(7));
+        List<String> users = registerUsers(GRACE_QUOTA);
+        boolean wasAccessGranted = licenseHandler
+                .registerUser(users.get(QUOTA * 2));
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
-        Assert.assertEquals(30, licenseHandler.getStatistics()
+        Assert.assertEquals(GRACE_QUOTA, licenseHandler.getStatistics()
                 .get(licenseHandler.getCurrentMonth()).size());
     }
 
@@ -566,9 +533,8 @@ public class LicenseHandlerTest {
     }
 
     @Test
-    public void requestAccess_userDoesNotHaveAccess_resolvesWithFalse()
-            throws IOException {
-        writeToLicenseFile(1, LocalDate.of(2020, 1, 1));
+    public void requestAccess_userDoesNotHaveAccess_resolvesWithFalse() {
+        fillGraceQuota();
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(true);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
@@ -625,37 +591,6 @@ public class LicenseHandlerTest {
         MockedLicenseHandler licenseHandler = new MockedLicenseHandler(config);
         licenseHandler.setCurrentDate(dateNow);
         return licenseHandler;
-    }
-
-    private void assertStatsFileContent(String expected) {
-        String fileContent = null;
-        try {
-            fileContent = new String(Files.readAllBytes(statsFilePath));
-        } catch (IOException e) {
-            Assert.fail("Failed to read the file at " + statsFilePath);
-        }
-        Assert.assertEquals("Unexpected statistics file content", expected,
-                fileContent);
-    }
-
-    private void writeToStatsFile(String content) throws IOException {
-        Files.write(statsFilePath, content.getBytes());
-    }
-
-    private void writeToLicenseFile(String content) throws IOException {
-        Files.write(licenseFilePath, content.getBytes());
-    }
-
-    private void writeToLicenseFile(int quota, LocalDate endDate)
-            throws IOException {
-        String licenseJson = licenseGenerator.generateLicense("Test company",
-                quota, endDate);
-        writeToLicenseFile(licenseJson);
-    }
-
-    private List<String> generateIds(int count) {
-        return IntStream.range(0, count).mapToObj(String::valueOf)
-                .collect(Collectors.toList());
     }
 
     private List<String> registerUsers(int i) {

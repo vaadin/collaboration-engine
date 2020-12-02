@@ -8,6 +8,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -66,6 +67,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     static final String MAP_NAME = CollaborationAvatarGroup.class.getName();
     static final String MAP_KEY = "users";
 
+    private final CollaborationEngine ce;
     private Registration topicRegistration;
     private CollaborationMap map;
 
@@ -104,9 +106,16 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *            connect the component to any topic
      */
     public CollaborationAvatarGroup(UserInfo localUser, String topicId) {
+        this(localUser, topicId, CollaborationEngine.getInstance());
+    }
+
+    CollaborationAvatarGroup(UserInfo localUser, String topicId,
+            CollaborationEngine ce) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
+        this.ce = ce;
         this.ownAvatarVisible = true;
+        refreshItems();
         setTopic(topicId);
     }
 
@@ -127,9 +136,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             topicRegistration = null;
         }
         if (topicId != null) {
-            topicRegistration = CollaborationEngine.getInstance()
-                    .openTopicConnection(getContent(), topicId, localUser,
-                            this::onConnectionActivate);
+            topicRegistration = ce.openTopicConnection(getContent(), topicId,
+                    localUser, this::onConnectionActivate);
         }
     }
 
@@ -221,8 +229,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             users.remove(localUser);
             return users.stream();
         });
-        getContent().setItems(Collections.emptyList());
         map = null;
+        refreshItems();
     }
 
     private void updateUsers(CollaborationMap map,
@@ -242,11 +250,9 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void refreshItems() {
-        if (map == null) {
-            return;
-        }
-        List<UserInfo> users = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
-
+        List<UserInfo> users = map != null
+                ? map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF)
+                : Arrays.asList(localUser);
         List<AvatarGroupItem> items = users != null ? users.stream().distinct()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))
                 .map(this::userToAvatarGroupItem).collect(Collectors.toList())
@@ -306,10 +312,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      */
     public void setImageProvider(ImageProvider imageProvider) {
         this.imageProvider = imageProvider;
-
-        if (map != null) {
-            refreshItems();
-        }
+        refreshItems();
     }
 
     /**
@@ -350,6 +353,6 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      */
     public void setOwnAvatarVisible(boolean ownAvatarVisible) {
         this.ownAvatarVisible = ownAvatarVisible;
-        this.refreshItems();
+        refreshItems();
     }
 }

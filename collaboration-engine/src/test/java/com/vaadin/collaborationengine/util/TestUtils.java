@@ -4,8 +4,9 @@ import java.lang.ref.WeakReference;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.node.NullNode;
 import org.junit.Assert;
+
+import com.fasterxml.jackson.databind.node.NullNode;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
@@ -37,8 +38,13 @@ public class TestUtils {
 
     public static void openEagerConnection(String topicId,
             Consumer<TopicConnection> handler) {
-        CollaborationEngine.getInstance().openTopicConnection(
-                new EagerConnectionContext(), topicId,
+        openEagerConnection(CollaborationEngine.getInstance(), topicId,
+                handler);
+    }
+
+    public static void openEagerConnection(CollaborationEngine ce,
+            String topicId, Consumer<TopicConnection> handler) {
+        ce.openTopicConnection(new EagerConnectionContext(), topicId,
                 new UserInfo(UUID.randomUUID().toString()), topic -> {
                     handler.accept(topic);
                     return null;

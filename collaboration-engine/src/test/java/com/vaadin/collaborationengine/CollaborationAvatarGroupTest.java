@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -32,22 +31,23 @@ public class CollaborationAvatarGroupTest {
     private static final String TOPIC_ID = "topic";
     private static final String TOPIC_ID_2 = "topic2";
 
-    private static class Client {
+    public static class AvatarGroupTestClient {
         final UI ui;
         final UserInfo user;
         CollaborationAvatarGroup group;
 
-        Client(int index) {
-            this(index, TOPIC_ID);
+        AvatarGroupTestClient(int index, CollaborationEngine ce) {
+            this(index, TOPIC_ID, ce);
         }
 
-        Client(int index, String topicId) {
+        AvatarGroupTestClient(int index, String topicId,
+                CollaborationEngine ce) {
             this.ui = new MockUI();
             this.user = new UserInfo("id" + index, "name" + index,
                     "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
-            group = new CollaborationAvatarGroup(user, topicId);
+            group = new CollaborationAvatarGroup(user, topicId, ce);
         }
 
         void attach() {
@@ -62,10 +62,6 @@ public class CollaborationAvatarGroupTest {
             group.setTopic(topicId);
         }
 
-        void cleanUp() {
-            ui.removeAll();
-        }
-
         List<AvatarGroupItem> getItems() {
             return group.getContent().getItems();
         }
@@ -76,41 +72,42 @@ public class CollaborationAvatarGroupTest {
         }
     }
 
-    private Client client1;
-    private Client client2;
-    private Client client3;
+    private CollaborationEngine ce;
 
-    private Client clientInOtherTopic;
+    private AvatarGroupTestClient client1;
+    private AvatarGroupTestClient client2;
+    private AvatarGroupTestClient client3;
 
-    private Client clientInMultipleTabs1;
-    private Client clientInMultipleTabs2;
+    private AvatarGroupTestClient clientInOtherTopic;
+
+    private AvatarGroupTestClient clientInMultipleTabs1;
+    private AvatarGroupTestClient clientInMultipleTabs2;
 
     @Before
     public void init() {
-        TestUtil.setDummyCollaborationEngineConfig();
-        client1 = new Client(1);
-        client2 = new Client(2);
-        client3 = new Client(3);
-        clientInOtherTopic = new Client(4, TOPIC_ID_2);
-        clientInMultipleTabs1 = new Client(5);
-        clientInMultipleTabs2 = new Client(5);
+        ce = new CollaborationEngine();
+        TestUtil.setDummyCollaborationEngineConfig(ce);
+        client1 = new AvatarGroupTestClient(1, ce);
+        client2 = new AvatarGroupTestClient(2, ce);
+        client3 = new AvatarGroupTestClient(3, ce);
+        clientInOtherTopic = new AvatarGroupTestClient(4, TOPIC_ID_2, ce);
+        clientInMultipleTabs1 = new AvatarGroupTestClient(5, ce);
+        clientInMultipleTabs2 = new AvatarGroupTestClient(5, ce);
     }
 
     @After
     public void cleanUp() {
-        Stream.of(client1, client2, client3, clientInOtherTopic,
-                clientInMultipleTabs1, clientInMultipleTabs2)
-                .forEach(Client::cleanUp);
-        TestUtils.clearMap(TOPIC_ID, CollaborationAvatarGroup.MAP_NAME,
-                CollaborationAvatarGroup.MAP_KEY);
-        TestUtils.clearMap(TOPIC_ID_2, CollaborationAvatarGroup.MAP_NAME,
-                CollaborationAvatarGroup.MAP_KEY);
-
         UI.setCurrent(null);
     }
 
     @Test
-    public void noInitialAvatar() {
+    public void beforeAttach_ownAvatarDisplayed() {
+        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+    }
+
+    @Test
+    public void beforeAttachNoOwnAvatar_noInitialAvatar() {
+        client1.group.setOwnAvatarVisible(false);
         Assert.assertEquals(Collections.emptyList(), client1.getItems());
     }
 
@@ -190,14 +187,14 @@ public class CollaborationAvatarGroupTest {
     }
 
     @Test
-    public void detach_localAvatarsCleared() {
+    public void detach_onlyLocalAvatarDisplayed() {
         client1.attach();
         client2.attach();
         client3.attach();
 
         client1.detach();
 
-        Assert.assertEquals(Collections.emptyList(), client1.getItems());
+        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
     }
 
     @Test
@@ -248,7 +245,8 @@ public class CollaborationAvatarGroupTest {
         client1.attach();
         client2.attach();
 
-        Client newClient = new Client(9, "new topic");
+        AvatarGroupTestClient newClient = new AvatarGroupTestClient(9,
+                "new topic", ce);
         newClient.attach();
 
         client1.setGroupTopic("new topic");
@@ -256,7 +254,8 @@ public class CollaborationAvatarGroupTest {
                 Arrays.asList(newClient.user.getName(), client1.user.getName()),
                 client1.getItemNames());
 
-        Client newClient1 = new Client(10, "new topic");
+        AvatarGroupTestClient newClient1 = new AvatarGroupTestClient(10,
+                "new topic", ce);
         newClient1.attach();
         Assert.assertEquals(Arrays.asList(newClient.user.getName(),
                 client1.user.getName(), newClient1.user.getName()),
@@ -264,13 +263,13 @@ public class CollaborationAvatarGroupTest {
     }
 
     @Test
-    public void setTopic_nullTopic_closeConnectionAndRemoveAvatars() {
+    public void setTopic_nullTopic_closeConnectionAndRemoveRemoteAvatars() {
         client1.attach();
         client2.attach();
 
         client1.setGroupTopic(null);
         client3.attach();
-        Assert.assertEquals(Collections.emptyList(), client1.getItemNames());
+        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
     }
 
     @Test
@@ -278,7 +277,7 @@ public class CollaborationAvatarGroupTest {
         client2.attach();
         client3.attach();
 
-        client1.group = new CollaborationAvatarGroup(client1.user, null);
+        client1.group = new CollaborationAvatarGroup(client1.user, null, ce);
         client1.setGroupTopic(TOPIC_ID);
         client1.attach();
         Assert.assertEquals(Arrays.asList("name2", "name3", "name1"),
@@ -310,7 +309,7 @@ public class CollaborationAvatarGroupTest {
     public void collaborationMapValueEncodedAsJsonNode() {
         client1.attach();
         AtomicBoolean done = new AtomicBoolean(false);
-        TestUtils.openEagerConnection(TOPIC_ID, topicConnection -> {
+        TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
             List<UserInfo> mapValue = topicConnection
                     .getNamedMap(CollaborationAvatarGroup.MAP_NAME)
                     .get(CollaborationAvatarGroup.MAP_KEY,
