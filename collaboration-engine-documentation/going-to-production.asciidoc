@@ -198,6 +198,22 @@ You can change your quota at any point in time.
 When you replace the license file with the new one, Collaboration Engine will mark your grace period as unused.
 If you exceed your new quota in the future, you will receive a new 30 day grace period.
 
+[[ce.production.request-access]]
+== Can I know if an end-user currently has access and act accordingly?
+
+Yes. The `CollaborationEngine` instance has the `requestAccess` method, which provides a way to know if an end-user has access.
+It takes a callback that will be invoked with a boolean response that you can use to act accordingly, e.g., adapting the UI
+depending on the fact that the end-user can use collaborative features.
+
+An example of how to check if an end-user has access:
+```java
+UI ui = UI.getCurrent();
+UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
+CollaborationEngine.getInstance().requestAccess(ui, userInfo, hasAccess -> {
+    component.setVisible(hasAccess);
+});
+```
+
 [[ce.production.restrict-usage]]
 == Can I restrict collaborative features to a subset of my end-users?
 
