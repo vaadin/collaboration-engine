@@ -118,10 +118,11 @@ public class CollaborationEngine {
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
-     * @return the handle that can be used for closing the connection
+     * @return the handle that can be used for configuring or closing the
+     *         connection
      */
-    public Registration openTopicConnection(Component component, String topicId,
-            UserInfo localUser,
+    public TopicConnectionRegistration openTopicConnection(Component component,
+            String topicId, UserInfo localUser,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(component, "Connection context can't be null");
         ConnectionContext context = new ComponentConnectionContext(component);
@@ -145,10 +146,11 @@ public class CollaborationEngine {
      * @param connectionActivationCallback
      *            the callback to be executed when a connection is activated,
      *            not {@code null}
-     * @return the handle that can be used for closing the connection
+     * @return the handle that can be used for configuring or closing the
+     *         connection
      */
-    public Registration openTopicConnection(ConnectionContext context,
-            String topicId, UserInfo localUser,
+    public TopicConnectionRegistration openTopicConnection(
+            ConnectionContext context, String topicId, UserInfo localUser,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         Objects.requireNonNull(context, "Connection context can't be null");
         Objects.requireNonNull(topicId, "Topic id can't be null");
@@ -170,9 +172,7 @@ public class CollaborationEngine {
 
             if (!hasSeat) {
                 // User quota exceeded, don't open the connection.
-                return () -> {
-                    // Nothing to do for closing the connection.
-                };
+                return new TopicConnectionRegistration(null, context);
             }
         }
 
@@ -181,7 +181,7 @@ public class CollaborationEngine {
         TopicConnection connection = new TopicConnection(context, topic,
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
-        return connection::deactivateAndClose;
+        return new TopicConnectionRegistration(connection, context);
     }
 
     /**
