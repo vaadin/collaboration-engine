@@ -2,7 +2,11 @@ package com.vaadin;
 
 import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
+import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.UserInfo;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinServiceInitListener;
@@ -16,6 +20,7 @@ public class ProductionDocumentation extends VerticalLayout {
 
     public ProductionDocumentation() {
         definitionOfEndUser();
+        requestAccess();
         checkUserPermissions();
     }
 
@@ -34,6 +39,18 @@ public class ProductionDocumentation extends VerticalLayout {
         CollaborationAvatarGroup avatarGroup = new CollaborationAvatarGroup(
                 userInfo, "app");
         add(avatarGroup);
+    }
+
+    private void requestAccess() {
+        Component component = new Div();
+
+        //@formatter:off
+        UI ui = UI.getCurrent();
+        UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
+        CollaborationEngine.getInstance().requestAccess(ui, userInfo, hasAccess -> {
+            component.setVisible(hasAccess);
+        });
+        //@formatter:on
     }
 
     private void checkUserPermissions() {
