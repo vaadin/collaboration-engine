@@ -28,12 +28,15 @@ class LicenseHandler {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class LicenseInfo {
+        final String key;
         final int quota;
         final LocalDate endDate;
 
         @JsonCreator
-        LicenseInfo(@JsonProperty(value = "quota", required = true) int quota,
+        LicenseInfo(@JsonProperty(value = "key", required = true) String key,
+                @JsonProperty(value = "quota", required = true) int quota,
                 @JsonProperty(value = "endDate", required = true) LocalDate endDate) {
+            this.key = key;
             this.quota = quota;
             this.endDate = endDate;
         }
@@ -55,12 +58,15 @@ class LicenseHandler {
     }
 
     static class StatisticsInfo {
+        String licenseKey;
         Map<YearMonth, Set<String>> statistics;
         LocalDate gracePeriodStart;
 
         StatisticsInfo(
+                @JsonProperty(value = "licenseKey", required = true) String licenseKey,
                 @JsonProperty(value = "statistics", required = true) Map<YearMonth, List<String>> userIdsFromFile,
                 @JsonProperty(value = "gracePeriodStart") LocalDate gracePeriodStart) {
+            this.licenseKey = licenseKey;
             this.statistics = copyMap(userIdsFromFile);
             this.gracePeriodStart = gracePeriodStart;
         }
@@ -86,6 +92,9 @@ class LicenseHandler {
             fileHandler = new FileHandler(config);
             license = fileHandler.readLicenseFile();
             statistics = fileHandler.readStatsFile();
+            if (!license.key.equals(statistics.licenseKey)) {
+                statistics.licenseKey = license.key;
+            }
             if (license.endDate.isBefore(getCurrentDate())) {
                 LoggerFactory.getLogger(CollaborationEngine.class)
                         .warn("Your Collaboration Engine license has expired. "
@@ -174,5 +183,4 @@ class LicenseHandler {
     Map<YearMonth, Set<String>> getStatistics() {
         return statistics.copyMap(statistics.statistics);
     }
-
 }

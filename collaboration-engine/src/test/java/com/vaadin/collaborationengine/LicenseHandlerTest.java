@@ -160,14 +160,17 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Files.deleteIfExists(statsFilePath);
         licenseHandler.setCurrentDate(LocalDate.of(2020, 2, 1));
         licenseHandler.registerUser("steve");
-        assertStatsFileContent(
-                "{\"statistics\":{\"2020-02\":[\"steve\"]},\"gracePeriodStart\":null}");
+
+        assertStatsFileContent("{\"licenseKey\":\""
+                + licenseHandler.statistics.licenseKey
+                + "\",\"statistics\":{\"2020-02\":[\"steve\"]},\"gracePeriodStart\":null}");
     }
 
     @Test
     public void statsFileHasData_initStatistics_readsDataFromFile()
             throws IOException {
-        writeToStatsFile("{\"statistics\":{\"2000-01\":[\"bob\"]}}");
+        writeToStatsFile(
+                "{\"licenseKey\":\"123\",\"statistics\":{\"2000-01\":[\"bob\"]}}");
         LicenseHandler licenseHandler = new LicenseHandler(config);
 
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
@@ -178,15 +181,32 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void statsFileHasData_initStatistics_registerUser_allDataIncludedInFile()
             throws IOException {
-        writeToStatsFile("{\"statistics\":{\"2020-01\":[\"bob\"]}}");
+
+        writeToStatsFile("{\"licenseKey\":\"" + LICENSE_KEY
+                + "\",\"statistics\":{\"2020-01\":[\"bob\"]}}");
         MockedLicenseHandler licenseHandler = new MockedLicenseHandler(config);
         licenseHandler.setCurrentDate(LocalDate.of(2020, 1, 1));
         licenseHandler.registerUser("steve");
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(new HashSet<>(Arrays.asList("bob", "steve")),
                 licenseHandler.getStatistics().get(YearMonth.of(2020, 1)));
-        assertStatsFileContent(
-                "{\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},\"gracePeriodStart\":null}");
+        assertStatsFileContent("{\"licenseKey\":\"" + LICENSE_KEY
+                + "\",\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},\"gracePeriodStart\":null}");
+    }
+
+    @Test
+    public void statsFileHasData_newLicenseGiven_licenseKeyUpdatedInStats()
+            throws IOException {
+        writeToStatsFile(
+                "{\"licenseKey\":\"123\",\"statistics\":{\"2020-01\":[\"bob\"]}},"
+                        + "\"gracePeriodStart\":null}");
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(config);
+        licenseHandler.setCurrentDate(LocalDate.of(2020, 1, 1));
+
+        // Do an action to trigger rewrite of the stats file
+        licenseHandler.registerUser("steve");
+        assertStatsFileContent("{\"licenseKey\":\"" + LICENSE_KEY
+                + "\",\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},\"gracePeriodStart\":null}");
     }
 
     @Test
@@ -199,9 +219,10 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         licenseHandler.setCurrentDate(LocalDate.of(2020, 3, 1));
         licenseHandler.registerUser("steve");
 
-        assertStatsFileContent(
-                "{\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
-                        + "\"2020-03\":[\"steve\"]},\"gracePeriodStart\":null}");
+        assertStatsFileContent("{\"licenseKey\":\""
+                + licenseHandler.statistics.licenseKey
+                + "\",\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
+                + "\"2020-03\":[\"steve\"]},\"gracePeriodStart\":null}");
 
         Map<YearMonth, Set<String>> newStats = new LicenseHandler(config)
                 .getStatistics();
@@ -444,7 +465,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void unSetGracePeriodReadFromFile_gracePeriodIsNull()
             throws IOException {
         writeToStatsFile(
-                "{\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\""
+                "{\"licenseKey\":\"123\",\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\""
                         + "]}," + "\"gracePeriodStart\":null}");
         LicenseHandler licenseHandler = new LicenseHandler(config);
         Assert.assertNull(licenseHandler.statistics.gracePeriodStart);
@@ -454,7 +475,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void setGracePeriodReadFromFile_gracePeriodIsSet()
             throws IOException {
         writeToStatsFile(
-                "{\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\","
+                "{\"licenseKey\":\"123\",\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\","
                         + "\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\","
                         + "\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"]},"
                         + "\"gracePeriodStart\":\"2020-10-28\"}");
@@ -582,7 +603,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         LocalDate dateNow = LocalDate.of(2020, 6, 10);
         LocalDate graceStart = dateNow.minusDays(daysSinceGracePeriodStarted);
 
-        writeToStatsFile("{\"statistics\":" + "{\""
+        writeToStatsFile("{\"licenseKey\":\"123\",\"statistics\":{\""
                 + YearMonth.from(dateNow).minusMonths(1)
                 + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"], \""
                 + YearMonth.from(dateNow)

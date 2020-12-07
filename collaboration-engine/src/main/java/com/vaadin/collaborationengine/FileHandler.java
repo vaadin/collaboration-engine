@@ -122,7 +122,7 @@ class FileHandler {
                 return objectMapper.treeToValue(statsJson.get(),
                         StatisticsInfo.class);
             } else {
-                return new StatisticsInfo(Collections.emptyMap(), null);
+                return new StatisticsInfo(null, Collections.emptyMap(), null);
             }
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(

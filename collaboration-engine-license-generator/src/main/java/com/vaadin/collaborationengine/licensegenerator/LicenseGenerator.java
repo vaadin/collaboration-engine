@@ -153,6 +153,33 @@ public class LicenseGenerator {
         Objects.requireNonNull(owner);
         Objects.requireNonNull(endDate);
         UUID key = UUID.randomUUID();
+        return generateLicense(key, owner, quota, endDate);
+    }
+
+    /**
+     * Generates a license in {@code JSON} format.
+     * <p>
+     * It takes in a license key, the owner name, the user quota and the license
+     * end-date.
+     * <p>
+     * A <i>checksum</i> of the license content will be calculated and appended
+     * to the {@code JSON} object.
+     *
+     * @param key
+     *            the license key
+     * @param owner
+     *            the name of the license owner
+     * @param quota
+     *            the license user quota
+     * @param endDate
+     *            the license end-date
+     * @return the license in {@code JSON} format
+     */
+    public String generateLicense(UUID key, String owner, int quota,
+            LocalDate endDate) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(owner);
+        Objects.requireNonNull(endDate);
         LicenseInfo content = new LicenseInfo(key, owner, quota, endDate);
         return generateLicense(content);
     }

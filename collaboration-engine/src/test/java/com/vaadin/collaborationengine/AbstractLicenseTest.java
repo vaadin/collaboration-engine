@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -22,6 +23,7 @@ public abstract class AbstractLicenseTest {
 
     final static int QUOTA = 3;
     final static int GRACE_QUOTA = 10 * QUOTA;
+    final static UUID LICENSE_KEY = UUID.randomUUID();
 
     Path statsFilePath;
     Path licenseFilePath;
@@ -76,8 +78,8 @@ public abstract class AbstractLicenseTest {
     }
 
     void writeToLicenseFile(int quota, LocalDate endDate) throws IOException {
-        String licenseJson = licenseGenerator.generateLicense("Test company",
-                quota, endDate);
+        String licenseJson = licenseGenerator.generateLicense(LICENSE_KEY,
+                "Test company", quota, endDate);
         writeToLicenseFile(licenseJson);
     }
 
