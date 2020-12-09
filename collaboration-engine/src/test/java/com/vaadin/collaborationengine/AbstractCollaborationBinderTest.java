@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.junit.After;
 import org.junit.Before;
 
 import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
@@ -15,7 +14,6 @@ import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.collaborationengine.util.TestLocalDateField;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Focusable;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
 
@@ -29,9 +27,9 @@ public class AbstractCollaborationBinderTest {
         CollaborationBinder<TestBean> binder;
         private final UI ui;
 
-        public BinderTestClient() {
+        public BinderTestClient(CollaborationEngine ce) {
             this.ui = new MockUI();
-            binder = new CollaborationBinder<>(TestBean.class, user);
+            binder = new CollaborationBinder<>(TestBean.class, user, ce);
             binder.setTopic("topic", () -> null);
         }
 
@@ -55,16 +53,9 @@ public class AbstractCollaborationBinderTest {
             ui.remove(field);
             ui.remove(localDateField);
         }
-
-        public void cleanUp() {
-            ui.getChildren().forEach(component -> {
-                if (component instanceof Focusable<?>) {
-                    ((Focusable<?>) component).blur();
-                }
-            });
-            ui.removeAll();
-        }
     }
+
+    protected CollaborationEngine ce;
 
     protected BinderTestClient client;
     protected BinderTestClient client2;
@@ -74,23 +65,18 @@ public class AbstractCollaborationBinderTest {
 
     @Before
     public void init() {
-        TestUtil.setDummyCollaborationEngineConfig();
-        client = new BinderTestClient();
+        ce = new CollaborationEngine();
+        TestUtil.setDummyCollaborationEngineConfig(ce);
+
+        client = new BinderTestClient(ce);
         field = client.field;
 
-        client2 = new BinderTestClient();
+        client2 = new BinderTestClient(ce);
 
-        TestUtils.openEagerConnection("topic", topicConnection -> {
+        TestUtils.openEagerConnection(ce, "topic", topicConnection -> {
             this.topicConnection = topicConnection;
             map = CollaborationBinderUtil.getMap(topicConnection);
         });
-    }
-
-    @After
-    public void cleanUp() {
-        client.cleanUp();
-        client2.cleanUp();
-        map.put("value", null);
     }
 
     protected void setSharedValue(String key, Object value) {

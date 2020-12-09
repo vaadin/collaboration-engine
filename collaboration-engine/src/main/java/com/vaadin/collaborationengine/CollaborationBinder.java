@@ -251,10 +251,11 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     }
 
     private final UserInfo localUser;
+    private final CollaborationEngine ce;
 
     private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
-    private Registration topicRegistration;
+    private TopicConnectionRegistration topicRegistration;
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
@@ -283,9 +284,15 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
      *            the information of the local user, not <code>null</code>
      */
     public CollaborationBinder(Class<BEAN> beanType, UserInfo localUser) {
+        this(beanType, localUser, CollaborationEngine.getInstance());
+    }
+
+    CollaborationBinder(Class<BEAN> beanType, UserInfo localUser,
+            CollaborationEngine ce) {
         super(beanType);
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
+        this.ce = ce;
     }
 
     @Override
@@ -662,9 +669,12 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             fieldToPropertyName.keySet().forEach(
                     field -> connectionContext.addComponent((Component) field));
 
-            topicRegistration = CollaborationEngine.getInstance()
-                    .openTopicConnection(connectionContext, topicId, localUser,
-                            topic -> bindToTopic(topic, initialBeanSupplier));
+            topicRegistration = ce.openTopicConnection(connectionContext,
+                    topicId, localUser,
+                    topic -> bindToTopic(topic, initialBeanSupplier));
+
+            topicRegistration.onConnectionFailed(
+                    e -> super.readBean(initialBeanSupplier.get()));
         }
 
     }
