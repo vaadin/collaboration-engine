@@ -547,8 +547,11 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         AtomicBoolean result = new AtomicBoolean(false);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
         ce.setConfigProvider(() -> new CollaborationEngineConfig(false, null));
-        ce.requestAccess(spyContext, user, result::set);
+        ce.requestAccess(spyContext, user, response -> {
+            result.set(response.hasAccess());
+        });
         Assert.assertTrue(result.get());
+
     }
 
     @Test
@@ -556,7 +559,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
-        ce.requestAccess(spyContext, user, result::set);
+        ce.requestAccess(spyContext, user, response -> {
+            result.set(response.hasAccess());
+        });
         Assert.assertTrue(result.get());
     }
 
@@ -566,7 +571,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(true);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
-        ce.requestAccess(spyContext, user, result::set);
+        ce.requestAccess(spyContext, user, response -> {
+            result.set(response.hasAccess());
+        });
         Assert.assertFalse(result.get());
     }
 
@@ -579,9 +586,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expectMessage("license file is not valid");
 
         UserInfo user = new UserInfo("steve");
-        AtomicBoolean result = new AtomicBoolean(false);
         ConnectionContext spyContext = new EagerConnectionContext();
-        ce.requestAccess(spyContext, user, result::set);
+        ce.requestAccess(spyContext, user, response -> {
+        });
     }
 
     @Test

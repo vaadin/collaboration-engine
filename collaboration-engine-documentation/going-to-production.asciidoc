@@ -202,15 +202,15 @@ If you exceed your new quota in the future, you will receive a new 30 day grace 
 == Can I know if an end-user currently has access and act accordingly?
 
 Yes. The `CollaborationEngine` instance has the `requestAccess` method, which provides a way to know if an end-user has access.
-It takes a callback that will be invoked with a boolean response that you can use to act accordingly, e.g., adapting the UI
+It takes a callback that will be invoked when access has been checked. Within the callback, based on `AccessResponse::hasAccess` you act accordingly, e.g., adapting the UI
 depending on the fact that the end-user can use collaborative features.
 
 An example of how to check if an end-user has access:
 ```java
 UI ui = UI.getCurrent();
 UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
-CollaborationEngine.getInstance().requestAccess(ui, userInfo, hasAccess -> {
-    component.setVisible(hasAccess);
+CollaborationEngine.getInstance().requestAccess(ui, userInfo, response -> {
+    component.setVisible(response.hasAccess());
 });
 ```
 

@@ -47,8 +47,8 @@ public class ProductionDocumentation extends VerticalLayout {
         //@formatter:off
         UI ui = UI.getCurrent();
         UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
-        CollaborationEngine.getInstance().requestAccess(ui, userInfo, hasAccess -> {
-            component.setVisible(hasAccess);
+        CollaborationEngine.getInstance().requestAccess(ui, userInfo, response -> {
+            component.setVisible(response.hasAccess());
         });
         //@formatter:on
     }

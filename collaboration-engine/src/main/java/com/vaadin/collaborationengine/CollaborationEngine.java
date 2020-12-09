@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -212,61 +211,68 @@ public class CollaborationEngine {
     }
 
     /**
-     * Requests access for a user to the Collaboration Engine, then the provided
-     * callback will be invoked with a boolean which will be {@code true} if the
-     * access is granted.
+     * Requests access for a user to Collaboration Engine. The provided callback
+     * will be invoked with a response that tells whether the access is granted.
      * <p>
      * This method can be used to check if the user has access to the
      * Collaboration Engine, e.g. if the license is not expired and there is
      * quota for that user; depending on the response, it's then possible to
      * adapt the UI enabling or disabling collaboration features.
+     * <p>
+     * In the callback, you can check from the response whether the user has
+     * access or not with the {@link AccessResponse#hasAccess()} method. It
+     * returns {@code true} if access has been granted for the user.
      *
      * @param ui
      *            the UI which will be accessed to execute the callback
      * @param user
      *            the user requesting access
-     * @param accessCallback
+     * @param requestCallback
      *            the callback to accept the response
      */
     public void requestAccess(UI ui, UserInfo user,
-            Consumer<Boolean> accessCallback) {
+            Consumer<AccessResponse> requestCallback) {
         Objects.requireNonNull(ui, "The UI cannot be null");
         ComponentConnectionContext context = new ComponentConnectionContext(ui);
-        requestAccess(context, user, accessCallback);
+        requestAccess(context, user, requestCallback);
     }
 
     /**
-     * Requests access for a user to the Collaboration Engine, then the provided
-     * callback will be invoked with a boolean which will be {@code true} if the
-     * access is granted.
+     * Requests access for a user to Collaboration Engine. The provided callback
+     * will be invoked with a response that tells whether the access is granted.
      * <p>
      * This method can be used to check if the user has access to the
      * Collaboration Engine, e.g. if the license is not expired and there is
      * quota for that user; depending on the response, it's then possible to
      * adapt the UI enabling or disabling collaboration features.
+     * <p>
+     * In the callback, you can check from the response whether the user has
+     * access or not with the {@link AccessResponse#hasAccess()} method. It
+     * returns {@code true} if access has been granted for the user.
      *
      * @param context
      *            context for the connection
      * @param user
      *            the user requesting access
-     * @param accessCallback
+     * @param requestCallback
      *            the callback to accept the response
      */
     public void requestAccess(ConnectionContext context, UserInfo user,
-            Consumer<Boolean> accessCallback) {
+            Consumer<AccessResponse> requestCallback) {
         Objects.requireNonNull(context, "ConnectionContext cannot be null");
         Objects.requireNonNull(user, "UserInfo cannot be null");
-        Objects.requireNonNull(accessCallback, "The callback cannot be null");
+        Objects.requireNonNull(requestCallback,
+                "AccessResponse cannot be null");
 
         // Will handle remote connection here
 
-        AtomicBoolean hasAccess = new AtomicBoolean(true);
         ensureConfigAndLicenseHandlerInitialization();
-        if (config.licenseCheckingEnabled) {
-            hasAccess.set(licenseHandler.registerUser(user.getId()));
-        }
+        final boolean hasAccess = config.licenseCheckingEnabled
+                ? licenseHandler.registerUser(user.getId())
+                : true;
 
-        context.dispatchAction(() -> accessCallback.accept(hasAccess.get()));
+        AccessResponse response = new AccessResponse(hasAccess);
+        context.dispatchAction(() -> requestCallback.accept(response));
     }
 
     void setConfigProvider(Supplier<CollaborationEngineConfig> configProvider) {
