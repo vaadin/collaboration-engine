@@ -5,7 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -16,10 +18,26 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
+import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.TestUtils;
 
 public abstract class AbstractLicenseTest {
+
+    public static class SpyLicenseEventHandler implements LicenseEventHandler {
+
+        private final Map<LicenseEventType, Integer> handledEvents = new HashMap<>();
+
+        @Override
+        public void handleLicenseEvent(LicenseEvent event) {
+            handledEvents.compute(event.getType(),
+                    (k, v) -> v == null ? 1 : v + 1);
+        }
+
+        Map<LicenseEventType, Integer> getHandledEvents() {
+            return handledEvents;
+        }
+    }
 
     final static int QUOTA = 3;
     final static int GRACE_QUOTA = 10 * QUOTA;
@@ -35,6 +53,8 @@ public abstract class AbstractLicenseTest {
             testDataDir);
 
     LicenseGenerator licenseGenerator = new LicenseGenerator();
+
+    SpyLicenseEventHandler spyEventHandler = new SpyLicenseEventHandler();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -56,6 +76,7 @@ public abstract class AbstractLicenseTest {
 
         ce = new CollaborationEngine();
         ce.setConfigProvider(() -> config);
+        ce.setLicenseEventHandler(spyEventHandler);
     }
 
     void assertStatsFileContent(String expected) {

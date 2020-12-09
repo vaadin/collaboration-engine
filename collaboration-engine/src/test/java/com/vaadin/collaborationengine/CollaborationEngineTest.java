@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
@@ -226,6 +227,27 @@ public class CollaborationEngineTest {
         pendingAction.get().execute();
 
         Assert.assertTrue(callbackRun.get());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void openConnection_licenseEventHandlerNotSet_throwsException() {
+        collaborationEngine.setConfigProvider(
+                () -> new CollaborationEngineConfig(true, null));
+        collaborationEngine.openTopicConnection(context, "topic",
+                SystemUserInfo.getInstance(), connection -> null);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void setLicenseEventHandler_licenseEventHandlerAlreadySet_throwsException() {
+        collaborationEngine.setLicenseEventHandler(event -> {
+        });
+        collaborationEngine.setLicenseEventHandler(event -> {
+        });
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void setLicenseEventHandlerNull_throwsException() {
+        collaborationEngine.setLicenseEventHandler(null);
     }
 
     class SpyConnectionContext implements ConnectionContext {

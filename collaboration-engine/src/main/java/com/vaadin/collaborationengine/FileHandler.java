@@ -122,12 +122,13 @@ class FileHandler {
                 return objectMapper.treeToValue(statsJson.get(),
                         StatisticsInfo.class);
             } else {
-                return new StatisticsInfo(null, Collections.emptyMap(), null);
+                return new StatisticsInfo(null, Collections.emptyMap(), null,
+                        Collections.emptyMap());
             }
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(
                     "Collaboration Engine failed to parse the statistics information from file '"
-                            + licenseFilePath + "'.",
+                            + statsFilePath + "'.",
                     e);
         }
     }

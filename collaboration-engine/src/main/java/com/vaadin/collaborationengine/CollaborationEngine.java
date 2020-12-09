@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -60,6 +61,7 @@ public class CollaborationEngine {
     private Supplier<CollaborationEngineConfig> configProvider;
     private CollaborationEngineConfig config;
     private LicenseHandler licenseHandler;
+    private LicenseEventHandler licenseEventHandler;
 
     private final TopicActivationHandler topicActivationHandler;
 
@@ -185,6 +187,31 @@ public class CollaborationEngine {
     }
 
     /**
+     * Sets the handler for license events. The handler will be invoked when
+     * license events occur, e.g. when the license is expired or when the
+     * end-user quota has entered the grace period. The handler can then be used
+     * for example to forward these events via e-mail or to a monitoring
+     * application to be alerted about the current status of the license.
+     * <p>
+     * In production mode, the handler must be set before using collaborative
+     * features, such as {@link CollaborationBinder} or directly opening a
+     * connection to Collaboration Engine.
+     * <p>
+     * See {@link LicenseEventType} for a list of license event types.
+     *
+     * @param handler
+     *            the license event handler, not {@code null}
+     */
+    public void setLicenseEventHandler(LicenseEventHandler handler) {
+        Objects.requireNonNull(handler, "The handler cannot be null");
+        if (licenseEventHandler != null) {
+            throw new IllegalStateException(
+                    "The handler was already set and it can only be set once.");
+        }
+        licenseEventHandler = handler;
+    }
+
+    /**
      * Requests access for a user to the Collaboration Engine, then the provided
      * callback will be invoked with a boolean which will be {@code true} if the
      * access is granted.
@@ -270,13 +297,21 @@ public class CollaborationEngine {
         return licenseHandler;
     }
 
-    private synchronized void ensureConfigAndLicenseHandlerInitialization() {
+    LicenseEventHandler getLicenseEventHandler() {
+        return licenseEventHandler;
+    }
+
+    synchronized CollaborationEngineConfig getConfig() {
         if (config == null) {
             config = configProvider.get();
         }
+        return config;
+    }
+
+    private synchronized void ensureConfigAndLicenseHandlerInitialization() {
         if (licenseHandler == null) {
             // Will throw if config is invalid
-            licenseHandler = new LicenseHandler(config);
+            licenseHandler = new LicenseHandler(this);
         }
     }
 }
