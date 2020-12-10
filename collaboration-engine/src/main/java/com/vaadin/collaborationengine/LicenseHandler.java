@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -87,6 +88,8 @@ class LicenseHandler {
             return treeMap;
         }
     }
+
+    static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
 
     private final CollaborationEngine ce;
     private final FileHandler fileHandler;
@@ -224,7 +227,20 @@ class LicenseHandler {
             // Event already fired, do nothing.
             return;
         }
-        LicenseEvent event = new LicenseEvent(ce, type);
+        String message;
+        switch (type) {
+        case GRACE_PERIOD_STARTED:
+            LocalDate gracePeriodEnd = getLastGracePeriodDate().plusDays(1);
+            message = type.createMessage(gracePeriodEnd.format(DATE_FORMATTER));
+            break;
+        case LICENSE_EXPIRES_SOON:
+            message = type
+                    .createMessage(license.endDate.format(DATE_FORMATTER));
+            break;
+        default:
+            message = type.createMessage();
+        }
+        LicenseEvent event = new LicenseEvent(ce, type, message);
         statistics.licenseEvents.put(type, getCurrentDate());
         fileHandler.writeStats(statistics);
         ce.getLicenseEventHandler().handleLicenseEvent(event);

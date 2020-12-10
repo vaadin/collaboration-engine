@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +29,21 @@ public abstract class AbstractLicenseTest {
 
         private final Map<LicenseEventType, Integer> handledEvents = new HashMap<>();
 
+        private final List<String> messages = new ArrayList<String>();
+
         @Override
         public void handleLicenseEvent(LicenseEvent event) {
             handledEvents.compute(event.getType(),
                     (k, v) -> v == null ? 1 : v + 1);
+            messages.add(event.getMessage());
         }
 
         Map<LicenseEventType, Integer> getHandledEvents() {
             return handledEvents;
+        }
+
+        List<String> getMessages() {
+            return messages;
         }
     }
 

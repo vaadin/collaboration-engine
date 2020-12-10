@@ -24,6 +24,8 @@ import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 public class LicenseHandlerTest extends AbstractLicenseTest {
 
     public static class MockedLicenseHandler extends LicenseHandler {
@@ -714,6 +716,32 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         boolean eventFired = spyEventHandler.getHandledEvents()
                 .containsKey(LicenseEventType.LICENSE_EXPIRED);
         Assert.assertFalse(eventFired);
+    }
+
+    @Test
+    public void licenseEventHandler_gracePeriodStarted_messageHasCorrectDate()
+            throws IOException {
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(ce);
+        registerUsers(licenseHandler, 4);
+
+        String message = spyEventHandler.getMessages().get(0);
+        Assert.assertThat(message, containsString("2020-06-01"));
+    }
+
+    @Test
+    public void licenseEventHandler_licenseExpiresSoon_messageHasCorrectDate()
+            throws IOException {
+        LocalDate dateNow = LocalDate.of(2020, 6, 10);
+        LocalDate endDate = LocalDate.of(2020, 7, 10);
+        writeToLicenseFile(3, endDate);
+
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(ce);
+
+        licenseHandler.setCurrentDate(dateNow);
+        licenseHandler.registerUser("steve");
+
+        String message = spyEventHandler.getMessages().get(0);
+        Assert.assertThat(message, containsString("2020-07-10"));
     }
 
     private LicenseHandler getLicenseHandlerWithGracePeriod(
