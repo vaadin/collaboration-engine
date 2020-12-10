@@ -13,8 +13,9 @@ Using Collaboration Engine adds a few extra steps when you https://vaadin.com/do
 You need to:
 
 . obtain a license file with an end-user quota,
-. configure where Collaboration Engine files are stored and
-. store the license file in the right location
+. configure where Collaboration Engine files are stored,
+. store the license file in the right location and
+. implement a `LicenseEventHandler` to be notified when the license needs to be updated.
 
 [[ce.production.obtain-license]]
 == Obtain a license file with an end-user quota
@@ -23,7 +24,7 @@ First, you need to have a subscription with a large enough user limit to meet yo
 Vaadin will provide the license file to you.
 If you do not have a license yet, https://vaadin.com/collaboration/#contact[request a license via the web page] to get in contact with Vaadin.
 
-The license file name is `ce-license.json`. 
+The license file name is `ce-license.json`.
 It defines how many unique end-users can use collaborative features per month and the license’s expiration date.
 
 [[ce.production.configure-data-dir]]
@@ -38,27 +39,26 @@ You can configure the directory path by either:
 
 If both are present, then the server startup parameter will be used.
 
+[[ce.production.data-dir-in-project-files]]
 === Configuring the data directory in project files
 
 Storing the path into the project files is a good way if you always deploy your application into the same environment and the folder does not change.
-You can provide the path as a system property within a `VaadinServiceInitListener`.
-How you register the listener depends on if you use Spring or not.
+You can set the path as a system property in code that runs once on startup.
+The most convenient place to write that code is different for Spring and non-Spring applications.
 
 ==== Spring applications
 
-If you have a Spring application, you can set `vaadin.ce.dataDir` as a system property in the `main` method.
+If you have a Spring application, you can create a singleton-scoped Spring component which sets `vaadin.ce.dataDir` as a system property.
 
 .com.company.myapp.Application.java
 ```java
-@SpringBootApplication
-public class Application extends SpringBootServletInitializer {
+@SpringComponent
+public class CollaborationEngineConfiguration {
 
-    public static void main(String[] args) {
+    public CollaborationEngineConfiguration() {
         System.setProperty("vaadin.ce.dataDir",
                 "/Users/steve/vaadin/collaboration-engine/");
-        SpringApplication.run(Application.class, args);
     }
-
 }
 ```
 
@@ -89,7 +89,7 @@ com.company.myapp.MyVaadinInitListener
 
 === Configuring the data directory on server startup
 
-As another option, you can pass the data directory as a parameter on server startup. 
+As another option, you can pass the data directory as a parameter on server startup.
 This option assumes that you have already a production-ready build available and want to run the package on the server.
 Read https://vaadin.com/docs/flow/production/tutorial-production-mode-basic.html[Preparing Your Application for Production] to learn more about building your application for production.
 
@@ -123,14 +123,14 @@ The directory should be both readable and writable by the operating system user 
 After obtaining the license file and the data directory, you need to put the license file in that directory on the server.
 For example, if you configured the folder to be `/Users/steve/vaadin/collaboration-engine/`, then place the license file so that `/Users/steve/vaadin/collaboration-engine/ce-license.json` can be read by the application.
 
-Collaboration Engine will use the file to verify you have a proper license. 
+Collaboration Engine will use the file to verify you have a proper license.
 The app does not require an internet connection to Vaadin servers to verify the license.
 
 == Providing a data directory for a Docker container
-It is recommended to provide the data directory to a Docker container on runtime by either using a https://docs.docker.com/storage/volumes/[volume] or a https://docs.docker.com/storage/bind-mounts/[bind mount]. 
+It is recommended to provide the data directory to a Docker container on runtime by either using a https://docs.docker.com/storage/volumes/[volume] or a https://docs.docker.com/storage/bind-mounts/[bind mount].
 It is not recommended to copy the license file into the container image, as the data directory will be erased every time you deploy a new version of your application.
 
-If you are deploying to a cloud provider, the odds are that you do not have access to the host file system to be able to make use of bind mounts. 
+If you are deploying to a cloud provider, the odds are that you do not have access to the host file system to be able to make use of bind mounts.
 Consult the documentation for your cloud provider to get instructions on how to set up and provide a volume to your application.
 
 While a volume is preferred, if you have access to the host's file system or want to test the Docker image locally, you can do it with a bind mount with the following steps:
@@ -146,6 +146,69 @@ When using volumes, you would replace the absolute path to the directory with th
 ```
 $ docker run --name=myapp -dp 8080:8080 -v myapp-volume:/usr/app/ce myapp
 ```
+
+
+[[ce.production.license-events]]
+== Getting notified when license needs to be updated
+
+The licensing model may cause collaborative features to be disabled for some of
+your application's users. To avoid this situation, you need to obtain a new license
+if your old license is about to expire, or if your user base increases and the
+number of monthly end-users exceeds the quota.
+
+To know when to update the license, you need to implement a license event handler for Collaboration Engine.
+There are four different license event types, each fired at most once during the license's lifecycle:
+
+. the first time when exceeding the end-user quota and entering the grace period (more details in <<ce.production.over-quota>>),
+. when the grace period ends,
+. 30 days before the license expires and
+. when the license expires.
+
+If you take care of updating the license when events 1 and 3 are fired, the other
+two events shouldn't happen at all.
+
+One potential way to handle the event is to send a message to any existing application monitoring system you might have.
+Another option is to send an email to the relevant people, e.g. those who maintain
+the deployment and those who are responsible of the Collaboration Engine license.
+The important thing is to make sure that the events are noticed and properly handled.
+
+In the following example, we are logging the event messages as errors using SLF4J logging API.
+The listener can be configured in the same place as the `vaadin.ce.dataDir` property
+if you're setting that property in Java code, as described earlier.
+In this case, we have a Spring project, so the handler is configured in a singleton-scoped
+Spring component.
+If you're not using Spring, you can configure the license event handler in a Vaadin service
+init listener in the same way as described in <<ce.production.data-dir-in-project-files>>.
+
+```java
+@SpringComponent
+public class CollaborationEngineConfiguration {
+
+    private static final Logger LOGGER = LoggerFactory
+            .getLogger(CollaborationEngineConfiguration.class);
+
+    public CollaborationEngineConfiguration() {
+        CollaborationEngine.getInstance().setLicenseEventHandler(event -> {
+            LOGGER.error(event.getMessage());
+        });
+    }
+}
+```
+
+The event messages provide information of what has happened, how it will affect the application, and
+what is the recommended action to take.
+If you want to handle the four license event types differently, you can check the
+type in the handler with `LicenseEvent::getType`, which returns a `LicenseEventType` enum.
+For example, you can write custom messages instead of the default messages provided by the event.
+
+Just logging the messages is a sufficient solution only if you're confident that someone is actively
+monitoring the error logs and is ready to take action in this situation.
+This example could be improved by automatically sending emails when an error is logged,
+e.g. based on https://www.baeldung.com/logback-send-email[this article].
+
+NOTE: Collaboration Engine will throw an exception in production mode if a license handler hasn't been defined.
+The purpose is to make sure that you're aware of the events,
+and to avoid accidentally forgetting to monitor the license status.
 
 [[ce.production.monthly-quota]]
 = Monthly end-user quota

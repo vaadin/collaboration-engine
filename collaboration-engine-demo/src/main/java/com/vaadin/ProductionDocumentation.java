@@ -1,5 +1,8 @@
 package com.vaadin;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationEngine;
@@ -9,6 +12,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinServiceInitListener;
+import com.vaadin.flow.spring.annotation.SpringComponent;
 
 /**
  * Code snippets used in licensing/production documentation.
@@ -28,6 +32,21 @@ public class ProductionDocumentation extends VerticalLayout {
         public void serviceInit(ServiceInitEvent event) {
             System.setProperty("vaadin.ce.dataDir",
                     "/Users/steve/vaadin/collaboration-engine/");
+        }
+    }
+
+    @SpringComponent
+    public static class CollaborationEngineConfiguration {
+
+        private static final Logger LOGGER = LoggerFactory
+                .getLogger(CollaborationEngineConfiguration.class);
+
+        public CollaborationEngineConfiguration() {
+            System.setProperty("vaadin.ce.dataDir",
+                    "/Users/steve/vaadin/collaboration-engine/");
+            CollaborationEngine.getInstance().setLicenseEventHandler(event -> {
+                LOGGER.error(event.getMessage());
+            });
         }
     }
 
