@@ -5,7 +5,6 @@ import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.server.ServiceInitEvent;
@@ -45,9 +44,8 @@ public class ProductionDocumentation extends VerticalLayout {
         Component component = new Div();
 
         //@formatter:off
-        UI ui = UI.getCurrent();
         UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
-        CollaborationEngine.getInstance().requestAccess(ui, userInfo, response -> {
+        CollaborationEngine.getInstance().requestAccess(userInfo, response -> {
             component.setVisible(response.hasAccess());
         });
         //@formatter:on

@@ -207,9 +207,8 @@ depending on the fact that the end-user can use collaborative features.
 
 An example of how to check if an end-user has access:
 ```java
-UI ui = UI.getCurrent();
 UserInfo userInfo = new UserInfo("steve@example.com", "Steve");
-CollaborationEngine.getInstance().requestAccess(ui, userInfo, response -> {
+CollaborationEngine.getInstance().requestAccess(userInfo, response -> {
     component.setVisible(response.hasAccess());
 });
 ```

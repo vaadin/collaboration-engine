@@ -222,17 +222,30 @@ public class CollaborationEngine {
      * In the callback, you can check from the response whether the user has
      * access or not with the {@link AccessResponse#hasAccess()} method. It
      * returns {@code true} if access has been granted for the user.
+     * <p>
+     * The current {@link UI} is accessed to run the callback, which means that
+     * UI updates in the callback are pushed to the client in real-time. Because
+     * of depending on the current UI, the method can be called only in the
+     * request processing thread, or it will throw.
      *
-     * @param ui
-     *            the UI which will be accessed to execute the callback
      * @param user
      *            the user requesting access
      * @param requestCallback
      *            the callback to accept the response
      */
-    public void requestAccess(UI ui, UserInfo user,
+    public void requestAccess(UserInfo user,
             Consumer<AccessResponse> requestCallback) {
-        Objects.requireNonNull(ui, "The UI cannot be null");
+        UI ui = UI.getCurrent();
+        if (ui == null) {
+            throw new IllegalStateException("You are calling the requestAccess "
+                    + "method without a UI instance being available. You can "
+                    + "either move the call where you are sure a UI is defined "
+                    + "or directly provide a ConnectionContext to the method. "
+                    + "The current UI is automatically defined when processing "
+                    + "requests to the server. In other cases, (e.g. from "
+                    + "background threads), the current UI is not automatically "
+                    + "defined.");
+        }
         ComponentConnectionContext context = new ComponentConnectionContext(ui);
         requestAccess(context, user, requestCallback);
     }

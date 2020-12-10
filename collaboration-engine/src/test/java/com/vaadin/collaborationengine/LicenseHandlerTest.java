@@ -23,6 +23,7 @@ import com.vaadin.collaborationengine.ConnectionContextTest.SimpleConnectionCont
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.flow.component.UI;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
@@ -538,9 +539,18 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void requestAccess_uiIsAccessed() {
         UserInfo user = new UserInfo("steve");
         MockUI ui = new MockUI();
-        ce.requestAccess(ui, user, result -> {
+        UI.setCurrent(ui);
+        ce.requestAccess(user, result -> {
         });
         Assert.assertFalse(ui.getAccessTasks().isEmpty());
+        UI.setCurrent(null);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void requestAccess_throwsIfNoUiAvailable() {
+        UserInfo user = new UserInfo("steve");
+        ce.requestAccess(user, result -> {
+        });
     }
 
     @Test
