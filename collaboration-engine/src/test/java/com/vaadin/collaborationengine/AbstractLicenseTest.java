@@ -13,6 +13,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,6 +98,13 @@ public abstract class AbstractLicenseTest {
         }
         Assert.assertEquals("Unexpected statistics file content", expected,
                 fileContent);
+    }
+
+    LicenseHandler.StatisticsInfo readStatsFileContent() throws IOException {
+        ObjectMapper objectMapper = FileHandler.createObjectMapper();
+        JsonNode statsJson = objectMapper.readTree(statsFilePath.toFile());
+        return objectMapper.treeToValue(statsJson,
+                LicenseHandler.StatisticsInfo.class);
     }
 
     void writeToStatsFile(String content) throws IOException {

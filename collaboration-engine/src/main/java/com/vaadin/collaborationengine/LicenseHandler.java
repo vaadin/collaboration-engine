@@ -107,6 +107,8 @@ class LicenseHandler {
             statistics = fileHandler.readStatsFile();
             if (!license.key.equals(statistics.licenseKey)) {
                 statistics.licenseKey = license.key;
+                statistics.gracePeriodStart = null;
+                statistics.licenseEvents.clear();
             }
             if (eventHandler == null) {
                 throw new IllegalStateException(
@@ -223,7 +225,7 @@ class LicenseHandler {
     }
 
     private void fireLicenseEvent(LicenseEventType type) {
-        if (statistics.licenseEvents.containsKey(type)) {
+        if (statistics.licenseEvents.get(type) != null) {
             // Event already fired, do nothing.
             return;
         }

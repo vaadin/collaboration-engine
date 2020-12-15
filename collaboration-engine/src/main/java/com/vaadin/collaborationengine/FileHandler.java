@@ -44,17 +44,13 @@ class FileHandler {
     static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
             + DATA_DIR_CONFIG_PROPERTY;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
     private final Path statsFilePath;
     private final Path licenseFilePath;
 
     FileHandler(CollaborationEngineConfig config) {
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.setVisibility(PropertyAccessor.FIELD,
-                Visibility.NON_PRIVATE);
-        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-
+        objectMapper = createObjectMapper();
         if (config.dataDirPath == null) {
             throw createDataDirNotConfiguredException();
         }
@@ -68,6 +64,15 @@ class FileHandler {
         if (Files.exists(statsFilePath) && !Files.isWritable(statsFilePath)) {
             throw createStatsFileNotWritableException();
         }
+    }
+
+    static ObjectMapper createObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setVisibility(PropertyAccessor.FIELD,
+                Visibility.NON_PRIVATE);
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+        return objectMapper;
     }
 
     static Path createStatsFilePath(Path dirPath) {
