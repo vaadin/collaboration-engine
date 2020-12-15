@@ -172,10 +172,9 @@ Another option is to send an email to the relevant people, e.g. those who mainta
 the deployment and those who are responsible of the Collaboration Engine license.
 The important thing is to make sure that the events are noticed and properly handled.
 
-In the following example, we are logging the event messages as errors using SLF4J logging API.
 The listener can be configured in the same place as the `vaadin.ce.dataDir` property
 if you're setting that property in Java code, as described earlier.
-In this case, we have a Spring project, so the handler is configured in a singleton-scoped
+In the following example we have a Spring project, so the handler is configured in a singleton-scoped
 Spring component.
 If you're not using Spring, you can configure the license event handler in a Vaadin service
 init listener in the same way as described in <<ce.production.data-dir-in-project-files>>.
@@ -189,22 +188,68 @@ public class CollaborationEngineConfiguration {
 
     public CollaborationEngineConfiguration() {
         CollaborationEngine.getInstance().setLicenseEventHandler(event -> {
-            LOGGER.error(event.getMessage());
+            switch (event.getType()) {
+            case GRACE_PERIOD_STARTED:
+            case LICENSE_EXPIRES_SOON:
+                LOGGER.warn(event.getMessage());
+                break;
+            case GRACE_PERIOD_ENDED:
+            case LICENSE_EXPIRED:
+                LOGGER.error(event.getMessage());
+                break;
+            }
+            sendEmail("Vaadin Collaboration Engine license needs to be updated",
+                    event.getMessage());
         });
+    }
+
+    private void sendEmail(String subject, String content) {
+        // Implement sending an email to relevant people
     }
 }
 ```
 
-The event messages provide information of what has happened, how it will affect the application, and
-what is the recommended action to take.
-If you want to handle the four license event types differently, you can check the
-type in the handler with `LicenseEvent::getType`, which returns a `LicenseEventType` enum.
-For example, you can write custom messages instead of the default messages provided by the event.
+In this example, we are logging the event messages using SLF4J logging API, as well as sending an email.
+When it's time to update the license, the message is logged as a warning.
+If the license is not updated in time, the message is logged as an error.
+The default event messages provide information of what has happened,
+how it will affect the application, and what is the recommended action to take.
 
-Just logging the messages is a sufficient solution only if you're confident that someone is actively
-monitoring the error logs and is ready to take action in this situation.
-This example could be improved by automatically sending emails when an error is logged,
-e.g. based on https://www.baeldung.com/logback-send-email[this article].
+Below is an example implementation of the `sendEmail` method.
+It requires the `javax.mail.mail` package as a dependency.
+```java
+private void sendEmail(String subject, String content) {
+    // Replace the following information:
+    String from = "sender@gmail.com";
+    String password = "*****"; // Read e.g. from encrypted config file
+    String to = "receiver@gmail.com";
+    String host = "smtp.gmail.com";
+
+    Properties properties = System.getProperties();
+    properties.put("mail.smtp.host", host);
+    properties.put("mail.smtp.port", "465");
+    properties.put("mail.smtp.ssl.enable", "true");
+    properties.put("mail.smtp.auth", "true");
+
+    Session session = Session.getInstance(properties, new Authenticator() {
+        @Override
+        protected PasswordAuthentication getPasswordAuthentication() {
+            return new PasswordAuthentication(from, password);
+        }
+    });
+    try {
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(from));
+        message.addRecipient(Message.RecipientType.TO,
+                new InternetAddress(to));
+        message.setSubject(subject);
+        message.setText(content);
+        Transport.send(message);
+    } catch (MessagingException e) {
+        LOGGER.error(e.getMessage(), e);
+    }
+}
+```
 
 NOTE: Collaboration Engine will throw an exception in production mode if a license handler hasn't been defined.
 The purpose is to make sure that you're aware of the events,
