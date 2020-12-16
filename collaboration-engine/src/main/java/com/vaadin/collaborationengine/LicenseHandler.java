@@ -89,6 +89,21 @@ class LicenseHandler {
         }
     }
 
+    static class StatisticsInfoWrapper {
+
+        final StatisticsInfo content;
+
+        final String checksum;
+
+        @JsonCreator
+        StatisticsInfoWrapper(
+                @JsonProperty(value = "content", required = true) StatisticsInfo content,
+                @JsonProperty(value = "checksum", required = true) String checksum) {
+            this.content = content;
+            this.checksum = checksum;
+        }
+    }
+
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
 
     private final CollaborationEngine ce;

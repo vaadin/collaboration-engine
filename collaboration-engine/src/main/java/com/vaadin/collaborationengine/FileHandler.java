@@ -29,6 +29,7 @@ import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineCon
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfoWrapper;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfoWrapper;
 import com.vaadin.flow.internal.MessageDigestUtil;
 
 class FileHandler {
@@ -85,7 +86,11 @@ class FileHandler {
 
     void writeStats(StatisticsInfo stats) {
         try {
-            objectMapper.writeValue(statsFilePath.toFile(), stats);
+            String checksum = calculateChecksum(
+                    objectMapper.valueToTree(stats));
+            StatisticsInfoWrapper wrapper = new StatisticsInfoWrapper(stats,
+                    checksum);
+            objectMapper.writeValue(statsFilePath.toFile(), wrapper);
         } catch (IOException e) {
             throw new IllegalStateException(
                     "Collaboration Engine wasn't able to write statistics into file at '"
@@ -103,9 +108,8 @@ class FileHandler {
             LicenseInfoWrapper licenseInfoWrapper = objectMapper
                     .treeToValue(licenseJson, LicenseInfoWrapper.class);
 
-            String calculatedChecksum = Base64.getEncoder()
-                    .encodeToString(MessageDigestUtil.sha256(objectMapper
-                            .writeValueAsString(licenseJson.get("content"))));
+            String calculatedChecksum = calculateChecksum(
+                    licenseJson.get("content"));
 
             if (licenseInfoWrapper.checksum == null
                     || !licenseInfoWrapper.checksum
@@ -124,8 +128,22 @@ class FileHandler {
         try {
             Optional<JsonNode> statsJson = readFileAsJson(statsFilePath);
             if (statsJson.isPresent()) {
-                return objectMapper.treeToValue(statsJson.get(),
-                        StatisticsInfo.class);
+                JsonNode statisticsJson = statsJson.get();
+
+                StatisticsInfoWrapper statisticsInfoWrapper = objectMapper
+                        .treeToValue(statisticsJson,
+                                StatisticsInfoWrapper.class);
+
+                String calculatedChecksum = calculateChecksum(
+                        statisticsJson.get("content"));
+
+                if (statisticsInfoWrapper.checksum == null
+                        || !statisticsInfoWrapper.checksum
+                                .equals(calculatedChecksum)) {
+                    throw createStatsInvalidException();
+                }
+
+                return statisticsInfoWrapper.content;
             } else {
                 return new StatisticsInfo(null, Collections.emptyMap(), null,
                         Collections.emptyMap());
@@ -136,6 +154,12 @@ class FileHandler {
                             + statsFilePath + "'.",
                     e);
         }
+    }
+
+    private String calculateChecksum(JsonNode node)
+            throws JsonProcessingException {
+        return Base64.getEncoder().encodeToString(MessageDigestUtil
+                .sha256(objectMapper.writeValueAsString(node)));
     }
 
     private Optional<JsonNode> readFileAsJson(Path filePath)
@@ -207,5 +231,14 @@ class FileHandler {
                 + "file to function. Make sure that the the system user, "
                 + "running the Java environment, has write permissions to the "
                 + "file.");
+    }
+
+    private RuntimeException createStatsInvalidException() {
+        return new IllegalStateException(
+                "Collaboration Engine failed to parse the file '"
+                        + statsFilePath
+                        + "'. The content of the statistics file is not valid. "
+                        + "If you have made any changes to the file, please revert those changes. "
+                        + "If that's not possible, contact Vaadin to get support.");
     }
 }

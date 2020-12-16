@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineCon
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.internal.MessageDigestUtil;
 
 public abstract class AbstractLicenseTest {
 
@@ -96,19 +98,27 @@ public abstract class AbstractLicenseTest {
         } catch (IOException e) {
             Assert.fail("Failed to read the file at " + statsFilePath);
         }
-        Assert.assertEquals("Unexpected statistics file content", expected,
-                fileContent);
+        Assert.assertEquals("Unexpected statistics file content",
+                getStatisticsWithChecksum(expected), fileContent);
     }
 
     LicenseHandler.StatisticsInfo readStatsFileContent() throws IOException {
         ObjectMapper objectMapper = FileHandler.createObjectMapper();
         JsonNode statsJson = objectMapper.readTree(statsFilePath.toFile());
         return objectMapper.treeToValue(statsJson,
-                LicenseHandler.StatisticsInfo.class);
+                LicenseHandler.StatisticsInfoWrapper.class).content;
     }
 
     void writeToStatsFile(String content) throws IOException {
-        Files.write(statsFilePath, content.getBytes());
+        String wrapper = getStatisticsWithChecksum(content);
+        Files.write(statsFilePath, wrapper.getBytes());
+    }
+
+    String getStatisticsWithChecksum(String content) {
+        String checksum = Base64.getEncoder()
+                .encodeToString(MessageDigestUtil.sha256(content));
+        return "{\"content\":" + content + ",\"checksum\":\"" + checksum
+                + "\"}";
     }
 
     void writeToLicenseFile(String content) throws IOException {

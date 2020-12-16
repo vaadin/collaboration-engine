@@ -280,6 +280,25 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     }
 
     @Test
+    public void statsFileTampered_openTopicConnection_throws()
+            throws IOException {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("statistics file is not valid");
+
+        MockedLicenseHandler licenseHandler = new MockedLicenseHandler(ce);
+        licenseHandler.registerUser("steve");
+        licenseHandler.registerUser("bob");
+
+        String stats = new String(Files.readAllBytes(statsFilePath));
+        String tamperedStats = stats.replace("[\"steve\",\"bob\"]",
+                "[\"steve\"]");
+        Files.write(statsFilePath, tamperedStats.getBytes());
+
+        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+                new UserInfo("user-id"), topicConnection -> null);
+    }
+
+    @Test
     public void dataDirNotConfigured_openTopicConnection_throws() {
         ce.setConfigProvider(() -> new CollaborationEngineConfig(true, null));
 
@@ -799,11 +818,11 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToStatsFile("{\"licenseKey\":\"" + LICENSE_KEY
                 + "\",\"statistics\":{\""
                 + YearMonth.from(dateNow).minusMonths(1)
-                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"], \""
+                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"],\""
                 + YearMonth.from(dateNow)
-                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"] },"
+                + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"]},"
                 + "\"gracePeriodStart\":\"" + graceStart
-                + "\", \"licenseEvents\":{}}");
+                + "\",\"licenseEvents\":{}}");
         MockedLicenseHandler licenseHandler = new MockedLicenseHandler(ce);
         licenseHandler.setCurrentDate(dateNow);
         return licenseHandler;
