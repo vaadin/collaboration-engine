@@ -5,19 +5,35 @@ import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.flow.server.VaadinService;
+
 public class JsonUtilTest {
 
     private UserInfo user;
+    private VaadinService service;
+    private CollaborationEngine ce;
 
     @Before
     public void init() {
+        service = new MockService();
+        ce = new CollaborationEngine();
+        service.getContext().setAttribute(CollaborationEngine.class, ce);
+        VaadinService.setCurrent(service);
+
         user = new UserInfo("my-id", "my-name", "my-image");
         user.setAbbreviation("my-abbreviation");
         user.setColorIndex(5);
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     @Test

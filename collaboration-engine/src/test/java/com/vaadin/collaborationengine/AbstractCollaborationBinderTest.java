@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.junit.After;
 import org.junit.Before;
 
 import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
@@ -16,6 +18,7 @@ import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.server.VaadinService;
 
 public class AbstractCollaborationBinderTest {
 
@@ -55,6 +58,7 @@ public class AbstractCollaborationBinderTest {
         }
     }
 
+    protected VaadinService service;
     protected CollaborationEngine ce;
 
     protected BinderTestClient client;
@@ -65,7 +69,10 @@ public class AbstractCollaborationBinderTest {
 
     @Before
     public void init() {
+        service = new MockService();
         ce = new CollaborationEngine();
+        service.getContext().setAttribute(CollaborationEngine.class, ce);
+        VaadinService.setCurrent(service);
         TestUtil.setDummyCollaborationEngineConfig(ce);
 
         client = new BinderTestClient(ce);
@@ -77,6 +84,11 @@ public class AbstractCollaborationBinderTest {
             this.topicConnection = topicConnection;
             map = CollaborationBinderUtil.getMap(topicConnection);
         });
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     protected void setSharedValue(String key, Object value) {

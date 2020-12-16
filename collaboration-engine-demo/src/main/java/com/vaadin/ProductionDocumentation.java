@@ -1,7 +1,5 @@
 package com.vaadin;
 
-import java.util.Properties;
-
 import javax.mail.Authenticator;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
@@ -10,6 +8,8 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +22,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.server.ServiceInitEvent;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
@@ -50,35 +51,36 @@ public class ProductionDocumentation extends VerticalLayout {
     }
 
     @SpringComponent
-    public static class CollaborationEngineConfiguration {
+    public static class CollaborationEngineConfiguration
+            implements VaadinServiceInitListener {
 
         private static final Logger LOGGER = LoggerFactory
                 .getLogger(CollaborationEngineConfiguration.class);
 
-        public CollaborationEngineConfiguration() {
-            System.setProperty("vaadin.ce.dataDir",
-                    "/Users/steve/vaadin/collaboration-engine/");
-            CollaborationEngine.getInstance().setLicenseEventHandler(event -> {
-                switch (event.getType()) {
-                case GRACE_PERIOD_STARTED:
-                case LICENSE_EXPIRES_SOON:
-                    LOGGER.warn(event.getMessage());
-                    break;
-                case GRACE_PERIOD_ENDED:
-                case LICENSE_EXPIRED:
-                    LOGGER.error(event.getMessage());
-                    break;
-                }
-                sendEmail(
-                        "Vaadin Collaboration Engine license needs to be updated",
-                        event.getMessage());
-            });
+        @Override
+        public void serviceInit(ServiceInitEvent serviceEvent) {
+            VaadinService service = serviceEvent.getSource();
+            CollaborationEngine.getInstance(service)
+                    .setLicenseEventHandler(licenseEvent -> {
+                        switch (licenseEvent.getType()) {
+                        case GRACE_PERIOD_STARTED:
+                        case LICENSE_EXPIRES_SOON:
+                            LOGGER.warn(licenseEvent.getMessage());
+                            break;
+                        case GRACE_PERIOD_ENDED:
+                        case LICENSE_EXPIRED:
+                            LOGGER.error(licenseEvent.getMessage());
+                            break;
+                        }
+                        sendEmail(
+                                "Vaadin Collaboration Engine license needs to be updated",
+                                licenseEvent.getMessage());
+                    });
         }
 
         private void sendEmail(String subject, String content) {
             // Implement sending an email to relevant people
         }
-
     }
 
     private void sendEmail(String subject, String content) {

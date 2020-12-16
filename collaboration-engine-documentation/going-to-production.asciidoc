@@ -175,31 +175,33 @@ The important thing is to make sure that the events are noticed and properly han
 The listener can be configured in the same place as the `vaadin.ce.dataDir` property
 if you're setting that property in Java code, as described earlier.
 In the following example we have a Spring project, so the handler is configured in a singleton-scoped
-Spring component.
+Spring component implementing the `VaadinServiceInitListener` interface.
 If you're not using Spring, you can configure the license event handler in a Vaadin service
 init listener in the same way as described in <<ce.production.data-dir-in-project-files>>.
 
 ```java
 @SpringComponent
-public class CollaborationEngineConfiguration {
+public class CollaborationEngineConfiguration implements VaadinServiceInitListener {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(CollaborationEngineConfiguration.class);
 
-    public CollaborationEngineConfiguration() {
-        CollaborationEngine.getInstance().setLicenseEventHandler(event -> {
-            switch (event.getType()) {
+    @Override
+    public void serviceInit(ServiceInitEvent serviceEvent) {
+        VaadinService service = serviceEvent.getSource();
+        CollaborationEngine.getInstance(service).setLicenseEventHandler(licenseEvent -> {
+            switch (licenseEvent.getType()) {
             case GRACE_PERIOD_STARTED:
             case LICENSE_EXPIRES_SOON:
-                LOGGER.warn(event.getMessage());
+                LOGGER.warn(licenseEvent.getMessage());
                 break;
             case GRACE_PERIOD_ENDED:
             case LICENSE_EXPIRED:
-                LOGGER.error(event.getMessage());
+                LOGGER.error(licenseEvent.getMessage());
                 break;
             }
             sendEmail("Vaadin Collaboration Engine license needs to be updated",
-                    event.getMessage());
+                    licenseEvent.getMessage());
         });
     }
 

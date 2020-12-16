@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.ServiceInitEvent;
+import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 
 /**
@@ -29,8 +30,10 @@ public class CollaborationEngineServiceInitListener
     public void serviceInit(ServiceInitEvent event) {
         DeploymentConfiguration config = event.getSource()
                 .getDeploymentConfiguration();
-
-        CollaborationEngine.getInstance().setConfigProvider(() -> {
+        CollaborationEngine ce = new CollaborationEngine();
+        VaadinContext context = event.getSource().getContext();
+        context.setAttribute(CollaborationEngine.class, ce);
+        ce.setConfigProvider(() -> {
             boolean licenseCheckingEnabled = config.isProductionMode();
             String dataDirectory = config.getStringProperty(
                     FileHandler.DATA_DIR_CONFIG_PROPERTY, null);

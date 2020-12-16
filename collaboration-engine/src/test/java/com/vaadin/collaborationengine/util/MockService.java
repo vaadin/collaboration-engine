@@ -3,7 +3,12 @@ package com.vaadin.collaborationengine.util;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import com.vaadin.flow.server.PwaRegistry;
 import com.vaadin.flow.server.RouteRegistry;
@@ -16,6 +21,39 @@ import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.AbstractTheme;
 
 public class MockService extends VaadinService {
+
+    static class MockContext implements VaadinContext {
+
+        private final Map<Class<?>, Object> context = new ConcurrentHashMap<>();
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getAttribute(Class<T> type,
+                Supplier<T> defaultValueSupplier) {
+            return (T) context.computeIfAbsent(type,
+                    k -> defaultValueSupplier.get());
+        }
+
+        @Override
+        public <T> void setAttribute(Class<T> clazz, T value) {
+            context.put(clazz, value);
+        }
+
+        @Override
+        public void removeAttribute(Class<?> clazz) {
+            context.remove(clazz);
+        }
+
+        @Override
+        public Enumeration<String> getContextParameterNames() {
+            return Collections.emptyEnumeration();
+        }
+
+        @Override
+        public String getContextParameter(String name) {
+            return null;
+        }
+    }
 
     @Override
     protected RouteRegistry getRouteRegistry() {
@@ -82,7 +120,7 @@ public class MockService extends VaadinService {
 
     @Override
     protected VaadinContext constructVaadinContext() {
-        return null;
+        return new MockContext();
     }
 
     @Override

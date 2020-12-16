@@ -7,11 +7,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 public class TopicConnectionTest {
@@ -53,6 +56,8 @@ public class TopicConnectionTest {
 
     private final Set<String> activeTopics = new HashSet<>();
 
+    private final VaadinService service = new MockService();
+
     private final CollaborationEngine engine = new CollaborationEngine(
             (topicId, isActive) -> {
                 if (isActive) {
@@ -69,6 +74,8 @@ public class TopicConnectionTest {
 
     @Before
     public void setup() {
+        service.getContext().setAttribute(CollaborationEngine.class, engine);
+        VaadinService.setCurrent(service);
         TestUtil.setDummyCollaborationEngineConfig(engine);
         connectionRegistration = engine.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), connection -> {
@@ -81,6 +88,11 @@ public class TopicConnectionTest {
                     };
                 });
 
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     @Test

@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestUtils;
@@ -19,6 +20,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinService;
 
 public class CollaborationAvatarGroupTest {
 
@@ -72,6 +74,7 @@ public class CollaborationAvatarGroupTest {
         }
     }
 
+    private VaadinService service;
     private CollaborationEngine ce;
 
     private AvatarGroupTestClient client1;
@@ -86,6 +89,9 @@ public class CollaborationAvatarGroupTest {
     @Before
     public void init() {
         ce = new CollaborationEngine();
+        service = new MockService();
+        service.getContext().setAttribute(CollaborationEngine.class, ce);
+        VaadinService.setCurrent(service);
         TestUtil.setDummyCollaborationEngineConfig(ce);
         client1 = new AvatarGroupTestClient(1, ce);
         client2 = new AvatarGroupTestClient(2, ce);
@@ -98,6 +104,7 @@ public class CollaborationAvatarGroupTest {
     @After
     public void cleanUp() {
         UI.setCurrent(null);
+        VaadinService.setCurrent(null);
     }
 
     @Test

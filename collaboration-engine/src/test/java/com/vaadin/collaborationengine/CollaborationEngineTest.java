@@ -6,22 +6,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.CoreMatchers;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
 
 public class CollaborationEngineTest {
 
+    private VaadinService service = new MockService();
     private CollaborationEngine collaborationEngine;
     private ConnectionContext context;
     private SerializableFunction<TopicConnection, Registration> connectionCallback;
@@ -29,12 +33,20 @@ public class CollaborationEngineTest {
     @Before
     public void init() {
         collaborationEngine = new CollaborationEngine();
+        service.getContext().setAttribute(CollaborationEngine.class,
+                collaborationEngine);
+        VaadinService.setCurrent(service);
         TestUtil.setDummyCollaborationEngineConfig(collaborationEngine);
 
         context = new EagerConnectionContext();
         connectionCallback = topicConnection -> () -> {
             // no impl
         };
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     @Test
@@ -56,8 +68,8 @@ public class CollaborationEngineTest {
 
     @Test
     public void getInstance_returnsAlwaysSameInstance() {
-        Assert.assertSame(CollaborationEngine.getInstance(),
-                CollaborationEngine.getInstance());
+        Assert.assertSame(CollaborationEngine.getInstance(service),
+                CollaborationEngine.getInstance(service));
     }
 
     @Test(expected = NullPointerException.class)

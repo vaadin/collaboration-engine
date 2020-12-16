@@ -8,24 +8,37 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.server.VaadinService;
 
 public class MultipleCollaborationMapTest {
 
+    private VaadinService service = new MockService();
+    private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationMap namedMapData;
 
     @Before
     public void init() {
-        TestUtil.setDummyCollaborationEngineConfig();
+        ce = new CollaborationEngine();
+        service.getContext().setAttribute(CollaborationEngine.class, ce);
+        VaadinService.setCurrent(service);
+        TestUtil.setDummyCollaborationEngineConfig(ce);
         TestUtils.openEagerConnection("form", topic -> {
             this.connection = topic;
             namedMapData = topic.getNamedMap("values");
         });
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     @Test

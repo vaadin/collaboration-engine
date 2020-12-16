@@ -16,6 +16,7 @@ import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,8 +25,10 @@ import org.junit.rules.ExpectedException;
 import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.internal.MessageDigestUtil;
+import com.vaadin.flow.server.VaadinService;
 
 public abstract class AbstractLicenseTest {
 
@@ -58,6 +61,7 @@ public abstract class AbstractLicenseTest {
     Path statsFilePath;
     Path licenseFilePath;
 
+    VaadinService service;
     CollaborationEngine ce;
     Path testDataDir = Paths.get(System.getProperty("user.home"), ".vaadin",
             "ce-tests");
@@ -89,6 +93,14 @@ public abstract class AbstractLicenseTest {
         ce = new CollaborationEngine();
         ce.setConfigProvider(() -> config);
         ce.setLicenseEventHandler(spyEventHandler);
+        service = new MockService();
+        service.getContext().setAttribute(CollaborationEngine.class, ce);
+        VaadinService.setCurrent(service);
+    }
+
+    @After
+    public void cleanUp() {
+        VaadinService.setCurrent(null);
     }
 
     void assertStatsFileContent(String expected) {

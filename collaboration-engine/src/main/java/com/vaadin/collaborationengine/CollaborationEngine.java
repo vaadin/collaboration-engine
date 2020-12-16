@@ -21,6 +21,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.UsageStatistics;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -48,8 +49,6 @@ public class CollaborationEngine {
 
     static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
     static final String COLLABORATION_ENGINE_VERSION = "3.0";
-
-    private static final CollaborationEngine collaborationEngine = new CollaborationEngine();
 
     static final int USER_COLOR_COUNT = 7;
 
@@ -95,12 +94,25 @@ public class CollaborationEngine {
     }
 
     /**
-     * Gets the {@link CollaborationEngine} singleton.
+     * Gets the {@link CollaborationEngine} instance from the current
+     * {@link VaadinService}.
      *
-     * @return the {@link CollaborationEngine} singleton
+     * @return the {@link CollaborationEngine} instance
      */
     public static CollaborationEngine getInstance() {
-        return collaborationEngine;
+        return getInstance(VaadinService.getCurrent());
+    }
+
+    /**
+     * Gets the {@link CollaborationEngine} instance from the provided
+     * {@link VaadinService}.
+     *
+     * @return the {@link CollaborationEngine} instance
+     */
+    public static CollaborationEngine getInstance(VaadinService vaadinService) {
+        Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
+        return vaadinService.getContext()
+                .getAttribute(CollaborationEngine.class);
     }
 
     /**
