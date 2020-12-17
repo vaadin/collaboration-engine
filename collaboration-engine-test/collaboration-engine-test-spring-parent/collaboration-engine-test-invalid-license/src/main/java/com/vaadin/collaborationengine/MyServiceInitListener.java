@@ -9,20 +9,20 @@ import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
 /**
- * Configuration class for the Collaboration Engine instance.
+ * Configures the Collaboration Engine instance.
  */
 @SpringComponent
-public class CollaborationEngineConfiguration
-        implements VaadinServiceInitListener {
+public class MyServiceInitListener implements VaadinServiceInitListener {
 
     private static final Logger LOGGER = LoggerFactory
-            .getLogger(CollaborationEngineConfiguration.class);
+            .getLogger(MyServiceInitListener.class);
 
     @Override
     public void serviceInit(ServiceInitEvent event) {
         VaadinService service = event.getSource();
-        CollaborationEngine.getInstance(service).setLicenseEventHandler(e -> {
-            LOGGER.error(e.getMessage());
-        });
+        CollaborationEngine.configure(service,
+                new CollaborationEngineConfiguration(e -> {
+                    LOGGER.error(e.getMessage());
+                }));
     }
 }

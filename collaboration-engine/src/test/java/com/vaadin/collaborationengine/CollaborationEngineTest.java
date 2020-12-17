@@ -1,5 +1,7 @@
 package com.vaadin.collaborationengine;
 
+import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
+
 import java.lang.ref.WeakReference;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -9,9 +11,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
@@ -21,8 +24,6 @@ import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
-import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
-
 public class CollaborationEngineTest {
 
     private VaadinService service = new MockService();
@@ -30,13 +31,13 @@ public class CollaborationEngineTest {
     private ConnectionContext context;
     private SerializableFunction<TopicConnection, Registration> connectionCallback;
 
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
     @Before
     public void init() {
-        collaborationEngine = new CollaborationEngine();
-        service.getContext().setAttribute(CollaborationEngine.class,
-                collaborationEngine);
         VaadinService.setCurrent(service);
-        TestUtil.setDummyCollaborationEngineConfig(collaborationEngine);
+        collaborationEngine = TestUtil.createTestCollaborationEngine(service);
 
         context = new EagerConnectionContext();
         connectionCallback = topicConnection -> () -> {
@@ -241,25 +242,33 @@ public class CollaborationEngineTest {
         Assert.assertTrue(callbackRun.get());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void openConnection_licenseEventHandlerNotSet_throwsException() {
-        collaborationEngine.setConfigProvider(
-                () -> new CollaborationEngineConfig(true, null));
-        collaborationEngine.openTopicConnection(context, "topic",
-                SystemUserInfo.getInstance(), connection -> null);
+    @Test
+    public void getInstance_productionMode_configurationNotProvided_throwsException() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(
+                "Collaboration Engine is missing a required configuration object");
+        MockService service = new MockService(true);
+        CollaborationEngine.getInstance(service);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void setLicenseEventHandler_licenseEventHandlerAlreadySet_throwsException() {
-        collaborationEngine.setLicenseEventHandler(event -> {
-        });
-        collaborationEngine.setLicenseEventHandler(event -> {
-        });
+    @Test
+    public void configure_configurationAlreadySet_throwsException() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(
+                "Collaboration Engine has been already configured");
+        MockService service = new MockService();
+        CollaborationEngine.configure(service,
+                new CollaborationEngineConfiguration(e -> {
+                }));
+        CollaborationEngine.configure(service,
+                new CollaborationEngineConfiguration(e -> {
+                }));
     }
 
     @Test(expected = NullPointerException.class)
-    public void setLicenseEventHandlerNull_throwsException() {
-        collaborationEngine.setLicenseEventHandler(null);
+    public void configureLicenseEventHandlerNull_throwsException() {
+        CollaborationEngine.configure(new MockService(),
+                new CollaborationEngineConfiguration(null));
     }
 
     class SpyConnectionContext implements ConnectionContext {

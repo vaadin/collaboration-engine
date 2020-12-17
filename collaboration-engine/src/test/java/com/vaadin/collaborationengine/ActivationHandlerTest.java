@@ -19,8 +19,7 @@ public class ActivationHandlerTest {
 
     @Before
     public void init() {
-        collaborationEngine = new CollaborationEngine();
-        TestUtil.setDummyCollaborationEngineConfig(collaborationEngine);
+        collaborationEngine = TestUtil.createTestCollaborationEngine();
         context = new SpyConnectionContext();
     }
 

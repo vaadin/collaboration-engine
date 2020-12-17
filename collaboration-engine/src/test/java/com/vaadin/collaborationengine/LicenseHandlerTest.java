@@ -1,5 +1,7 @@
 package com.vaadin.collaborationengine;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -18,14 +20,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.ConnectionContextTest.SimpleConnectionContext;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.flow.component.UI;
-
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class LicenseHandlerTest extends AbstractLicenseTest {
 
@@ -300,7 +299,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void dataDirNotConfigured_openTopicConnection_throws() {
-        ce.setConfigProvider(() -> new CollaborationEngineConfig(true, null));
+        configuration.setDataDirPath(null);
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage("Missing required configuration property");
@@ -311,9 +310,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void noDataDir_openTopicConnection_throws() {
-        ce.setConfigProvider(() -> new CollaborationEngineConfig(true,
-                Paths.get(System.getProperty("user.home"), ".vaadin",
-                        "ce-tests", "non-existing", "dir")));
+        configuration.setDataDirPath(Paths.get(System.getProperty("user.home"),
+                ".vaadin", "ce-tests", "non-existing", "dir"));
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
@@ -614,7 +612,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
         SimpleConnectionContext spyContext = new SimpleConnectionContext();
-        ce.setConfigProvider(() -> new CollaborationEngineConfig(false, null));
+        configuration.setLicenseCheckingEnabled(false);
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });

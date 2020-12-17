@@ -10,11 +10,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.flow.server.Command;
@@ -61,8 +62,7 @@ public class CollaborationMapTest {
     @Before
     public void init() {
         context = new ToggleableConnectionContext();
-        CollaborationEngine ce = new CollaborationEngine();
-        TestUtil.setDummyCollaborationEngineConfig(ce);
+        CollaborationEngine ce = TestUtil.createTestCollaborationEngine();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
                 topicConnection -> {
                     this.connection = topicConnection;

@@ -74,9 +74,8 @@ public class TopicConnectionTest {
 
     @Before
     public void setup() {
-        service.getContext().setAttribute(CollaborationEngine.class, engine);
         VaadinService.setCurrent(service);
-        TestUtil.setDummyCollaborationEngineConfig(engine);
+        TestUtil.configureTestCollaborationEngine(service, engine);
         connectionRegistration = engine.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), connection -> {
                     map = connection.getNamedMap("map");

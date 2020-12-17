@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfo;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfoWrapper;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
@@ -50,19 +49,20 @@ class FileHandler {
     private final Path statsFilePath;
     private final Path licenseFilePath;
 
-    FileHandler(CollaborationEngineConfig config) {
+    FileHandler(CollaborationEngineConfiguration config) {
         objectMapper = createObjectMapper();
-        if (config.dataDirPath == null) {
+        if (config.getDataDirPath() == null) {
             throw createDataDirNotConfiguredException();
         }
-        if (Files.exists(config.dataDirPath)
-                && !Files.isWritable(config.dataDirPath)) {
-            throw createDataDirNotWritableException(config.dataDirPath);
+        if (config.getDataDirPath().toFile().exists()
+                && !Files.isWritable(config.getDataDirPath())) {
+            throw createDataDirNotWritableException(config.getDataDirPath());
         }
 
-        statsFilePath = createStatsFilePath(config.dataDirPath);
-        licenseFilePath = createLicenseFilePath(config.dataDirPath);
-        if (Files.exists(statsFilePath) && !Files.isWritable(statsFilePath)) {
+        statsFilePath = createStatsFilePath(config.getDataDirPath());
+        licenseFilePath = createLicenseFilePath(config.getDataDirPath());
+        if (statsFilePath.toFile().exists()
+                && !Files.isWritable(statsFilePath)) {
             throw createStatsFileNotWritableException();
         }
     }

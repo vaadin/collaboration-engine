@@ -8,20 +8,22 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.UsageStatistics;
+import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinService;
+import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -36,16 +38,8 @@ import com.vaadin.flow.shared.Registration;
 @JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
-    static class CollaborationEngineConfig {
-        final boolean licenseCheckingEnabled;
-        final Path dataDirPath;
-
-        CollaborationEngineConfig(boolean licenseCheckingEnabled,
-                Path dataDirPath) {
-            this.licenseCheckingEnabled = licenseCheckingEnabled;
-            this.dataDirPath = dataDirPath;
-        }
-    }
+    static final Logger LOGGER = LoggerFactory
+            .getLogger(CollaborationEngine.class);
 
     static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
     static final String COLLABORATION_ENGINE_VERSION = "3.0";
@@ -56,10 +50,9 @@ public class CollaborationEngine {
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
 
-    private Supplier<CollaborationEngineConfig> configProvider;
-    private CollaborationEngineConfig config;
     private LicenseHandler licenseHandler;
-    private LicenseEventHandler licenseEventHandler;
+
+    private CollaborationEngineConfiguration configuration;
 
     private final TopicActivationHandler topicActivationHandler;
 
@@ -111,8 +104,77 @@ public class CollaborationEngine {
      */
     public static CollaborationEngine getInstance(VaadinService vaadinService) {
         Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
+
         return vaadinService.getContext()
-                .getAttribute(CollaborationEngine.class);
+                .getAttribute(CollaborationEngine.class, () -> {
+                    // CollaborationEngineConfiguration has not been provided
+
+                    if (vaadinService.getDeploymentConfiguration()
+                            .isProductionMode()) {
+                        throw new IllegalStateException(
+                                "Vaadin is running in production mode, and "
+                                        + "Collaboration Engine is missing a required configuration object. "
+                                        + "The configuration should be "
+                                        + "set by calling the static CollaborationEngine.configure() method "
+                                        + "in a VaadinServiceInitListener.");
+                    } else {
+                        LOGGER.warn(
+                                "Collaboration Engine is used in development/trial mode. "
+                                        + "Note that in order to make a production build, "
+                                        + "you need to obtain a license from Vaadin and configure the '"
+                                        + FileHandler.DATA_DIR_PUBLIC_PROPERTY
+                                        + "' property. You also need to provide a configuration object "
+                                        + "by using the static CollaborationEngine.configure() method in "
+                                        + "a VaadinServiceInitListener. "
+                                        + "More info in Vaadin documentation.");
+                        return CollaborationEngine.configure(vaadinService,
+                                new CollaborationEngineConfiguration(e -> {
+                                    throw new IllegalStateException(
+                                            "License event handler was called in dev mode. "
+                                                    + "This should not happen.");
+                                }));
+                    }
+                });
+    }
+
+    /**
+     * Sets the configuration for the Collaboration Engine associated with the
+     * given Vaadin service. This configuration is required when running in
+     * production mode. It can be set only once.
+     * <p>
+     * You should register a {@link VaadinServiceInitListener} where you call
+     * this method with the service returned by
+     * {@link ServiceInitEvent#getSource()}.
+     *
+     * @param vaadinService
+     *            the Vaadin service for which to configure the Collaboration
+     *            Engine
+     * @param configuration
+     *            the configuration to provide for the Collaboration Engine
+     * @return the configured Collaboration Engine instance
+     */
+    public static CollaborationEngine configure(VaadinService vaadinService,
+            CollaborationEngineConfiguration configuration) {
+        return configure(vaadinService, configuration,
+                new CollaborationEngine());
+    }
+
+    static CollaborationEngine configure(VaadinService vaadinService,
+            CollaborationEngineConfiguration configuration,
+            CollaborationEngine ce) {
+        Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
+        Objects.requireNonNull(configuration, "Configuration cannot be null");
+        if (vaadinService.getContext()
+                .getAttribute(CollaborationEngine.class) != null) {
+            throw new IllegalStateException(
+                    "Collaboration Engine has been already configured for the provided VaadinService. "
+                            + "The configuration can be provided only once.");
+        }
+        configuration.setVaadinService(vaadinService);
+        ce.configuration = configuration;
+
+        vaadinService.getContext().setAttribute(CollaborationEngine.class, ce);
+        return ce;
     }
 
     /**
@@ -171,7 +233,7 @@ public class CollaborationEngine {
         Objects.requireNonNull(connectionActivationCallback,
                 "Callback for connection activation can't be null");
 
-        if (configProvider == null) {
+        if (configuration == null) {
             throw new IllegalStateException(
                     "Collaboration Engine is missing required configuration "
                             + "that should be provided by a VaadinServiceInitListener. "
@@ -180,7 +242,7 @@ public class CollaborationEngine {
         }
 
         ensureConfigAndLicenseHandlerInitialization();
-        if (config.licenseCheckingEnabled) {
+        if (configuration.isLicenseCheckingEnabled()) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
             if (!hasSeat) {
@@ -195,31 +257,6 @@ public class CollaborationEngine {
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return new TopicConnectionRegistration(connection, context);
-    }
-
-    /**
-     * Sets the handler for license events. The handler will be invoked when
-     * license events occur, e.g. when the license is expired or when the
-     * end-user quota has entered the grace period. The handler can then be used
-     * for example to forward these events via e-mail or to a monitoring
-     * application to be alerted about the current status of the license.
-     * <p>
-     * In production mode, the handler must be set before using collaborative
-     * features, such as {@link CollaborationBinder} or directly opening a
-     * connection to Collaboration Engine.
-     * <p>
-     * See {@link LicenseEventType} for a list of license event types.
-     *
-     * @param handler
-     *            the license event handler, not {@code null}
-     */
-    public void setLicenseEventHandler(LicenseEventHandler handler) {
-        Objects.requireNonNull(handler, "The handler cannot be null");
-        if (licenseEventHandler != null) {
-            throw new IllegalStateException(
-                    "The handler was already set and it can only be set once.");
-        }
-        licenseEventHandler = handler;
     }
 
     /**
@@ -292,16 +329,12 @@ public class CollaborationEngine {
         // Will handle remote connection here
 
         ensureConfigAndLicenseHandlerInitialization();
-        final boolean hasAccess = config.licenseCheckingEnabled
+        final boolean hasAccess = configuration.isLicenseCheckingEnabled()
                 ? licenseHandler.registerUser(user.getId())
                 : true;
 
         AccessResponse response = new AccessResponse(hasAccess);
         context.dispatchAction(() -> requestCallback.accept(response));
-    }
-
-    void setConfigProvider(Supplier<CollaborationEngineConfig> configProvider) {
-        this.configProvider = configProvider;
     }
 
     /**
@@ -328,15 +361,8 @@ public class CollaborationEngine {
         return licenseHandler;
     }
 
-    LicenseEventHandler getLicenseEventHandler() {
-        return licenseEventHandler;
-    }
-
-    synchronized CollaborationEngineConfig getConfig() {
-        if (config == null) {
-            config = configProvider.get();
-        }
-        return config;
+    CollaborationEngineConfiguration getConfiguration() {
+        return configuration;
     }
 
     private synchronized void ensureConfigAndLicenseHandlerInitialization() {

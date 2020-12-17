@@ -70,10 +70,8 @@ public class AbstractCollaborationBinderTest {
     @Before
     public void init() {
         service = new MockService();
-        ce = new CollaborationEngine();
-        service.getContext().setAttribute(CollaborationEngine.class, ce);
         VaadinService.setCurrent(service);
-        TestUtil.setDummyCollaborationEngineConfig(ce);
+        ce = TestUtil.createTestCollaborationEngine(service);
 
         client = new BinderTestClient(ce);
         field = client.field;

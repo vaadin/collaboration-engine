@@ -14,16 +14,17 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
-import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
@@ -61,12 +62,12 @@ public abstract class AbstractLicenseTest {
     Path statsFilePath;
     Path licenseFilePath;
 
+    MockConfiguration configuration;
+
     VaadinService service;
     CollaborationEngine ce;
     Path testDataDir = Paths.get(System.getProperty("user.home"), ".vaadin",
             "ce-tests");
-    CollaborationEngineConfig config = new CollaborationEngineConfig(true,
-            testDataDir);
 
     LicenseGenerator licenseGenerator = new LicenseGenerator();
 
@@ -90,12 +91,14 @@ public abstract class AbstractLicenseTest {
         // Set quota to 3
         writeToLicenseFile(QUOTA, LocalDate.of(2222, 1, 1));
 
-        ce = new CollaborationEngine();
-        ce.setConfigProvider(() -> config);
-        ce.setLicenseEventHandler(spyEventHandler);
         service = new MockService();
-        service.getContext().setAttribute(CollaborationEngine.class, ce);
         VaadinService.setCurrent(service);
+
+        configuration = new MockConfiguration(spyEventHandler);
+        configuration.setDataDirPath(testDataDir);
+        configuration.setLicenseCheckingEnabled(true);
+
+        ce = CollaborationEngine.configure(service, configuration);
     }
 
     @After

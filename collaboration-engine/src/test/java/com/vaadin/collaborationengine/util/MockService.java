@@ -7,9 +7,12 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import com.vaadin.flow.function.DeploymentConfiguration;
+import com.vaadin.flow.server.DefaultDeploymentConfiguration;
 import com.vaadin.flow.server.PwaRegistry;
 import com.vaadin.flow.server.RouteRegistry;
 import com.vaadin.flow.server.VaadinContext;
@@ -30,6 +33,9 @@ public class MockService extends VaadinService {
         @SuppressWarnings("unchecked")
         public <T> T getAttribute(Class<T> type,
                 Supplier<T> defaultValueSupplier) {
+            if (defaultValueSupplier == null) {
+                return (T) context.get(type);
+            }
             return (T) context.computeIfAbsent(type,
                     k -> defaultValueSupplier.get());
         }
@@ -53,6 +59,27 @@ public class MockService extends VaadinService {
         public String getContextParameter(String name) {
             return null;
         }
+    }
+
+    private DeploymentConfiguration deploymentConfiguration;
+
+    public MockService(boolean productionMode) {
+        deploymentConfiguration = new DefaultDeploymentConfiguration(
+                Object.class, new Properties()) {
+            @Override
+            public boolean isProductionMode() {
+                return productionMode;
+            }
+        };
+    }
+
+    public MockService() {
+        this(false);
+    }
+
+    @Override
+    public DeploymentConfiguration getDeploymentConfiguration() {
+        return deploymentConfiguration;
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.vaadin;
 
+import java.util.Properties;
+
 import javax.mail.Authenticator;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
@@ -9,14 +11,14 @@ import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import java.util.Properties;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vaadin.User.UserService;
 import com.vaadin.collaborationengine.CollaborationAvatarGroup;
 import com.vaadin.collaborationengine.CollaborationEngine;
+import com.vaadin.collaborationengine.CollaborationEngineConfiguration;
+import com.vaadin.collaborationengine.LicenseEventHandler;
 import com.vaadin.collaborationengine.UserInfo;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;
@@ -42,40 +44,39 @@ public class ProductionDocumentation extends VerticalLayout {
         checkUserPermissions();
     }
 
-    public class MyVaadinInitListener implements VaadinServiceInitListener {
-        @Override
-        public void serviceInit(ServiceInitEvent event) {
-            System.setProperty("vaadin.ce.dataDir",
-                    "/Users/steve/vaadin/collaboration-engine/");
-        }
-    }
-
     @SpringComponent
-    public static class CollaborationEngineConfiguration
+    public static class MyVaadinInitListener
             implements VaadinServiceInitListener {
 
         private static final Logger LOGGER = LoggerFactory
-                .getLogger(CollaborationEngineConfiguration.class);
+                .getLogger(MyVaadinInitListener.class);
 
         @Override
         public void serviceInit(ServiceInitEvent serviceEvent) {
+            System.setProperty("vaadin.ce.dataDir",
+                    "/Users/steve/vaadin/collaboration-engine/");
+
             VaadinService service = serviceEvent.getSource();
-            CollaborationEngine.getInstance(service)
-                    .setLicenseEventHandler(licenseEvent -> {
-                        switch (licenseEvent.getType()) {
-                        case GRACE_PERIOD_STARTED:
-                        case LICENSE_EXPIRES_SOON:
-                            LOGGER.warn(licenseEvent.getMessage());
-                            break;
-                        case GRACE_PERIOD_ENDED:
-                        case LICENSE_EXPIRED:
-                            LOGGER.error(licenseEvent.getMessage());
-                            break;
-                        }
-                        sendEmail(
-                                "Vaadin Collaboration Engine license needs to be updated",
-                                licenseEvent.getMessage());
-                    });
+
+            LicenseEventHandler licenseEventHandler = licenseEvent -> {
+                switch (licenseEvent.getType()) {
+                case GRACE_PERIOD_STARTED:
+                case LICENSE_EXPIRES_SOON:
+                    LOGGER.warn(licenseEvent.getMessage());
+                    break;
+                case GRACE_PERIOD_ENDED:
+                case LICENSE_EXPIRED:
+                    LOGGER.error(licenseEvent.getMessage());
+                    break;
+                }
+                sendEmail(
+                        "Vaadin Collaboration Engine license needs to be updated",
+                        licenseEvent.getMessage());
+            };
+
+            CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                    licenseEventHandler);
+            CollaborationEngine.configure(service, configuration);
         }
 
         private void sendEmail(String subject, String content) {

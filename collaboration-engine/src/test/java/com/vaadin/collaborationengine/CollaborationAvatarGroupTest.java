@@ -88,11 +88,9 @@ public class CollaborationAvatarGroupTest {
 
     @Before
     public void init() {
-        ce = new CollaborationEngine();
         service = new MockService();
-        service.getContext().setAttribute(CollaborationEngine.class, ce);
         VaadinService.setCurrent(service);
-        TestUtil.setDummyCollaborationEngineConfig(ce);
+        ce = TestUtil.createTestCollaborationEngine(service);
         client1 = new AvatarGroupTestClient(1, ce);
         client2 = new AvatarGroupTestClient(2, ce);
         client3 = new AvatarGroupTestClient(3, ce);

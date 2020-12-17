@@ -22,9 +22,7 @@ import java.util.TreeMap;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.slf4j.LoggerFactory;
 
-import com.vaadin.collaborationengine.CollaborationEngine.CollaborationEngineConfig;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 
 class LicenseHandler {
@@ -113,11 +111,10 @@ class LicenseHandler {
 
     LicenseHandler(CollaborationEngine collaborationEngine) {
         this.ce = collaborationEngine;
-        LicenseEventHandler eventHandler = collaborationEngine
-                .getLicenseEventHandler();
-        CollaborationEngineConfig config = collaborationEngine.getConfig();
-        if (config.licenseCheckingEnabled) {
-            fileHandler = new FileHandler(config);
+        CollaborationEngineConfiguration configuration = collaborationEngine
+                .getConfiguration();
+        if (configuration.isLicenseCheckingEnabled()) {
+            fileHandler = new FileHandler(configuration);
             license = fileHandler.readLicenseFile();
             statistics = fileHandler.readStatsFile();
             if (!license.key.equals(statistics.licenseKey)) {
@@ -125,17 +122,8 @@ class LicenseHandler {
                 statistics.gracePeriodStart = null;
                 statistics.licenseEvents.clear();
             }
-            if (eventHandler == null) {
-                throw new IllegalStateException(
-                        "Collaboration Engine is missing a LicenseEventHandler which "
-                                + "is required to be notified when license events "
-                                + "occur, e.g. when the grace period starts/ends or "
-                                + "when the license is expiring; the handler can be "
-                                + "set with CollaborationEngine.getInstance()."
-                                + "setLicenseEventHandler()");
-            }
             if (license.endDate.isBefore(getCurrentDate())) {
-                LoggerFactory.getLogger(CollaborationEngine.class)
+                CollaborationEngine.LOGGER
                         .warn("Your Collaboration Engine license has expired. "
                                 + "Your application will still continue to "
                                 + "work, but the collaborative features will be "
@@ -148,26 +136,6 @@ class LicenseHandler {
             fileHandler = null;
             license = null;
             statistics = null;
-            if (config.dataDirPath == null) {
-                LoggerFactory.getLogger(CollaborationEngine.class).warn(
-                        "Collaboration Engine is used in development/trial mode. "
-                                + "Note that in order to make a production build, "
-                                + "you need to obtain a license from Vaadin and configure the '"
-                                + FileHandler.DATA_DIR_PUBLIC_PROPERTY
-                                + "' property, which is currently not configured. "
-                                + "More info in Vaadin documentation.");
-            }
-            if (eventHandler == null) {
-                LoggerFactory.getLogger(CollaborationEngine.class).warn(
-                        "Collaboration Engine is used in development/trial mode. "
-                                + "Note that in order to make a production build, "
-                                + "you need to set a LicenseEventHandler which "
-                                + "is required to be notified when license events "
-                                + "occur, e.g. when the grace period starts/ends or "
-                                + "when the license is expiring; the handler can be "
-                                + "set with CollaborationEngine.getInstance()."
-                                + "setLicenseEventHandler()");
-            }
         }
     }
 
@@ -260,7 +228,8 @@ class LicenseHandler {
         LicenseEvent event = new LicenseEvent(ce, type, message);
         statistics.licenseEvents.put(type, getCurrentDate());
         fileHandler.writeStats(statistics);
-        ce.getLicenseEventHandler().handleLicenseEvent(event);
+        ce.getConfiguration().getLicenseEventHandler()
+                .handleLicenseEvent(event);
     }
 
     LocalDate getCurrentDate() {

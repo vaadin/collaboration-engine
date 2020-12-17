@@ -26,10 +26,8 @@ public class MultipleCollaborationMapTest {
 
     @Before
     public void init() {
-        ce = new CollaborationEngine();
-        service.getContext().setAttribute(CollaborationEngine.class, ce);
         VaadinService.setCurrent(service);
-        TestUtil.setDummyCollaborationEngineConfig(ce);
+        ce = TestUtil.createTestCollaborationEngine(service);
         TestUtils.openEagerConnection("form", topic -> {
             this.connection = topic;
             namedMapData = topic.getNamedMap("values");
