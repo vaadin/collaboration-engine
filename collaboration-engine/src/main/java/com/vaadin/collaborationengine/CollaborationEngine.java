@@ -25,6 +25,7 @@ import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.pro.licensechecker.LicenseChecker;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -41,7 +42,7 @@ public class CollaborationEngine {
     static final Logger LOGGER = LoggerFactory
             .getLogger(CollaborationEngine.class);
 
-    static final String COLLABORATION_ENGINE_NAME = "CollaborationEngine";
+    static final String COLLABORATION_ENGINE_NAME = "vaadin-collaboration-engine";
     static final String COLLABORATION_ENGINE_VERSION = "3.0";
 
     static final int USER_COLOR_COUNT = 7;
@@ -174,6 +175,10 @@ public class CollaborationEngine {
         ce.configuration = configuration;
 
         vaadinService.getContext().setAttribute(CollaborationEngine.class, ce);
+        if (!vaadinService.getDeploymentConfiguration().isProductionMode()) {
+            LicenseChecker.checkLicense(COLLABORATION_ENGINE_NAME,
+                    COLLABORATION_ENGINE_VERSION);
+        }
         return ce;
     }
 
