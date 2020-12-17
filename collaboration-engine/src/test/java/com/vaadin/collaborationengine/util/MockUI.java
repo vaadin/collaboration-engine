@@ -17,6 +17,8 @@ public class MockUI extends UI {
 
     private List<Command> accessTasks = new ArrayList<>();
 
+    private boolean executeAccessTasks = true;
+
     public MockUI() {
         super();
         ReentrantLock lock = new ReentrantLock();
@@ -39,7 +41,9 @@ public class MockUI extends UI {
     @Override
     public Future<Void> access(Command command) {
         accessTasks.add(command);
-        command.execute();
+        if (executeAccessTasks) {
+            command.execute();
+        }
         return null;
     }
 
@@ -47,4 +51,7 @@ public class MockUI extends UI {
         return accessTasks;
     }
 
+    public void setExecuteAccessTasks(boolean executeAccessTasks) {
+        this.executeAccessTasks = executeAccessTasks;
+    }
 }

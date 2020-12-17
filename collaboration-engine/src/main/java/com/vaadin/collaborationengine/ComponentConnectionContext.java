@@ -8,8 +8,10 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -21,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
@@ -39,6 +42,8 @@ public class ComponentConnectionContext implements ConnectionContext {
     private final Set<Component> attachedComponents = new HashSet<>();
 
     private volatile UI ui;
+
+    private List<Command> pendingActions = new ArrayList<>();
 
     private ActivationHandler activationHandler;
     private Registration beaconListener;
@@ -124,9 +129,12 @@ public class ComponentConnectionContext implements ConnectionContext {
                 destroyListener = destroyDelegate
                         .addListener(event -> deactivateConnection());
 
+                flushPendingActionsIfActive();
+
                 if (activationHandler != null) {
                     activationHandler.setActive(true);
                 }
+
             } else if (componentUi != ui) {
                 throw new IllegalStateException(
                         "All components in this connection context must be associated with the same UI.");
@@ -181,12 +189,24 @@ public class ComponentConnectionContext implements ConnectionContext {
         }
     }
 
+    /**
+     * Executes the given action by holding the session lock. This is done by
+     * using {@link UI#access(Command)} on the UI that the component(s)
+     * associated with this context belong to. This ensures that any UI changes
+     * are pushed to the client in real-time if {@link Push} is enabled.
+     * <p>
+     * If this context is not active (none of the components are attached to a
+     * UI), the action is postponed until the connection becomes active.
+     *
+     * @param action
+     *            the action to dispatch
+     */
     @Override
     public void dispatchAction(Command action) {
-        UI localUI = this.ui;
-        if (localUI != null) {
-            localUI.access(action);
+        synchronized (pendingActions) {
+            pendingActions.add(action);
         }
+        flushPendingActionsIfActive();
     }
 
     @Override
@@ -198,6 +218,20 @@ public class ComponentConnectionContext implements ConnectionContext {
                             + "Make sure the context has at least one component attached to the UI.");
         }
         return new DeadlockDetectingCompletableFuture<>(localUI.getSession());
+    }
+
+    private void flushPendingActionsIfActive() {
+        UI localUI = this.ui;
+        if (localUI != null) {
+            localUI.access(() -> {
+                List<Command> pendingActionsCopy;
+                synchronized (pendingActions) {
+                    pendingActionsCopy = new ArrayList<>(pendingActions);
+                    pendingActions.clear();
+                }
+                pendingActionsCopy.forEach(Command::execute);
+            });
+        }
     }
 
     private void checkForPush(UI ui) {

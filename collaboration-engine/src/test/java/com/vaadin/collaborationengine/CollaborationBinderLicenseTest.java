@@ -46,6 +46,15 @@ public class CollaborationBinderLicenseTest extends AbstractLicenseTest {
         Assert.assertEquals("value-from-client-2", client1.field.getValue());
     }
 
+    @Test
+    public void licenseTermsExceeded_setTopicBeforeAttach_fieldsPopulated() {
+        BinderTestClient client = new BinderTestClient(ce);
+        client.bind();
+        client.binder.setTopic("foo", () -> new TestBean("bean-value"));
+        client.attach();
+        Assert.assertEquals("bean-value", client.field.getValue());
+    }
+
     private BinderTestClient addClient() {
         BinderTestClient client = new BinderTestClient(ce);
         client.attach();

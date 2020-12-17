@@ -1,5 +1,14 @@
 package com.vaadin.collaborationengine;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import com.vaadin.collaborationengine.util.TestComponent;
@@ -10,12 +19,6 @@ import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.ServiceException;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.lang.ref.WeakReference;
-import java.util.Arrays;
 
 public class ComponentConnectionContextTest {
     private MockUI ui;
@@ -277,29 +280,92 @@ public class ComponentConnectionContextTest {
         ComponentConnectionContext context = new ComponentConnectionContext(
                 component);
 
-        Command command = () -> {
-        };
+        ArrayList<String> executed = new ArrayList<>();
+        Command command = () -> executed.add("command");
+
+        ui.setExecuteAccessTasks(false);
+
         context.dispatchAction(command);
+        Assert.assertEquals(Collections.emptyList(), executed);
+
+        ui.getAccessTasks().forEach(Command::execute);
 
         Assert.assertEquals("Command should have been passed to UI.access",
-                Arrays.asList(command), ui.getAccessTasks());
+                Arrays.asList("command"), executed);
     }
 
     @Test
-    public void deactivatedContext_dispatchAction_noUiAccessed() {
+    public void inactiveContext_dispatchActions_actionsEnqueued() {
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+
+        ArrayList<String> executed = new ArrayList<>();
+        context.dispatchAction(() -> executed.add("foo"));
+        context.dispatchAction(() -> executed.add("bar"));
+
+        Assert.assertEquals(Collections.emptyList(), executed);
+
+        ui.add(component);
+
+        Assert.assertEquals(Arrays.asList("foo", "bar"), executed);
+    }
+
+    @Test
+    public void deactivatedContext_dispatchAction_actionsEnqueued() {
         ui.add(component);
         ComponentConnectionContext context = new ComponentConnectionContext(
                 component);
         context.setActivationHandler(activationHandler);
         activationHandler.assertActive("Sanity check");
         ui.remove(component);
+        activationHandler.assertInactive("Sanity check");
 
-        Command command = () -> {
+        ArrayList<String> executed = new ArrayList<>();
+        context.dispatchAction(() -> executed.add("foo"));
+        context.dispatchAction(() -> executed.add("bar"));
+
+        Assert.assertEquals("Dispatched action should not have been invoked",
+                Collections.emptyList(), executed);
+
+        ui.add(component);
+        activationHandler.assertActive("Sanity check");
+
+        Assert.assertEquals(
+                "Dispatched action should have been invoked after activating",
+                Arrays.asList("foo", "bar"), executed);
+    }
+
+    @Test
+    public void dispatchAction_activateContext_dispatchedActionRunsBeforeActivationHandler() {
+        ArrayList<String> actions = new ArrayList<>();
+
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+
+        context.setActivationHandler(active -> actions.add("active"));
+        context.dispatchAction(() -> actions.add("dispatched"));
+
+        ui.add(component);
+        Assert.assertEquals(Arrays.asList("dispatched", "active"), actions);
+    }
+
+    @Test
+    public void inactiveContext_dispatchActionInAction_activate_actionsExecuted() {
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+
+        ArrayList<String> executed = new ArrayList<>();
+        Command innerCommand = () -> executed.add("inner");
+        Command outerCommand = () -> {
+            executed.add("outer");
+            context.dispatchAction(innerCommand);
         };
-        context.dispatchAction(command);
 
-        Assert.assertTrue("UI.access should not be invoked",
-                ui.getAccessTasks().isEmpty());
+        context.dispatchAction(outerCommand);
+        Assert.assertEquals(Collections.emptyList(), executed);
+
+        ui.add(component);
+        Assert.assertEquals(Arrays.asList("outer", "inner"), executed);
     }
 
     @Test(expected = IllegalStateException.class)
