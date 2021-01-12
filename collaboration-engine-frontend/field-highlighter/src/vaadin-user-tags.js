@@ -211,7 +211,6 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
 
   createUserTag(user) {
     const tag = document.createElement('vaadin-user-tag');
-    tag.setAttribute('id', `tag-${user.id}`);
     tag.name = user.name;
     tag.uid = user.id;
     tag.colorIndex = user.colorIndex;
@@ -219,7 +218,7 @@ export class UserTags extends ThemableMixin(DirMixin(PolymerElement)) {
   }
 
   getTagForUser(user) {
-    return this.wrapper.querySelector(`#tag-${user.id}`);
+    return Array.from(this.wrapper.children).filter((tag) => tag.uid === user.id)[0];
   }
 
   getChangedTags(addedUsers, removedUsers) {
