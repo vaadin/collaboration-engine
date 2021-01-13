@@ -252,6 +252,12 @@ public class CollaborationEngine {
 
             if (!hasSeat) {
                 // User quota exceeded, don't open the connection.
+                LOGGER.warn(
+                        "Access for user '{}' was denied. The license may have "
+                                + "expired or the user quota may have exceeded, check the "
+                                + "license events handled by your LicenseEventHandler for "
+                                + "more details.",
+                        localUser.getId());
                 return new TopicConnectionRegistration(null, context);
             }
         }
