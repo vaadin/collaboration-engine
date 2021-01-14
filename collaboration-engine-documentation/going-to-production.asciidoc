@@ -48,19 +48,27 @@ You can set the path as a system property in a `VaadinServiceInitListener`, whic
 ==== Spring applications
 
 If you have a Spring application, you can register a `VaadinServiceInitListener` by implementing the interface and annotating
-the class as a `@SpringComponent`. In the `serviceInit` method, you can then set `vaadin.ce.dataDir` as a system property.
+the class as a `@SpringComponent`. In the `serviceInit` method, you can then create a `CollaborationEngineConfiguration` object and set
+the data directory path with the `setDataDir` method.
 
 .com.company.myapp.MyVaadinInitListener.java
-```java
+[source,java,subs="+macros"]
+----
 @SpringComponent
 public class MyVaadinInitListener implements VaadinServiceInitListener {
     @Override
     public void serviceInit(ServiceInitEvent event) {
-        System.setProperty("vaadin.ce.dataDir",
-                "/Users/steve/vaadin/collaboration-engine/");
+        VaadinService service = serviceEvent.getSource();
+
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                licenseEvent -> {
+                    // See <<ce.production.license-events>>
+                });
+        configuration.setDataDir("/Users/steve/vaadin/collaboration-engine/");
+        CollaborationEngine.configure(service, configuration);
     }
 }
-```
+----
 
 ==== Other applications
 
@@ -170,8 +178,7 @@ in the same way as described in <<ce.production.data-dir-in-project-files>>.
 
 ```java
 @SpringComponent
-public static class MyVaadinInitListener
-        implements VaadinServiceInitListener {
+public class MyVaadinInitListener implements VaadinServiceInitListener {
 
     private static final Logger LOGGER = LoggerFactory
             .getLogger(MyVaadinInitListener.class);

@@ -271,6 +271,29 @@ public class CollaborationEngineTest {
                 new CollaborationEngineConfiguration(null));
     }
 
+    @Test
+    public void dataDirPropertyIsSetCorrectly() {
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                event -> {
+                });
+        configuration.setVaadinService(service);
+        configuration.setDataDir("foo");
+        String dataDir = configuration.getDataDirPath().toString();
+        Assert.assertEquals("foo", dataDir);
+    }
+
+    @Test
+    public void dataDirPropertyTakesPrecedenceOverConfiguration() {
+        System.setProperty("vaadin.ce.dataDir", "foo");
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                event -> {
+                });
+        configuration.setVaadinService(service);
+        configuration.setDataDir("bar");
+        String dataDir = configuration.getDataDirPath().toString();
+        Assert.assertEquals("foo", dataDir);
+    }
+
     class SpyConnectionContext implements ConnectionContext {
 
         private ActivationHandler activationHandler;

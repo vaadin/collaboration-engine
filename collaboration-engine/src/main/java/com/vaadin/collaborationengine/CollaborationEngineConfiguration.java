@@ -20,6 +20,7 @@ public class CollaborationEngineConfiguration {
 
     private LicenseEventHandler licenseEventHandler;
     private VaadinService vaadinService;
+    private String configuredDataDir;
 
     /**
      * Creates a new Collaboration Engine configuration with the provided
@@ -51,6 +52,31 @@ public class CollaborationEngineConfiguration {
         return licenseEventHandler;
     }
 
+    /**
+     * Gets the configured data-directory.
+     *
+     * @return the data-directory
+     */
+    public String getDataDir() {
+        return configuredDataDir;
+    }
+
+    /**
+     * Sets the path to the data-directory, which is used by Collaboration
+     * Engine to store files.
+     * <p>
+     * The data-directory can also be configured by setting the
+     * {@code vaadin.ce.dataDir} system property either in the command line or
+     * with {@link System#setProperty(String, String)}. If a system property is
+     * set, it will take precedence over this setting.
+     *
+     * @param dataDir
+     *            path to the data-directory
+     */
+    public void setDataDir(String dataDir) {
+        configuredDataDir = dataDir;
+    }
+
     void setVaadinService(VaadinService vaadinService) {
         this.vaadinService = vaadinService;
     }
@@ -62,6 +88,9 @@ public class CollaborationEngineConfiguration {
     Path getDataDirPath() {
         String dataDirectory = vaadinService.getDeploymentConfiguration()
                 .getStringProperty(FileHandler.DATA_DIR_CONFIG_PROPERTY, null);
+        if (dataDirectory == null) {
+            dataDirectory = configuredDataDir;
+        }
         return dataDirectory != null ? Paths.get(dataDirectory) : null;
     }
 }

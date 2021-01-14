@@ -1,7 +1,5 @@
 package com.vaadin;
 
-import java.util.Properties;
-
 import javax.mail.Authenticator;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
@@ -10,6 +8,8 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +53,6 @@ public class ProductionDocumentation extends VerticalLayout {
 
         @Override
         public void serviceInit(ServiceInitEvent serviceEvent) {
-            System.setProperty("vaadin.ce.dataDir",
-                    "/Users/steve/vaadin/collaboration-engine/");
-
             VaadinService service = serviceEvent.getSource();
 
             LicenseEventHandler licenseEventHandler = licenseEvent -> {
@@ -76,6 +73,8 @@ public class ProductionDocumentation extends VerticalLayout {
 
             CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
                     licenseEventHandler);
+            configuration
+                    .setDataDir("/Users/steve/vaadin/collaboration-engine/");
             CollaborationEngine.configure(service, configuration);
         }
 
