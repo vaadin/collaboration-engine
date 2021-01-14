@@ -20,10 +20,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.MockService;
@@ -58,6 +60,8 @@ public abstract class AbstractLicenseTest {
     final static int QUOTA = 3;
     final static int GRACE_QUOTA = 10 * QUOTA;
     final static UUID LICENSE_KEY = UUID.randomUUID();
+
+    ObjectMapper objectMapper = FileHandler.createObjectMapper();
 
     Path statsFilePath;
     Path licenseFilePath;
@@ -118,15 +122,26 @@ public abstract class AbstractLicenseTest {
     }
 
     LicenseHandler.StatisticsInfo readStatsFileContent() throws IOException {
-        ObjectMapper objectMapper = FileHandler.createObjectMapper();
         JsonNode statsJson = objectMapper.readTree(statsFilePath.toFile());
         return objectMapper.treeToValue(statsJson,
                 LicenseHandler.StatisticsInfoWrapper.class).content;
     }
 
-    void writeToStatsFile(String content) throws IOException {
+    void writeToStatsFile(StatisticsInfo stats) {
+        try {
+            writeToStatsFile(objectMapper.writeValueAsString(stats));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Json conversion failed.");
+        }
+    }
+
+    void writeToStatsFile(String content) {
         String wrapper = getStatisticsWithChecksum(content);
-        Files.write(statsFilePath, wrapper.getBytes());
+        try {
+            Files.write(statsFilePath, wrapper.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException("Writing to stats file failed.");
+        }
     }
 
     String getStatisticsWithChecksum(String content) {
