@@ -232,8 +232,8 @@ class LicenseHandler {
                 .handleLicenseEvent(event);
     }
 
-    LocalDate getCurrentDate() {
-        return LocalDate.now();
+    private LocalDate getCurrentDate() {
+        return LocalDate.now(ce.getClock());
     }
 
     /*

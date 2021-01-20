@@ -8,6 +8,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,6 +57,8 @@ public class CollaborationEngine {
     private CollaborationEngineConfiguration configuration;
 
     private final TopicActivationHandler topicActivationHandler;
+
+    private Clock clock = Clock.systemUTC();
 
     static {
         UsageStatistics.markAsUsed(COLLABORATION_ENGINE_NAME,
@@ -374,6 +377,14 @@ public class CollaborationEngine {
 
     CollaborationEngineConfiguration getConfiguration() {
         return configuration;
+    }
+
+    Clock getClock() {
+        return clock;
+    }
+
+    void setClock(Clock clock) {
+        this.clock = clock;
     }
 
     private synchronized void ensureConfigAndLicenseHandlerInitialization() {

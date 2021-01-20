@@ -4,7 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -14,15 +18,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
@@ -171,5 +174,15 @@ public abstract class AbstractLicenseTest {
                 "topic-id-to-fill-grace-quota", t -> {
                     // NO-OP
                 }));
+    }
+
+    YearMonth getCurrentMonth() {
+        return YearMonth.from(ce.getClock().instant().atZone(ZoneOffset.UTC));
+    }
+
+    void setCurrentDate(LocalDate currentDate) {
+        Instant instant = currentDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Clock clock = Clock.fixed(instant, ZoneOffset.UTC);
+        ce.setClock(clock);
     }
 }
