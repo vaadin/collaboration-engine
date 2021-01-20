@@ -35,6 +35,21 @@
         </dependency>
 
         <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>flow-html-components</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-button-flow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-text-field-flow</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>3.1.0</version>
@@ -81,17 +96,18 @@
                         </goals>
                         <configuration>
                             <outputDirectory>
-                                ${project.basedir}/src/main/resources/META-INF/resources/frontend/field-highlighter
+                                ${project.basedir}/src/main/resources/META-INF/resources/frontend/
                             </outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>
-                                        ${basedir}/../collaboration-engine-frontend/field-highlighter
+                                        ${basedir}/../collaboration-engine-frontend/
                                     </directory>
                                     <filtering>true</filtering>
                                     <includes>
-                                        <include>src/**</include>
-                                        <include>theme/**</include>
+                                        <include>field-highlighter/src/**</include>
+                                        <include>field-highlighter/theme/**</include>
+                                        <include>styles/**</include>
                                     </includes>
                                 </resource>
                             </resources>
