@@ -120,7 +120,9 @@ public class CollaborationEngine {
                                         + "Collaboration Engine is missing a required configuration object. "
                                         + "The configuration should be "
                                         + "set by calling the static CollaborationEngine.configure() method "
-                                        + "in a VaadinServiceInitListener.");
+                                        + "in a VaadinServiceInitListener or, if using Spring/CDI, provide "
+                                        + "a bean of type CollaborationEngineConfiguration. "
+                                        + "More info in Vaadin documentation.");
                     } else {
                         LOGGER.warn(
                                 "Collaboration Engine is used in development/trial mode. "
@@ -129,7 +131,8 @@ public class CollaborationEngine {
                                         + FileHandler.DATA_DIR_PUBLIC_PROPERTY
                                         + "' property. You also need to provide a configuration object "
                                         + "by using the static CollaborationEngine.configure() method in "
-                                        + "a VaadinServiceInitListener. "
+                                        + "a VaadinServiceInitListener or, if using Spring/CDI, provide "
+                                        + "a bean of type CollaborationEngineConfiguration. "
                                         + "More info in Vaadin documentation.");
                         return CollaborationEngine.configure(vaadinService,
                                 new CollaborationEngineConfiguration(e -> {
