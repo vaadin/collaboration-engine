@@ -8,6 +8,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,11 +31,34 @@ class Topic {
         void onEntryChange(MapChange mapChange);
     }
 
+    private final CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, JsonNode>> namedMapData = new HashMap<>();
     private final List<ChangeNotifier> changeListeners = new ArrayList<>();
+    final Map<String, Duration> expirationTimeouts = new HashMap<>();
+    private Instant lastDisconnected;
+
+    Topic(CollaborationEngine collaborationEngine) {
+        this.collaborationEngine = collaborationEngine;
+    }
 
     Registration subscribe(ChangeNotifier changeNotifier) {
-        return Registration.addAndRemove(changeListeners, changeNotifier);
+        Clock clock = collaborationEngine.getClock();
+        if (lastDisconnected != null) {
+            Instant now = clock.instant();
+            expirationTimeouts.forEach((name, timeout) -> {
+                if (now.isAfter(lastDisconnected.plus(timeout))) {
+                    namedMapData.get(name).clear();
+                }
+            });
+        }
+        lastDisconnected = null;
+        changeListeners.add(changeNotifier);
+        return () -> {
+            changeListeners.remove(changeNotifier);
+            if (changeListeners.isEmpty()) {
+                lastDisconnected = clock.instant();
+            }
+        };
     }
 
     private void fireMapChangeEvent(MapChange change) {

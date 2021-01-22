@@ -12,7 +12,7 @@ public class TopicTest {
 
     @Before
     public void init() {
-        topic = new Topic();
+        topic = new Topic(new CollaborationEngine());
     }
 
     @Test

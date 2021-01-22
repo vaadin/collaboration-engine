@@ -8,6 +8,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -133,4 +135,24 @@ public interface CollaborationMap {
      * @return the topic connection used by this map, not <code>null</code>
      */
     TopicConnection getConnection();
+
+    /**
+     * Gets the optional expiration timeout of this map. An empty
+     * {@link Optional} is returned if no timeout is set, which means the map is
+     * not cleared when there are no connected users (this is the default).
+     *
+     * @return the expiration timeout
+     */
+    Optional<Duration> getExpirationTimeout();
+
+    /**
+     * Sets the expiration timeout of this map. If set, this map data is cleared
+     * when {@code expirationTimeout} has passed after the last connection to
+     * the topic this map belongs to is closed. If set to {@code null}, the
+     * timeout is cancelled.
+     *
+     * @param expirationTimeout
+     *            the expiration timeout
+     */
+    void setExpirationTimeout(Duration expirationTimeout);
 }

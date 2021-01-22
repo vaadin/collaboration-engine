@@ -268,7 +268,7 @@ public class CollaborationEngine {
             }
         }
 
-        Topic topic = topics.computeIfAbsent(topicId, id -> new Topic());
+        Topic topic = topics.computeIfAbsent(topicId, id -> new Topic(this));
 
         TopicConnection connection = new TopicConnection(context, topic,
                 localUser, isActive -> updateTopicActivation(topicId, isActive),

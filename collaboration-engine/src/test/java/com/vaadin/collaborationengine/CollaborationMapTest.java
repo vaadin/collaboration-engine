@@ -1,5 +1,7 @@
 package com.vaadin.collaborationengine;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,12 +12,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.flow.server.Command;
@@ -55,17 +56,19 @@ public class CollaborationMapTest {
     }
 
     private ToggleableConnectionContext context;
+    private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationMap map;
     private MapSubscriberSpy spy;
+    private TopicConnectionRegistration registration;
 
     @Before
     public void init() {
         context = new ToggleableConnectionContext();
-        CollaborationEngine ce = TestUtil.createTestCollaborationEngine();
-        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
-                topicConnection -> {
-                    this.connection = topicConnection;
+        ce = TestUtil.createTestCollaborationEngine();
+        registration = ce.openTopicConnection(context, "topic",
+                SystemUserInfo.getInstance(), topicConnection -> {
+                    connection = topicConnection;
                     map = connection.getNamedMap("foo");
                     return null;
                 });
@@ -269,6 +272,70 @@ public class CollaborationMapTest {
                 "The returned value shouldn't affect map data in the topic.",
                 data.containsAll(
                         map.get("key", MockJson.LIST_STRING_TYPE_REF)));
+    }
+
+    @Test
+    public void expirationTimeout_mapClearedAfterTimeout() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        map.put("foo", "foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        Assert.assertEquals(0, map.getKeys().count());
+    }
+
+    @Test
+    public void expirationTimeout_mapNotClearedBeforeTimeout() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        map.put("foo", "foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.minusMinutes(1)));
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_timeoutRemovedWhenSetToNull() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        map.put("foo", "foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        map.setExpirationTimeout(null);
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_connectionOpened_mapClearCancelled() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        map.put("foo", "foo");
+        registration.remove();
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_multipleConnectionsOpened_closeOne_mapClearNotScheduled() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        map.put("foo", "foo");
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null).remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
     }
 
     private class ToggleableConnectionContext extends EagerConnectionContext {

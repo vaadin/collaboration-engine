@@ -8,11 +8,13 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -217,6 +219,21 @@ public class TopicConnection {
             @Override
             public TopicConnection getConnection() {
                 return TopicConnection.this;
+            }
+
+            @Override
+            public Optional<Duration> getExpirationTimeout() {
+                Duration expirationTimeout = topic.expirationTimeouts.get(name);
+                return Optional.ofNullable(expirationTimeout);
+            }
+
+            @Override
+            public void setExpirationTimeout(Duration expirationTimeout) {
+                if (expirationTimeout == null) {
+                    topic.expirationTimeouts.remove(name);
+                } else {
+                    topic.expirationTimeouts.put(name, expirationTimeout);
+                }
             }
         };
     }
