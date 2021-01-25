@@ -14,8 +14,20 @@ import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.html.Div;
 
+/**
+ * Component for displaying a message with name, date, avatar and content from a
+ * {@link Message} data model.
+ */
 public class ExampleComponentMessage extends Div {
+    final Message message;
+
+    /**
+     * Creates a new example component message for displaying a single message.
+     * It includes the name of the user, avatar of the user, date and time sent
+     * and the content of the message.
+     */
     public ExampleComponentMessage(Message message) {
+        this.message = message;
         Avatar avatar = new Avatar(message.getUserName(), message.getImage());
         Div name = new Div(new Text(message.getUserName()));
         Div date = new Div(new Text(message.getTime()
@@ -32,5 +44,14 @@ public class ExampleComponentMessage extends Div {
         date.addClassName("comments-comment-date");
         content.addClassName("comments-comment-content");
         nameDateContent.addClassName("comments-comment-content");
+    }
+
+    /**
+     * Gets a reference to the original {@link Message} data structure.
+     * 
+     * @return the message the component is rendering
+     */
+    public Message getMessage() {
+        return message;
     }
 }
