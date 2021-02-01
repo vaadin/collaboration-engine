@@ -285,6 +285,9 @@ public class CollaborationEngine {
      * quota for that user; depending on the response, it's then possible to
      * adapt the UI enabling or disabling collaboration features.
      * <p>
+     * To avoid calling this method multiple times per user, it is suggested to
+     * cache the result during the login process (e.g. in the session).
+     * <p>
      * In the callback, you can check from the response whether the user has
      * access or not with the {@link AccessResponse#hasAccess()} method. It
      * returns {@code true} if access has been granted for the user.
@@ -324,6 +327,9 @@ public class CollaborationEngine {
      * Collaboration Engine, e.g. if the license is not expired and there is
      * quota for that user; depending on the response, it's then possible to
      * adapt the UI enabling or disabling collaboration features.
+     * <p>
+     * To avoid calling this method multiple times per user, it is suggested to
+     * cache the result during the login process (e.g. in the session).
      * <p>
      * In the callback, you can check from the response whether the user has
      * access or not with the {@link AccessResponse#hasAccess()} method. It
