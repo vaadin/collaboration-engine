@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -744,5 +745,32 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     @Test(expected = NullPointerException.class)
     public void nullFieldType_rejected() {
         client.binder.forField(client.field, null);
+    }
+
+    @Test
+    public void expirationTimeout_timeoutIsSetOnBinderMap_beforeTopicIsSet() {
+        client.binder.setExpirationTimeout(Duration.ofMinutes(15));
+        client.bind();
+        client.attach();
+        long timeout = map.getExpirationTimeout().get().toMinutes();
+        Assert.assertEquals(15, timeout);
+    }
+
+    @Test
+    public void expirationTimeout_timeoutIsSetOnBinderMap_afterTopicIsSet() {
+        client.bind();
+        client.attach();
+        client.binder.setExpirationTimeout(Duration.ofMinutes(15));
+        long timeout = map.getExpirationTimeout().get().toMinutes();
+        Assert.assertEquals(15, timeout);
+    }
+
+    @Test
+    public void expirationTimeout_timeoutIsUnset() {
+        client.binder.setExpirationTimeout(Duration.ofMinutes(15));
+        client.bind();
+        client.attach();
+        client.binder.setExpirationTimeout(null);
+        Assert.assertFalse(map.getExpirationTimeout().isPresent());
     }
 }

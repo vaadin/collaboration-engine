@@ -11,6 +11,7 @@ package com.vaadin.collaborationengine;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -61,7 +62,8 @@ import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
  * @param <BEAN>
  *            the bean type
  */
-public class CollaborationBinder<BEAN> extends Binder<BEAN> {
+public class CollaborationBinder<BEAN> extends Binder<BEAN>
+        implements HasExpirationTimeout {
 
     private static final List<Class<?>> SUPPORTED_CLASS_TYPES = Arrays.asList(
             String.class, Boolean.class, Integer.class, Double.class,
@@ -256,6 +258,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
     private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
     private TopicConnectionRegistration topicRegistration;
+    private Duration expirationTimeout;
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
     private final Map<HasValue<?, ?>, String> fieldToPropertyName = new HashMap<>();
@@ -411,7 +414,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
     private void onConnectionDeactivate() {
         fieldToPropertyName.values().forEach(this::removeEditor);
-        this.topic = null;
+        topic = null;
     }
 
     @SuppressWarnings("rawtypes")
@@ -683,7 +686,13 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
             SerializableSupplier<BEAN> initialBeanSupplier) {
         this.topic = topic;
 
-        getMap(topic).subscribe(this::onMapChange);
+        CollaborationMap map = getMap(topic);
+
+        map.subscribe(this::onMapChange);
+
+        if (expirationTimeout != null) {
+            map.setExpirationTimeout(expirationTimeout);
+        }
 
         initializeBindingsWithoutFieldState(initialBeanSupplier);
 
@@ -1018,5 +1027,36 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN> {
 
             return collection;
         });
+    }
+
+    /**
+     * Gets the optional expiration timeout of this binder. An empty
+     * {@link Optional} is returned if no timeout is set, which means the binder
+     * is not cleared when there are no connected users to the related topic
+     * (this is the default).
+     *
+     * @return the expiration timeout
+     */
+    @Override
+    public Optional<Duration> getExpirationTimeout() {
+        return Optional.ofNullable(expirationTimeout);
+    }
+
+    /**
+     * Sets the expiration timeout of this binder. If set, this binder data is
+     * cleared when {@code expirationTimeout} has passed after the last
+     * connection to the related topic is closed. If set to {@code null}, the
+     * timeout is cancelled.
+     *
+     * @param expirationTimeout
+     *            the expiration timeout
+     */
+    @Override
+    public void setExpirationTimeout(Duration expirationTimeout) {
+        this.expirationTimeout = expirationTimeout;
+
+        if (topic != null) {
+            getMap(topic).setExpirationTimeout(expirationTimeout);
+        }
     }
 }

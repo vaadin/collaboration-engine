@@ -24,7 +24,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public interface CollaborationMap {
+public interface CollaborationMap extends HasExpirationTimeout {
 
     /**
      * Gets the map value for the given key as an instance of the given class.
@@ -139,10 +139,12 @@ public interface CollaborationMap {
     /**
      * Gets the optional expiration timeout of this map. An empty
      * {@link Optional} is returned if no timeout is set, which means the map is
-     * not cleared when there are no connected users (this is the default).
+     * not cleared when there are no connected users to the related topic (this
+     * is the default).
      *
      * @return the expiration timeout
      */
+    @Override
     Optional<Duration> getExpirationTimeout();
 
     /**
@@ -154,5 +156,6 @@ public interface CollaborationMap {
      * @param expirationTimeout
      *            the expiration timeout
      */
+    @Override
     void setExpirationTimeout(Duration expirationTimeout);
 }
