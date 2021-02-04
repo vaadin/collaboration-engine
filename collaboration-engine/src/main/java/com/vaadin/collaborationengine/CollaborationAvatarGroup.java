@@ -271,7 +271,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             item.setImageResource(imageProvider.getImageResource(user));
         }
 
-        item.setColorIndex(user.getColorIndex());
+        item.setColorIndex(ce.getUserColorIndex(user));
         return item;
     }
 

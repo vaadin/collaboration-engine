@@ -1,7 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
-
 import java.lang.ref.WeakReference;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,6 +21,8 @@ import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
+
+import static com.vaadin.collaborationengine.CollaborationEngine.USER_COLOR_COUNT;
 
 public class CollaborationEngineTest {
 
@@ -182,20 +182,27 @@ public class CollaborationEngineTest {
     public void userColors_sameColorForSameUserId() {
         UserInfo firstUser = new UserInfo("id1234");
         UserInfo secondUser = new UserInfo("id1234");
-        Assert.assertEquals(firstUser.getColorIndex(),
-                secondUser.getColorIndex());
+        Assert.assertEquals(collaborationEngine.getUserColorIndex(firstUser),
+                collaborationEngine.getUserColorIndex(secondUser));
     }
 
     @Test
     public void userColors_calculateBaseOnMapSize() {
         UserInfo firstUser = new UserInfo("userId-first");
-        int offset = firstUser.getColorIndex();
+        int offset = collaborationEngine.getUserColorIndex(firstUser);
 
         for (int i = 0; i < 12; i++) {
             UserInfo user = new UserInfo("user-color-test-id-" + i);
-            Assert.assertEquals(user.getColorIndex(),
+            Assert.assertEquals(collaborationEngine.getUserColorIndex(user),
                     (offset + i + 1) % USER_COLOR_COUNT);
         }
+    }
+
+    @Test
+    public void userColors_userInfoHasColorSet() {
+        UserInfo firstUser = new UserInfo("id1234", 99999);
+        Assert.assertEquals(99999,
+                collaborationEngine.getUserColorIndex(firstUser));
     }
 
     @Test(expected = NullPointerException.class)

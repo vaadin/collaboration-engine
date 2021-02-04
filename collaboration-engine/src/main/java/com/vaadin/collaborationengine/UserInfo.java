@@ -28,21 +28,18 @@ public class UserInfo {
     private int colorIndex;
 
     /**
-     * Creates a new user info object from the given user id. The color index is
-     * calculated based on the id. All other properties are left empty.
+     * Creates a new user info object from the given user id.
      *
      * @param userId
      *            the user id, not {@code null}
      */
     @JsonCreator
     public UserInfo(@JsonProperty("id") String userId) {
-        this(userId,
-                CollaborationEngine.getInstance().getUserColorIndex(userId));
+        this(userId, -1);
     }
 
     /**
-     * Creates a new user info object from the given user id and name. The color
-     * index is calculated based on the id. All other properties are left empty.
+     * Creates a new user info object from the given user id and name.
      *
      * @param userId
      *            the user id, not {@code null}
@@ -167,6 +164,9 @@ public class UserInfo {
      * The color index defines the user specific color. In practice, color index
      * {@code n} means that the user color will be set as the CSS variable
      * {@code --vaadin-user-color-n}.
+     * <p>
+     * The default value is -1, which indicates that the user color can be
+     * automatically assigned by Collaboration Engine.
      *
      * @return the user's color index
      */
@@ -176,6 +176,9 @@ public class UserInfo {
 
     /**
      * Sets the user's color index.
+     * <p>
+     * Setting it to -1 (which is the default value) indicates that the user
+     * color can be automatically assigned by Collaboration Engine.
      *
      * @param colorIndex
      *            the color index to set

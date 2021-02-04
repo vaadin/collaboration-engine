@@ -185,24 +185,25 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
             HasValue<?, ?> field = binding.getField();
 
-            ComponentConnectionContext connectionContext = getBinder().connectionContext;
+            CollaborationBinder<BEAN> binder = getBinder();
+            ComponentConnectionContext connectionContext = binder.connectionContext;
             if (connectionContext != null) {
                 connectionContext.addComponent((Component) field);
             }
 
             List<Registration> registrations = new ArrayList<>();
 
-            registrations.add(field.addValueChangeListener(event -> getBinder()
-                    .setMapValueFromField(propertyName, field)));
+            registrations.add(field.addValueChangeListener(
+                    event -> binder.setMapValueFromField(propertyName, field)));
 
             registrations.add(FieldHighlighter.setupForField(field,
-                    propertyName, getBinder()));
+                    propertyName, binder));
 
-            getBinder().bindingRegistrations.put(binding,
+            binder.bindingRegistrations.put(binding,
                     () -> registrations.forEach(Registration::remove));
 
-            getBinder().setFieldValueFromMap(propertyName, field);
-            getBinder().fieldToPropertyName.put(field, propertyName);
+            binder.setFieldValueFromMap(propertyName, field);
+            binder.fieldToPropertyName.put(field, propertyName);
 
             return binding;
         }
@@ -254,6 +255,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
     private final UserInfo localUser;
     private final CollaborationEngine ce;
+    private final FieldHighlighter fieldHighlighter;
 
     private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
@@ -296,6 +298,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
         this.ce = ce;
+        this.fieldHighlighter = new FieldHighlighter(ce::getUserColorIndex);
     }
 
     @Override
@@ -408,7 +411,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
             setFieldValueFromFieldState(field, propertyName, fieldState);
 
-            FieldHighlighter.setEditors(field, fieldState.editors, localUser);
+            fieldHighlighter.setEditors(field, fieldState.editors, localUser);
         });
     }
 
@@ -658,7 +661,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
         if (topicRegistration != null) {
             topicRegistration.remove();
             fieldToPropertyName.keySet()
-                    .forEach(FieldHighlighter::removeEditors);
+                    .forEach(fieldHighlighter::removeEditors);
             topicRegistration = null;
             connectionContext = null;
         }

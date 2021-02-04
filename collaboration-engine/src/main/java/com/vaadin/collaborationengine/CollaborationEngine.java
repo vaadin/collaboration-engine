@@ -361,14 +361,20 @@ public class CollaborationEngine {
     }
 
     /**
-     * Gets the color index of a user based on the user id. If the color index
-     * for a user id does not exist yet, it's created on demand.
+     * Gets the color index of a user if different than -1, or let Collaboration
+     * Engine provide one. If the color index for a user id does not exist yet,
+     * it's created on demand based on the user id.
      *
-     * @param userId
-     *            user id
+     * @param userInfo
+     *            user info
      * @return the color index
      */
-    int getUserColorIndex(String userId) {
+    int getUserColorIndex(UserInfo userInfo) {
+        int currentColorIndex = userInfo.getColorIndex();
+        if (currentColorIndex != -1) {
+            return currentColorIndex;
+        }
+        String userId = userInfo.getId();
         Integer colorIndex = userColors.computeIfAbsent(userId,
                 id -> userColors.size() % USER_COLOR_COUNT);
         return colorIndex.intValue();
