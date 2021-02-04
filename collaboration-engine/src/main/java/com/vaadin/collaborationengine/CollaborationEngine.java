@@ -369,7 +369,7 @@ public class CollaborationEngine {
      *            user info
      * @return the color index
      */
-    int getUserColorIndex(UserInfo userInfo) {
+    public int getUserColorIndex(UserInfo userInfo) {
         int currentColorIndex = userInfo.getColorIndex();
         if (currentColorIndex != -1) {
             return currentColorIndex;
