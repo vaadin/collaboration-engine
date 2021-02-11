@@ -8,6 +8,7 @@ import org.junit.Assert;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.Focusable;
+import com.vaadin.flow.component.HasValidation;
 import com.vaadin.flow.component.Tag;
 import com.vaadin.flow.dom.DomEvent;
 import com.vaadin.flow.internal.nodefeature.ElementListenerMap;
@@ -16,7 +17,11 @@ import elemental.json.Json;
 
 @Tag("test-field")
 public class TestField extends AbstractField<TestField, String>
-        implements Focusable<TestField> {
+        implements Focusable<TestField>, HasValidation {
+
+    private String errorMessage;
+
+    private boolean invalid;
 
     public TestField() {
         super(null);
@@ -77,5 +82,25 @@ public class TestField extends AbstractField<TestField, String>
                     "Failed to get element's event listeners with reflection");
         }
         return false;
+    }
+
+    @Override
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+
+    @Override
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    @Override
+    public void setInvalid(boolean invalid) {
+        this.invalid = invalid;
+    }
+
+    @Override
+    public boolean isInvalid() {
+        return invalid;
     }
 }

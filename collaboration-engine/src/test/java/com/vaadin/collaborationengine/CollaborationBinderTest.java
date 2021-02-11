@@ -2,10 +2,12 @@ package com.vaadin.collaborationengine;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -21,6 +23,13 @@ import com.vaadin.collaborationengine.util.TestField;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.data.binder.Result;
+import com.vaadin.flow.data.binder.StatusChangeEvent;
+import com.vaadin.flow.data.binder.ValidationException;
+import com.vaadin.flow.data.binder.Validator;
+import com.vaadin.flow.data.binder.ValueContext;
+import com.vaadin.flow.data.converter.Converter;
+import com.vaadin.flow.data.validator.StringLengthValidator;
 
 import static com.vaadin.collaborationengine.util.TestUtils.assertNullNode;
 
@@ -772,5 +781,74 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach();
         client.binder.setExpirationTimeout(null);
         Assert.assertFalse(map.getExpirationTimeout().isPresent());
+    }
+
+    @Test(expected = ValidationException.class)
+    public void withValidator_writeBeanThrowsWithInvalidValue()
+            throws ValidationException {
+        Validator<String> validator = new StringLengthValidator("ERROR", 4, 8);
+        client.binder.forField(client.field, String.class)
+                .withValidator(validator).bind("value");
+        client.attach();
+        client.field.setValue("foo");
+        TestBean bean = new TestBean();
+        client.binder.writeBean(bean);
+    }
+
+    @Test
+    public void withValidator_fieldAppearsInvalidOnAllClients()
+            throws ValidationException {
+        Validator<String> validator = new StringLengthValidator("ERROR", 4, 8);
+        client.binder.forField(client.field, String.class)
+                .withValidator(validator).bind("value");
+        client.attach();
+        client2.binder.forField(client2.field, String.class)
+                .withValidator(validator).bind("value");
+        client2.attach();
+        client.field.setValue("foo");
+
+        Assert.assertTrue(client.field.isInvalid());
+        Assert.assertTrue(client2.field.isInvalid());
+    }
+
+    @Test
+    public void withConverter_valueIsConvertedProperly() {
+        Converter<String, LocalDate> converter = new Converter<String, LocalDate>() {
+
+            @Override
+            public Result<LocalDate> convertToModel(String value,
+                    ValueContext context) {
+                try {
+                    return Result.ok(LocalDate.parse(value));
+                } catch (DateTimeParseException e) {
+                    return Result.ok(null);
+                }
+            }
+
+            @Override
+            public String convertToPresentation(LocalDate value,
+                    ValueContext context) {
+                return value.toString();
+            }
+        };
+        client.binder.forField(client.field, String.class)
+                .withConverter(converter).bind("localDate");
+        client.attach();
+        client.field.setValue("2021-02-11");
+        TestBean bean = new TestBean();
+        client.binder.writeBeanIfValid(bean);
+
+        Assert.assertEquals(LocalDate.parse("2021-02-11"), bean.getLocalDate());
+    }
+
+    @Test
+    public void addStatusChangeListener_listenerIsInvokedOnStatusChange() {
+        AtomicReference<StatusChangeEvent> event = new AtomicReference<>();
+        client.binder.forField(client.field, String.class).bind("value");
+        client.attach();
+        client.binder.addStatusChangeListener(event::set);
+        client.field.setValue("foo");
+
+        Assert.assertNotNull(event.get());
     }
 }
