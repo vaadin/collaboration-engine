@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -281,9 +282,13 @@ public class CollaborationMapTest {
         map.put("foo", "foo");
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
-                connection -> null);
-        Assert.assertEquals(0, map.getKeys().count());
+                connection -> {
+                    newMap.set(connection.getNamedMap("map"));
+                    return null;
+                });
+        Assert.assertEquals(0, newMap.get().getKeys().count());
     }
 
     @Test
@@ -293,9 +298,13 @@ public class CollaborationMapTest {
         map.put("foo", "foo");
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.minusMinutes(1)));
+        AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
-                connection -> null);
-        String foo = map.get("foo", String.class);
+                connection -> {
+                    newMap.set(connection.getNamedMap("foo"));
+                    return null;
+                });
+        String foo = newMap.get().get("foo", String.class);
         Assert.assertEquals("foo", foo);
     }
 
@@ -307,9 +316,13 @@ public class CollaborationMapTest {
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         map.setExpirationTimeout(null);
+        AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
-                connection -> null);
-        String foo = map.get("foo", String.class);
+                connection -> {
+                    newMap.set(connection.getNamedMap("foo"));
+                    return null;
+                });
+        String foo = newMap.get().get("foo", String.class);
         Assert.assertEquals("foo", foo);
     }
 
@@ -319,10 +332,13 @@ public class CollaborationMapTest {
         map.setExpirationTimeout(timeout);
         map.put("foo", "foo");
         registration.remove();
+        AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
-                connection -> null);
-        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
-        String foo = map.get("foo", String.class);
+                connection -> {
+                    newMap.set(connection.getNamedMap("foo"));
+                    return null;
+                });
+        String foo = newMap.get().get("foo", String.class);
         Assert.assertEquals("foo", foo);
     }
 
@@ -336,6 +352,37 @@ public class CollaborationMapTest {
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         String foo = map.get("foo", String.class);
         Assert.assertEquals("foo", foo);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void subscribe_throwsIfInactiveConnection() {
+        registration.remove();
+        map.subscribe(event -> {
+        });
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void replace_throwsIfInactiveConnection() {
+        registration.remove();
+        map.replace("foo", "foo", "bar");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void getKeys_throwsIfInactiveConnection() {
+        registration.remove();
+        map.getKeys();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void get_throwsIfInactiveConnection() {
+        registration.remove();
+        map.get("foo", String.class);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void put_throwsIfInactiveConnection() {
+        registration.remove();
+        map.put("foo", "foo");
     }
 
     private class ToggleableConnectionContext extends EagerConnectionContext {

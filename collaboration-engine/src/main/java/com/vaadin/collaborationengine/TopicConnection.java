@@ -44,6 +44,8 @@ public class TopicConnection {
     private final Consumer<Boolean> topicActivationHandler;
     private final Map<String, List<ChangeNotifier>> subscribersPerMap = new HashMap<>();
 
+    private boolean active;
+
     TopicConnection(ConnectionContext context, Topic topic, UserInfo localUser,
             Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
@@ -54,6 +56,7 @@ public class TopicConnection {
 
         closeRegistration = context.setActivationHandler(active -> {
             if (active) {
+                this.active = true;
                 context.dispatchAction(() -> {
                     Registration callbackRegistration = connectionActivationCallback
                             .apply(this);
@@ -132,10 +135,13 @@ public class TopicConnection {
      * @return the collaboration map, not <code>null</code>
      */
     public CollaborationMap getNamedMap(String name) {
+        ensureActiveConnection();
         return new CollaborationMap() {
             @Override
             public Registration subscribe(MapSubscriber subscriber) {
+                ensureActiveConnection();
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
+
                 synchronized (topic) {
                     ChangeNotifier changeNotifier = mapChange -> {
                         MapChangeEvent event = new MapChangeEvent(this,
@@ -156,6 +162,7 @@ public class TopicConnection {
             @Override
             public CompletableFuture<Boolean> replace(String key,
                     Object expectedValue, Object newValue) {
+                ensureActiveConnection();
                 Objects.requireNonNull(key, "Key cannot be null");
 
                 CompletableFuture<Boolean> contextFuture = context
@@ -175,6 +182,7 @@ public class TopicConnection {
 
             @Override
             public CompletableFuture<Void> put(String key, Object value) {
+                ensureActiveConnection();
                 Objects.requireNonNull(key, "Key cannot be null");
 
                 CompletableFuture<Void> contextFuture = context
@@ -191,6 +199,7 @@ public class TopicConnection {
 
             @Override
             public Stream<String> getKeys() {
+                ensureActiveConnection();
                 synchronized (topic) {
                     List<String> snapshot = topic.getMapData(name)
                             .map(MapChange::getKey)
@@ -210,7 +219,9 @@ public class TopicConnection {
             }
 
             private JsonNode get(String key) {
+                ensureActiveConnection();
                 Objects.requireNonNull(key, "Key cannot be null");
+
                 synchronized (topic) {
                     return topic.getMapValue(name, key);
                 }
@@ -265,7 +276,14 @@ public class TopicConnection {
             }
         } finally {
             topicActivationHandler.accept(false);
+            this.active = false;
         }
     }
 
+    private void ensureActiveConnection() {
+        if (!active) {
+            throw new IllegalStateException("Cannot perform this "
+                    + "operation on a deactivated connection.");
+        }
+    }
 }

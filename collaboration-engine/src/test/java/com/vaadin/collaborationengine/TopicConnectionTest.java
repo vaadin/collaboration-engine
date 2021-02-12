@@ -67,6 +67,7 @@ public class TopicConnectionTest {
                 }
             });
 
+    private TopicConnection connection;
     private CollaborationMap map;
 
     private Command deactivateCommand;
@@ -78,6 +79,7 @@ public class TopicConnectionTest {
         TestUtil.configureTestCollaborationEngine(service, engine);
         connectionRegistration = engine.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), connection -> {
+                    this.connection = connection;
                     map = connection.getNamedMap("map");
 
                     return () -> {
@@ -188,5 +190,11 @@ public class TopicConnectionTest {
 
         Assert.assertTrue(context.isClosed());
         Assert.assertTrue(activeTopics.isEmpty());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void getNamedMap_throwsIfInactive() {
+        connectionRegistration.remove();
+        connection.getNamedMap("foo");
     }
 }
