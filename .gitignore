@@ -28,6 +28,9 @@ webpack.generated.js
 # resources copied at build time
 collaboration-engine/src/main/resources/META-INF/resources/frontend/
 
+# Node is installed for running frontend tests during maven build
+collaboration-engine-frontend/field-highlighter/node
+
 # Browser drivers for local integration tests
 drivers/
 webdrivers.xml
