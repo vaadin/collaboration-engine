@@ -37,6 +37,7 @@
 
         <flow.version>7.0-SNAPSHOT</flow.version>
         <avatar.version>20.0-SNAPSHOT</avatar.version>
+        <messages.version>20.0-SNAPSHOT</messages.version>
         <jackson.version>2.11.2</jackson.version>
         <junit.version>4.12</junit.version>
 

@@ -28,7 +28,11 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-testbench</artifactId>
-            <version>${avatar.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-messages-testbench</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>

@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import com.vaadin.collaborationengine.examplecomponent.Message;
+import com.vaadin.flow.component.messages.MessageListItem;
 
 public class JsonUtil {
 
     public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
     };
-    public static final TypeReference<List<Message>> LIST_MESSAGE_TYPE_REF = new TypeReference<List<Message>>() {
+    public static final TypeReference<List<MessageListItem>> LIST_MESSAGE_TYPE_REF = new TypeReference<List<MessageListItem>>() {
     };
     public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
     };
