@@ -62,7 +62,7 @@
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
+                <version>${test.vaadin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -71,13 +71,56 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Tell where the CE data dir is -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <configuration>
+                    <systemProperties>
+                        <systemProperty>
+                            <name>vaadin.ce.dataDir</name>
+                            <value>${project.basedir}/dataDir</value>
+                        </systemProperty>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+            <!-- Clean stats file after ITs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>dataDir</directory>
+                                    <includes>
+                                        <include>ce-statistics.json</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
     <profiles>
         <profile>
-            <!-- Production mode is activated using -Pproduction -->
             <id>production</id>
+
+            <!-- Always activate the production mode by checking a non-existent system property -->
+            <activation>
+                <property>
+                    <name>!never.used.prop</name>
+                </property>
+            </activation>
+
             <properties>
                 <vaadin.productionMode>true</vaadin.productionMode>
             </properties>
@@ -99,7 +142,6 @@
                                 <goals>
                                     <goal>build-frontend</goal>
                                 </goals>
-                                <phase>compile</phase>
                             </execution>
                         </executions>
                     </plugin>

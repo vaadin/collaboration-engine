@@ -9,16 +9,15 @@ import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.shared.communication.PushMode;
 
 /**
  * The main view contains a button and a collaborative div which shows the
  * number of clicks
  */
 @Route("")
-@Push
 public class MainView extends VerticalLayout {
 
     private UserInfo user = new UserInfo(UUID.randomUUID().toString());
@@ -29,6 +28,8 @@ public class MainView extends VerticalLayout {
     private Registration connectionRegistration;
 
     public MainView() {
+        addAttachListener(event -> event.getUI().getPushConfiguration()
+                .setPushMode(PushMode.AUTOMATIC));
         openConnection();
 
         editor.add(button, span);

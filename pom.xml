@@ -34,12 +34,14 @@
         <project.reporting.outputEncoding>UTF-8
         </project.reporting.outputEncoding>
 
-        <flow.version>2.4.6</flow.version>
-        <avatar.version>1.0.1</avatar.version>
+
+        <flow.version>7.0-SNAPSHOT</flow.version>
+        <avatar.version>20.0-SNAPSHOT</avatar.version>
         <jackson.version>2.11.2</jackson.version>
         <junit.version>4.12</junit.version>
 
         <jetty.version>9.4.28.v20200408</jetty.version>
+        <test.vaadin.version>20.0-SNAPSHOT</test.vaadin.version>
     </properties>
 
     <dependencyManagement>

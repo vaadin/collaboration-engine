@@ -17,13 +17,12 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.shared.communication.PushMode;
 
 @Route("")
-@Push
 @CssImport("./styles/shared-styles.css")
 public class DemoView extends VerticalLayout {
 
@@ -66,6 +65,8 @@ public class DemoView extends VerticalLayout {
     private final Div log = new Div();
 
     public DemoView() {
+        addAttachListener(event -> event.getUI().getPushConfiguration()
+                .setPushMode(PushMode.AUTOMATIC));
         addClassName("centered-content");
         log.setClassName("log");
         showLogin();

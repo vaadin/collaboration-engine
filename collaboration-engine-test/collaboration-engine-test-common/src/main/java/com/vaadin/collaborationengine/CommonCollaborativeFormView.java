@@ -7,14 +7,13 @@ import com.vaadin.collaborationengine.util.Person.Diet;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.radiobutton.RadioGroupVariant;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PreserveOnRefresh;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.communication.PushMode;
 
-@Push
 @Route("form")
 @PreserveOnRefresh
 public class CommonCollaborativeFormView extends VerticalLayout {
@@ -35,6 +34,8 @@ public class CommonCollaborativeFormView extends VerticalLayout {
             e -> userCounter.set(0));
 
     public CommonCollaborativeFormView() {
+        addAttachListener(event -> event.getUI().getPushConfiguration()
+                .setPushMode(PushMode.AUTOMATIC));
         int userIndex = userCounter.incrementAndGet();
 
         UserInfo localUser = new UserInfo("userId-" + userIndex);

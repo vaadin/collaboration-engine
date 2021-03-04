@@ -17,8 +17,6 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
         <drivers.downloader.phase>pre-integration-test
         </drivers.downloader.phase>
-
-        <vaadin.version>14.4.7</vaadin.version>
     </properties>
 
     <repositories>
@@ -39,7 +37,7 @@
                 <artifactId>vaadin-bom</artifactId>
                 <type>pom</type>
                 <scope>import</scope>
-                <version>${vaadin.version}</version>
+                <version>${test.vaadin.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -130,7 +128,7 @@
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${vaadin.version}</version>
+                <version>${test.vaadin.version}</version>
                 <executions>
                     <execution>
                         <goals>

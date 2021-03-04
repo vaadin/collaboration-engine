@@ -1,12 +1,10 @@
 package com.vaadin.collaborationengine.util;
 
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -19,9 +17,8 @@ import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinRequest;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.server.WebBrowser;
-import com.vaadin.flow.shared.Registration;
-import com.vaadin.flow.theme.AbstractTheme;
+import com.vaadin.flow.server.frontend.FallbackChunk;
+import com.vaadin.flow.server.startup.ApplicationConfiguration;
 
 public class MockService extends VaadinService {
 
@@ -65,11 +62,47 @@ public class MockService extends VaadinService {
 
     public MockService(boolean productionMode) {
         deploymentConfiguration = new DefaultDeploymentConfiguration(
-                Object.class, new Properties()) {
-            @Override
-            public boolean isProductionMode() {
-                return productionMode;
-            }
+                new ApplicationConfiguration() {
+                    @Override
+                    public Enumeration<String> getPropertyNames() {
+                        return new Enumeration<String>() {
+                            @Override
+                            public boolean hasMoreElements() {
+                                return false;
+                            }
+
+                            @Override
+                            public String nextElement() {
+                                return null;
+                            }
+                        };
+                    }
+
+                    @Override
+                    public VaadinContext getContext() {
+                        return null;
+                    }
+
+                    @Override
+                    public FallbackChunk getFallbackChunk() {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean isProductionMode() {
+                        return productionMode;
+                    }
+
+                    @Override
+                    public String getStringProperty(String s, String s1) {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean getBooleanProperty(String s, boolean b) {
+                        return false;
+                    }
+                }, Object.class, new Properties()) {
         };
     }
 
@@ -123,52 +156,22 @@ public class MockService extends VaadinService {
     }
 
     @Override
-    public URL getResource(String url, WebBrowser browser,
-            AbstractTheme theme) {
+    public URL getResource(String url) {
         return null;
     }
 
     @Override
-    public InputStream getResourceAsStream(String url, WebBrowser browser,
-            AbstractTheme theme) {
+    public InputStream getResourceAsStream(String url) {
         return null;
     }
 
     @Override
-    public String resolveResource(String url, WebBrowser browser) {
-        return null;
-    }
-
-    @Override
-    public Optional<String> getThemedUrl(String url, WebBrowser browser,
-            AbstractTheme theme) {
+    public String resolveResource(String url) {
         return null;
     }
 
     @Override
     protected VaadinContext constructVaadinContext() {
         return new MockContext();
-    }
-
-    @Override
-    public void destroy() {
-        try {
-            /*
-             * super.destroy() will try to remove this registration and throws
-             * NPE if it isn't initialized. That is usually done by init(), but
-             * being able to run that method to set it up would require mocking
-             * quite many other parts as well.
-             */
-            Field registrationField = VaadinService.class.getDeclaredField(
-                    "htmlImportDependencyCacheClearRegistration");
-            registrationField.setAccessible(true);
-            registrationField.set(this, (Registration) () -> {
-            });
-        } catch (NoSuchFieldException | SecurityException
-                | IllegalArgumentException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-
-        super.destroy();
     }
 }

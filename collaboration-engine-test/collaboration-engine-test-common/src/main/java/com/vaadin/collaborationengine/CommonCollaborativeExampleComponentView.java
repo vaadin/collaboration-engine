@@ -4,11 +4,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.vaadin.flow.component.html.NativeButton;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.router.PreserveOnRefresh;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.communication.PushMode;
 
-@Push
 @Route("examplecomponent")
 @PreserveOnRefresh
 public class CommonCollaborativeExampleComponentView extends VerticalLayout {
@@ -24,6 +23,8 @@ public class CommonCollaborativeExampleComponentView extends VerticalLayout {
             e -> userCounter.set(0));
 
     public CommonCollaborativeExampleComponentView() {
+        addAttachListener(event -> event.getUI().getPushConfiguration()
+                .setPushMode(PushMode.AUTOMATIC));
         int userIndex = userCounter.incrementAndGet();
 
         UserInfo localUser = new UserInfo("userId-" + userIndex);
