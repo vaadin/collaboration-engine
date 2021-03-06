@@ -20,6 +20,10 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
     </properties>
 
+    <modules>
+        <module>collaboration-engine-test-common</module>
+    </modules>
+
     <profiles>
         <profile>
             <!-- Build the modules only if running tests -->
@@ -30,7 +34,6 @@
                 </property>
             </activation>
             <modules>
-                <module>collaboration-engine-test-common</module>
                 <module>collaboration-engine-integration-test</module>
                 <module>collaboration-engine-test-spring-parent</module>
                 <module>collaboration-engine-test-cdi</module>
