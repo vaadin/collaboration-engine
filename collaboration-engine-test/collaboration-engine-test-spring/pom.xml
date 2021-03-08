@@ -3,44 +3,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>collaboration-engine-test-spring-parent</artifactId>
-    <name>IT for Spring Parent</name>
-    <packaging>pom</packaging>
+    <artifactId>collaboration-engine-test-spring</artifactId>
+    <name>IT for Spring</name>
+    <packaging>jar</packaging>
 
     <parent>
         <artifactId>collaboration-engine-test</artifactId>
         <groupId>com.vaadin</groupId>
         <version>3.1-SNAPSHOT</version>
     </parent>
-
-    <properties>
-        <spring-boot.version>2.3.3.RELEASE</spring-boot.version>
-    </properties>
-
-    <modules>
-        <module>collaboration-engine-test-spring</module>
-        <module>collaboration-engine-test-invalid-license</module>
-    </modules>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-bom</artifactId>
-                <version>${test.vaadin.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -102,6 +73,44 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <!-- Clean stats file after ITs -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <filesets>
+                                <fileset>
+                                    <directory>dataDir</directory>
+                                    <includes>
+                                        <include>ce-statistics.json</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
@@ -194,7 +203,5 @@
                 </pluginManagement>
             </build>
         </profile>
-
     </profiles>
-
 </project>
