@@ -56,28 +56,29 @@ public class CollaborationMessageListTest {
             messageList.setTopic(topicId);
         }
 
-        public void sendMessage(String content) {
+        public void sendMessage(String content, Instant time) {
             TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
                 CollaborationMap messageMap = topicConnection
                         .getNamedMap(CollaborationMessageInput.MAP_NAME);
-                sendMessage(messageMap, content);
+                sendMessage(messageMap, content, time);
             });
         }
 
-        private void sendMessage(CollaborationMap map, String content) {
-            List<MessageListItem> messages = map.get(
+        private void sendMessage(CollaborationMap map, String content,
+                Instant time) {
+            List<CollaborationMessageListItem> messages = map.get(
                     CollaborationMessageInput.MAP_KEY,
                     JsonUtil.LIST_MESSAGE_TYPE_REF);
-            List<MessageListItem> newMessages = messages != null
+            List<CollaborationMessageListItem> newMessages = messages != null
                     ? new ArrayList<>(messages)
                     : new ArrayList<>();
-            MessageListItem submittedMessage = new MessageListItem(content,
-                    Instant.now(), user.getName(), user.getImage());
+            CollaborationMessageListItem submittedMessage = new CollaborationMessageListItem(
+                    user, content, time);
             newMessages.add(submittedMessage);
             map.replace(CollaborationMessageInput.MAP_KEY, messages,
                     newMessages).thenAccept(success -> {
                         if (!success) {
-                            sendMessage(map, content);
+                            sendMessage(map, content, time);
                         }
                     });
         }
@@ -107,12 +108,26 @@ public class CollaborationMessageListTest {
         client1.attach();
         client1.setTopic(TOPIC_ID);
         Assert.assertEquals(Collections.emptyList(), client1.getMessages());
-        client1.sendMessage("new message");
+        client1.sendMessage("new message", Instant.ofEpochSecond(10));
         List<MessageListItem> messages = client1.getMessages();
         Assert.assertEquals(1, messages.size());
         MessageListItem message = messages.get(0);
         Assert.assertEquals("new message", message.getText());
+        Assert.assertEquals(Instant.ofEpochSecond(10), message.getTime());
         Assert.assertEquals("name1", message.getUserName());
+        Assert.assertEquals("abbreviation1", message.getUserAbbreviation());
+        Assert.assertEquals("image1", message.getUserImage());
+        Assert.assertEquals(Integer.valueOf(1), message.getUserColorIndex());
+    }
+
+    @Test
+    public void noExplicitColorIndex_colorIndexProvidedByCollaborationEngine() {
+        client1.user.setColorIndex(-1);
+        client1.attach();
+        client1.setTopic(TOPIC_ID);
+        client1.sendMessage("new message", Instant.ofEpochSecond(10));
+        MessageListItem message = client1.getMessages().get(0);
+        Assert.assertEquals(Integer.valueOf(0), message.getUserColorIndex());
     }
 
     @Test
@@ -123,7 +138,7 @@ public class CollaborationMessageListTest {
         client2.setTopic(TOPIC_ID);
         Assert.assertEquals(Collections.emptyList(), client1.getMessages());
         Assert.assertEquals(Collections.emptyList(), client2.getMessages());
-        client1.sendMessage("new message");
+        client1.sendMessage("new message", Instant.ofEpochSecond(10));
         Assert.assertEquals(1, client1.getMessages().size());
         Assert.assertEquals(1, client2.getMessages().size());
         MessageListItem message = client2.getMessages().get(0);
@@ -136,7 +151,7 @@ public class CollaborationMessageListTest {
         client1.attach();
         client1.setTopic(TOPIC_ID);
         Assert.assertEquals(Collections.emptyList(), client1.getMessages());
-        client1.sendMessage("new message");
+        client1.sendMessage("new message", Instant.ofEpochSecond(10));
         Assert.assertEquals(1, client1.getMessages().size());
         Assert.assertEquals(0, client2.getMessages().size());
         client2.attach();
@@ -151,7 +166,7 @@ public class CollaborationMessageListTest {
     public void topicSetToNull_contentIsCleared() {
         client1.attach();
         client1.setTopic(TOPIC_ID);
-        client1.sendMessage("new message");
+        client1.sendMessage("new message", Instant.ofEpochSecond(10));
         Assert.assertEquals(1, client1.getMessages().size());
         client1.setTopic(null);
         Assert.assertEquals(0, client1.getMessages().size());

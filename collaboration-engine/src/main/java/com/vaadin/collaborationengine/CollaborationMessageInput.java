@@ -17,7 +17,6 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.messages.MessageInput;
-import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -33,7 +32,7 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationMessageInput extends Composite<MessageInput>
         implements HasSize, HasStyle {
 
-    static final String MAP_NAME = CollaborationMessageList.class.getName();
+    static final String MAP_NAME = CollaborationMessageList.MAP_NAME;
     static final String MAP_KEY = CollaborationMessageList.MAP_KEY;
 
     private final CollaborationEngine ce;
@@ -118,15 +117,13 @@ public class CollaborationMessageInput extends Composite<MessageInput>
 
     void submitMessage(MessageInput.SubmitEvent event) {
         Objects.requireNonNull(map, "CollaborationMap cannot be null");
-        List<MessageListItem> messages = map.get(MAP_KEY,
+        List<CollaborationMessageListItem> messages = map.get(MAP_KEY,
                 JsonUtil.LIST_MESSAGE_TYPE_REF);
-        List<MessageListItem> newMessages = messages != null
+        List<CollaborationMessageListItem> newMessages = messages != null
                 ? new ArrayList<>(messages)
                 : new ArrayList<>();
-        MessageListItem submittedMessage = new MessageListItem(event.getValue(),
-                Instant.now(), localUser.getName(), localUser.getImage());
-        submittedMessage.setUserAbbreviation(localUser.getAbbreviation());
-        submittedMessage.setUserColorIndex(ce.getUserColorIndex(localUser));
+        CollaborationMessageListItem submittedMessage = new CollaborationMessageListItem(
+                localUser, event.getValue(), Instant.now());
         newMessages.add(submittedMessage);
         map.replace(MAP_KEY, messages, newMessages).thenAccept(success -> {
             if (!success) {

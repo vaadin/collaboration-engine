@@ -11,6 +11,7 @@ package com.vaadin.collaborationengine;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
@@ -112,9 +113,23 @@ public class CollaborationMessageList extends Composite<MessageList>
     }
 
     private void refreshMessages() {
-        List<MessageListItem> messages = map != null
+        List<CollaborationMessageListItem> collaborationMessageListItems = map != null
                 ? map.get(MAP_KEY, JsonUtil.LIST_MESSAGE_TYPE_REF)
                 : Collections.emptyList();
-        getContent().setItems(messages);
+
+        List<MessageListItem> messageListItems = collaborationMessageListItems
+                .stream().map(item -> {
+                    MessageListItem messageListItem = new MessageListItem(
+                            item.getText(), item.getTime(),
+                            item.getUser().getName(),
+                            item.getUser().getImage());
+                    messageListItem.setUserAbbreviation(
+                            item.getUser().getAbbreviation());
+                    messageListItem.setUserColorIndex(
+                            ce.getUserColorIndex(item.getUser()));
+                    return messageListItem;
+                }).collect(Collectors.toList());
+
+        getContent().setItems(messageListItems);
     }
 }

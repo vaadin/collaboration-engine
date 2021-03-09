@@ -13,7 +13,6 @@ import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageInput;
-import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.server.VaadinService;
 
 public class CollaborationMessageInputTest {
@@ -43,13 +42,13 @@ public class CollaborationMessageInputTest {
 
         }
 
-        private List<MessageListItem> getMessages() {
-            AtomicReference<List<MessageListItem>> messages = new AtomicReference<>(
+        private List<CollaborationMessageListItem> getMessages() {
+            AtomicReference<List<CollaborationMessageListItem>> messages = new AtomicReference<>(
                     null);
             TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
                 CollaborationMap messageMap = topicConnection
                         .getNamedMap(CollaborationMessageInput.MAP_NAME);
-                List<MessageListItem> list = messageMap.get(
+                List<CollaborationMessageListItem> list = messageMap.get(
                         CollaborationMessageInput.MAP_KEY,
                         JsonUtil.LIST_MESSAGE_TYPE_REF);
                 messages.set(list);
@@ -99,24 +98,15 @@ public class CollaborationMessageInputTest {
         client1.setTopic(TOPIC_ID);
         Assert.assertNull(client1.getMessages());
         client1.submitMessage("new message");
-        List<MessageListItem> messages = client1.getMessages();
+        List<CollaborationMessageListItem> messages = client1.getMessages();
         Assert.assertEquals(1, messages.size());
-        MessageListItem message = messages.get(0);
+        CollaborationMessageListItem message = messages.get(0);
         Assert.assertEquals("new message", message.getText());
-        Assert.assertEquals("name1", message.getUserName());
-        Assert.assertEquals("image1", message.getUserImage());
-        Assert.assertEquals("abbreviation1", message.getUserAbbreviation());
-        Assert.assertEquals(Integer.valueOf(1), message.getUserColorIndex());
-    }
-
-    @Test
-    public void noExplicitColorIndex_colorIndexProvidedByCollaborationEngine() {
-        client1.user.setColorIndex(-1);
-        client1.attach();
-        client1.setTopic(TOPIC_ID);
-        client1.submitMessage("new message");
-        MessageListItem message = client1.getMessages().get(0);
-        Assert.assertEquals(Integer.valueOf(0), message.getUserColorIndex());
+        Assert.assertEquals("name1", message.getUser().getName());
+        Assert.assertEquals("image1", message.getUser().getImage());
+        Assert.assertEquals("abbreviation1",
+                message.getUser().getAbbreviation());
+        Assert.assertEquals(1, message.getUser().getColorIndex());
     }
 
     @Test
