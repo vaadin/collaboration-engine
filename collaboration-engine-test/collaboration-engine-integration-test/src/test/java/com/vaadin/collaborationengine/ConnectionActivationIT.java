@@ -1,4 +1,4 @@
 package com.vaadin.collaborationengine;
 
-public class ConnectionActivationIT extends CommonConnectionActivationIT {
+public class ConnectionActivationIT extends ConnectionActivationTestCommon {
 }

@@ -13,7 +13,7 @@ import com.vaadin.flow.component.messages.testbench.MessageInputElement;
 import com.vaadin.flow.component.messages.testbench.MessageListElement;
 import com.vaadin.testbench.TestBenchTestCase;
 
-public class CommonMessageListIT extends AbstractCollaborativeViewTest {
+public class MessageListTestCommon extends AbstractCollaborativeViewTest {
 
     @Override
     public String getRoute() {

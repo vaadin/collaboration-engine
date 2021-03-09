@@ -9,7 +9,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.shared.communication.PushMode;
 
 @Route("chat")
-public class CommonCollaborativeChatView extends VerticalLayout {
+public class CollaborativeChatViewCommon extends VerticalLayout {
 
     CollaborationMessageList list;
     CollaborationMessageInput input;
@@ -22,7 +22,7 @@ public class CommonCollaborativeChatView extends VerticalLayout {
     String currentTopic;
     Paragraph topicIndicator = new Paragraph("Current topic: ");
 
-    public CommonCollaborativeChatView() {
+    public CollaborativeChatViewCommon() {
         addAttachListener(event -> event.getUI().getPushConfiguration()
                 .setPushMode(PushMode.AUTOMATIC));
         int userIndex = userCounter.incrementAndGet();

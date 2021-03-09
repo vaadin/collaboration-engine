@@ -3,9 +3,10 @@ package com.vaadin.collaborationengine;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 
-public class CommonCollaborationBinderIT extends AbstractCollaborativeFormIT {
+public class CollaborationBinderTestCommon
+        extends AbstractCollaborativeFormTestCommon {
 
     @Test
     public void fieldValuesSyncedAmongClients() {

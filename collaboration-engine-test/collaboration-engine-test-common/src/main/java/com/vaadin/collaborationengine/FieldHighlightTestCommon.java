@@ -3,11 +3,12 @@ package com.vaadin.collaborationengine;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 import com.vaadin.collaborationengine.util.FieldOutlineElement;
 import com.vaadin.flow.component.radiobutton.testbench.RadioButtonElement;
 
-public class CommonFieldHighlightIT extends AbstractCollaborativeFormIT {
+public class FieldHighlightTestCommon
+        extends AbstractCollaborativeFormTestCommon {
 
     @Test
     public void noInitialUserTags() {

@@ -16,7 +16,7 @@ import com.vaadin.flow.shared.communication.PushMode;
 
 @Route("form")
 @PreserveOnRefresh
-public class CommonCollaborativeFormView extends VerticalLayout {
+public class CollaborativeFormViewCommon extends VerticalLayout {
 
     public static final String TOPIC_ID = "topic";
 
@@ -33,7 +33,7 @@ public class CommonCollaborativeFormView extends VerticalLayout {
     NativeButton resetUserCounter = new NativeButton("Reset user counter",
             e -> userCounter.set(0));
 
-    public CommonCollaborativeFormView() {
+    public CollaborativeFormViewCommon() {
         addAttachListener(event -> event.getUI().getPushConfiguration()
                 .setPushMode(PushMode.AUTOMATIC));
         int userIndex = userCounter.incrementAndGet();

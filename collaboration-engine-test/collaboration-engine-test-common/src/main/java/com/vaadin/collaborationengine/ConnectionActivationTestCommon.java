@@ -1,10 +1,12 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CommonConnectionActivationIT extends AbstractCollaborativeFormIT {
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
+
+public class ConnectionActivationTestCommon
+        extends AbstractCollaborativeFormTestCommon {
     @Test
     public void preserveOnRefresh_fieldValuesPreserved_fieldIsCollaborative() {
         client1.textField.setValue("foo");

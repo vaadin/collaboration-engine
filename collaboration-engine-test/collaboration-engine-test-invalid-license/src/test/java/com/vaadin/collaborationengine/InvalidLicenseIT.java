@@ -1,17 +1,17 @@
 package com.vaadin.collaborationengine;
 
-import static org.junit.Assert.assertFalse;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 import com.vaadin.flow.component.avatar.testbench.AvatarGroupElement;
 import com.vaadin.flow.component.textfield.testbench.TextFieldElement;
 import com.vaadin.testbench.TestBenchTestCase;
 
-public class InvalidLicenseIT extends AbstractCollaborativeFormIT {
+import static org.junit.Assert.assertFalse;
+
+public class InvalidLicenseIT extends AbstractCollaborativeFormTestCommon {
 
     @Test
     public void tamperedLicense_openViews_errorMessageRendered_componentsNot() {

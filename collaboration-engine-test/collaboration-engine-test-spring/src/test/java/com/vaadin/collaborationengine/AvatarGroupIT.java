@@ -1,5 +1,5 @@
 package com.vaadin.collaborationengine;
 
-public class AvatarGroupIT extends CommonAvatarGroupIT {
+public class AvatarGroupIT extends AvatarGroupTestCommon {
 
 }

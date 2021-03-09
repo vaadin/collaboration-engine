@@ -1,14 +1,14 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.collaborationengine.util.AbstractCollaborativeFormIT;
-
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CommonAvatarGroupIT extends AbstractCollaborativeFormIT {
+import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
+
+public class AvatarGroupTestCommon extends AbstractCollaborativeFormTestCommon {
 
     @Test
     public void openAndCloseClients_avatarsUpdated() {

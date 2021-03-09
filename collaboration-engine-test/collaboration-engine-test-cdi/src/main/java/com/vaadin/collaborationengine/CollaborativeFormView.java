@@ -1,9 +1,10 @@
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.component.html.Span;
 import javax.inject.Inject;
 
-public class CollaborativeFormView extends CommonCollaborativeFormView {
+import com.vaadin.flow.component.html.Span;
+
+public class CollaborativeFormView extends CollaborativeFormViewCommon {
 
     @Inject
     public CollaborativeFormView(GreetService greetService) {
