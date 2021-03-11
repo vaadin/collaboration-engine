@@ -23,7 +23,8 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.vaadin.collaborationengine.Topic.ChangeNotifier;
+import com.vaadin.collaborationengine.Topic.ListChangeNotifier;
+import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -42,7 +43,8 @@ public class TopicConnection {
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
 
     private final Consumer<Boolean> topicActivationHandler;
-    private final Map<String, List<ChangeNotifier>> subscribersPerMap = new HashMap<>();
+    private final Map<String, List<MapChangeNotifier>> subscribersPerMap = new HashMap<>();
+    private final Map<String, List<ListChangeNotifier>> subscribersPerList = new HashMap<>();
 
     private boolean active;
 
@@ -62,14 +64,18 @@ public class TopicConnection {
                             .apply(this);
                     addRegistration(callbackRegistration);
 
-                    Registration changeRegistration;
+                    Registration mapChangeRegistration;
+                    Registration listChangeRegistration;
                     synchronized (this.topic) {
-                        changeRegistration = this.topic
-                                .subscribe(this::handleChange);
+                        mapChangeRegistration = this.topic
+                                .subscribeToMapChange(this::handleMapChange);
+                        listChangeRegistration = this.topic
+                                .subscribeToListChange(this::handleListChange);
                     }
                     addRegistration(() -> {
                         synchronized (this.topic) {
-                            changeRegistration.remove();
+                            mapChangeRegistration.remove();
+                            listChangeRegistration.remove();
                         }
                     });
                 });
@@ -80,10 +86,20 @@ public class TopicConnection {
         });
     }
 
-    private void handleChange(MapChange change) {
+    private void handleMapChange(MapChange change) {
         try {
             EventUtil.fireEvents(subscribersPerMap.get(change.getMapName()),
                     notifier -> notifier.onEntryChange(change), false);
+        } catch (RuntimeException e) {
+            deactivateAndClose();
+            throw e;
+        }
+    }
+
+    private void handleListChange(ListChange change) {
+        try {
+            EventUtil.fireEvents(subscribersPerList.get(change.getListName()),
+                    notifier -> notifier.onListChange(change), false);
         } catch (RuntimeException e) {
             deactivateAndClose();
             throw e;
@@ -110,21 +126,40 @@ public class TopicConnection {
     }
 
     private Registration subscribeToMap(String mapName,
-            ChangeNotifier changeNotifier) {
+            MapChangeNotifier mapChangeNotifier) {
         subscribersPerMap.computeIfAbsent(mapName, key -> new ArrayList<>())
-                .add(changeNotifier);
-        return () -> unsubscribeFromMap(mapName, changeNotifier);
+                .add(mapChangeNotifier);
+        return () -> unsubscribeFromMap(mapName, mapChangeNotifier);
     }
 
     private void unsubscribeFromMap(String mapName,
-            ChangeNotifier changeNotifier) {
-        List<ChangeNotifier> notifiers = subscribersPerMap.get(mapName);
+            MapChangeNotifier mapChangeNotifier) {
+        List<MapChangeNotifier> notifiers = subscribersPerMap.get(mapName);
+        if (notifiers == null) {
+            return;
+        }
+        notifiers.remove(mapChangeNotifier);
+        if (notifiers.isEmpty()) {
+            subscribersPerMap.remove(mapName);
+        }
+    }
+
+    private Registration subscribeToList(String listName,
+            ListChangeNotifier changeNotifier) {
+        subscribersPerList.computeIfAbsent(listName, key -> new ArrayList<>())
+                .add(changeNotifier);
+        return () -> unsubscribeFromList(listName, changeNotifier);
+    }
+
+    private void unsubscribeFromList(String listName,
+            ListChangeNotifier changeNotifier) {
+        List<ListChangeNotifier> notifiers = subscribersPerList.get(listName);
         if (notifiers == null) {
             return;
         }
         notifiers.remove(changeNotifier);
         if (notifiers.isEmpty()) {
-            subscribersPerMap.remove(mapName);
+            subscribersPerList.remove(listName);
         }
     }
 
@@ -132,6 +167,8 @@ public class TopicConnection {
      * Gets a collaboration map that can be used to track multiple values in a
      * single topic.
      *
+     * @param name
+     *            the name of the map
      * @return the collaboration map, not <code>null</code>
      */
     public CollaborationMap getNamedMap(String name) {
@@ -143,17 +180,17 @@ public class TopicConnection {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
 
                 synchronized (topic) {
-                    ChangeNotifier changeNotifier = mapChange -> {
+                    MapChangeNotifier mapChangeNotifier = mapChange -> {
                         MapChangeEvent event = new MapChangeEvent(this,
                                 mapChange);
                         context.dispatchAction(
                                 () -> subscriber.onMapChange(event));
                     };
                     topic.getMapData(name)
-                            .forEach(changeNotifier::onEntryChange);
+                            .forEach(mapChangeNotifier::onEntryChange);
 
                     Registration registration = subscribeToMap(name,
-                            changeNotifier);
+                            mapChangeNotifier);
                     addRegistration(registration);
                     return registration;
                 }
@@ -170,8 +207,8 @@ public class TopicConnection {
 
                 boolean isReplaced;
                 synchronized (topic) {
-                    isReplaced = topic.applyReplace(new ReplaceChange(name, key,
-                            JsonUtil.toJsonNode(expectedValue),
+                    isReplaced = topic.applyMapReplace(new ReplaceChange(name,
+                            key, JsonUtil.toJsonNode(expectedValue),
                             JsonUtil.toJsonNode(newValue)));
 
                 }
@@ -189,7 +226,7 @@ public class TopicConnection {
                         .createCompletableFuture();
 
                 synchronized (topic) {
-                    topic.applyChange(new PutChange(name, key,
+                    topic.applyMapChange(new PutChange(name, key,
                             JsonUtil.toJsonNode(value)));
                 }
 
@@ -245,6 +282,81 @@ public class TopicConnection {
                 } else {
                     topic.expirationTimeouts.put(name, expirationTimeout);
                 }
+            }
+        };
+    }
+
+    /**
+     * Gets a collaboration list that can be used to track a list of items in a
+     * single topic.
+     *
+     * @param name
+     *            the name of the list
+     * @return the collaboration list, not <code>null</code>
+     */
+    public CollaborationList getNamedList(String name) {
+        ensureActiveConnection();
+        return new CollaborationList() {
+            @Override
+            public Registration subscribe(ListSubscriber subscriber) {
+                ensureActiveConnection();
+                Objects.requireNonNull(subscriber, "Subscriber cannot be null");
+
+                synchronized (topic) {
+                    ListChangeNotifier changeNotifier = listChange -> {
+                        ListChangeEvent event = new ListChangeEvent(this,
+                                listChange);
+                        context.dispatchAction(
+                                () -> subscriber.onListChange(event));
+                    };
+                    topic.getListChanges(name)
+                            .forEach(changeNotifier::onListChange);
+
+                    Registration registration = subscribeToList(name,
+                            changeNotifier);
+                    addRegistration(registration);
+                    return registration;
+                }
+            }
+
+            @Override
+            public <T> List<T> getItems(Class<T> type) {
+                ensureActiveConnection();
+                Objects.requireNonNull(type, "The type can't be null");
+                synchronized (topic) {
+                    return topic.getListItems(name)
+                            .map(node -> JsonUtil.toInstance(node, type))
+                            .collect(Collectors.toList());
+                }
+            }
+
+            @Override
+            public <T> List<T> getItems(TypeReference<T> type) {
+                ensureActiveConnection();
+                Objects.requireNonNull(type,
+                        "The type reference cannot be null");
+                synchronized (topic) {
+                    return topic.getListItems(name)
+                            .map(node -> JsonUtil.toInstance(node, type))
+                            .collect(Collectors.toList());
+                }
+            }
+
+            @Override
+            public CompletableFuture<Void> append(Object item) {
+                ensureActiveConnection();
+                Objects.requireNonNull(item, "The item cannot be null");
+
+                CompletableFuture<Void> contextFuture = context
+                        .createCompletableFuture();
+
+                synchronized (topic) {
+                    JsonNode value = JsonUtil.toJsonNode(item);
+                    topic.applyListChange(new ListChange(name, value));
+                }
+
+                context.dispatchAction(() -> contextFuture.complete(null));
+                return contextFuture;
             }
         };
     }

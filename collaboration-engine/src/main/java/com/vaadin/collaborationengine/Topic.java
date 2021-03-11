@@ -27,13 +27,20 @@ import com.vaadin.flow.shared.Registration;
 class Topic {
 
     @FunctionalInterface
-    interface ChangeNotifier {
+    interface MapChangeNotifier {
         void onEntryChange(MapChange mapChange);
+    }
+
+    @FunctionalInterface
+    interface ListChangeNotifier {
+        void onListChange(ListChange listChange);
     }
 
     private final CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, JsonNode>> namedMapData = new HashMap<>();
-    private final List<ChangeNotifier> changeListeners = new ArrayList<>();
+    private final List<MapChangeNotifier> mapChangeListeners = new ArrayList<>();
+    private final Map<String, List<JsonNode>> namedListData = new HashMap<>();
+    private final List<ListChangeNotifier> listChangeListeners = new ArrayList<>();
     final Map<String, Duration> expirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
 
@@ -41,7 +48,7 @@ class Topic {
         this.collaborationEngine = collaborationEngine;
     }
 
-    Registration subscribe(ChangeNotifier changeNotifier) {
+    Registration subscribeToMapChange(MapChangeNotifier changeNotifier) {
         Clock clock = collaborationEngine.getClock();
         if (lastDisconnected != null) {
             Instant now = clock.instant();
@@ -52,18 +59,28 @@ class Topic {
             });
         }
         lastDisconnected = null;
-        changeListeners.add(changeNotifier);
+        mapChangeListeners.add(changeNotifier);
         return () -> {
-            changeListeners.remove(changeNotifier);
-            if (changeListeners.isEmpty()) {
+            mapChangeListeners.remove(changeNotifier);
+            if (mapChangeListeners.isEmpty()) {
                 lastDisconnected = clock.instant();
             }
         };
     }
 
+    Registration subscribeToListChange(ListChangeNotifier changeNotifier) {
+        listChangeListeners.add(changeNotifier);
+        return () -> listChangeListeners.remove(changeNotifier);
+    }
+
     private void fireMapChangeEvent(MapChange change) {
-        EventUtil.fireEvents(changeListeners,
+        EventUtil.fireEvents(mapChangeListeners,
                 listener -> listener.onEntryChange(change), true);
+    }
+
+    private void fireListChangeEvent(ListChange change) {
+        EventUtil.fireEvents(listChangeListeners,
+                listener -> listener.onListChange(change), true);
     }
 
     Stream<MapChange> getMapData(String mapName) {
@@ -83,11 +100,11 @@ class Topic {
         return map.get(key).deepCopy();
     }
 
-    void applyChange(PutChange change) {
-        applyChange(change, null);
+    void applyMapChange(PutChange change) {
+        applyMapChange(change, null);
     }
 
-    boolean applyChange(PutChange change, Predicate<Object> condition) {
+    boolean applyMapChange(PutChange change, Predicate<Object> condition) {
         String mapName = change.getMapName();
         String key = change.getKey();
 
@@ -114,9 +131,30 @@ class Topic {
         return true;
     }
 
-    boolean applyReplace(ReplaceChange replaceChange) {
-        return applyChange(new PutChange(replaceChange), oldValue -> Objects
+    boolean applyMapReplace(ReplaceChange replaceChange) {
+        return applyMapChange(new PutChange(replaceChange), oldValue -> Objects
                 .equals(oldValue, replaceChange.getExpectedValue()));
+    }
+
+    void applyListChange(ListChange change) {
+        String listName = change.getListName();
+        JsonNode item = change.getAddedItem();
+        getList(listName).add(item);
+        fireListChangeEvent(new ListChange(listName, item));
+    }
+
+    Stream<ListChange> getListChanges(String listName) {
+        return getListItems(listName)
+                .map(item -> new ListChange(listName, item));
+    }
+
+    Stream<JsonNode> getListItems(String listName) {
+        return getList(listName).stream();
+    }
+
+    private List<JsonNode> getList(String listName) {
+        return namedListData.computeIfAbsent(listName,
+                name -> new ArrayList<>());
     }
 
 }
