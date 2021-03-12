@@ -46,11 +46,10 @@ public class CollaborationMessageInputTest {
             AtomicReference<List<CollaborationMessageListItem>> messages = new AtomicReference<>(
                     null);
             TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
-                CollaborationMap messageMap = topicConnection
-                        .getNamedMap(CollaborationMessageInput.MAP_NAME);
-                List<CollaborationMessageListItem> list = messageMap.get(
-                        CollaborationMessageInput.MAP_KEY,
-                        JsonUtil.LIST_MESSAGE_TYPE_REF);
+                CollaborationList messageList = topicConnection
+                        .getNamedList(CollaborationMessageInput.LIST_NAME);
+                List<CollaborationMessageListItem> list = messageList
+                        .getItems(CollaborationMessageListItem.class);
                 messages.set(list);
             });
             return messages.get();
@@ -96,7 +95,7 @@ public class CollaborationMessageInputTest {
     public void sendMessage_messageAppearsInTopic() {
         client1.attach();
         client1.setTopic(TOPIC_ID);
-        Assert.assertNull(client1.getMessages());
+        Assert.assertTrue(client1.getMessages().isEmpty());
         client1.submitMessage("new message");
         List<CollaborationMessageListItem> messages = client1.getMessages();
         Assert.assertEquals(1, messages.size());

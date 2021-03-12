@@ -1,7 +1,6 @@
 package com.vaadin.collaborationengine;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -58,29 +57,17 @@ public class CollaborationMessageListTest {
 
         public void sendMessage(String content, Instant time) {
             TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
-                CollaborationMap messageMap = topicConnection
-                        .getNamedMap(CollaborationMessageInput.MAP_NAME);
-                sendMessage(messageMap, content, time);
+                CollaborationList messageList = topicConnection
+                        .getNamedList(CollaborationMessageInput.LIST_NAME);
+                sendMessage(messageList, content, time);
             });
         }
 
-        private void sendMessage(CollaborationMap map, String content,
+        private void sendMessage(CollaborationList list, String content,
                 Instant time) {
-            List<CollaborationMessageListItem> messages = map.get(
-                    CollaborationMessageInput.MAP_KEY,
-                    JsonUtil.LIST_MESSAGE_TYPE_REF);
-            List<CollaborationMessageListItem> newMessages = messages != null
-                    ? new ArrayList<>(messages)
-                    : new ArrayList<>();
             CollaborationMessageListItem submittedMessage = new CollaborationMessageListItem(
                     user, content, time);
-            newMessages.add(submittedMessage);
-            map.replace(CollaborationMessageInput.MAP_KEY, messages,
-                    newMessages).thenAccept(success -> {
-                        if (!success) {
-                            sendMessage(map, content, time);
-                        }
-                    });
+            list.append(submittedMessage);
         }
     }
 

@@ -9,8 +9,6 @@
 package com.vaadin.collaborationengine;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Composite;
@@ -32,12 +30,11 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationMessageInput extends Composite<MessageInput>
         implements HasSize, HasStyle {
 
-    static final String MAP_NAME = CollaborationMessageList.MAP_NAME;
-    static final String MAP_KEY = CollaborationMessageList.MAP_KEY;
+    static final String LIST_NAME = CollaborationMessageList.LIST_NAME;
 
     private final CollaborationEngine ce;
     private Registration topicRegistration;
-    private CollaborationMap map;
+    private CollaborationList list;
 
     private final UserInfo localUser;
 
@@ -105,30 +102,20 @@ public class CollaborationMessageInput extends Composite<MessageInput>
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        map = topicConnection.getNamedMap(MAP_NAME);
+        list = topicConnection.getNamedList(LIST_NAME);
         getContent().setEnabled(true);
         return this::onConnectionDeactivate;
     }
 
     private void onConnectionDeactivate() {
-        map = null;
+        list = null;
         getContent().setEnabled(false);
     }
 
     void submitMessage(MessageInput.SubmitEvent event) {
-        Objects.requireNonNull(map, "CollaborationMap cannot be null");
-        List<CollaborationMessageListItem> messages = map.get(MAP_KEY,
-                JsonUtil.LIST_MESSAGE_TYPE_REF);
-        List<CollaborationMessageListItem> newMessages = messages != null
-                ? new ArrayList<>(messages)
-                : new ArrayList<>();
+        Objects.requireNonNull(list, "CollaborationList cannot be null");
         CollaborationMessageListItem submittedMessage = new CollaborationMessageListItem(
                 localUser, event.getValue(), Instant.now());
-        newMessages.add(submittedMessage);
-        map.replace(MAP_KEY, messages, newMessages).thenAccept(success -> {
-            if (!success) {
-                submitMessage(event);
-            }
-        });
+        list.append(submittedMessage);
     }
 }

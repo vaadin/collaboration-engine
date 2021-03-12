@@ -33,12 +33,11 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationMessageList extends Composite<MessageList>
         implements HasSize, HasStyle {
 
-    static final String MAP_NAME = CollaborationMessageList.class.getName();
-    static final String MAP_KEY = "messages";
+    static final String LIST_NAME = CollaborationMessageList.class.getName();
 
     private final CollaborationEngine ce;
     private Registration topicRegistration;
-    private CollaborationMap map;
+    private CollaborationList list;
 
     private final UserInfo localUser;
 
@@ -102,19 +101,19 @@ public class CollaborationMessageList extends Composite<MessageList>
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        map = topicConnection.getNamedMap(MAP_NAME);
-        map.subscribe(event -> refreshMessages());
+        list = topicConnection.getNamedList(LIST_NAME);
+        list.subscribe(event -> refreshMessages());
         return this::onConnectionDeactivate;
     }
 
     private void onConnectionDeactivate() {
-        map = null;
+        list = null;
         refreshMessages();
     }
 
     private void refreshMessages() {
-        List<CollaborationMessageListItem> collaborationMessageListItems = map != null
-                ? map.get(MAP_KEY, JsonUtil.LIST_MESSAGE_TYPE_REF)
+        List<CollaborationMessageListItem> collaborationMessageListItems = list != null
+                ? list.getItems(CollaborationMessageListItem.class)
                 : Collections.emptyList();
 
         List<MessageListItem> messageListItems = collaborationMessageListItems

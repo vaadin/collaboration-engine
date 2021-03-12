@@ -23,8 +23,6 @@ public class JsonUtil {
 
     public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
     };
-    public static final TypeReference<List<CollaborationMessageListItem>> LIST_MESSAGE_TYPE_REF = new TypeReference<List<CollaborationMessageListItem>>() {
-    };
     public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
     };
 
