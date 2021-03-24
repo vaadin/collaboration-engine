@@ -27,7 +27,7 @@ export class FieldOutline extends ThemableMixin(DirMixin(PolymerElement)) {
           bottom: 0;
           width: 100%;
           height: 100%;
-          z-index: -1;
+          pointer-events: none;
           user-select: none;
           opacity: 0;
           --_active-user-color: transparent;

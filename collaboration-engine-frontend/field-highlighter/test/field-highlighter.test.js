@@ -53,8 +53,8 @@ describe('field highlighter', () => {
       expect(getComputedStyle(outline).opacity).to.equal('0');
     });
 
-    it('should set z-index on the outline to -1', () => {
-      expect(getComputedStyle(outline).zIndex).to.equal('-1');
+    it('should set pointer-events on the outline to none', () => {
+      expect(getComputedStyle(outline).pointerEvents).to.equal('none');
     });
   });
 
