@@ -36,13 +36,13 @@
 
 
         <flow.version>6.0.0.rc1</flow.version>
-        <avatar.version>20.0.0.alpha2</avatar.version>
-        <messages.version>20.0.0.alpha2</messages.version>
+        <avatar.version>20.0.0.alpha3</avatar.version>
+        <messages.version>20.0.0.alpha3</messages.version>
         <jackson.version>2.11.2</jackson.version>
         <junit.version>4.12</junit.version>
 
         <jetty.version>9.4.28.v20200408</jetty.version>
-        <test.vaadin.version>20.0.0.alpha2</test.vaadin.version>
+        <test.vaadin.version>20.0.0.alpha3</test.vaadin.version>
     </properties>
 
     <dependencyManagement>

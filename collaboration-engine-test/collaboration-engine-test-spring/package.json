@@ -48,8 +48,8 @@
     "@vaadin/flow-frontend": "./target/flow-frontend",
     "@vaadin/form": "./target/flow-frontend/form",
     "@vaadin/vaadin-messages": "2.0.0-alpha1",
-    "@vaadin/vaadin-core-shrinkwrap": "20.0.0-alpha2",
-    "@vaadin/vaadin-shrinkwrap": "20.0.0-alpha2"
+    "@vaadin/vaadin-core-shrinkwrap": "20.0.0-alpha3",
+    "@vaadin/vaadin-shrinkwrap": "20.0.0-alpha3"
   },
   "devDependencies": {
     "webpack": "4.46.0",
@@ -69,15 +69,16 @@
     "lit-element": "2.4.0",
     "construct-style-sheets-polyfill": "2.4.16",
     "ts-loader": "8.0.12",
-    "typescript": "4.0.3",
-    "workbox-webpack-plugin": "5.1.4",
+    "typescript": "4.1.5",
+    "workbox-webpack-plugin": "6.1.0",
     "idb": "5.0.6",
     "lit-html": "1.3.0",
-    "workbox-core": "5.1.4",
+    "workbox-core": "6.1.0",
     "html-webpack-plugin": "4.5.1",
-    "workbox-precaching": "5.1.4",
+    "workbox-precaching": "6.1.0",
     "webpack-manifest-plugin": "3.0.0",
-    "extract-loader": "5.1.0"
+    "extract-loader": "5.1.0",
+    "style-loader": "2.0.0"
   },
   "vaadin": {
     "dependencies": {
@@ -125,8 +126,8 @@
       "@vaadin/vaadin-avatar": "2.0.0",
       "@vaadin/vaadin-messages": "2.0.0-alpha1",
       "@vaadin/router": "1.7.2",
-      "@vaadin/vaadin-core-shrinkwrap": "20.0.0-alpha2",
-      "@vaadin/vaadin-shrinkwrap": "20.0.0-alpha2"
+      "@vaadin/vaadin-core-shrinkwrap": "20.0.0-alpha3",
+      "@vaadin/vaadin-shrinkwrap": "20.0.0-alpha3"
     },
     "devDependencies": {
       "compression-webpack-plugin": "4.0.1",
@@ -146,16 +147,17 @@
       "lit-element": "2.4.0",
       "construct-style-sheets-polyfill": "2.4.16",
       "ts-loader": "8.0.12",
-      "typescript": "4.0.3",
-      "workbox-webpack-plugin": "5.1.4",
+      "typescript": "4.1.5",
+      "workbox-webpack-plugin": "6.1.0",
       "idb": "5.0.6",
       "lit-html": "1.3.0",
-      "workbox-core": "5.1.4",
+      "workbox-core": "6.1.0",
       "html-webpack-plugin": "4.5.1",
-      "workbox-precaching": "5.1.4",
+      "workbox-precaching": "6.1.0",
       "webpack-manifest-plugin": "3.0.0",
-      "extract-loader": "5.1.0"
+      "extract-loader": "5.1.0",
+      "style-loader": "2.0.0"
     },
-    "hash": "4578c85bc8ca27e2070a771a97e6c43b1477cda63e26af17b21b9c307f1f9f85"
+    "hash": "724c64d97ab4d180f05841ba6a88057b8b44e902ed24b040ee51f7f65c76bd94"
   }
 }
