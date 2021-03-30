@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,6 +12,7 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.TestStreamResource;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageListItem;
@@ -158,4 +160,93 @@ public class CollaborationMessageListTest {
         client1.setTopic(null);
         Assert.assertEquals(0, client1.getMessages().size());
     }
+
+    @Test
+    public void imageProvider_beforeAttach_streamResourceIsUsed() {
+        UI.setCurrent(client1.ui);
+        client1.messageList.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client2.sendMessage("foo", Instant.ofEpochMilli(10));
+
+        List<MessageListItem> items = client1.getMessages();
+
+        Assert.assertEquals(1, items.size());
+        MessageListItem item = items.get(0);
+
+        Assert.assertThat(item.getUserImage(),
+                CoreMatchers.startsWith("VAADIN/dynamic"));
+        Assert.assertEquals("name2", item.getUserImageResource().getName());
+    }
+
+    @Test
+    public void imageProvider_afterAttach_streamResourceIsUsed() {
+        UI.setCurrent(client1.ui);
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client1.messageList.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+
+        client2.sendMessage("foo", Instant.ofEpochMilli(10));
+
+        List<MessageListItem> items = client1.getMessages();
+
+        Assert.assertEquals(1, items.size());
+        MessageListItem item = items.get(0);
+
+        Assert.assertThat(item.getUserImage(),
+                CoreMatchers.startsWith("VAADIN/dynamic"));
+        Assert.assertEquals("name2", item.getUserImageResource().getName());
+    }
+
+    @Test
+    public void imageProvider_nullStream_noImage() {
+        UI.setCurrent(client1.ui);
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client1.messageList.setImageProvider(user -> null);
+
+        client2.sendMessage("foo", Instant.ofEpochMilli(10));
+
+        List<MessageListItem> items = client1.getMessages();
+        Assert.assertEquals(1, items.size());
+
+        MessageListItem item = items.get(0);
+
+        Assert.assertNull(item.getUserImage());
+        Assert.assertNull(item.getUserImageResource());
+    }
+
+    @Test
+    public void imageProvider_clearProvider_imageIsSetFromUserInfo() {
+        UI.setCurrent(client1.ui);
+        client1.messageList.setImageProvider(
+                user -> new TestStreamResource(user.getName()));
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client2.sendMessage("foo", Instant.ofEpochMilli(10));
+
+        client1.messageList.setImageProvider(null);
+
+        List<MessageListItem> items = client1.getMessages();
+        Assert.assertEquals(1, items.size());
+        MessageListItem item = items.get(0);
+
+        Assert.assertNull(item.getUserImageResource());
+        Assert.assertEquals("image2", item.getUserImage());
+    }
+
 }

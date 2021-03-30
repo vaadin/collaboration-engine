@@ -15,20 +15,14 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
+import com.vaadin.collaborationengine.util.TestStreamResource;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
-import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.VaadinService;
 
 public class CollaborationAvatarGroupTest {
-
-    private static class TestStreamResource extends StreamResource {
-        public TestStreamResource(String name) {
-            super(name, () -> null);
-        }
-    }
 
     private static final String TOPIC_ID = "topic";
     private static final String TOPIC_ID_2 = "topic2";

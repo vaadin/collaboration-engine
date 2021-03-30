@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
@@ -40,6 +41,8 @@ public class CollaborationMessageList extends Composite<MessageList>
     private CollaborationList list;
 
     private final UserInfo localUser;
+
+    private ImageProvider imageProvider;
 
     static {
         UsageStatistics.markAsUsed(
@@ -100,6 +103,54 @@ public class CollaborationMessageList extends Composite<MessageList>
         }
     }
 
+    /**
+     * Sets an image provider callback for dynamically loading avatar images for
+     * a given user. The image can be loaded on-demand from a database or using
+     * any other source of IO streams.
+     * <p>
+     * If no image callback is defined, then the image URL defined by
+     * {@link UserInfo#getImage()} is directly passed to the browser. This means
+     * that avatar images need to be available as static files or served
+     * dynamically from a custom servlet. This is the default.
+     * <p>
+     *
+     * Usage example:
+     *
+     * <pre>
+     * collaborationMessageList.setImageProvider(userInfo -> {
+     *     StreamResource streamResource = new StreamResource(
+     *             "avatar_" + userInfo.getId(), () -> {
+     *                 User userEntity = userRepository
+     *                         .findById(userInfo.getId());
+     *                 byte[] profilePicture = userEntity.getProfilePicture();
+     *                 return new ByteArrayInputStream(profilePicture);
+     *             });
+     *     streamResource.setContentType("image/png");
+     *     return streamResource;
+     * });
+     * </pre>
+     *
+     * @param imageProvider
+     *            the image provider to use, or <code>null</code> to use image
+     *            URLs directly from the user info object
+     */
+    public void setImageProvider(ImageProvider imageProvider) {
+        this.imageProvider = imageProvider;
+        refreshMessages();
+    }
+
+    /**
+     * Gets the currently used image provider callback.
+     *
+     * @see #setImageProvider(ImageProvider)
+     *
+     * @return the current image provider callback, or <code>null</code> if no
+     *         callback is set
+     */
+    public ImageProvider getImageProvider() {
+        return imageProvider;
+    }
+
     private Registration onConnectionActivate(TopicConnection topicConnection) {
         list = topicConnection.getNamedList(LIST_NAME);
         list.subscribe(event -> refreshMessages());
@@ -120,8 +171,13 @@ public class CollaborationMessageList extends Composite<MessageList>
                 .stream().map(item -> {
                     MessageListItem messageListItem = new MessageListItem(
                             item.getText(), item.getTime(),
-                            item.getUser().getName(),
-                            item.getUser().getImage());
+                            item.getUser().getName());
+                    if (imageProvider == null) {
+                        messageListItem.setUserImage(item.getUser().getImage());
+                    } else {
+                        messageListItem.setUserImageResource(
+                                imageProvider.getImageResource(item.getUser()));
+                    }
                     messageListItem.setUserAbbreviation(
                             item.getUser().getAbbreviation());
                     messageListItem.setUserColorIndex(
