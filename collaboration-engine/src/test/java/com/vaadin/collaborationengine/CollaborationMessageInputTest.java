@@ -1,7 +1,9 @@
 package com.vaadin.collaborationengine;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -10,6 +12,7 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
@@ -132,5 +135,26 @@ public class CollaborationMessageInputTest {
         client1.setTopic("foo");
         client1.setTopic(null);
         Assert.assertFalse(client1.isEnabled());
+    }
+
+    private static List<String> blackListedMethods = Arrays
+            .asList("addSubmitListener", "isEnabled", "setEnabled");
+
+    @Test
+    public void messageInput_replicateRelevantAPIs() {
+        List<String> messageInputMethods = ReflectionUtils
+                .getMethodNames(MessageInput.class);
+        List<String> collaborationMessageInputMethods = ReflectionUtils
+                .getMethodNames(CollaborationMessageInput.class);
+
+        List<String> missingMethods = messageInputMethods.stream()
+                .filter(m -> !blackListedMethods.contains(m)
+                        && !collaborationMessageInputMethods.contains(m))
+                .collect(Collectors.toList());
+
+        if (!missingMethods.isEmpty()) {
+            Assert.fail("Missing wrapper for methods: "
+                    + missingMethods.toString());
+        }
     }
 }

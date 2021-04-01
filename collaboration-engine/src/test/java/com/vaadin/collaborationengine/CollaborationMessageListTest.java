@@ -4,11 +4,13 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -18,8 +20,10 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestStreamResource;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.messages.MessageList;
 import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.server.VaadinService;
 
@@ -176,6 +180,27 @@ public class CollaborationMessageListTest {
         Assert.assertEquals(1, client1.getMessages().size());
         client1.setTopic(null);
         Assert.assertEquals(0, client1.getMessages().size());
+    }
+
+    private static List<String> blackListedMethods = Arrays.asList("getItems",
+            "setItems", "localeChange");
+
+    @Test
+    public void messageList_replicateRelevantAPIs() {
+        List<String> messageListMethods = ReflectionUtils
+                .getMethodNames(MessageList.class);
+        List<String> collaborationMessageListMethods = ReflectionUtils
+                .getMethodNames(CollaborationMessageList.class);
+
+        List<String> missingMethods = messageListMethods.stream()
+                .filter(m -> !blackListedMethods.contains(m)
+                        && !collaborationMessageListMethods.contains(m))
+                .collect(Collectors.toList());
+
+        if (!missingMethods.isEmpty()) {
+            Assert.fail("Missing wrapper for methods: "
+                    + missingMethods.toString());
+        }
     }
 
     @Test(expected = NullPointerException.class)

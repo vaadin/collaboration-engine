@@ -14,6 +14,7 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.messages.MessageInput;
+import com.vaadin.flow.component.messages.MessageInputI18n;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -58,5 +59,34 @@ public class CollaborationMessageInput extends Composite<MessageInput>
                 getContent().setEnabled(false);
             };
         });
+    }
+
+    /**
+     * Gets the internationalization object previously set for this component.
+     * <p>
+     * Note: updating the object content returned by this method will not update
+     * the component if not set back using
+     * {@link MessageInput#setI18n(MessageInputI18n)}.
+     *
+     * @return the i18n object, or {@code null} if one has not been set with
+     *         {@link #setI18n(MessageInputI18n)}
+     */
+    public MessageInputI18n getI18n() {
+        return getContent().getI18n();
+    }
+
+    /**
+     * Sets the internationalization properties for this component. It enabled
+     * you to customize and translate the language used in the message input.
+     * <p>
+     * Note: updating the object properties after setting the i18n will not
+     * update the component. To make the changes effective, you need to set the
+     * updated object again.
+     *
+     * @param i18n
+     *            the i18n object, not {@code null}
+     */
+    public void setI18n(MessageInputI18n i18n) {
+        getContent().setI18n(i18n);
     }
 }

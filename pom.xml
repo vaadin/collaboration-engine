@@ -36,9 +36,9 @@
 
         <!-- Versions to keep in sync with the targeted platform version: -->
         <flow.version>7.0.0.alpha2</flow.version>
-        <avatar.version>20.0.0.alpha3</avatar.version>
-        <messages.version>20.0.0.alpha3</messages.version>
-        <test.vaadin.version>20.0.0.alpha3</test.vaadin.version>
+        <avatar.version>20.0.0.alpha5</avatar.version>
+        <messages.version>20.0.0.alpha5</messages.version>
+        <test.vaadin.version>20.0.0.alpha5</test.vaadin.version>
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
 
