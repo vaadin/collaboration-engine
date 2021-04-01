@@ -8,7 +8,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.time.Instant;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Composite;
@@ -20,23 +19,17 @@ import com.vaadin.flow.shared.Registration;
 
 /**
  * Extension of the {@link MessageInput} component which integrates with the
- * {@link CollaborationEngine}. The user can type a message and submit it. The
- * messages will be displayed in any {@link CollaborationMessageList} that is
- * connected to the same topic. The text area and button will be disabled if the
- * topic is set to <code>null</code>.
+ * {@link CollaborationMessageList}. The user can type a message and submit it.
+ * The messages will be displayed in any {@link CollaborationMessageList} that
+ * is connected to the same topic as the list passed as the argument of this
+ * component constructor. The text area and button will be disabled while the
+ * connection to the topic is not active or the topic is set to
+ * <code>null</code> (see {@link CollaborationMessageList#setTopic(String)}).
  *
  * @author Vaadin Ltd
  */
 public class CollaborationMessageInput extends Composite<MessageInput>
         implements HasSize, HasStyle {
-
-    static final String LIST_NAME = CollaborationMessageList.LIST_NAME;
-
-    private final CollaborationEngine ce;
-    private Registration topicRegistration;
-    private CollaborationList list;
-
-    private final UserInfo localUser;
 
     static {
         UsageStatistics.markAsUsed(
@@ -46,76 +39,24 @@ public class CollaborationMessageInput extends Composite<MessageInput>
     }
 
     /**
-     * Creates a new collaboration message input component with the provided
-     * topic id.
-     * <p>
-     * The provided user information is used for identifying who sent the
-     * message.
-     * <p>
-     * A {@link CollaborationMessageList}, connected to the same topic id, can
-     * be used to render the messages sent by the users.
-     * <p>
-     * If a {@code null} topic id is provided, the text area and button will be
-     * disabled, until connecting to a non-null topic with
-     * {@link #setTopic(String)}.
+     * Creates a new collaboration message input component which submits
+     * messages to the provided {@link CollaborationMessageList}.
      *
-     * @param localUser
-     *            the information of the end user, not {@code null}
-     * @param topicId
-     *            the id of the topic to connect to, or <code>null</code> to not
-     *            connect the component to any topic
+     * @param list
+     *            the list which will display the submitted messages, not null
      */
-    public CollaborationMessageInput(UserInfo localUser, String topicId) {
-        this(localUser, topicId, CollaborationEngine.getInstance());
-    }
-
-    CollaborationMessageInput(UserInfo localUser, String topicId,
-            CollaborationEngine ce) {
-        this.localUser = Objects.requireNonNull(localUser,
-                "User cannot be null");
-        this.ce = ce;
-        setTopic(topicId);
-        getContent().addSubmitListener(this::submitMessage);
-    }
-
-    /**
-     * Sets the topic to use with this component. The connection to the previous
-     * topic (if any) is closed and a connection to the new topic is opened.
-     * Messages submitted via this component will be rendered in any
-     * {@link CollaborationMessageList} that is connected to the same topic.
-     * <p>
-     * If the topic id is {@code null}, the component will be disabled.
-     *
-     * @param topicId
-     *            the topic id to use, or <code>null</code> to not use any topic
-     */
-    public void setTopic(String topicId) {
-        if (topicRegistration != null) {
-            topicRegistration.remove();
-            topicRegistration = null;
-        }
+    public CollaborationMessageInput(CollaborationMessageList list) {
+        Objects.requireNonNull(list,
+                "A list instance to connect this component to is required");
         getContent().setEnabled(false);
-        if (topicId != null) {
-            topicRegistration = ce.openTopicConnection(getContent(), topicId,
-                    localUser, this::onConnectionActivate);
-        }
-    }
-
-    private Registration onConnectionActivate(TopicConnection topicConnection) {
-        list = topicConnection.getNamedList(LIST_NAME);
-        getContent().setEnabled(true);
-        return this::onConnectionDeactivate;
-    }
-
-    private void onConnectionDeactivate() {
-        list = null;
-        getContent().setEnabled(false);
-    }
-
-    void submitMessage(MessageInput.SubmitEvent event) {
-        Objects.requireNonNull(list, "CollaborationList cannot be null");
-        CollaborationMessageListItem submittedMessage = new CollaborationMessageListItem(
-                localUser, event.getValue(), Instant.now());
-        list.append(submittedMessage);
+        list.setSubmitter(activationContext -> {
+            getContent().setEnabled(true);
+            Registration registration = getContent().addSubmitListener(
+                    event -> activationContext.appendMessage(event.getValue()));
+            return () -> {
+                registration.remove();
+                getContent().setEnabled(false);
+            };
+        });
     }
 }

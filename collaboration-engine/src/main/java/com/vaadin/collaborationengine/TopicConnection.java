@@ -60,10 +60,6 @@ public class TopicConnection {
             if (active) {
                 this.active = true;
                 context.dispatchAction(() -> {
-                    Registration callbackRegistration = connectionActivationCallback
-                            .apply(this);
-                    addRegistration(callbackRegistration);
-
                     Registration mapChangeRegistration;
                     Registration listChangeRegistration;
                     synchronized (this.topic) {
@@ -72,6 +68,9 @@ public class TopicConnection {
                         listChangeRegistration = this.topic
                                 .subscribeToListChange(this::handleListChange);
                     }
+                    Registration callbackRegistration = connectionActivationCallback
+                            .apply(this);
+                    addRegistration(callbackRegistration);
                     addRegistration(() -> {
                         synchronized (this.topic) {
                             mapChangeRegistration.remove();

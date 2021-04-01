@@ -30,7 +30,7 @@ public class CollaborativeChatViewCommon extends VerticalLayout {
         UserInfo localUser = new UserInfo("userId-" + userIndex);
         localUser.setName("User " + userIndex);
         list = new CollaborationMessageList(localUser, null);
-        input = new CollaborationMessageInput(localUser, null);
+        input = new CollaborationMessageInput(list);
         currentTopic = "topic" + topicCounter.get();
         setTopic(currentTopic);
 
@@ -61,7 +61,6 @@ public class CollaborativeChatViewCommon extends VerticalLayout {
     private void setTopic(String topic) {
         topicIndicator.setText("Current topic: " + topic);
         list.setTopic(topic);
-        input.setTopic(topic);
     }
 
 }

@@ -8,12 +8,15 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
+import com.vaadin.collaborationengine.CollaborationMessagePersister.FetchQuery;
+import com.vaadin.collaborationengine.CollaborationMessagePersister.PersistRequest;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
@@ -34,15 +37,20 @@ import com.vaadin.flow.shared.Registration;
 public class CollaborationMessageList extends Composite<MessageList>
         implements HasSize, HasStyle {
 
+    private static final Object FETCH_LOCK = new Object();
+
     static final String LIST_NAME = CollaborationMessageList.class.getName();
+    static final String LAST_FETCHED_KEY = "lastFetched";
 
     private final CollaborationEngine ce;
     private Registration topicRegistration;
     private CollaborationList list;
+    private CollaborationMap data;
+    private CollaborationMessagePersister persister;
+    private ImageProvider imageProvider;
+    private String topicId;
 
     private final UserInfo localUser;
-
-    private ImageProvider imageProvider;
 
     static {
         UsageStatistics.markAsUsed(
@@ -51,13 +59,16 @@ public class CollaborationMessageList extends Composite<MessageList>
                 CollaborationEngine.COLLABORATION_ENGINE_VERSION);
     }
 
+    private CollaborationMessageSubmitter submitter;
+    private Registration submitterRegistration;
+
     /**
      * Creates a new collaboration message list component with the provided
      * topic id.
      * <p>
-     * Whenever a new message is posted to the topic id, this component will
-     * render it. Use {@link CollaborationMessageInput} to give controls to the
-     * end user to post new messages to the topic.
+     * It renders messages received by a {@link CollaborationMessageInput} or a
+     * custom submitter component connected to this list via
+     * {@link #setSubmitter(CollaborationMessageSubmitter)}
      * <p>
      * If a {@code null} topic id is provided, the component won't display any
      * messages, until connecting to a non-null topic with
@@ -70,15 +81,41 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            connect the component to any topic
      */
     public CollaborationMessageList(UserInfo localUser, String topicId) {
-        this(localUser, topicId, CollaborationEngine.getInstance());
+        this(localUser, topicId, null, CollaborationEngine.getInstance());
+    }
+
+    /**
+     * Creates a new collaboration message list component with the provided
+     * topic id and persister of {@link CollaborationMessage} items from/to an
+     * external source (e.g. a database).
+     * <p>
+     * It renders messages received by a {@link CollaborationMessageInput} or a
+     * custom submitter component connected to this list via
+     * {@link #setSubmitter(CollaborationMessageSubmitter)}
+     * <p>
+     * If a {@code null} topic id is provided, the component won't display any
+     * messages, until connecting to a non-null topic with
+     * {@link #setTopic(String)}.
+     *
+     * @param localUser
+     *            the information of the end user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, or <code>null</code> to not
+     *            connect the component to any topic
+     * @param persister
+     *            the persister to read/write messages to an external source
+     */
+    public CollaborationMessageList(UserInfo localUser, String topicId,
+            CollaborationMessagePersister persister) {
+        this(localUser, topicId, persister, CollaborationEngine.getInstance());
     }
 
     CollaborationMessageList(UserInfo localUser, String topicId,
-            CollaborationEngine ce) {
+            CollaborationMessagePersister persister, CollaborationEngine ce) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
         this.ce = ce;
-        setTopic(topicId);
+        setTopic(topicId, persister);
     }
 
     /**
@@ -93,6 +130,28 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            the topic id to use, or <code>null</code> to not use any topic
      */
     public void setTopic(String topicId) {
+        setTopic(topicId, null);
+    }
+
+    /**
+     * Sets the topic to use with this component and a persister of
+     * {@link CollaborationMessage} items to/from an external source, for
+     * example a database. The connection to the previous topic (if any) and
+     * existing messages are removed. A connection to the new topic is opened
+     * and the list of messages in the new topic are populated to this
+     * component.
+     * <p>
+     * If the topic id is {@code null}, no messages will be displayed.
+     *
+     * @param topicId
+     *            the topic id to use, or <code>null</code> to not use any topic
+     * @param persister
+     *            the persister to read/write messages to an external source
+     */
+    public void setTopic(String topicId,
+            CollaborationMessagePersister persister) {
+        this.topicId = topicId;
+        this.persister = persister;
         if (topicRegistration != null) {
             topicRegistration.remove();
             topicRegistration = null;
@@ -100,6 +159,48 @@ public class CollaborationMessageList extends Composite<MessageList>
         if (topicId != null) {
             topicRegistration = ce.openTopicConnection(getContent(), topicId,
                     localUser, this::onConnectionActivate);
+        }
+    }
+
+    /**
+     * Sets a submitter to handle the append of messages to the list. It can be
+     * used to connect a custom input component as an alternative to the
+     * provided {@link CollaborationMessageInput}. If set to {@code null} the
+     * existing submitter will be disconnected from the list.
+     *
+     * @param submitter
+     *            the submitter, or {@code null} to remove the current submitter
+     */
+    public void setSubmitter(CollaborationMessageSubmitter submitter) {
+        this.submitter = submitter;
+        if (submitterRegistration != null) {
+            submitterRegistration.remove();
+        }
+        if (submitter != null && list != null) {
+            submitterRegistration = submitter.onActivation(this::appendMessage);
+            Objects.requireNonNull(submitterRegistration,
+                    "The submitter should return a non-null registration object");
+        }
+    }
+
+    /**
+     * Appends a message to this list and all other lists connected to the same
+     * topic. The message will be associated with the current local-user and the
+     * current timestamp.
+     *
+     * @param text
+     *            the content of the message
+     */
+    void appendMessage(String text) {
+        CollaborationMessage message = new CollaborationMessage(localUser, text,
+                ce.getClock().instant());
+
+        if (persister != null) {
+            PersistRequest request = new PersistRequest(this, topicId, message);
+            persister.persistMessage(request);
+            fetchPersistedList();
+        } else {
+            list.append(message);
         }
     }
 
@@ -153,22 +254,34 @@ public class CollaborationMessageList extends Composite<MessageList>
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
         list = topicConnection.getNamedList(LIST_NAME);
+        data = topicConnection.getNamedMap(LIST_NAME);
         list.subscribe(event -> refreshMessages());
+        fetchPersistedList();
+        if (submitter != null && submitterRegistration == null) {
+            submitterRegistration = submitter.onActivation(this::appendMessage);
+            Objects.requireNonNull(submitterRegistration,
+                    "The submitter should return a non-null registration object");
+        }
         return this::onConnectionDeactivate;
     }
 
     private void onConnectionDeactivate() {
         list = null;
+        data = null;
         refreshMessages();
+        if (submitterRegistration != null) {
+            submitterRegistration.remove();
+            submitterRegistration = null;
+        }
     }
 
     private void refreshMessages() {
-        List<CollaborationMessageListItem> collaborationMessageListItems = list != null
-                ? list.getItems(CollaborationMessageListItem.class)
+        List<CollaborationMessage> collaborationMessages = list != null
+                ? list.getItems(CollaborationMessage.class)
                 : Collections.emptyList();
 
-        List<MessageListItem> messageListItems = collaborationMessageListItems
-                .stream().map(item -> {
+        List<MessageListItem> messageListItems = collaborationMessages.stream()
+                .map(item -> {
                     MessageListItem messageListItem = new MessageListItem(
                             item.getText(), item.getTime(),
                             item.getUser().getName());
@@ -186,5 +299,25 @@ public class CollaborationMessageList extends Composite<MessageList>
                 }).collect(Collectors.toList());
 
         getContent().setItems(messageListItems);
+    }
+
+    void fetchPersistedList() {
+        if (persister != null) {
+            synchronized (FETCH_LOCK) {
+                Instant since = data.get(LAST_FETCHED_KEY, Instant.class);
+                if (since == null) {
+                    since = Instant.EPOCH;
+                }
+                FetchQuery query = new FetchQuery(this, topicId, since);
+                List<CollaborationMessage> messages = persister
+                        .fetchMessages(query).collect(Collectors.toList());
+                if (!messages.isEmpty()) {
+                    int lastIndex = messages.size() - 1;
+                    data.put(LAST_FETCHED_KEY,
+                            messages.get(lastIndex).getTime());
+                    messages.forEach(list::append);
+                }
+            }
+        }
     }
 }

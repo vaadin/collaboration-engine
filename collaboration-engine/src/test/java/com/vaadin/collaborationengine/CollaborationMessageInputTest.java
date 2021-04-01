@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageInput;
 import com.vaadin.flow.server.VaadinService;
@@ -23,6 +24,7 @@ public class CollaborationMessageInputTest {
         CollaborationEngine ce;
         final UI ui;
         final UserInfo user;
+        CollaborationMessageList messageList;
         CollaborationMessageInput messageInput;
         String topicId = null;
 
@@ -38,35 +40,38 @@ public class CollaborationMessageInputTest {
                     "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
-            messageInput = new CollaborationMessageInput(user, topicId, ce);
+            messageList = new CollaborationMessageList(this.user, null, null,
+                    ce);
+            messageInput = new CollaborationMessageInput(messageList);
 
         }
 
-        private List<CollaborationMessageListItem> getMessages() {
-            AtomicReference<List<CollaborationMessageListItem>> messages = new AtomicReference<>(
+        private List<CollaborationMessage> getMessages() {
+            AtomicReference<List<CollaborationMessage>> messages = new AtomicReference<>(
                     null);
             TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
                 CollaborationList messageList = topicConnection
-                        .getNamedList(CollaborationMessageInput.LIST_NAME);
-                List<CollaborationMessageListItem> list = messageList
-                        .getItems(CollaborationMessageListItem.class);
+                        .getNamedList(CollaborationMessageList.LIST_NAME);
+                List<CollaborationMessage> list = messageList
+                        .getItems(CollaborationMessage.class);
                 messages.set(list);
             });
             return messages.get();
         }
 
         void attach() {
-            ui.add(messageInput);
+            ui.add(messageList, messageInput);
         }
 
         void setTopic(String topicId) {
             this.topicId = topicId;
-            messageInput.setTopic(topicId);
+            messageList.setTopic(topicId);
         }
 
         void submitMessage(String message) {
-            messageInput.submitMessage(new MessageInput.SubmitEvent(
-                    messageInput.getContent(), true, message));
+            MessageInput.SubmitEvent submitEvent = new MessageInput.SubmitEvent(
+                    messageInput.getContent(), true, message);
+            ComponentUtil.fireEvent(messageInput.getContent(), submitEvent);
         }
 
         boolean isEnabled() {
@@ -97,9 +102,9 @@ public class CollaborationMessageInputTest {
         client1.setTopic(TOPIC_ID);
         Assert.assertTrue(client1.getMessages().isEmpty());
         client1.submitMessage("new message");
-        List<CollaborationMessageListItem> messages = client1.getMessages();
+        List<CollaborationMessage> messages = client1.getMessages();
         Assert.assertEquals(1, messages.size());
-        CollaborationMessageListItem message = messages.get(0);
+        CollaborationMessage message = messages.get(0);
         Assert.assertEquals("new message", message.getText());
         Assert.assertEquals("name1", message.getUser().getName());
         Assert.assertEquals("image1", message.getUser().getImage());
@@ -109,29 +114,23 @@ public class CollaborationMessageInputTest {
     }
 
     @Test
-    public void nonNullTopic_connectionNotActivated_componentDisabled() {
+    public void initialState_componentDisabled() {
+        client1.attach();
         Assert.assertFalse(client1.isEnabled());
     }
 
     @Test
-    public void nonNullTopic_connectionActivated_componentEnabled() {
+    public void setTopicOnList_componentEnabled() {
         client1.attach();
+        client1.setTopic("foo");
         Assert.assertTrue(client1.isEnabled());
     }
 
     @Test
-    public void initialNullTopic_componentDisabled() {
-        MessageInputTestClient client2 = new MessageInputTestClient(2, null,
-                ce);
-        client2.attach();
-        Assert.assertFalse(client2.isEnabled());
-    }
-
-    @Test
-    public void changeTopicToNull_componentDisabled() {
+    public void clearTopicOnList_componentDisabled() {
         client1.attach();
+        client1.setTopic("foo");
         client1.setTopic(null);
         Assert.assertFalse(client1.isEnabled());
     }
-
 }
