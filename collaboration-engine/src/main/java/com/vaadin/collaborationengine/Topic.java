@@ -41,7 +41,8 @@ class Topic {
     private final List<MapChangeNotifier> mapChangeListeners = new ArrayList<>();
     private final Map<String, List<JsonNode>> namedListData = new HashMap<>();
     private final List<ListChangeNotifier> listChangeListeners = new ArrayList<>();
-    final Map<String, Duration> expirationTimeouts = new HashMap<>();
+    final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
+    final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
 
     Topic(CollaborationEngine collaborationEngine) {
@@ -49,28 +50,43 @@ class Topic {
     }
 
     Registration subscribeToMapChange(MapChangeNotifier changeNotifier) {
+        clearExpiredData();
+        mapChangeListeners.add(changeNotifier);
+        return Registration.combine(
+                () -> mapChangeListeners.remove(changeNotifier),
+                this::updateLastDisconnected);
+    }
+
+    Registration subscribeToListChange(ListChangeNotifier changeNotifier) {
+        clearExpiredData();
+        listChangeListeners.add(changeNotifier);
+        return Registration.combine(
+                () -> listChangeListeners.remove(changeNotifier),
+                this::updateLastDisconnected);
+    }
+
+    private void clearExpiredData() {
         Clock clock = collaborationEngine.getClock();
         if (lastDisconnected != null) {
             Instant now = clock.instant();
-            expirationTimeouts.forEach((name, timeout) -> {
+            mapExpirationTimeouts.forEach((name, timeout) -> {
                 if (now.isAfter(lastDisconnected.plus(timeout))) {
                     namedMapData.get(name).clear();
                 }
             });
+            listExpirationTimeouts.forEach((name, timeout) -> {
+                if (now.isAfter(lastDisconnected.plus(timeout))) {
+                    namedListData.get(name).clear();
+                }
+            });
         }
         lastDisconnected = null;
-        mapChangeListeners.add(changeNotifier);
-        return () -> {
-            mapChangeListeners.remove(changeNotifier);
-            if (mapChangeListeners.isEmpty()) {
-                lastDisconnected = clock.instant();
-            }
-        };
     }
 
-    Registration subscribeToListChange(ListChangeNotifier changeNotifier) {
-        listChangeListeners.add(changeNotifier);
-        return () -> listChangeListeners.remove(changeNotifier);
+    private void updateLastDisconnected() {
+        if (mapChangeListeners.isEmpty() && listChangeListeners.isEmpty()) {
+            lastDisconnected = collaborationEngine.getClock().instant();
+        }
     }
 
     private void fireMapChangeEvent(MapChange change) {

@@ -270,16 +270,17 @@ public class TopicConnection {
 
             @Override
             public Optional<Duration> getExpirationTimeout() {
-                Duration expirationTimeout = topic.expirationTimeouts.get(name);
+                Duration expirationTimeout = topic.mapExpirationTimeouts
+                        .get(name);
                 return Optional.ofNullable(expirationTimeout);
             }
 
             @Override
             public void setExpirationTimeout(Duration expirationTimeout) {
                 if (expirationTimeout == null) {
-                    topic.expirationTimeouts.remove(name);
+                    topic.mapExpirationTimeouts.remove(name);
                 } else {
-                    topic.expirationTimeouts.put(name, expirationTimeout);
+                    topic.mapExpirationTimeouts.put(name, expirationTimeout);
                 }
             }
         };
@@ -356,6 +357,27 @@ public class TopicConnection {
 
                 context.dispatchAction(() -> contextFuture.complete(null));
                 return contextFuture;
+            }
+
+            @Override
+            public TopicConnection getConnection() {
+                return TopicConnection.this;
+            }
+
+            @Override
+            public Optional<Duration> getExpirationTimeout() {
+                Duration expirationTimeout = topic.listExpirationTimeouts
+                        .get(name);
+                return Optional.ofNullable(expirationTimeout);
+            }
+
+            @Override
+            public void setExpirationTimeout(Duration expirationTimeout) {
+                if (expirationTimeout == null) {
+                    topic.listExpirationTimeouts.remove(name);
+                } else {
+                    topic.listExpirationTimeouts.put(name, expirationTimeout);
+                }
             }
         };
     }

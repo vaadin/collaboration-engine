@@ -16,6 +16,8 @@
 
 package com.vaadin.collaborationengine;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.LinkedList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -268,5 +270,86 @@ public class CollaborationListTest {
     public void append_throwsIfInactiveConnection() {
         registration.remove();
         list.append("foo");
+    }
+
+    @Test
+    public void expirationTimeout_listClearedAfterTimeout() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        list.append("foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        AtomicReference<CollaborationList> newList = new AtomicReference<>();
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    newList.set(connection.getNamedList("foo"));
+                    return null;
+                });
+        int listSize = newList.get().getItems(String.class).size();
+        Assert.assertEquals(0, listSize);
+    }
+
+    @Test
+    public void expirationTimeout_listNotClearedBeforeTimeout() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        list.append("foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.minusMinutes(1)));
+        AtomicReference<CollaborationList> newList = new AtomicReference<>();
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    newList.set(connection.getNamedList("foo"));
+                    return null;
+                });
+        String foo = newList.get().getItems(String.class).get(0);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_timeoutRemovedWhenSetToNull() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        list.append("foo");
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        list.setExpirationTimeout(null);
+        AtomicReference<CollaborationList> newList = new AtomicReference<>();
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    newList.set(connection.getNamedList("foo"));
+                    return null;
+                });
+        String foo = newList.get().getItems(String.class).get(0);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_connectionOpened_listClearCancelled() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        list.append("foo");
+        registration.remove();
+        AtomicReference<CollaborationList> newList = new AtomicReference<>();
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    newList.set(connection.getNamedList("foo"));
+                    return null;
+                });
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        String foo = newList.get().getItems(String.class).get(0);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void expirationTimeout_multipleConnectionsOpened_closeOne_listClearNotScheduled() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        list.append("foo");
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null).remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+        String foo = list.getItems(String.class).get(0);
+        Assert.assertEquals("foo", foo);
     }
 }

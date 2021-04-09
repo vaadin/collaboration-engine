@@ -285,7 +285,7 @@ public class CollaborationMapTest {
         AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
                 connection -> {
-                    newMap.set(connection.getNamedMap("map"));
+                    newMap.set(connection.getNamedMap("foo"));
                     return null;
                 });
         Assert.assertEquals(0, newMap.get().getKeys().count());
@@ -338,6 +338,7 @@ public class CollaborationMapTest {
                     newMap.set(connection.getNamedMap("foo"));
                     return null;
                 });
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         String foo = newMap.get().get("foo", String.class);
         Assert.assertEquals("foo", foo);
     }

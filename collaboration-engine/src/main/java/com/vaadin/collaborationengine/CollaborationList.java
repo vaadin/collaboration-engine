@@ -8,7 +8,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,7 +24,7 @@ import com.vaadin.flow.shared.Registration;
  * 
  * @author Vaadin Ltd
  */
-public interface CollaborationList {
+public interface CollaborationList extends HasExpirationTimeout {
 
     /**
      * Gets the list items as instances of the given class.
@@ -77,4 +79,35 @@ public interface CollaborationList {
      *         <code>null</code>
      */
     Registration subscribe(ListSubscriber subscriber);
+
+    /**
+     * Gets the topic connection which is used to propagate changes to this
+     * list.
+     *
+     * @return the topic connection used by this list, not <code>null</code>
+     */
+    TopicConnection getConnection();
+
+    /**
+     * Gets the optional expiration timeout of this list. An empty
+     * {@link Optional} is returned if no timeout is set, which means the list
+     * is not cleared when there are no connected users to the related topic
+     * (this is the default).
+     *
+     * @return the expiration timeout
+     */
+    @Override
+    Optional<Duration> getExpirationTimeout();
+
+    /**
+     * Sets the expiration timeout of this list. If set, the list content is
+     * cleared when {@code expirationTimeout} has passed after the last
+     * connection to the topic this list belongs to is closed. If set to
+     * {@code null}, the timeout is cancelled.
+     *
+     * @param expirationTimeout
+     *            the expiration timeout
+     */
+    @Override
+    void setExpirationTimeout(Duration expirationTimeout);
 }
