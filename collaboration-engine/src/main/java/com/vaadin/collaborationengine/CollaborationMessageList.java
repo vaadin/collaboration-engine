@@ -312,6 +312,13 @@ public class CollaborationMessageList extends Composite<MessageList>
                 List<CollaborationMessage> messages = persister
                         .fetchMessages(query).collect(Collectors.toList());
                 if (!messages.isEmpty()) {
+                    if (!query.isGetSinceCalled()) {
+                        throw new IllegalStateException(
+                                "FetchQuery.getSince() was not called when fetching messages from the persister. "
+                                        + "This value needs to be used to fetch only the messages which have been "
+                                        + "submitted after the already fetched messages. Otherwise the message list "
+                                        + "will display duplicates.");
+                    }
                     int lastIndex = messages.size() - 1;
                     data.put(LAST_FETCHED_KEY,
                             messages.get(lastIndex).getTime());

@@ -40,6 +40,8 @@ public interface CollaborationMessagePersister extends Serializable {
         private final String topicId;
         private final Instant since;
 
+        private boolean getSinceCalled = false;
+
         FetchQuery(CollaborationMessageList list, String topicId,
                 Instant since) {
             super(list);
@@ -62,12 +64,17 @@ public interface CollaborationMessagePersister extends Serializable {
          * @return the timestamp
          */
         public Instant getSince() {
+            getSinceCalled = true;
             return since;
         }
 
         @Override
         public CollaborationMessageList getSource() {
             return (CollaborationMessageList) super.getSource();
+        }
+
+        boolean isGetSinceCalled() {
+            return getSinceCalled;
         }
     }
 

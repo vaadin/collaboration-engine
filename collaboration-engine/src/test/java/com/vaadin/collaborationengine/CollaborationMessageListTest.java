@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -322,6 +323,25 @@ public class CollaborationMessageListTest {
 
         client1.messageList.fetchPersistedList();
         Assert.assertEquals(2, client1.getMessages().size());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void persisterReturnsNonEmptyStream_getSinceIsNotCalled_throws() {
+        CollaborationMessagePersister persister = CollaborationMessagePersister
+                .fromCallbacks(query -> Stream.of(new CollaborationMessage()),
+                        event -> {
+                        });
+        client1.attach();
+        client1.setTopic(TOPIC_ID, persister);
+    }
+
+    @Test
+    public void persisterReturnsEmptyStream_getSinceIsNotCalled_doesntThrow() {
+        CollaborationMessagePersister persister = CollaborationMessagePersister
+                .fromCallbacks(query -> Stream.empty(), event -> {
+                });
+        client1.attach();
+        client1.setTopic(TOPIC_ID, persister);
     }
 
     private void addMessageToBackend(String topicId, UserInfo user, String text,
