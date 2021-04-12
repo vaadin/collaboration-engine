@@ -326,7 +326,7 @@ public class CollaborationMessageListTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void persisterReturnsNonEmptyStream_getSinceIsNotCalled_throws() {
+    public void persisterReturnsNonEmptyStream_gettersNotCalled_throws() {
         CollaborationMessagePersister persister = CollaborationMessagePersister
                 .fromCallbacks(query -> Stream.of(new CollaborationMessage()),
                         event -> {
@@ -335,8 +335,32 @@ public class CollaborationMessageListTest {
         client1.setTopic(TOPIC_ID, persister);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void persisterReturnsNonEmptyStream_getSinceNotCalled_throws() {
+        CollaborationMessagePersister persister = CollaborationMessagePersister
+                .fromCallbacks(query -> {
+                    query.getTopicId();
+                    return Stream.of(new CollaborationMessage());
+                }, event -> {
+                });
+        client1.attach();
+        client1.setTopic(TOPIC_ID, persister);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void persisterReturnsNonEmptyStream_getTopicIdNotCalled_throws() {
+        CollaborationMessagePersister persister = CollaborationMessagePersister
+                .fromCallbacks(query -> {
+                    query.getSince();
+                    return Stream.of(new CollaborationMessage());
+                }, event -> {
+                });
+        client1.attach();
+        client1.setTopic(TOPIC_ID, persister);
+    }
+
     @Test
-    public void persisterReturnsEmptyStream_getSinceIsNotCalled_doesntThrow() {
+    public void persisterReturnsEmptyStream_gettersNotCalled_doesntThrow() {
         CollaborationMessagePersister persister = CollaborationMessagePersister
                 .fromCallbacks(query -> Stream.empty(), event -> {
                 });

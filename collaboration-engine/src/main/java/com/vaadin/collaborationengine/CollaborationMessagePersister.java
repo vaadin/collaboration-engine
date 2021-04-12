@@ -41,6 +41,7 @@ public interface CollaborationMessagePersister extends Serializable {
         private final Instant since;
 
         private boolean getSinceCalled = false;
+        private boolean getTopicIdCalled = false;
 
         FetchQuery(CollaborationMessageList list, String topicId,
                 Instant since) {
@@ -55,6 +56,7 @@ public interface CollaborationMessagePersister extends Serializable {
          * @return the topic identifier
          */
         public String getTopicId() {
+            getTopicIdCalled = true;
             return topicId;
         }
 
@@ -73,8 +75,24 @@ public interface CollaborationMessagePersister extends Serializable {
             return (CollaborationMessageList) super.getSource();
         }
 
-        boolean isGetSinceCalled() {
-            return getSinceCalled;
+        void throwIfPropsNotUsed() {
+            if (!getSinceCalled && !getTopicIdCalled) {
+                throw new IllegalStateException(
+                        "FetchQuery.getSince() and FetchQuery.getTopicId() were not called when fetching messages from the persister. "
+                                + "These values need to be used to fetch only the messages belonging to the correct topic and submitted after the already fetched messages. "
+                                + "Otherwise the message list will display duplicates or messages from other topics.");
+            } else if (!getSinceCalled) {
+                throw new IllegalStateException(
+                        "FetchQuery.getSince() was not called when fetching messages from the persister. "
+                                + "This value needs to be used to fetch only the messages which have been "
+                                + "submitted after the already fetched messages. Otherwise the message list "
+                                + "will display duplicates.");
+            } else if (!getTopicIdCalled) {
+                throw new IllegalStateException(
+                        "FetchQuery.getTopicId() was not called when fetching messages from the persister. "
+                                + "This value needs to be used to fetch only the messages belonging to the correct topic. "
+                                + "Otherwise the message list will display messages from other topics.");
+            }
         }
     }
 
