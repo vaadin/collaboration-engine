@@ -37,24 +37,11 @@ public abstract class AbstractCollaborativeViewTest extends AbstractViewTest {
     @After
     public void closeBrowsers() {
         new ArrayList<>(addedClients).forEach(this::close);
-        openBlankPage(this);
     }
 
     protected void close(TestBenchTestCase client) {
-        openBlankPage(client);
         client.getDriver().close();
         addedClients.remove(client);
-    }
-
-    private void openBlankPage(TestBenchTestCase client) {
-        /*
-         * When closing the chromedriver, it does not correctly fire the
-         * window's `unload` event, that would send a beacon request and e.g.
-         * remove the user from CollaborationAvatarGroup. Opening a blank page
-         * before closing the browser is a workaround for this.
-         * https://bugs.chromium.org/p/chromedriver/issues/detail?id=3706
-         */
-        client.getDriver().get("about:blank");
     }
 
 }
