@@ -40,10 +40,11 @@ public class CollaborationMessageListTest {
         String topicId = null;
 
         MessageListTestClient(int index, CollaborationEngine ce) {
-            this(index, TOPIC_ID, ce);
+            this(index, TOPIC_ID, null, ce);
         }
 
         MessageListTestClient(int index, String topicId,
+                CollaborationMessagePersister persister,
                 CollaborationEngine ce) {
             this.ce = ce;
             this.ui = new MockUI();
@@ -51,7 +52,8 @@ public class CollaborationMessageListTest {
                     "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
-            messageList = new CollaborationMessageList(user, null, null, ce);
+            messageList = new CollaborationMessageList(user, topicId, persister,
+                    ce);
         }
 
         private List<MessageListItem> getMessages() {
@@ -63,12 +65,8 @@ public class CollaborationMessageListTest {
         }
 
         void setTopic(String topicId) {
-            setTopic(topicId, null);
-        }
-
-        void setTopic(String topicId, CollaborationMessagePersister persister) {
             this.topicId = topicId;
-            messageList.setTopic(this.topicId, persister);
+            messageList.setTopic(this.topicId);
         }
 
         public void sendMessage(String content) {
@@ -76,8 +74,11 @@ public class CollaborationMessageListTest {
         }
     }
 
+    private CollaborationEngine ce;
+
     private MessageListTestClient client1;
     private MessageListTestClient client2;
+    private MessageListTestClient client3;
 
     private Map<String, List<CollaborationMessage>> backend;
     private CollaborationMessagePersister persister;
@@ -86,8 +87,7 @@ public class CollaborationMessageListTest {
     public void init() {
         VaadinService service = new MockService();
         VaadinService.setCurrent(service);
-        CollaborationEngine ce = TestUtil
-                .createTestCollaborationEngine(service);
+        ce = TestUtil.createTestCollaborationEngine(service);
         client1 = new MessageListTestClient(1, ce);
         client2 = new MessageListTestClient(2, ce);
 
@@ -103,6 +103,8 @@ public class CollaborationMessageListTest {
                         .computeIfAbsent(event.getTopicId(),
                                 t -> new ArrayList<>())
                         .add(event.getMessage()));
+
+        client3 = new MessageListTestClient(3, TOPIC_ID, persister, ce);
     }
 
     @After
@@ -291,38 +293,35 @@ public class CollaborationMessageListTest {
 
     @Test
     public void setPersister_attach_messagesAreReadFromBackend() {
-        addMessageToBackend(TOPIC_ID, client1.user, "foo", Instant.now());
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
-        Assert.assertEquals(1, client1.getMessages().size());
+        addMessageToBackend(TOPIC_ID, client3.user, "foo", Instant.now());
+        client3.attach();
+        Assert.assertEquals(1, client3.getMessages().size());
     }
 
     @Test
     public void setPersister_appendMessage_messagesAreWrittenToBackend() {
         Instant time = Instant.now();
-        client1.ce.setClock(Clock.fixed(time, ZoneOffset.UTC));
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
-        client1.messageList.appendMessage("foo");
+        client3.ce.setClock(Clock.fixed(time, ZoneOffset.UTC));
+        client3.attach();
+        client3.messageList.appendMessage("foo");
         CollaborationMessage message = backend.get(TOPIC_ID).get(0);
 
         // Assert we pass all the correct info to the persister
         Assert.assertEquals("foo", message.getText());
-        Assert.assertEquals(client1.user, message.getUser());
+        Assert.assertEquals(client3.user, message.getUser());
         Assert.assertEquals(time, message.getTime());
     }
 
     @Test
     public void setPersister_fetchPersistedList_onlyNewMessagesAreAppended() {
-        addMessageToBackend(TOPIC_ID, client1.user, "foo", Instant.now());
+        addMessageToBackend(TOPIC_ID, client3.user, "foo", Instant.now());
 
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
+        client3.attach();
 
-        addMessageToBackend(TOPIC_ID, client1.user, "bar", Instant.now());
+        addMessageToBackend(TOPIC_ID, client3.user, "bar", Instant.now());
 
-        client1.messageList.fetchPersistedList();
-        Assert.assertEquals(2, client1.getMessages().size());
+        client3.messageList.fetchPersistedList();
+        Assert.assertEquals(2, client3.getMessages().size());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -331,8 +330,7 @@ public class CollaborationMessageListTest {
                 .fromCallbacks(query -> Stream.of(new CollaborationMessage()),
                         event -> {
                         });
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
+        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -343,8 +341,7 @@ public class CollaborationMessageListTest {
                     return Stream.of(new CollaborationMessage());
                 }, event -> {
                 });
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
+        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -355,8 +352,7 @@ public class CollaborationMessageListTest {
                     return Stream.of(new CollaborationMessage());
                 }, event -> {
                 });
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
+        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
     }
 
     @Test
@@ -364,8 +360,7 @@ public class CollaborationMessageListTest {
         CollaborationMessagePersister persister = CollaborationMessagePersister
                 .fromCallbacks(query -> Stream.empty(), event -> {
                 });
-        client1.attach();
-        client1.setTopic(TOPIC_ID, persister);
+        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
     }
 
     private void addMessageToBackend(String topicId, UserInfo user, String text,

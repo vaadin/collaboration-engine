@@ -115,7 +115,8 @@ public class CollaborationMessageList extends Composite<MessageList>
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
         this.ce = ce;
-        setTopic(topicId, persister);
+        this.persister = persister;
+        setTopic(topicId);
     }
 
     /**
@@ -130,28 +131,7 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            the topic id to use, or <code>null</code> to not use any topic
      */
     public void setTopic(String topicId) {
-        setTopic(topicId, null);
-    }
-
-    /**
-     * Sets the topic to use with this component and a persister of
-     * {@link CollaborationMessage} items to/from an external source, for
-     * example a database. The connection to the previous topic (if any) and
-     * existing messages are removed. A connection to the new topic is opened
-     * and the list of messages in the new topic are populated to this
-     * component.
-     * <p>
-     * If the topic id is {@code null}, no messages will be displayed.
-     *
-     * @param topicId
-     *            the topic id to use, or <code>null</code> to not use any topic
-     * @param persister
-     *            the persister to read/write messages to an external source
-     */
-    public void setTopic(String topicId,
-            CollaborationMessagePersister persister) {
         this.topicId = topicId;
-        this.persister = persister;
         if (topicRegistration != null) {
             topicRegistration.remove();
             topicRegistration = null;
@@ -302,7 +282,7 @@ public class CollaborationMessageList extends Composite<MessageList>
     }
 
     void fetchPersistedList() {
-        if (persister != null) {
+        if (persister != null && topicId != null) {
             synchronized (FETCH_LOCK) {
                 Instant since = data.get(LAST_FETCHED_KEY, Instant.class);
                 if (since == null) {

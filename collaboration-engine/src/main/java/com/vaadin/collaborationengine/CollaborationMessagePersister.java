@@ -27,7 +27,6 @@ import com.vaadin.flow.function.SerializableFunction;
  * {@link CollaborationMessageInput}.
  *
  * @author Vaadin Ltd
- * @see CollaborationMessageList#setTopic(String, CollaborationMessagePersister)
  */
 public interface CollaborationMessagePersister extends Serializable {
 
