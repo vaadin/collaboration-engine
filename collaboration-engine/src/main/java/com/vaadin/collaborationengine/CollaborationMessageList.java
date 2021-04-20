@@ -9,7 +9,9 @@
 package com.vaadin.collaborationengine;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,14 +40,17 @@ public class CollaborationMessageList extends Composite<MessageList>
         implements HasSize, HasStyle {
 
     private static final Object FETCH_LOCK = new Object();
+    private static final String MISSING_RECENT_MESSAGES = "The messages "
+            + "returned invoking CollaborationMessagePersister.fetchMessages() "
+            + "do not include the last fetched message of the previous call. "
+            + "Please update the implementation to fetch all messages whose "
+            + "timestamp is greater OR EQUAL with the query's timestamp.";
 
     static final String LIST_NAME = CollaborationMessageList.class.getName();
-    static final String LAST_FETCHED_KEY = "lastFetched";
 
     private final CollaborationEngine ce;
     private Registration topicRegistration;
     private CollaborationList list;
-    private CollaborationMap data;
     private CollaborationMessagePersister persister;
     private ImageProvider imageProvider;
     private String topicId;
@@ -234,7 +239,6 @@ public class CollaborationMessageList extends Composite<MessageList>
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
         list = topicConnection.getNamedList(LIST_NAME);
-        data = topicConnection.getNamedMap(LIST_NAME);
         list.subscribe(event -> refreshMessages());
         fetchPersistedList();
         if (submitter != null && submitterRegistration == null) {
@@ -247,7 +251,6 @@ public class CollaborationMessageList extends Composite<MessageList>
 
     private void onConnectionDeactivate() {
         list = null;
-        data = null;
         refreshMessages();
         if (submitterRegistration != null) {
             submitterRegistration.remove();
@@ -256,11 +259,7 @@ public class CollaborationMessageList extends Composite<MessageList>
     }
 
     private void refreshMessages() {
-        List<CollaborationMessage> collaborationMessages = list != null
-                ? list.getItems(CollaborationMessage.class)
-                : Collections.emptyList();
-
-        List<MessageListItem> messageListItems = collaborationMessages.stream()
+        List<MessageListItem> messageListItems = getMessages().stream()
                 .map(item -> {
                     MessageListItem messageListItem = new MessageListItem(
                             item.getText(), item.getTime(),
@@ -284,22 +283,48 @@ public class CollaborationMessageList extends Composite<MessageList>
     void fetchPersistedList() {
         if (persister != null && topicId != null) {
             synchronized (FETCH_LOCK) {
-                Instant since = data.get(LAST_FETCHED_KEY, Instant.class);
-                if (since == null) {
-                    since = Instant.EPOCH;
-                }
+                List<CollaborationMessage> recentMessages = getRecentMessages();
+                Instant since = recentMessages.isEmpty() ? Instant.EPOCH
+                        : recentMessages.get(0).getTime();
                 FetchQuery query = new FetchQuery(this, topicId, since);
                 List<CollaborationMessage> messages = persister
-                        .fetchMessages(query).collect(Collectors.toList());
+                        .fetchMessages(query)
+                        .sorted(Comparator
+                                .comparing(CollaborationMessage::getTime))
+                        .filter(message -> !recentMessages.remove(message))
+                        .collect(Collectors.toList());
+                if (!recentMessages.isEmpty()) {
+                    throw new IllegalStateException(MISSING_RECENT_MESSAGES);
+                }
                 if (!messages.isEmpty()) {
                     query.throwIfPropsNotUsed();
-
-                    int lastIndex = messages.size() - 1;
-                    data.put(LAST_FETCHED_KEY,
-                            messages.get(lastIndex).getTime());
                     messages.forEach(list::append);
                 }
             }
         }
+    }
+
+    private List<CollaborationMessage> getRecentMessages() {
+        List<CollaborationMessage> currentMessages = getMessages();
+        List<CollaborationMessage> recentMessages = new ArrayList<>();
+        CollaborationMessage lastMessage = currentMessages.isEmpty() ? null
+                : currentMessages.get(currentMessages.size() - 1);
+        if (lastMessage != null) {
+            Instant lastMessageTime = lastMessage.getTime();
+            for (int i = currentMessages.size() - 1; i >= 0; i--) {
+                CollaborationMessage m = currentMessages.get(i);
+                if (m.getTime().equals(lastMessageTime)) {
+                    recentMessages.add(m);
+                } else {
+                    break;
+                }
+            }
+        }
+        return recentMessages;
+    }
+
+    private List<CollaborationMessage> getMessages() {
+        return list != null ? list.getItems(CollaborationMessage.class)
+                : Collections.emptyList();
     }
 }

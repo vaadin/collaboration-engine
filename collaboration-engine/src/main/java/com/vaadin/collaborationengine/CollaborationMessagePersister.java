@@ -61,6 +61,15 @@ public interface CollaborationMessagePersister extends Serializable {
 
         /**
          * Gets the timestamp since when messages should be fetched.
+         * <p>
+         * Note: You must include the messages sent during or after this
+         * timestamp, <b>including</b> the messages sent at this exact time.
+         * More formally, you should return all such messages, for which the
+         * following condition is true:
+         *
+         * <pre>
+         * message.getTime() >= fetchQuery.getSince()
+         * </pre>
          *
          * @return the timestamp
          */
@@ -169,7 +178,16 @@ public interface CollaborationMessagePersister extends Serializable {
     /**
      * Reads a stream of {@link CollaborationMessage} items from a persistence
      * backend. The query parameter contains the topic identifier and the
-     * timestamp after which messages should be read.
+     * timestamp from which messages should be read.
+     * <p>
+     * Note: You must include the messages sent during or after the timestamp
+     * returned from {@link FetchQuery#getSince()}, <b>including</b> the
+     * messages sent at that exact time. More formally, you should return all
+     * such messages, for which the following condition is true:
+     *
+     * <pre>
+     * message.getTime() >= fetchQuery.getSince()
+     * </pre>
      *
      * @param query
      *            the fetch query
@@ -179,6 +197,9 @@ public interface CollaborationMessagePersister extends Serializable {
 
     /**
      * Writes a {@link CollaborationMessage} to the persistence backend.
+     * <p>
+     * It is recommended to let the backend set the message timestamp and only
+     * use {@link CollaborationMessage#getTime()} as a fallback.
      *
      * @param request
      *            the request to persist the message

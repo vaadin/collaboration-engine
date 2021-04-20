@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Message of a {@link CollaborationMessageList}.
@@ -101,5 +102,22 @@ public class CollaborationMessage implements Serializable {
      */
     public void setTime(Instant time) {
         this.time = time;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        CollaborationMessage that = (CollaborationMessage) o;
+        return Objects.equals(user, that.user)
+                && Objects.equals(text, that.text)
+                && Objects.equals(time, that.time);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(user, text, time);
     }
 }

@@ -98,7 +98,7 @@ public class CollaborationMessageListTest {
                                 query.getTopicId(), t -> new ArrayList<>())
                         .stream()
                         .filter(message -> message.getTime()
-                                .isAfter(query.getSince())),
+                                .compareTo(query.getSince()) >= 0),
                 event -> backend
                         .computeIfAbsent(event.getTopicId(),
                                 t -> new ArrayList<>())
@@ -292,14 +292,14 @@ public class CollaborationMessageListTest {
     }
 
     @Test
-    public void setPersister_attach_messagesAreReadFromBackend() {
+    public void withPersister_attach_messagesAreReadFromBackend() {
         addMessageToBackend(TOPIC_ID, client3.user, "foo", Instant.now());
         client3.attach();
         Assert.assertEquals(1, client3.getMessages().size());
     }
 
     @Test
-    public void setPersister_appendMessage_messagesAreWrittenToBackend() {
+    public void withPersister_appendMessage_messagesAreWrittenToBackend() {
         Instant time = Instant.now();
         client3.ce.setClock(Clock.fixed(time, ZoneOffset.UTC));
         client3.attach();
@@ -313,7 +313,7 @@ public class CollaborationMessageListTest {
     }
 
     @Test
-    public void setPersister_fetchPersistedList_onlyNewMessagesAreAppended() {
+    public void withPersister_fetchPersistedList_onlyNewMessagesAreAppended() {
         addMessageToBackend(TOPIC_ID, client3.user, "foo", Instant.now());
 
         client3.attach();
@@ -322,6 +322,50 @@ public class CollaborationMessageListTest {
 
         client3.messageList.fetchPersistedList();
         Assert.assertEquals(2, client3.getMessages().size());
+    }
+
+    @Test
+    public void withPersister_fetchPersistedList_duplicateMessagesRemoved() {
+        Instant timestamp = Instant.now();
+        addMessageToBackend(TOPIC_ID, client3.user, "foo", timestamp);
+        addMessageToBackend(TOPIC_ID, client3.user, "bar", timestamp);
+        client3.attach();
+        client3.messageList.fetchPersistedList();
+        Assert.assertEquals(2, client3.getMessages().size());
+    }
+
+    @Test
+    public void withPersister_fetchPersistedList_messagesAreSorted() {
+        Instant timestamp = Instant.now();
+        Instant beforeTimestamp = timestamp.minusSeconds(60);
+        addMessageToBackend(TOPIC_ID, client3.user, "bar", timestamp);
+        addMessageToBackend(TOPIC_ID, client3.user, "foo", beforeTimestamp);
+        client3.attach();
+        List<MessageListItem> messages = client3.getMessages();
+        String shouldBeFoo = messages.get(0).getText();
+        String shouldBeBar = messages.get(1).getText();
+        Assert.assertEquals("foo", shouldBeFoo);
+        Assert.assertEquals("bar", shouldBeBar);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void withPersister_lastMessageNotFetched_throws() {
+        MessageListTestClient client = new MessageListTestClient(1, TOPIC_ID,
+                CollaborationMessagePersister.fromCallbacks(
+                        query -> backend
+                                .computeIfAbsent(query
+                                        .getTopicId(), t -> new ArrayList<>())
+                                .stream()
+                                .filter(message -> message.getTime()
+                                        .compareTo(query.getSince()) > 0),
+                        event -> backend
+                                .computeIfAbsent(event.getTopicId(),
+                                        t -> new ArrayList<>())
+                                .add(event.getMessage())),
+                ce);
+        addMessageToBackend(TOPIC_ID, client.user, "foo", Instant.now());
+        client.attach();
+        client.messageList.fetchPersistedList();
     }
 
     @Test(expected = IllegalStateException.class)
