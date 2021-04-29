@@ -3,8 +3,8 @@ Bundle-Name: Vaadin Collaboration Engine
 Bundle-Version: ${osgi.bundle.version}
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: com.vaadin.collaborationengine*
-Import-Package: com.vaadin.flow.component.avatar;version="[1.0,21)",\
-  com.vaadin.flow.component.messages;version="[1.0,21)",\
+Import-Package: com.vaadin.flow.component.avatar;version="[1.0,22)",\
+  com.vaadin.flow.component.messages;version="[1.0,22)",\
   com.vaadin.flow.*;version="[2.3,8)",\
   *
 Bundle-DocURL:
