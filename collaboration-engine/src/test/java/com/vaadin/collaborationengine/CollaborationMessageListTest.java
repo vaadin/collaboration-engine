@@ -500,4 +500,44 @@ public class CollaborationMessageListTest {
         Assert.assertNull(item.getUserImageResource());
         Assert.assertEquals("image2", item.getUserImage());
     }
+
+    @Test
+    public void setMessageConfigurator_sendMessages_messagesConfigured() {
+        client1.messageList.setMessageConfigurator((message, user) -> {
+            message.setText(user.getName() + ": " + message.getText());
+        });
+
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client1.sendMessage("foo");
+        client2.sendMessage("bar");
+
+        Assert.assertEquals("name1: foo",
+                client1.getMessages().get(0).getText());
+        Assert.assertEquals("name2: bar",
+                client1.getMessages().get(1).getText());
+    }
+
+    @Test
+    public void sendMessages_setMessageConfigurator_messagesConfigured() {
+        client1.setTopic(TOPIC_ID);
+        client2.setTopic(TOPIC_ID);
+        client1.attach();
+        client2.attach();
+
+        client1.sendMessage("foo");
+        client2.sendMessage("bar");
+
+        client1.messageList.setMessageConfigurator((message, user) -> {
+            message.setText(user.getName() + ": " + message.getText());
+        });
+
+        Assert.assertEquals("name1: foo",
+                client1.getMessages().get(0).getText());
+        Assert.assertEquals("name2: bar",
+                client1.getMessages().get(1).getText());
+    }
 }
