@@ -35,10 +35,8 @@
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
-        <flow.version>7.0.0.beta3</flow.version>
-        <avatar.version>20.0.0.beta1</avatar.version>
-        <messages.version>20.0.0.beta1</messages.version>
-        <test.vaadin.version>20.0.0.beta1</test.vaadin.version>
+        <flow.version>8.0.0.alpha3</flow.version>
+        <vaadin.version>21.0.0.alpha2</vaadin.version>
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
 

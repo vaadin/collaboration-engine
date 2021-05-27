@@ -37,7 +37,7 @@
                 <artifactId>vaadin-bom</artifactId>
                 <type>pom</type>
                 <scope>import</scope>
-                <version>${test.vaadin.version}</version>
+                <version>${vaadin.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -128,7 +128,7 @@
             <plugin>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-maven-plugin</artifactId>
-                <version>${test.vaadin.version}</version>
+                <version>${vaadin.version}</version>
                 <executions>
                     <execution>
                         <goals>
