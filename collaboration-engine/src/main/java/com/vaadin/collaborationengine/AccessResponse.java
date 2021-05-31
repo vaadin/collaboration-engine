@@ -10,12 +10,10 @@ package com.vaadin.collaborationengine;
 
 import java.util.function.Consumer;
 
-import com.vaadin.flow.component.UI;
-
 /**
  * Response object when access to Collaboration Engine is requested for a user.
  *
- * @see CollaborationEngine#requestAccess(UI, UserInfo, Consumer)
+ * @see CollaborationEngine#requestAccess(UserInfo, Consumer)
  *
  * @author Vaadin Ltd
  */

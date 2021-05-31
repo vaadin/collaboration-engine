@@ -17,7 +17,6 @@
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
-            <version>3.1.0</version>
             <scope>provided</scope>
         </dependency>
 
@@ -46,6 +45,13 @@
                     might cause lots of unnecessary compilations in the
                     background.-->
                     <scanIntervalSeconds>2</scanIntervalSeconds>
+                    <!-- Tell where the CE data dir is -->
+                    <systemProperties>
+                        <systemProperty>
+                            <name>vaadin.ce.dataDir</name>
+                            <value>${project.basedir}/dataDir</value>
+                        </systemProperty>
+                    </systemProperties>
                     <!-- Use war output directory to get the webpack files -->
                     <webAppConfig>
                         <allowDuplicateFragmentNames>true
@@ -53,7 +59,6 @@
                     </webAppConfig>
                 </configuration>
             </plugin>
-
             <!--
                 Take care of synchronizing java dependencies and imports in
                 package.json and main.js files.
@@ -70,19 +75,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <!-- Tell where the CE data dir is -->
-            <plugin>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-maven-plugin</artifactId>
-                <configuration>
-                    <systemProperties>
-                        <systemProperty>
-                            <name>vaadin.ce.dataDir</name>
-                            <value>${project.basedir}/dataDir</value>
-                        </systemProperty>
-                    </systemProperties>
-                </configuration>
             </plugin>
             <!-- Clean stats file after ITs -->
             <plugin>

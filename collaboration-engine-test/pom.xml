@@ -153,7 +153,6 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
