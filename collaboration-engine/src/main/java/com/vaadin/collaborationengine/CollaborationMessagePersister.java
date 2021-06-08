@@ -23,7 +23,7 @@ import com.vaadin.flow.function.SerializableFunction;
  * <p>
  * It can be used with a {@link CollaborationMessageList} to have the component
  * read messages from the backend when attached and write new messages to it
- * when appended to the list with a sumbmitter component, e.g.
+ * when appended to the list with a submitter component, e.g.
  * {@link CollaborationMessageInput}.
  *
  * @author Vaadin Ltd
