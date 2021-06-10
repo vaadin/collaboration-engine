@@ -7,6 +7,7 @@ import java.util.Objects;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
+import com.vaadin.flow.shared.communication.PushMode;
 
 /**
  * Configuration object for {@link CollaborationEngine}. When running in
@@ -18,9 +19,12 @@ import com.vaadin.flow.server.VaadinServiceInitListener;
  */
 public class CollaborationEngineConfiguration {
 
+    static final boolean DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH = true;
+
     private LicenseEventHandler licenseEventHandler;
     private VaadinService vaadinService;
     private String configuredDataDir;
+    private boolean automaticallyActivatePush = DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH;
 
     /**
      * Creates a new Collaboration Engine configuration with the provided
@@ -75,6 +79,36 @@ public class CollaborationEngineConfiguration {
      */
     public void setDataDir(String dataDir) {
         configuredDataDir = dataDir;
+    }
+
+    /**
+     * Sets whether server push should be automatically activated if needed.
+     * When enabled, which is the default, Collaboration Engine will
+     * automatically activate {@link PushMode#AUTOMATIC} if neither push nor
+     * polling is active for a UI where CollaborationEngine is used. When
+     * disabled, no automatic changes are made to the application's push
+     * configuration.
+     *
+     * @param automaticallyActivatePush
+     *            <code>true</code> to automatically activate server push if
+     *            needed, <code>false</code> to not make any automatic changes
+     *            to the push configuration
+     */
+    public void setAutomaticallyActivatePush(
+            boolean automaticallyActivatePush) {
+        this.automaticallyActivatePush = automaticallyActivatePush;
+    }
+
+    /**
+     * Checks whether automatic push activation is enabled.
+     *
+     * @see #setAutomaticallyActivatePush(boolean)
+     *
+     * @return <code>true</code> if automatic server push configuration is
+     *         enabled, <code>false</code> if it's no enabled
+     */
+    public boolean isAutomaticallyActivatePush() {
+        return automaticallyActivatePush;
     }
 
     void setVaadinService(VaadinService vaadinService) {

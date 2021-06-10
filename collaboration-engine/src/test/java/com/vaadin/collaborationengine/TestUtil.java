@@ -64,6 +64,6 @@ public class TestUtil {
         MockConfiguration configuration = new MockConfiguration(e -> {
         });
         configuration.setLicenseCheckingEnabled(false);
-        return CollaborationEngine.configure(service, configuration, ce);
+        return CollaborationEngine.configure(service, configuration, ce, true);
     }
 }

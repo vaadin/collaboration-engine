@@ -139,7 +139,7 @@ public class CollaborationEngine {
                                     throw new IllegalStateException(
                                             "License event handler was called in dev mode. "
                                                     + "This should not happen.");
-                                }));
+                                }), new CollaborationEngine(), false);
                     }
                 });
     }
@@ -163,12 +163,12 @@ public class CollaborationEngine {
     public static CollaborationEngine configure(VaadinService vaadinService,
             CollaborationEngineConfiguration configuration) {
         return configure(vaadinService, configuration,
-                new CollaborationEngine());
+                new CollaborationEngine(), true);
     }
 
     static CollaborationEngine configure(VaadinService vaadinService,
             CollaborationEngineConfiguration configuration,
-            CollaborationEngine ce) {
+            CollaborationEngine ce, boolean storeInService) {
         Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
         Objects.requireNonNull(configuration, "Configuration cannot be null");
         if (vaadinService.getContext()
@@ -180,7 +180,11 @@ public class CollaborationEngine {
         configuration.setVaadinService(vaadinService);
         ce.configuration = configuration;
 
-        vaadinService.getContext().setAttribute(CollaborationEngine.class, ce);
+        if (storeInService) {
+            // Avoid storing from inside computeIfAbsent
+            vaadinService.getContext().setAttribute(CollaborationEngine.class,
+                    ce);
+        }
         if (!vaadinService.getDeploymentConfiguration().isProductionMode()) {
             LicenseChecker.checkLicense(COLLABORATION_ENGINE_NAME,
                     COLLABORATION_ENGINE_VERSION);

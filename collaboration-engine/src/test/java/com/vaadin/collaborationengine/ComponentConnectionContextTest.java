@@ -19,6 +19,7 @@ import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.ServiceException;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.shared.communication.PushMode;
 
 public class ComponentConnectionContextTest {
     private MockUI ui;
@@ -487,6 +488,95 @@ public class ComponentConnectionContextTest {
         component = null;
 
         Assert.assertTrue(TestUtils.isGarbageCollected(contextRef));
+    }
+
+    @Test
+    public void noPushActive_actiavteThenAttach_pushActivated() {
+        Assert.assertFalse("Sanity check",
+                ui.getPushConfiguration().getPushMode().isEnabled());
+        new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+        ui.add(component);
+
+        Assert.assertTrue("Push should be enabled",
+                ui.getPushConfiguration().getPushMode().isEnabled());
+
+    }
+
+    @Test
+    public void noPushActive_attachThenActivate_pushActivated() {
+        Assert.assertFalse("Sanity check",
+                ui.getPushConfiguration().getPushMode().isEnabled());
+
+        ui.add(component);
+        new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+
+        Assert.assertTrue("Push should be enabled",
+                ui.getPushConfiguration().getPushMode().isEnabled());
+
+    }
+
+    @Test
+    public void specialPushActive_activateContext_pushNotChanged() {
+        // Manual mode counts as enabled push
+        ui.getPushConfiguration().setPushMode(PushMode.MANUAL);
+
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+        ui.add(component);
+        context.setActivationHandler(activationHandler);
+
+        Assert.assertEquals("Push mode should remain same", PushMode.MANUAL,
+                ui.getPushConfiguration().getPushMode());
+    }
+
+    @Test
+    public void pollingActive_activateContext_pushNotActivated() {
+        ui.setPollInterval(1);
+
+        ui.add(component);
+        new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+
+        Assert.assertEquals("Push mode should remain disabled",
+                PushMode.DISABLED, ui.getPushConfiguration().getPushMode());
+    }
+
+    @Test
+    public void defaultConfig_activateContext_pushActivated() {
+        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration(
+                licenceEvent -> {
+                });
+
+        // Stores itself for CollaborationEngine.getInstance(service)
+        CollaborationEngine.configure(ui.getSession().getService(), config);
+
+        ui.add(component);
+        new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+
+        Assert.assertEquals("Push mode should be activated", PushMode.AUTOMATIC,
+                ui.getPushConfiguration().getPushMode());
+    }
+
+    @Test
+    public void pushActivationDisabled_activateContext_pushNotActivated() {
+        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration(
+                licenceEvent -> {
+                });
+
+        // Stores itself for CollaborationEngine.getInstance(service)
+        CollaborationEngine.configure(ui.getSession().getService(), config);
+
+        config.setAutomaticallyActivatePush(false);
+
+        ui.add(component);
+        new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+
+        Assert.assertEquals("Push mode should remain disabled",
+                PushMode.DISABLED, ui.getPushConfiguration().getPushMode());
     }
 
     public BeaconHandler getBeaconHandler(MockUI mockUI) {

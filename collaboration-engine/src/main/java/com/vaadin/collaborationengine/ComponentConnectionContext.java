@@ -25,7 +25,9 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.Version;
 import com.vaadin.flow.shared.Registration;
+import com.vaadin.flow.shared.communication.PushMode;
 
 /**
  * A connection context based on the attach state of a set of component
@@ -49,7 +51,7 @@ public class ComponentConnectionContext implements ConnectionContext {
     private Registration beaconListener;
     private Registration destroyListener;
 
-    private static AtomicBoolean pushCheckDone = new AtomicBoolean(false);
+    private static AtomicBoolean pushWarningShown = new AtomicBoolean(false);
 
     /**
      * Creates an empty component connection context.
@@ -117,6 +119,7 @@ public class ComponentConnectionContext implements ConnectionContext {
             if (attachedComponents.size() == 1) {
                 // First attach
                 this.ui = componentUi;
+
                 checkForPush(ui);
 
                 BeaconHandler beaconHandler = BeaconHandler
@@ -234,14 +237,39 @@ public class ComponentConnectionContext implements ConnectionContext {
         }
     }
 
-    private void checkForPush(UI ui) {
-        boolean checkedBefore = pushCheckDone.getAndSet(true);
-        if (!checkedBefore
-                && !ui.getSession().getConfiguration().isProductionMode()
-                && !ui.getPushConfiguration().getPushMode().isEnabled()) {
-            LoggerFactory.getLogger(ComponentConnectionContext.class).warn(
-                    "Collaboration Engine is used without server push, so updates can't be propagated in real time. "
-                            + "Add @Push annotation on your root layout or individual views to fix this.");
+    private static void checkForPush(UI ui) {
+        if (!canPushChanges(ui) && isActivationEnabled(ui)) {
+            ui.getPushConfiguration().setPushMode(PushMode.AUTOMATIC);
+
+            boolean warningAlreadyShown = pushWarningShown.getAndSet(true);
+            if (!warningAlreadyShown) {
+                int flowVersionInVaadin14 = 2;
+                String annotationLocation = Version
+                        .getMajorVersion() == flowVersionInVaadin14
+                                ? "root layout or individual views"
+                                : "AppShellConfigurator class";
+
+                LoggerFactory.getLogger(ComponentConnectionContext.class).warn(
+                        "Server push has been automatically enabled so updates can be shown immediately. "
+                                + "Add @Push annotation on your "
+                                + annotationLocation
+                                + " to suppress this warning. "
+                                + "Set automaticallyActivatePush to false in CollaborationEngineConfiguration if you want to ensure push is not automatically enabled.");
+            }
         }
+    }
+
+    private static boolean isActivationEnabled(UI ui) {
+
+        CollaborationEngine ce = CollaborationEngine
+                .getInstance(ui.getSession().getService());
+
+        return ce != null ? ce.getConfiguration().isAutomaticallyActivatePush()
+                : CollaborationEngineConfiguration.DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH;
+    }
+
+    private static boolean canPushChanges(UI ui) {
+        return ui.getPushConfiguration().getPushMode().isEnabled()
+                || ui.getPollInterval() > 0;
     }
 }
