@@ -199,7 +199,7 @@ public class TopicConnection {
             public CompletableFuture<Boolean> replace(String key,
                     Object expectedValue, Object newValue) {
                 ensureActiveConnection();
-                Objects.requireNonNull(key, "Key cannot be null");
+                Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
                 CompletableFuture<Boolean> contextFuture = context
                         .createCompletableFuture();
@@ -219,7 +219,7 @@ public class TopicConnection {
             @Override
             public CompletableFuture<Void> put(String key, Object value) {
                 ensureActiveConnection();
-                Objects.requireNonNull(key, "Key cannot be null");
+                Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
                 CompletableFuture<Void> contextFuture = context
                         .createCompletableFuture();
@@ -256,7 +256,7 @@ public class TopicConnection {
 
             private JsonNode get(String key) {
                 ensureActiveConnection();
-                Objects.requireNonNull(key, "Key cannot be null");
+                Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
                 synchronized (topic) {
                     return topic.getMapValue(name, key);

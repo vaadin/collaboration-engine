@@ -24,7 +24,7 @@ public class AbstractMapChange {
 
     public AbstractMapChange(String mapName, String key, JsonNode value) {
         Objects.requireNonNull(mapName, "Map name can not be null.");
-        Objects.requireNonNull(key, "Key can not be null.");
+        Objects.requireNonNull(key, MessageUtil.Required.KEY);
         this.mapName = mapName;
         this.key = key;
         this.value = value;
