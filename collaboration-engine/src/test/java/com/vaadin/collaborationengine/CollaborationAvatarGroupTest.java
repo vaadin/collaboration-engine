@@ -3,7 +3,7 @@ package com.vaadin.collaborationengine;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.hamcrest.CoreMatchers;
@@ -62,9 +62,9 @@ public class CollaborationAvatarGroupTest {
             return group.getContent().getItems();
         }
 
-        List<String> getItemNames() {
+        Set<String> getItemNames() {
             return group.getContent().getItems().stream()
-                    .map(AvatarGroupItem::getName).collect(Collectors.toList());
+                    .map(AvatarGroupItem::getName).collect(Collectors.toSet());
         }
     }
 
@@ -101,7 +101,8 @@ public class CollaborationAvatarGroupTest {
 
     @Test
     public void beforeAttach_ownAvatarDisplayed() {
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
@@ -113,16 +114,17 @@ public class CollaborationAvatarGroupTest {
     @Test
     public void attach_ownAvatarDisplayed() {
         client1.attach();
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
     public void attachTwoGroups_bothAvatarsDisplayed() {
         client1.attach();
         client2.attach();
-        Assert.assertEquals(Arrays.asList("name1", "name2"),
+        Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client1.getItemNames());
-        Assert.assertEquals(Arrays.asList("name1", "name2"),
+        Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client2.getItemNames());
     }
 
@@ -130,9 +132,9 @@ public class CollaborationAvatarGroupTest {
     public void attachSameUserTwice_avatarDisplayedOnce() {
         clientInMultipleTabs1.attach();
         clientInMultipleTabs2.attach();
-        Assert.assertEquals(Arrays.asList("name5"),
+        Assert.assertEquals(TestUtils.newHashSet("name5"),
                 clientInMultipleTabs1.getItemNames());
-        Assert.assertEquals(Arrays.asList("name5"),
+        Assert.assertEquals(TestUtils.newHashSet("name5"),
                 clientInMultipleTabs2.getItemNames());
     }
 
@@ -140,7 +142,7 @@ public class CollaborationAvatarGroupTest {
     public void userPropertiesPropagatedToAvatarGroupItems() {
         client1.attach();
         client2.attach();
-        AvatarGroupItem item = client2.getItems().get(0);
+        AvatarGroupItem item = client2.getItems().get(1);
 
         Assert.assertEquals("name1", item.getName());
         Assert.assertEquals("abbreviation1", item.getAbbreviation());
@@ -149,12 +151,22 @@ public class CollaborationAvatarGroupTest {
     }
 
     @Test
+    public void ownAvatarIsAlwaysFirst() {
+        client1.attach();
+        client2.attach();
+        AvatarGroupItem item = client2.getItems().get(0);
+
+        Assert.assertEquals("name2", item.getName());
+    }
+
+    @Test
     public void detach_avatarRemovedInOtherClient() {
         client1.attach();
         client2.attach();
 
         client1.detach();
-        Assert.assertEquals(Arrays.asList("name2"), client2.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name2"),
+                client2.getItemNames());
     }
 
     @Test
@@ -163,14 +175,14 @@ public class CollaborationAvatarGroupTest {
         client2.attach();
         client3.attach();
 
-        List<String> expected = Arrays.asList("name1", "name2", "name3");
+        Set<String> expected = TestUtils.newHashSet("name1", "name2", "name3");
         Assert.assertEquals(expected, client1.getItemNames());
         Assert.assertEquals(expected, client2.getItemNames());
         Assert.assertEquals(expected, client3.getItemNames());
 
         client2.detach();
 
-        expected = Arrays.asList("name1", "name3");
+        expected = TestUtils.newHashSet("name1", "name3");
         Assert.assertEquals(expected, client1.getItemNames());
         Assert.assertEquals(expected, client3.getItemNames());
     }
@@ -180,8 +192,9 @@ public class CollaborationAvatarGroupTest {
         client1.attach();
         clientInOtherTopic.attach();
 
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
-        Assert.assertEquals(Arrays.asList("name4"),
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name4"),
                 clientInOtherTopic.getItemNames());
     }
 
@@ -193,7 +206,8 @@ public class CollaborationAvatarGroupTest {
 
         client1.detach();
 
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
@@ -205,7 +219,7 @@ public class CollaborationAvatarGroupTest {
         client1.detach();
         client1.attach();
 
-        List<String> expected = Arrays.asList("name2", "name3", "name1");
+        Set<String> expected = TestUtils.newHashSet("name2", "name3", "name1");
         Assert.assertEquals(expected, client1.getItemNames());
         Assert.assertEquals(expected, client2.getItemNames());
     }
@@ -215,7 +229,7 @@ public class CollaborationAvatarGroupTest {
         clientInMultipleTabs1.attach();
         clientInMultipleTabs2.attach();
         clientInMultipleTabs2.detach();
-        Assert.assertEquals(Arrays.asList("name5"),
+        Assert.assertEquals(TestUtils.newHashSet("name5"),
                 clientInMultipleTabs1.getItemNames());
     }
 
@@ -226,7 +240,8 @@ public class CollaborationAvatarGroupTest {
         clientInMultipleTabs2.attach();
         clientInMultipleTabs1.detach();
         clientInMultipleTabs2.detach();
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
@@ -236,7 +251,8 @@ public class CollaborationAvatarGroupTest {
 
         client1.setGroupTopic("new topic");
         client3.attach();
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
@@ -249,15 +265,15 @@ public class CollaborationAvatarGroupTest {
         newClient.attach();
 
         client1.setGroupTopic("new topic");
-        Assert.assertEquals(
-                Arrays.asList(newClient.user.getName(), client1.user.getName()),
-                client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet(newClient.user.getName(),
+                client1.user.getName()), client1.getItemNames());
 
         AvatarGroupTestClient newClient1 = new AvatarGroupTestClient(10,
                 "new topic", ce);
         newClient1.attach();
-        Assert.assertEquals(Arrays.asList(newClient.user.getName(),
-                client1.user.getName(), newClient1.user.getName()),
+        Assert.assertEquals(
+                TestUtils.newHashSet(newClient.user.getName(),
+                        client1.user.getName(), newClient1.user.getName()),
                 client1.getItemNames());
     }
 
@@ -268,7 +284,8 @@ public class CollaborationAvatarGroupTest {
 
         client1.setGroupTopic(null);
         client3.attach();
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
     }
 
     @Test
@@ -279,7 +296,7 @@ public class CollaborationAvatarGroupTest {
         client1.group = new CollaborationAvatarGroup(client1.user, null, ce);
         client1.setGroupTopic(TOPIC_ID);
         client1.attach();
-        Assert.assertEquals(Arrays.asList("name2", "name3", "name1"),
+        Assert.assertEquals(TestUtils.newHashSet("name2", "name3", "name1"),
                 client1.getItemNames());
     }
 
@@ -302,23 +319,6 @@ public class CollaborationAvatarGroupTest {
             Assert.fail("Missing wrapper for methods: "
                     + missingMethods.toString());
         }
-    }
-
-    @Test
-    public void collaborationMapValueEncodedAsJsonNode() {
-        client1.attach();
-        AtomicBoolean done = new AtomicBoolean(false);
-        TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
-            List<UserInfo> mapValue = topicConnection
-                    .getNamedMap(CollaborationAvatarGroup.MAP_NAME)
-                    .get(CollaborationAvatarGroup.MAP_KEY,
-                            JsonUtil.LIST_USER_TYPE_REF);
-            List<String> ids = mapValue.stream().map(UserInfo::getId)
-                    .collect(Collectors.toList());
-            Assert.assertTrue(ids.contains(client1.user.getId()));
-            done.set(true);
-        });
-        Assert.assertTrue("Topic connection callback has not run", done.get());
     }
 
     @Test
@@ -398,11 +398,13 @@ public class CollaborationAvatarGroupTest {
         client2.group.setOwnAvatarVisible(false);
 
         client1.attach();
-        Assert.assertEquals(Collections.emptyList(), client1.getItemNames());
+        Assert.assertEquals(Collections.emptySet(), client1.getItemNames());
 
         client2.attach();
-        Assert.assertEquals(Arrays.asList("name2"), client1.getItemNames());
-        Assert.assertEquals(Arrays.asList("name1"), client2.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name2"),
+                client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client2.getItemNames());
     }
 
     @Test
@@ -411,10 +413,11 @@ public class CollaborationAvatarGroupTest {
         client2.attach();
 
         client1.group.setOwnAvatarVisible(false);
-        Assert.assertEquals(Arrays.asList("name2"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name2"),
+                client1.getItemNames());
 
         client1.group.setOwnAvatarVisible(true);
-        Assert.assertEquals(Arrays.asList("name1", "name2"),
+        Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client1.getItemNames());
     }
 }

@@ -1,12 +1,14 @@
 package com.vaadin.collaborationengine.util;
 
 import java.lang.ref.WeakReference;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import org.junit.Assert;
-
 import com.fasterxml.jackson.databind.node.NullNode;
+import org.junit.Assert;
 
 import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
@@ -55,4 +57,8 @@ public class TestUtils {
         Assert.assertEquals(message, NullNode.class, value.getClass());
     }
 
+    @SafeVarargs
+    public static <E> Set<E> newHashSet(E... items) {
+        return new HashSet<>(Arrays.asList(items));
+    }
 }

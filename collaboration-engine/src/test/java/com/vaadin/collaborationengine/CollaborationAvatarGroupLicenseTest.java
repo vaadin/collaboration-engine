@@ -1,13 +1,13 @@
 package com.vaadin.collaborationengine;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.CollaborationAvatarGroupTest.AvatarGroupTestClient;
+import com.vaadin.collaborationengine.util.TestUtils;
 
 public class CollaborationAvatarGroupLicenseTest extends AbstractLicenseTest {
 
@@ -15,6 +15,7 @@ public class CollaborationAvatarGroupLicenseTest extends AbstractLicenseTest {
     private AvatarGroupTestClient client2;
     private AvatarGroupTestClient client3;
 
+    @Override
     @Before
     public void init() throws IOException {
         super.init();
@@ -31,21 +32,23 @@ public class CollaborationAvatarGroupLicenseTest extends AbstractLicenseTest {
 
     @Test
     public void licenseTermsExceeded_attachGroup_onlyLocalAvatarDisplayed() {
-        Assert.assertEquals(Arrays.asList("name3"), client3.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name3"),
+                client3.getItemNames());
     }
 
     @Test
     public void licenseTermsExceeded_attachGroup_avatarNotDisplayedToOthers() {
-        Assert.assertEquals(Arrays.asList("name1", "name2"),
+        Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client1.getItemNames());
     }
 
     @Test
     public void licenseTermsExceeded_activeGroupsKeepUpdating() {
         client2.detach();
-        Assert.assertEquals(Arrays.asList("name1"), client1.getItemNames());
+        Assert.assertEquals(TestUtils.newHashSet("name1"),
+                client1.getItemNames());
         client2.attach();
-        Assert.assertEquals(Arrays.asList("name1", "name2"),
+        Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client1.getItemNames());
     }
 }

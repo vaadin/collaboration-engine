@@ -2,6 +2,7 @@ package com.vaadin.collaborationengine.util;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.After;
@@ -80,11 +81,11 @@ public abstract class AbstractCollaborativeFormTestCommon
             }
         }
 
-        public List<String> getAvatarNames() {
+        public Set<String> getAvatarNames() {
             return avatars.$(AvatarElement.class).all().stream()
                     .filter(avatar -> !avatar.hasAttribute("hidden"))
                     .map(avatar -> avatar.getPropertyString("name"))
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toSet());
         }
 
         public void detachTextField() {

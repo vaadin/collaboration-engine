@@ -8,8 +8,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -24,11 +22,9 @@ import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
-import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.server.AbstractStreamResource;
 import com.vaadin.flow.server.StreamResource;
-import com.vaadin.flow.shared.Registration;
 
 /**
  * Extension of the {@link AvatarGroup} component which integrates with the
@@ -64,12 +60,9 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         AbstractStreamResource getImageResource(UserInfo user);
     }
 
-    static final String MAP_NAME = CollaborationAvatarGroup.class.getName();
-    static final String MAP_KEY = "users";
-
     private final CollaborationEngine ce;
-    private Registration topicRegistration;
-    private CollaborationMap map;
+
+    private final PresenceAdapter presenceAdapter;
 
     private final UserInfo localUser;
 
@@ -115,6 +108,16 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
                 "User cannot be null");
         this.ce = ce;
         this.ownAvatarVisible = true;
+
+        presenceAdapter = new PresenceAdapter(
+                () -> new ComponentConnectionContext(this), localUser, null,
+                ce);
+        presenceAdapter.setNewUserHandler(user -> {
+            refreshItems();
+            return () -> refreshItems();
+        });
+        presenceAdapter.setAutoPresence(true);
+
         refreshItems();
         setTopic(topicId);
     }
@@ -131,14 +134,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *            the topic id to use, or <code>null</code> to not use any topic
      */
     public void setTopic(String topicId) {
-        if (topicRegistration != null) {
-            topicRegistration.remove();
-            topicRegistration = null;
-        }
-        if (topicId != null) {
-            topicRegistration = ce.openTopicConnection(getContent(), topicId,
-                    localUser, this::onConnectionActivate);
-        }
+        presenceAdapter.setTopic(topicId);
     }
 
     /**
@@ -212,51 +208,12 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         getContent().setI18n(i18n);
     }
 
-    private Registration onConnectionActivate(TopicConnection topicConnection) {
-        map = topicConnection.getNamedMap(MAP_NAME);
-
-        updateUsers(map,
-                oldValue -> Stream.concat(oldValue, Stream.of(localUser)));
-
-        map.subscribe(event -> refreshItems());
-
-        return this::onConnectionDeactivate;
-    }
-
-    private void onConnectionDeactivate() {
-        updateUsers(map, oldValue -> {
-            List<UserInfo> users = oldValue.collect(Collectors.toList());
-            users.remove(localUser);
-            return users.stream();
-        });
-        map = null;
-        refreshItems();
-    }
-
-    private void updateUsers(CollaborationMap map,
-            SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
-        List<UserInfo> oldUsers = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
-
-        Stream<UserInfo> oldUsersStream = oldUsers == null ? Stream.empty()
-                : oldUsers.stream();
-        List<UserInfo> newUsers = updater.apply(oldUsersStream)
-                .collect(Collectors.toList());
-
-        map.replace(MAP_KEY, oldUsers, newUsers).thenAccept(success -> {
-            if (!success) {
-                updateUsers(map, updater);
-            }
-        });
-    }
-
     private void refreshItems() {
-        List<UserInfo> users = map != null
-                ? map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF)
-                : Arrays.asList(localUser);
-        List<AvatarGroupItem> items = users != null ? users.stream().distinct()
+        List<AvatarGroupItem> items = Stream
+                .concat(Stream.of(localUser), presenceAdapter.getUsers())
+                .distinct()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))
-                .map(this::userToAvatarGroupItem).collect(Collectors.toList())
-                : Collections.emptyList();
+                .map(this::userToAvatarGroupItem).collect(Collectors.toList());
         getContent().setItems(items);
     }
 
