@@ -278,6 +278,21 @@ public class CollaborationAvatarGroupTest {
     }
 
     @Test
+    public void setTopic_changingFromNullUpdatesAvatars() {
+        client1.attach();
+
+        AvatarGroupTestClient newClient = new AvatarGroupTestClient(9, null,
+                ce);
+        newClient.attach();
+        Assert.assertEquals(TestUtils.newHashSet(newClient.user.getName()),
+                newClient.getItemNames());
+
+        newClient.setGroupTopic("topic");
+        Assert.assertEquals(TestUtils.newHashSet(client1.user.getName(),
+                newClient.user.getName()), newClient.getItemNames());
+    }
+
+    @Test
     public void setTopic_nullTopic_closeConnectionAndRemoveRemoteAvatars() {
         client1.attach();
         client2.attach();

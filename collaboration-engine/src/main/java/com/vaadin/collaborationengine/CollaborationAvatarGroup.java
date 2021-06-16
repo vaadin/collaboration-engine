@@ -62,9 +62,11 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
 
     private final CollaborationEngine ce;
 
-    private final PresenceAdapter presenceAdapter;
-
     private final UserInfo localUser;
+
+    private PresenceAdapter presenceAdapter;
+
+    private String topicId;
 
     private ImageProvider imageProvider;
 
@@ -109,17 +111,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         this.ce = ce;
         this.ownAvatarVisible = true;
 
-        presenceAdapter = new PresenceAdapter(
-                () -> new ComponentConnectionContext(this), localUser, null,
-                ce);
-        presenceAdapter.setNewUserHandler(user -> {
-            refreshItems();
-            return () -> refreshItems();
-        });
-        presenceAdapter.setAutoPresence(true);
-
-        refreshItems();
         setTopic(topicId);
+        refreshItems();
     }
 
     /**
@@ -134,7 +127,27 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *            the topic id to use, or <code>null</code> to not use any topic
      */
     public void setTopic(String topicId) {
-        presenceAdapter.setTopic(topicId);
+        if (Objects.equals(this.topicId, topicId)) {
+            return;
+        }
+
+        if (this.presenceAdapter != null) {
+            this.presenceAdapter.closeTopicConnection();
+            this.presenceAdapter = null;
+        }
+
+        this.topicId = topicId;
+
+        if (topicId != null) {
+            this.presenceAdapter = new PresenceAdapter(
+                    new ComponentConnectionContext(this), localUser, topicId,
+                    ce);
+            this.presenceAdapter.setAutoPresence(true);
+            this.presenceAdapter.setNewUserHandler(user -> {
+                refreshItems();
+                return this::refreshItems;
+            });
+        }
     }
 
     /**
@@ -209,9 +222,11 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void refreshItems() {
+        Stream<UserInfo> usersInTopic = presenceAdapter != null
+                ? presenceAdapter.getUsers()
+                : Stream.empty();
         List<AvatarGroupItem> items = Stream
-                .concat(Stream.of(localUser), presenceAdapter.getUsers())
-                .distinct()
+                .concat(Stream.of(localUser), usersInTopic).distinct()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))
                 .map(this::userToAvatarGroupItem).collect(Collectors.toList());
         getContent().setItems(items);

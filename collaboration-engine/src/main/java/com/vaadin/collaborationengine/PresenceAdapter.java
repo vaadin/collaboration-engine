@@ -8,6 +8,11 @@
  */
 package com.vaadin.collaborationengine;
 
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.function.SerializableSupplier;
+import com.vaadin.flow.shared.Registration;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -17,11 +22,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.function.SerializableSupplier;
-import com.vaadin.flow.shared.Registration;
 
 /**
  * Adapter to handle user presence in topics. It allows to set the user presence
@@ -36,11 +36,7 @@ public class PresenceAdapter {
 
     static final String MAP_KEY = "users";
 
-    private final CollaborationEngine collaborationEngine;
-
     private final Map<String, Registration> handlerRegistrations = new ConcurrentHashMap<>();
-
-    private final SerializableSupplier<ConnectionContext> contextSupplier;
 
     private final UserInfo localUser;
 
@@ -60,84 +56,32 @@ public class PresenceAdapter {
      * user with {@link #setAutoPresence(boolean)} (the default is
      * {@code false}).
      * <p>
-     * If a {@code null} topic id is provided, {@link #getUsers()} will return
-     * an empty stream until connecting to a non-null topic with
-     * {@link #setTopic(String)}.
      *
      * @param component
      *            the component which holds UI access, not {@code null}
      * @param localUser
      *            the information of the local user, not {@code null}
      * @param topicId
-     *            the id of the topic to connect to, or {@code null} to not
-     *            connect the component to any topic
+     *            the id of the topic to connect to, not {@code null}
      */
     public PresenceAdapter(Component component, UserInfo localUser,
             String topicId) {
-        this(() -> new ComponentConnectionContext(component), localUser,
-                topicId);
-    }
-
-    /**
-     * Creates a new adapter for the context obtained from the provided
-     * supplier, with the provided local user and topic id.
-     * <p>
-     * The context supplier will be used when the topic connection is opened.
-     * <p>
-     * The provided user information is used to set the presence of the local
-     * user with {@link #setAutoPresence(boolean)} (the default is
-     * {@code false}).
-     * <p>
-     * If a {@code null} topic id is provided, {@link #getUsers()} will return
-     * an empty stream until connecting to a non-null topic with
-     * {@link #setTopic(String)}.
-     *
-     * @param contextSupplier
-     *            the connection context supplier, not {@code null}
-     * @param localUser
-     *            the information of the local user, not {@code null}
-     * @param topicId
-     *            the id of the topic to connect to, or {@code null} to not
-     *            connect the component to any topic
-     */
-    PresenceAdapter(SerializableSupplier<ConnectionContext> contextSupplier,
-            UserInfo localUser, String topicId) {
-        this(contextSupplier, localUser, topicId,
+        this(new ComponentConnectionContext(component), localUser, topicId,
                 CollaborationEngine.getInstance());
     }
 
-    PresenceAdapter(SerializableSupplier<ConnectionContext> contextSupplier,
-            UserInfo localUser, String topicId,
-            CollaborationEngine collaborationEngine) {
-        this.contextSupplier = Objects.requireNonNull(contextSupplier);
+    PresenceAdapter(ConnectionContext connectionContext, UserInfo localUser,
+            String topicId, CollaborationEngine collaborationEngine) {
         this.localUser = Objects.requireNonNull(localUser);
-        this.collaborationEngine = Objects.requireNonNull(collaborationEngine);
-        setTopic(topicId);
+        this.topicRegistration = collaborationEngine.openTopicConnection(
+                connectionContext, Objects.requireNonNull(topicId), localUser,
+                this::onConnectionActivate);
     }
 
     /**
-     * Sets the topic to use with this adapter. The connection to the previous
-     * topic (if any) is closed and the local user is removed from the topic (if
-     * previously set with this adapter). Connection to the new topic is opened
-     * and the local user is added to the topic if previously set using
-     * {@link #setAutoPresence(boolean)}.
-     * <p>
-     * If the topic id is {@code null}, the connection is closed.
-     *
-     * @param topicId
-     *            the topic id to connect to, or {@code null} to not connect to
-     *            any topic
+     * Disconnects from the topic.
      */
-    public void setTopic(String topicId) {
-        closeTopicConnection();
-        if (topicId != null) {
-            topicRegistration = collaborationEngine.openTopicConnection(
-                    contextSupplier.get(), topicId, localUser,
-                    this::onConnectionActivate);
-        }
-    }
-
-    private void closeTopicConnection() {
+    public void closeTopicConnection() {
         if (topicRegistration != null) {
             // This will also trigger onConnectionDeactivate which will remove
             // all handler registrations
