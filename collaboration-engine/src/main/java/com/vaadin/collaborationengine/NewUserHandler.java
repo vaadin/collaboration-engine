@@ -16,7 +16,7 @@ import com.vaadin.flow.shared.Registration;
  * Functional interface that defines how to handle a user when it becomes
  * present in a topic.
  *
- * @see PresenceAdapter#setNewUserHandler(NewUserHandler)
+ * @see PresenceManager#setNewUserHandler(NewUserHandler)
  * @author Vaadin Ltd
  */
 @FunctionalInterface

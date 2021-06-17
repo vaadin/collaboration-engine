@@ -16,7 +16,7 @@ import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinService;
 
-public class PresenceAdapterTest {
+public class PresenceManagerTest {
 
     private static final String TOPIC_ID = "presence";
 
@@ -40,31 +40,31 @@ public class PresenceAdapterTest {
     @Test
     public void autoPresenceTrue_localUserPresent() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
 
-        adapter.setAutoPresence(true);
+        manager.setAutoPresence(true);
 
-        Assert.assertTrue(adapter.getUsers().anyMatch(user::equals));
+        Assert.assertTrue(manager.getUsers().anyMatch(user::equals));
     }
 
     @Test
     public void autoPresenceTrue_setTopic_localUserPresent() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user, "topic");
+        PresenceManager manager = createActiveManager(user, "topic");
 
-        adapter.setAutoPresence(true);
+        manager.setAutoPresence(true);
 
-        Assert.assertTrue(adapter.getUsers().anyMatch(user::equals));
+        Assert.assertTrue(manager.getUsers().anyMatch(user::equals));
     }
 
     @Test
     public void autoPresenceTrue_setHandler_handlerInvoked() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setAutoPresence(true);
-        adapter.setNewUserHandler(newUser -> {
+        manager.setAutoPresence(true);
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
@@ -75,23 +75,23 @@ public class PresenceAdapterTest {
     @Test
     public void setHandler_autoPresenceTrue_handlerInvoked() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setNewUserHandler(newUser -> {
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        adapter.setAutoPresence(true);
+        manager.setAutoPresence(true);
 
         Assert.assertTrue(users.contains(user));
     }
 
     @Test
-    public void setHandler_autoPresenceTrue_handlerInvokedOnOtherAdapter() {
+    public void setHandler_autoPresenceTrue_handlerInvokedOnOtherManager() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter foo = createActiveAdapter(user);
-        PresenceAdapter bar = createActiveAdapter(user);
+        PresenceManager foo = createActiveManager(user);
+        PresenceManager bar = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
         bar.setNewUserHandler(newUser -> {
@@ -106,14 +106,14 @@ public class PresenceAdapterTest {
     @Test
     public void setHandler_autoPresenceFalse_handlerRegistrationRemoved() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setNewUserHandler(newUser -> {
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        adapter.setAutoPresence(false);
+        manager.setAutoPresence(false);
 
         Assert.assertTrue(users.isEmpty());
     }
@@ -121,35 +121,35 @@ public class PresenceAdapterTest {
     @Test
     public void autoPresenceSetTwice_handlerInvokedOnce() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setNewUserHandler(newUser -> {
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> {
             };
         });
-        adapter.setAutoPresence(true);
-        adapter.setAutoPresence(true);
+        manager.setAutoPresence(true);
+        manager.setAutoPresence(true);
 
         Assert.assertEquals(1, users.size());
     }
 
     @Test
-    public void autoPresenceSetOnMultipleAdapters_oneRemoved_correctHandlerUnregistered() {
+    public void autoPresenceSetOnMultipleManagers_oneRemoved_correctHandlerUnregistered() {
         UserInfo foo = new UserInfo("foo");
         UserInfo bar = new UserInfo("bar");
-        PresenceAdapter fooAdapter = createActiveAdapter(foo);
-        PresenceAdapter barAdapter = createActiveAdapter(bar);
+        PresenceManager fooManager = createActiveManager(foo);
+        PresenceManager barManager = createActiveManager(bar);
         List<UserInfo> users = new ArrayList<>();
 
-        fooAdapter.setNewUserHandler(newUser -> {
+        fooManager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        fooAdapter.setAutoPresence(true);
-        barAdapter.setAutoPresence(true);
-        barAdapter.setAutoPresence(false);
+        fooManager.setAutoPresence(true);
+        barManager.setAutoPresence(true);
+        barManager.setAutoPresence(false);
 
         Assert.assertTrue(users.contains(foo));
         Assert.assertFalse(users.contains(bar));
@@ -158,11 +158,11 @@ public class PresenceAdapterTest {
     @Test
     public void setHandler_handlerReceivesCurrentUser() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setAutoPresence(true);
-        adapter.setNewUserHandler(newUser -> {
+        manager.setAutoPresence(true);
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
@@ -173,15 +173,15 @@ public class PresenceAdapterTest {
     @Test
     public void replaceHandler_oldRegistrationsRemoved() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
+        PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        adapter.setNewUserHandler(newUser -> {
+        manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        adapter.setAutoPresence(true);
-        adapter.setNewUserHandler(null);
+        manager.setAutoPresence(true);
+        manager.setNewUserHandler(null);
 
         Assert.assertTrue(users.isEmpty());
     }
@@ -189,8 +189,8 @@ public class PresenceAdapterTest {
     @Test
     public void getUsers_doesNotContainDuplicates() {
         UserInfo foo = new UserInfo("foo");
-        PresenceAdapter first = createActiveAdapter(foo);
-        PresenceAdapter second = createActiveAdapter(foo);
+        PresenceManager first = createActiveManager(foo);
+        PresenceManager second = createActiveManager(foo);
 
         first.setAutoPresence(true);
         second.setAutoPresence(true);
@@ -202,22 +202,22 @@ public class PresenceAdapterTest {
     public void getUsers_orderOfPresenceIsPreserved() {
         UserInfo foo = new UserInfo("foo");
         UserInfo bar = new UserInfo("bar");
-        PresenceAdapter fooAdapter = createActiveAdapter(foo);
-        PresenceAdapter barAdapter = createActiveAdapter(bar);
+        PresenceManager fooManager = createActiveManager(foo);
+        PresenceManager barManager = createActiveManager(bar);
 
-        fooAdapter.setAutoPresence(true);
-        barAdapter.setAutoPresence(true);
+        fooManager.setAutoPresence(true);
+        barManager.setAutoPresence(true);
 
-        List<UserInfo> users = fooAdapter.getUsers()
+        List<UserInfo> users = fooManager.getUsers()
                 .collect(Collectors.toList());
 
         Assert.assertEquals(foo, users.get(0));
         Assert.assertEquals(bar, users.get(1));
 
-        fooAdapter.setAutoPresence(false);
-        fooAdapter.setAutoPresence(true);
+        fooManager.setAutoPresence(false);
+        fooManager.setAutoPresence(true);
 
-        users = barAdapter.getUsers().collect(Collectors.toList());
+        users = barManager.getUsers().collect(Collectors.toList());
 
         Assert.assertEquals(bar, users.get(0));
         Assert.assertEquals(foo, users.get(1));
@@ -226,13 +226,13 @@ public class PresenceAdapterTest {
     @Test
     public void collaborationMapValueEncodedAsJsonNode() {
         UserInfo user = new UserInfo("foo");
-        PresenceAdapter adapter = createActiveAdapter(user);
-        adapter.setAutoPresence(true);
+        PresenceManager manager = createActiveManager(user);
+        manager.setAutoPresence(true);
         AtomicBoolean done = new AtomicBoolean(false);
         TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
             List<UserInfo> mapValue = topicConnection
-                    .getNamedMap(PresenceAdapter.MAP_NAME)
-                    .get(PresenceAdapter.MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
+                    .getNamedMap(PresenceManager.MAP_NAME)
+                    .get(PresenceManager.MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
             List<String> ids = mapValue.stream().map(UserInfo::getId)
                     .collect(Collectors.toList());
             Assert.assertTrue(ids.contains("foo"));
@@ -241,12 +241,12 @@ public class PresenceAdapterTest {
         Assert.assertTrue("Topic connection callback has not run", done.get());
     }
 
-    private PresenceAdapter createActiveAdapter(UserInfo user) {
-        return createActiveAdapter(user, TOPIC_ID);
+    private PresenceManager createActiveManager(UserInfo user) {
+        return createActiveManager(user, TOPIC_ID);
     }
 
-    private PresenceAdapter createActiveAdapter(UserInfo user, String topicId) {
-        return new PresenceAdapter(new EagerConnectionContext(), user, topicId,
+    private PresenceManager createActiveManager(UserInfo user, String topicId) {
+        return new PresenceManager(new EagerConnectionContext(), user, topicId,
                 ce);
     }
 }

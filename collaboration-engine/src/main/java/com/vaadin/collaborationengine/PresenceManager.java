@@ -10,7 +10,6 @@ package com.vaadin.collaborationengine;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.shared.Registration;
 
 import java.util.ArrayList;
@@ -24,15 +23,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Adapter to handle user presence in topics. It allows to set the user presence
+ * Manager to handle user presence in topics. It allows to set the user presence
  * in the set topic and get a list of users currently set as present in the same
  * topic. A handler can be set to react when the presence of a user changes.
  *
  * @author Vaadin Ltd
  */
-public class PresenceAdapter {
+public class PresenceManager {
 
-    static final String MAP_NAME = PresenceAdapter.class.getName();
+    static final String MAP_NAME = PresenceManager.class.getName();
 
     static final String MAP_KEY = "users";
 
@@ -49,7 +48,7 @@ public class PresenceAdapter {
     private TopicConnectionRegistration topicRegistration;
 
     /**
-     * Creates a new adapter for the provided component, with the provided local
+     * Creates a new manager for the provided component, with the provided local
      * user and topic id.
      * <p>
      * The provided user information is used to set the presence of the local
@@ -64,13 +63,13 @@ public class PresenceAdapter {
      * @param topicId
      *            the id of the topic to connect to, not {@code null}
      */
-    public PresenceAdapter(Component component, UserInfo localUser,
+    public PresenceManager(Component component, UserInfo localUser,
             String topicId) {
         this(new ComponentConnectionContext(component), localUser, topicId,
                 CollaborationEngine.getInstance());
     }
 
-    PresenceAdapter(ConnectionContext connectionContext, UserInfo localUser,
+    PresenceManager(ConnectionContext connectionContext, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
         this.localUser = Objects.requireNonNull(localUser);
         this.topicRegistration = collaborationEngine.openTopicConnection(
@@ -91,10 +90,10 @@ public class PresenceAdapter {
     }
 
     /**
-     * Checks if this adapter is configured to set the local user automatically
+     * Checks if this manager is configured to set the local user automatically
      * present when a topic is set.
      *
-     * @return {@code true} if this adapter is configured to set the local user
+     * @return {@code true} if this manager is configured to set the local user
      *         automatically present
      */
     public boolean isAutoPresence() {
@@ -102,10 +101,10 @@ public class PresenceAdapter {
     }
 
     /**
-     * Configures the adapter to set the local user automatically present when a
+     * Configures the manager to set the local user automatically present when a
      * topic is set.
      * <p>
-     * If the user wasn't already present in the topic, all adapters connected
+     * If the user wasn't already present in the topic, all managers connected
      * to the same topic will be notified of the change and their handlers will
      * be applied to the user instance.
      *

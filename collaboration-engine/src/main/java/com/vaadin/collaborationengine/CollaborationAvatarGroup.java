@@ -64,7 +64,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
 
     private final UserInfo localUser;
 
-    private PresenceAdapter presenceAdapter;
+    private PresenceManager presenceManager;
 
     private String topicId;
 
@@ -131,19 +131,19 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             return;
         }
 
-        if (this.presenceAdapter != null) {
-            this.presenceAdapter.closeTopicConnection();
-            this.presenceAdapter = null;
+        if (this.presenceManager != null) {
+            this.presenceManager.closeTopicConnection();
+            this.presenceManager = null;
         }
 
         this.topicId = topicId;
 
         if (topicId != null) {
-            this.presenceAdapter = new PresenceAdapter(
+            this.presenceManager = new PresenceManager(
                     new ComponentConnectionContext(this), localUser, topicId,
                     ce);
-            this.presenceAdapter.setAutoPresence(true);
-            this.presenceAdapter.setNewUserHandler(user -> {
+            this.presenceManager.setAutoPresence(true);
+            this.presenceManager.setNewUserHandler(user -> {
                 refreshItems();
                 return this::refreshItems;
             });
@@ -222,8 +222,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void refreshItems() {
-        Stream<UserInfo> usersInTopic = presenceAdapter != null
-                ? presenceAdapter.getUsers()
+        Stream<UserInfo> usersInTopic = presenceManager != null
+                ? presenceManager.getUsers()
                 : Stream.empty();
         List<AvatarGroupItem> items = Stream
                 .concat(Stream.of(localUser), usersInTopic).distinct()
