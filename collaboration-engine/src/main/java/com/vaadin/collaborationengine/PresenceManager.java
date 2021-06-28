@@ -8,10 +8,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.shared.Registration;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -21,6 +17,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.shared.Registration;
 
 /**
  * Manager to handle user presence in topics. It allows to set the user presence
@@ -39,11 +39,13 @@ public class PresenceManager {
 
     private final UserInfo localUser;
 
+    private final String topicId;
+
     private CollaborationMap map;
 
     private NewUserHandler newUserHandler;
 
-    private boolean autoPresence = false;
+    private boolean markAsPresent = false;
 
     private TopicConnectionRegistration topicRegistration;
 
@@ -52,8 +54,7 @@ public class PresenceManager {
      * user and topic id.
      * <p>
      * The provided user information is used to set the presence of the local
-     * user with {@link #setAutoPresence(boolean)} (the default is
-     * {@code false}).
+     * user with {@link #markAsPresent(boolean)} (the default is {@code false}).
      * <p>
      *
      * @param component
@@ -72,15 +73,25 @@ public class PresenceManager {
     PresenceManager(ConnectionContext connectionContext, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
         this.localUser = Objects.requireNonNull(localUser);
+        this.topicId = Objects.requireNonNull(topicId);
         this.topicRegistration = collaborationEngine.openTopicConnection(
-                connectionContext, Objects.requireNonNull(topicId), localUser,
+                connectionContext, topicId, localUser,
                 this::onConnectionActivate);
+    }
+
+    /**
+     * Gets the topic id.
+     *
+     * @return the topic id
+     */
+    public String getTopicId() {
+        return topicId;
     }
 
     /**
      * Disconnects from the topic.
      */
-    public void closeTopicConnection() {
+    public void close() {
         if (topicRegistration != null) {
             // This will also trigger onConnectionDeactivate which will remove
             // all handler registrations
@@ -90,37 +101,25 @@ public class PresenceManager {
     }
 
     /**
-     * Checks if this manager is configured to set the local user automatically
-     * present when a topic is set.
-     *
-     * @return {@code true} if this manager is configured to set the local user
-     *         automatically present
-     */
-    public boolean isAutoPresence() {
-        return autoPresence;
-    }
-
-    /**
-     * Configures the manager to set the local user automatically present when a
-     * topic is set.
+     * Configures the manager to mark the local user present in the topic.
      * <p>
      * If the user wasn't already present in the topic, all managers connected
      * to the same topic will be notified of the change and their handlers will
      * be applied to the user instance.
      *
-     * @param autoPresence
-     *            {@code true} to set the user as present when a topic is set,
+     * @param markAsPresent
+     *            {@code true} to mark the user as present in the topic,
      *            {@code false} to set as not present
      */
-    public void setAutoPresence(boolean autoPresence) {
-        if (this.autoPresence != autoPresence && map != null) {
-            if (autoPresence) {
+    public void markAsPresent(boolean markAsPresent) {
+        if (this.markAsPresent != markAsPresent && map != null) {
+            if (markAsPresent) {
                 addLocalUserToTopic();
             } else {
                 removeLocalUserFromTopic();
             }
         }
-        this.autoPresence = autoPresence;
+        this.markAsPresent = markAsPresent;
     }
 
     private void addLocalUserToTopic() {
@@ -164,7 +163,7 @@ public class PresenceManager {
      *
      * @return the stream of users, not {@code null}
      */
-    public Stream<UserInfo> getUsers() {
+    private Stream<UserInfo> getUsers() {
         if (map != null) {
             List<UserInfo> list = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
             return list != null ? list.stream().distinct() : Stream.empty();
@@ -176,14 +175,14 @@ public class PresenceManager {
     private Registration onConnectionActivate(TopicConnection topicConnection) {
         map = topicConnection.getNamedMap(MAP_NAME);
         map.subscribe(this::onMapChange);
-        if (autoPresence) {
+        if (markAsPresent) {
             addLocalUserToTopic();
         }
         return this::onConnectionDeactivate;
     }
 
     private void onConnectionDeactivate() {
-        if (autoPresence) {
+        if (markAsPresent) {
             removeLocalUserFromTopic();
         }
         map = null;

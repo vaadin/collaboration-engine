@@ -8,6 +8,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -63,6 +64,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     private final CollaborationEngine ce;
 
     private final UserInfo localUser;
+
+    private final List<UserInfo> userInfoCache = new ArrayList<>();
 
     private PresenceManager presenceManager;
 
@@ -132,7 +135,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         }
 
         if (this.presenceManager != null) {
-            this.presenceManager.closeTopicConnection();
+            this.presenceManager.close();
             this.presenceManager = null;
         }
 
@@ -142,10 +145,14 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             this.presenceManager = new PresenceManager(
                     new ComponentConnectionContext(this), localUser, topicId,
                     ce);
-            this.presenceManager.setAutoPresence(true);
-            this.presenceManager.setNewUserHandler(user -> {
+            this.presenceManager.markAsPresent(true);
+            this.presenceManager.setNewUserHandler(userInfo -> {
+                userInfoCache.add(userInfo);
                 refreshItems();
-                return this::refreshItems;
+                return () -> {
+                    userInfoCache.remove(userInfo);
+                    refreshItems();
+                };
             });
         }
     }
@@ -222,11 +229,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
     }
 
     private void refreshItems() {
-        Stream<UserInfo> usersInTopic = presenceManager != null
-                ? presenceManager.getUsers()
-                : Stream.empty();
         List<AvatarGroupItem> items = Stream
-                .concat(Stream.of(localUser), usersInTopic).distinct()
+                .concat(Stream.of(localUser), userInfoCache.stream()).distinct()
                 .filter(user -> ownAvatarVisible || isNotLocalUser(user))
                 .map(this::userToAvatarGroupItem).collect(Collectors.toList());
         getContent().setItems(items);

@@ -38,32 +38,12 @@ public class PresenceManagerTest {
     }
 
     @Test
-    public void autoPresenceTrue_localUserPresent() {
-        UserInfo user = new UserInfo("foo");
-        PresenceManager manager = createActiveManager(user);
-
-        manager.setAutoPresence(true);
-
-        Assert.assertTrue(manager.getUsers().anyMatch(user::equals));
-    }
-
-    @Test
-    public void autoPresenceTrue_setTopic_localUserPresent() {
-        UserInfo user = new UserInfo("foo");
-        PresenceManager manager = createActiveManager(user, "topic");
-
-        manager.setAutoPresence(true);
-
-        Assert.assertTrue(manager.getUsers().anyMatch(user::equals));
-    }
-
-    @Test
-    public void autoPresenceTrue_setHandler_handlerInvoked() {
+    public void markAsPresentTrue_setHandler_handlerInvoked() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
         manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
@@ -73,7 +53,7 @@ public class PresenceManagerTest {
     }
 
     @Test
-    public void setHandler_autoPresenceTrue_handlerInvoked() {
+    public void setHandler_markAsPresentTrue_handlerInvoked() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
@@ -82,13 +62,13 @@ public class PresenceManagerTest {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
 
         Assert.assertTrue(users.contains(user));
     }
 
     @Test
-    public void setHandler_autoPresenceTrue_handlerInvokedOnOtherManager() {
+    public void setHandler_markAsPresentTrue_handlerInvokedOnOtherManager() {
         UserInfo user = new UserInfo("foo");
         PresenceManager foo = createActiveManager(user);
         PresenceManager bar = createActiveManager(user);
@@ -98,13 +78,13 @@ public class PresenceManagerTest {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        foo.setAutoPresence(true);
+        foo.markAsPresent(true);
 
         Assert.assertTrue(users.contains(user));
     }
 
     @Test
-    public void setHandler_autoPresenceFalse_handlerRegistrationRemoved() {
+    public void setHandler_markAsPresentFalse_handlerRegistrationRemoved() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
@@ -113,13 +93,13 @@ public class PresenceManagerTest {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        manager.setAutoPresence(false);
+        manager.markAsPresent(false);
 
         Assert.assertTrue(users.isEmpty());
     }
 
     @Test
-    public void autoPresenceSetTwice_handlerInvokedOnce() {
+    public void markAsPresentTwice_handlerInvokedOnce() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
@@ -129,14 +109,14 @@ public class PresenceManagerTest {
             return () -> {
             };
         });
-        manager.setAutoPresence(true);
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
+        manager.markAsPresent(true);
 
         Assert.assertEquals(1, users.size());
     }
 
     @Test
-    public void autoPresenceSetOnMultipleManagers_oneRemoved_correctHandlerUnregistered() {
+    public void markAsPresentOnMultipleManagers_oneRemoved_correctHandlerUnregistered() {
         UserInfo foo = new UserInfo("foo");
         UserInfo bar = new UserInfo("bar");
         PresenceManager fooManager = createActiveManager(foo);
@@ -147,9 +127,9 @@ public class PresenceManagerTest {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        fooManager.setAutoPresence(true);
-        barManager.setAutoPresence(true);
-        barManager.setAutoPresence(false);
+        fooManager.markAsPresent(true);
+        barManager.markAsPresent(true);
+        barManager.markAsPresent(false);
 
         Assert.assertTrue(users.contains(foo));
         Assert.assertFalse(users.contains(bar));
@@ -161,7 +141,7 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
         manager.setNewUserHandler(newUser -> {
             users.add(newUser);
             return () -> users.remove(newUser);
@@ -180,54 +160,17 @@ public class PresenceManagerTest {
             users.add(newUser);
             return () -> users.remove(newUser);
         });
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
         manager.setNewUserHandler(null);
 
         Assert.assertTrue(users.isEmpty());
     }
 
     @Test
-    public void getUsers_doesNotContainDuplicates() {
-        UserInfo foo = new UserInfo("foo");
-        PresenceManager first = createActiveManager(foo);
-        PresenceManager second = createActiveManager(foo);
-
-        first.setAutoPresence(true);
-        second.setAutoPresence(true);
-
-        Assert.assertEquals(1, first.getUsers().count());
-    }
-
-    @Test
-    public void getUsers_orderOfPresenceIsPreserved() {
-        UserInfo foo = new UserInfo("foo");
-        UserInfo bar = new UserInfo("bar");
-        PresenceManager fooManager = createActiveManager(foo);
-        PresenceManager barManager = createActiveManager(bar);
-
-        fooManager.setAutoPresence(true);
-        barManager.setAutoPresence(true);
-
-        List<UserInfo> users = fooManager.getUsers()
-                .collect(Collectors.toList());
-
-        Assert.assertEquals(foo, users.get(0));
-        Assert.assertEquals(bar, users.get(1));
-
-        fooManager.setAutoPresence(false);
-        fooManager.setAutoPresence(true);
-
-        users = barManager.getUsers().collect(Collectors.toList());
-
-        Assert.assertEquals(bar, users.get(0));
-        Assert.assertEquals(foo, users.get(1));
-    }
-
-    @Test
     public void collaborationMapValueEncodedAsJsonNode() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
-        manager.setAutoPresence(true);
+        manager.markAsPresent(true);
         AtomicBoolean done = new AtomicBoolean(false);
         TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
             List<UserInfo> mapValue = topicConnection
