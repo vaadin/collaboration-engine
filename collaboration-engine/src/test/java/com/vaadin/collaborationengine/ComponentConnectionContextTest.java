@@ -5,10 +5,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import com.vaadin.collaborationengine.util.TestComponent;
@@ -20,6 +16,10 @@ import com.vaadin.flow.server.ServiceException;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.shared.communication.PushMode;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ComponentConnectionContextTest {
     private MockUI ui;
@@ -187,8 +187,9 @@ public class ComponentConnectionContextTest {
                 component);
         context.addComponent(c2);
 
-        Registration registration = context.setActivationHandler(
-                ignore -> Assert.fail("Should not be triggered"));
+        Registration registration = context
+                .setActivationHandler(active -> Assert.assertFalse(
+                        "Should only be triggered for deactivation", active));
 
         // Sanity checks
         Assert.assertTrue(component.hasAttachListener());
@@ -577,6 +578,21 @@ public class ComponentConnectionContextTest {
 
         Assert.assertEquals("Push mode should remain disabled",
                 PushMode.DISABLED, ui.getPushConfiguration().getPushMode());
+    }
+
+    @Test
+    public void activeContext_deactivateByRegistration_cleanupListeners() {
+        ui.add(component);
+        Registration registration = new ComponentConnectionContext(component)
+                .setActivationHandler(activationHandler);
+        activationHandler.assertActive("Context should be active");
+        BeaconHandler beaconHandler = getBeaconHandler(ui);
+        Assert.assertFalse(beaconHandler.getListeners().isEmpty());
+        registration.remove();
+        Assert.assertTrue("Should have been removed by registration.remove",
+                beaconHandler.getListeners().isEmpty());
+        activationHandler.assertInactive(
+                "Should have been deactivated by registration.remove");
     }
 
     public BeaconHandler getBeaconHandler(MockUI mockUI) {

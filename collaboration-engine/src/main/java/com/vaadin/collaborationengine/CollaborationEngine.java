@@ -77,7 +77,9 @@ public class CollaborationEngine {
     }
 
     private void updateTopicActivation(String topicId, Boolean isActive) {
-        activeTopicsCount.putIfAbsent(topicId, 0);
+        if (isActive) {
+            activeTopicsCount.putIfAbsent(topicId, 0);
+        }
         activeTopicsCount.computeIfPresent(topicId, (topic, count) -> {
             int newCount = isActive ? count + 1 : count - 1;
             if (newCount <= 0) {

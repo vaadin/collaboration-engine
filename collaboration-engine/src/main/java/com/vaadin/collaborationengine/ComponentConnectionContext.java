@@ -174,6 +174,7 @@ public class ComponentConnectionContext implements ConnectionContext {
             componentListeners.values().forEach(Registration::remove);
             componentListeners.clear();
             attachedComponents.clear();
+            deactivateConnection();
             ui = null;
         };
     }
