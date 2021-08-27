@@ -15,6 +15,7 @@ import org.junit.rules.ExpectedException;
 
 import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.SpyConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
@@ -299,30 +300,5 @@ public class CollaborationEngineTest {
         configuration.setDataDir("bar");
         String dataDir = configuration.getDataDirPath().toString();
         Assert.assertEquals("foo", dataDir);
-    }
-
-    class SpyConnectionContext implements ConnectionContext {
-
-        private ActivationHandler activationHandler;
-
-        @Override
-        public Registration setActivationHandler(ActivationHandler handler) {
-            activationHandler = handler;
-            return () -> activationHandler = null;
-        }
-
-        public ActivationHandler getActivationHandler() {
-            return activationHandler;
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            action.execute();
-        }
-
-        @Override
-        public <T> CompletableFuture<T> createCompletableFuture() {
-            return new CompletableFuture<>();
-        }
     }
 }

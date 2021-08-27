@@ -317,10 +317,8 @@ public class CollaborationMessageListTest {
         addMessageToBackend(TOPIC_ID, client3.user, "foo", Instant.now());
 
         client3.attach();
+        client3.messageList.appendMessage("bar");
 
-        addMessageToBackend(TOPIC_ID, client3.user, "bar", Instant.now());
-
-        client3.messageList.fetchPersistedList();
         Assert.assertEquals(2, client3.getMessages().size());
     }
 
@@ -330,7 +328,6 @@ public class CollaborationMessageListTest {
         addMessageToBackend(TOPIC_ID, client3.user, "foo", timestamp);
         addMessageToBackend(TOPIC_ID, client3.user, "bar", timestamp);
         client3.attach();
-        client3.messageList.fetchPersistedList();
         Assert.assertEquals(2, client3.getMessages().size());
     }
 
@@ -365,7 +362,7 @@ public class CollaborationMessageListTest {
                 ce);
         addMessageToBackend(TOPIC_ID, client.user, "foo", Instant.now());
         client.attach();
-        client.messageList.fetchPersistedList();
+        client.messageList.appendMessage("foo");
     }
 
     @Test(expected = IllegalStateException.class)

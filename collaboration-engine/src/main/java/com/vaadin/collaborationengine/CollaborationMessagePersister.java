@@ -42,9 +42,8 @@ public interface CollaborationMessagePersister extends Serializable {
         private boolean getSinceCalled = false;
         private boolean getTopicIdCalled = false;
 
-        FetchQuery(CollaborationMessageList list, String topicId,
-                Instant since) {
-            super(list);
+        FetchQuery(MessageManager manager, String topicId, Instant since) {
+            super(manager);
             this.topicId = topicId;
             this.since = since;
         }
@@ -79,8 +78,8 @@ public interface CollaborationMessagePersister extends Serializable {
         }
 
         @Override
-        public CollaborationMessageList getSource() {
-            return (CollaborationMessageList) super.getSource();
+        public MessageManager getSource() {
+            return (MessageManager) super.getSource();
         }
 
         void throwIfPropsNotUsed() {
@@ -112,9 +111,9 @@ public interface CollaborationMessagePersister extends Serializable {
         private final String topicId;
         private final CollaborationMessage message;
 
-        PersistRequest(CollaborationMessageList list, String topicId,
+        PersistRequest(MessageManager manager, String topicId,
                 CollaborationMessage message) {
-            super(list);
+            super(manager);
             this.topicId = topicId;
             this.message = message;
         }
@@ -138,8 +137,8 @@ public interface CollaborationMessagePersister extends Serializable {
         }
 
         @Override
-        public CollaborationMessageList getSource() {
-            return (CollaborationMessageList) super.getSource();
+        public MessageManager getSource() {
+            return (MessageManager) super.getSource();
         }
     }
 

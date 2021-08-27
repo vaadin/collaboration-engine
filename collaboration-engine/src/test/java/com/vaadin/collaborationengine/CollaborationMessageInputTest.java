@@ -2,7 +2,6 @@ package com.vaadin.collaborationengine;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.junit.After;
@@ -13,10 +12,10 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
-import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageInput;
+import com.vaadin.flow.component.messages.MessageListItem;
 import com.vaadin.flow.server.VaadinService;
 
 public class CollaborationMessageInputTest {
@@ -49,17 +48,8 @@ public class CollaborationMessageInputTest {
 
         }
 
-        private List<CollaborationMessage> getMessages() {
-            AtomicReference<List<CollaborationMessage>> messages = new AtomicReference<>(
-                    null);
-            TestUtils.openEagerConnection(ce, topicId, (topicConnection) -> {
-                CollaborationList messageList = topicConnection
-                        .getNamedList(CollaborationMessageList.LIST_NAME);
-                List<CollaborationMessage> list = messageList
-                        .getItems(CollaborationMessage.class);
-                messages.set(list);
-            });
-            return messages.get();
+        private List<MessageListItem> getMessages() {
+            return messageList.getContent().getItems();
         }
 
         void attach() {
@@ -105,15 +95,14 @@ public class CollaborationMessageInputTest {
         client1.setTopic(TOPIC_ID);
         Assert.assertTrue(client1.getMessages().isEmpty());
         client1.submitMessage("new message");
-        List<CollaborationMessage> messages = client1.getMessages();
+        List<MessageListItem> messages = client1.getMessages();
         Assert.assertEquals(1, messages.size());
-        CollaborationMessage message = messages.get(0);
+        MessageListItem message = messages.get(0);
         Assert.assertEquals("new message", message.getText());
-        Assert.assertEquals("name1", message.getUser().getName());
-        Assert.assertEquals("image1", message.getUser().getImage());
-        Assert.assertEquals("abbreviation1",
-                message.getUser().getAbbreviation());
-        Assert.assertEquals(1, message.getUser().getColorIndex());
+        Assert.assertEquals("name1", message.getUserName());
+        Assert.assertEquals("image1", message.getUserImage());
+        Assert.assertEquals("abbreviation1", message.getUserAbbreviation());
+        Assert.assertEquals(1, message.getUserColorIndex().intValue());
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.vaadin.collaborationengine;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -12,47 +11,16 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.EagerConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.SpyConnectionContext.FailOnPurposeException;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 public class TopicConnectionTest {
 
-    private static class SpyConnectionContext implements ConnectionContext {
-        boolean closed = false;
-        boolean throwOnClose = false;
-
-        @Override
-        public Registration setActivationHandler(ActivationHandler handler) {
-            handler.setActive(true);
-            return () -> {
-                closed = true;
-                if (throwOnClose) {
-                    throw new FailOnPurposeException();
-                }
-            };
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            action.execute();
-        }
-
-        @Override
-        public <T> CompletableFuture<T> createCompletableFuture() {
-            return null;
-        }
-
-        public boolean isClosed() {
-            return closed;
-        }
-    }
-
-    private static class FailOnPurposeException extends RuntimeException {
-    }
-
-    private final SpyConnectionContext context = new SpyConnectionContext();
+    private final EagerConnectionContext context = new EagerConnectionContext();
 
     private final Set<String> activeTopics = new HashSet<>();
 
@@ -175,7 +143,7 @@ public class TopicConnectionTest {
 
     @Test
     public void throwingCloseHandler_connectionIsProperlyClosed() {
-        context.throwOnClose = true;
+        context.setThrowOnClose(true);
 
         try {
             connectionRegistration.remove();

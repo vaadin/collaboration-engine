@@ -1,16 +1,14 @@
 package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.util.SpyConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
 
 public class ActivationHandlerTest {
 
@@ -124,34 +122,5 @@ public class ActivationHandlerTest {
         Assert.assertTrue(
                 "Expect the returned Registration of connection callback to be called when deactivated",
                 isCalled.get());
-    }
-
-    class SpyConnectionContext implements ConnectionContext {
-
-        private ActivationHandler activationHandler;
-
-        public void activate() {
-            activationHandler.setActive(true);
-        }
-
-        public void deactivate() {
-            activationHandler.setActive(false);
-        }
-
-        @Override
-        public Registration setActivationHandler(ActivationHandler handler) {
-            activationHandler = handler;
-            return null;
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            action.execute();
-        }
-
-        @Override
-        public <T> CompletableFuture<T> createCompletableFuture() {
-            return new CompletableFuture<>();
-        }
     }
 }

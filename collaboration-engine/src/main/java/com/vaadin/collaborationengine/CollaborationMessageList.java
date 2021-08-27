@@ -8,17 +8,12 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
-import com.vaadin.collaborationengine.CollaborationMessagePersister.FetchQuery;
-import com.vaadin.collaborationengine.CollaborationMessagePersister.PersistRequest;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
@@ -62,21 +57,9 @@ public class CollaborationMessageList extends Composite<MessageList>
         void configureMessage(MessageListItem message, UserInfo user);
     }
 
-    private static final Object FETCH_LOCK = new Object();
-    private static final String MISSING_RECENT_MESSAGES = "The messages "
-            + "returned invoking CollaborationMessagePersister.fetchMessages() "
-            + "do not include the last fetched message of the previous call. "
-            + "Please update the implementation to fetch all messages whose "
-            + "timestamp is greater OR EQUAL with the query's timestamp.";
-
-    static final String LIST_NAME = CollaborationMessageList.class.getName();
-
     private final CollaborationEngine ce;
-    private Registration topicRegistration;
-    private CollaborationList list;
-    private CollaborationMessagePersister persister;
+
     private ImageProvider imageProvider;
-    private String topicId;
 
     private final UserInfo localUser;
 
@@ -91,6 +74,12 @@ public class CollaborationMessageList extends Composite<MessageList>
     private Registration submitterRegistration;
 
     private MessageConfigurator messageConfigurator;
+
+    private MessageManager messageManager;
+
+    private final CollaborationMessagePersister persister;
+
+    private final List<CollaborationMessage> messageCache = new ArrayList<>();
 
     /**
      * Creates a new collaboration message list component with the provided
@@ -161,14 +150,31 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            the topic id to use, or <code>null</code> to not use any topic
      */
     public void setTopic(String topicId) {
-        this.topicId = topicId;
-        if (topicRegistration != null) {
-            topicRegistration.remove();
-            topicRegistration = null;
+        String currentTopic = messageManager != null
+                ? messageManager.getTopicId()
+                : null;
+        if (Objects.equals(currentTopic, topicId)) {
+            return;
         }
+
+        if (messageManager != null) {
+            messageManager.close();
+            messageManager = null;
+            unregisterSubmitter();
+            messageCache.clear();
+            refreshMessages();
+        }
+
         if (topicId != null) {
-            topicRegistration = ce.openTopicConnection(getContent(), topicId,
-                    localUser, this::onConnectionActivate);
+            messageManager = new MessageManager(
+                    new ComponentConnectionContext(this), localUser, topicId,
+                    persister, ce);
+            messageManager.setNewMessageHandler(context -> {
+                CollaborationMessage message = context.getMessage();
+                messageCache.add(message);
+                refreshMessages();
+            });
+            messageManager.setActivationHandler(this::onManagerActivation);
         }
     }
 
@@ -182,14 +188,33 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            the submitter, or {@code null} to remove the current submitter
      */
     public void setSubmitter(CollaborationMessageSubmitter submitter) {
+        unregisterSubmitter();
         this.submitter = submitter;
-        if (submitterRegistration != null) {
-            submitterRegistration.remove();
+        if (messageManager != null) {
+            messageManager.setActivationHandler(this::onManagerActivation);
         }
-        if (submitter != null && list != null) {
+    }
+
+    private Registration onManagerActivation() {
+        registerSubmitter();
+        return () -> {
+            unregisterSubmitter();
+            refreshMessages();
+        };
+    }
+
+    private void registerSubmitter() {
+        if (submitter != null) {
             submitterRegistration = submitter.onActivation(this::appendMessage);
             Objects.requireNonNull(submitterRegistration,
                     "The submitter should return a non-null registration object");
+        }
+    }
+
+    private void unregisterSubmitter() {
+        if (submitterRegistration != null) {
+            submitterRegistration.remove();
+            submitterRegistration = null;
         }
     }
 
@@ -199,19 +224,14 @@ public class CollaborationMessageList extends Composite<MessageList>
      * current timestamp.
      *
      * @param text
-     *            the content of the message
+     *            the content of the message, not {@code null}
      */
     void appendMessage(String text) {
+        Objects.requireNonNull(text, "Cannot append a null message");
+
         CollaborationMessage message = new CollaborationMessage(localUser, text,
                 ce.getClock().instant());
-
-        if (persister != null) {
-            PersistRequest request = new PersistRequest(this, topicId, message);
-            persister.persistMessage(request);
-            fetchPersistedList();
-        } else {
-            list.append(message);
-        }
+        messageManager.submit(message);
     }
 
     /**
@@ -298,29 +318,8 @@ public class CollaborationMessageList extends Composite<MessageList>
         return messageConfigurator;
     }
 
-    private Registration onConnectionActivate(TopicConnection topicConnection) {
-        list = topicConnection.getNamedList(LIST_NAME);
-        list.subscribe(event -> refreshMessages());
-        fetchPersistedList();
-        if (submitter != null && submitterRegistration == null) {
-            submitterRegistration = submitter.onActivation(this::appendMessage);
-            Objects.requireNonNull(submitterRegistration,
-                    "The submitter should return a non-null registration object");
-        }
-        return this::onConnectionDeactivate;
-    }
-
-    private void onConnectionDeactivate() {
-        list = null;
-        refreshMessages();
-        if (submitterRegistration != null) {
-            submitterRegistration.remove();
-            submitterRegistration = null;
-        }
-    }
-
     private void refreshMessages() {
-        List<MessageListItem> messageListItems = getMessages().stream()
+        List<MessageListItem> messageListItems = messageCache.stream()
                 .map(this::convertToMessageListItem)
                 .collect(Collectors.toList());
         getContent().setItems(messageListItems);
@@ -348,53 +347,5 @@ public class CollaborationMessageList extends Composite<MessageList>
         }
 
         return messageListItem;
-    }
-
-    void fetchPersistedList() {
-        if (persister != null && topicId != null) {
-            synchronized (FETCH_LOCK) {
-                List<CollaborationMessage> recentMessages = getRecentMessages();
-                Instant since = recentMessages.isEmpty() ? Instant.EPOCH
-                        : recentMessages.get(0).getTime();
-                FetchQuery query = new FetchQuery(this, topicId, since);
-                List<CollaborationMessage> messages = persister
-                        .fetchMessages(query)
-                        .sorted(Comparator
-                                .comparing(CollaborationMessage::getTime))
-                        .filter(message -> !recentMessages.remove(message))
-                        .collect(Collectors.toList());
-                if (!recentMessages.isEmpty()) {
-                    throw new IllegalStateException(MISSING_RECENT_MESSAGES);
-                }
-                if (!messages.isEmpty()) {
-                    query.throwIfPropsNotUsed();
-                    messages.forEach(list::append);
-                }
-            }
-        }
-    }
-
-    private List<CollaborationMessage> getRecentMessages() {
-        List<CollaborationMessage> currentMessages = getMessages();
-        List<CollaborationMessage> recentMessages = new ArrayList<>();
-        CollaborationMessage lastMessage = currentMessages.isEmpty() ? null
-                : currentMessages.get(currentMessages.size() - 1);
-        if (lastMessage != null) {
-            Instant lastMessageTime = lastMessage.getTime();
-            for (int i = currentMessages.size() - 1; i >= 0; i--) {
-                CollaborationMessage m = currentMessages.get(i);
-                if (m.getTime().equals(lastMessageTime)) {
-                    recentMessages.add(m);
-                } else {
-                    break;
-                }
-            }
-        }
-        return recentMessages;
-    }
-
-    private List<CollaborationMessage> getMessages() {
-        return list != null ? list.getItems(CollaborationMessage.class)
-                : Collections.emptyList();
     }
 }
