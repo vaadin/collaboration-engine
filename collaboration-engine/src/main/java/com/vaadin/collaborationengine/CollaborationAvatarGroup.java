@@ -33,6 +33,7 @@ import com.vaadin.flow.server.StreamResource;
  * other attached avatar groups connected to the same topic.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         implements HasSize, HasStyle, HasTheme {
@@ -44,6 +45,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @see StreamResource
      * @see CollaborationAvatarGroup#setImageProvider(ImageProvider)
+     * @since 1.0
      */
     @FunctionalInterface
     public interface ImageProvider {
@@ -102,6 +104,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param topicId
      *            the id of the topic to connect to, or <code>null</code> to not
      *            connect the component to any topic
+     * @since 1.0
      */
     public CollaborationAvatarGroup(UserInfo localUser, String topicId) {
         this(localUser, topicId, CollaborationEngine.getInstance());
@@ -128,6 +131,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @param topicId
      *            the topic id to use, or <code>null</code> to not use any topic
+     * @since 1.0
      */
     public void setTopic(String topicId) {
         if (Objects.equals(this.topicId, topicId)) {
@@ -163,6 +167,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @return the max number of avatars
      * @see AvatarGroup#getMaxItemsVisible()
+     * @since 1.0
      */
     public Integer getMaxItemsVisible() {
         return getContent().getMaxItemsVisible();
@@ -177,6 +182,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param max
      *            the max number of avatars, or {@code null} to remove the max
      * @see AvatarGroup#setMaxItemsVisible(Integer)
+     * @since 1.0
      */
     public void setMaxItemsVisible(Integer max) {
         getContent().setMaxItemsVisible(max);
@@ -188,6 +194,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param variants
      *            theme variants to add
      * @see AvatarGroup#addThemeVariants(AvatarGroupVariant...)
+     * @since 1.0
      */
     public void addThemeVariants(AvatarGroupVariant... variants) {
         getContent().addThemeVariants(variants);
@@ -199,6 +206,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param variants
      *            theme variants to remove
      * @see AvatarGroup#removeThemeVariants(AvatarGroupVariant...)
+     * @since 1.0
      */
     public void removeThemeVariants(AvatarGroupVariant... variants) {
         getContent().removeThemeVariants(variants);
@@ -213,6 +221,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @return the i18n object. It will be <code>null</code>, if the i18n
      *         properties haven't been set.
+     * @since 1.0
      */
     public AvatarGroupI18n getI18n() {
         return getContent().getI18n();
@@ -223,6 +232,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @param i18n
      *            the internationalized properties, not <code>null</code>
+     * @since 1.0
      */
     public void setI18n(AvatarGroupI18n i18n) {
         getContent().setI18n(i18n);
@@ -285,6 +295,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param imageProvider
      *            the image provider to use, or <code>null</code> to use image
      *            URLs directly from the user info object
+     * @since 1.0
      */
     public void setImageProvider(ImageProvider imageProvider) {
         this.imageProvider = imageProvider;
@@ -298,6 +309,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      *
      * @return the current image provider callback, or <code>null</code> if no
      *         callback is set
+     * @since 1.0
      */
     public ImageProvider getImageProvider() {
         return imageProvider;
@@ -310,6 +322,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @return {@code true} if the user's own avatar is included in the group,
      *         {@code false} if not
      * @see #setOwnAvatarVisible(boolean)
+     * @since 1.0
      */
     public boolean isOwnAvatarVisible() {
         return ownAvatarVisible;
@@ -326,6 +339,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @param ownAvatarVisible
      *            {@code true} to include user's own avatar, {@code false} to
      *            not include it
+     * @since 1.0
      */
     public void setOwnAvatarVisible(boolean ownAvatarVisible) {
         this.ownAvatarVisible = ownAvatarVisible;

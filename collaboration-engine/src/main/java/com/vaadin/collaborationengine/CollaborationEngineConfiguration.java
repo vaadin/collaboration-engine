@@ -16,6 +16,9 @@ import com.vaadin.flow.shared.communication.PushMode;
  * should be done by calling
  * {@link CollaborationEngine#configure(VaadinService, CollaborationEngineConfiguration)}
  * in a {@link VaadinServiceInitListener}.
+ *
+ * @author Vaadin Ltd
+ * @since 3.0
  */
 public class CollaborationEngineConfiguration {
 
@@ -40,6 +43,8 @@ public class CollaborationEngineConfiguration {
      *
      * @param licenseEventHandler
      *            the license event handler, not {@code null}
+     *
+     * @since 3.0
      */
     public CollaborationEngineConfiguration(
             LicenseEventHandler licenseEventHandler) {
@@ -51,6 +56,8 @@ public class CollaborationEngineConfiguration {
      * Gets the license event handler of this configuration.
      *
      * @return the license event handler
+     *
+     * @since 3.0
      */
     public LicenseEventHandler getLicenseEventHandler() {
         return licenseEventHandler;
@@ -60,6 +67,8 @@ public class CollaborationEngineConfiguration {
      * Gets the configured data-directory.
      *
      * @return the data-directory
+     *
+     * @since 3.0
      */
     public String getDataDir() {
         return configuredDataDir;
@@ -76,6 +85,8 @@ public class CollaborationEngineConfiguration {
      *
      * @param dataDir
      *            path to the data-directory
+     *
+     * @since 3.0
      */
     public void setDataDir(String dataDir) {
         configuredDataDir = dataDir;
@@ -93,6 +104,8 @@ public class CollaborationEngineConfiguration {
      *            <code>true</code> to automatically activate server push if
      *            needed, <code>false</code> to not make any automatic changes
      *            to the push configuration
+     *
+     * @since 3.0
      */
     public void setAutomaticallyActivatePush(
             boolean automaticallyActivatePush) {
@@ -106,6 +119,8 @@ public class CollaborationEngineConfiguration {
      *
      * @return <code>true</code> if automatic server push configuration is
      *         enabled, <code>false</code> if it's no enabled
+     *
+     * @since 3.0
      */
     public boolean isAutomaticallyActivatePush() {
         return automaticallyActivatePush;

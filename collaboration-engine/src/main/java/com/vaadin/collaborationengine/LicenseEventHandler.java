@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
  * {@link CollaborationEngine#setLicenseEventHandler(LicenseEventHandler)}.
  *
  * @author Vaadin Ltd
+ * @since 3.0
  */
 @FunctionalInterface
 public interface LicenseEventHandler {

@@ -21,8 +21,9 @@ import com.vaadin.flow.shared.Registration;
  * A list that is shared between multiple users. List instances can be retrieved
  * through a {@link TopicConnection}. Changes performed by one user will be
  * delivered as events to subscribers defined by other users.
- * 
+ *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 public interface CollaborationList extends HasExpirationTimeout {
 

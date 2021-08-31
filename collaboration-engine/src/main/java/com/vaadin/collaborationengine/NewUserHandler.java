@@ -18,6 +18,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @see PresenceManager#setNewUserHandler(NewUserHandler)
  * @author Vaadin Ltd
+ * @since 3.2
  */
 @FunctionalInterface
 public interface NewUserHandler extends Serializable {

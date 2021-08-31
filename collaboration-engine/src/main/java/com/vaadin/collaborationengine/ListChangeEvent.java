@@ -16,8 +16,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Event that is fired when the value in a collaboration list changes.
- * 
+ *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 public class ListChangeEvent extends EventObject {
 

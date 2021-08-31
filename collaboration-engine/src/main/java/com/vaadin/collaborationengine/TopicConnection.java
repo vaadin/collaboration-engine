@@ -33,6 +33,7 @@ import com.vaadin.flow.shared.Registration;
  * the same collaboration topic.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class TopicConnection {
 
@@ -113,6 +114,8 @@ public class TopicConnection {
      * Gets the user who is related to this topic connection.
      *
      * @return the related user, not {@code null}
+     *
+     * @since 1.0
      */
     public UserInfo getUserInfo() {
         return localUser;
@@ -169,6 +172,8 @@ public class TopicConnection {
      * @param name
      *            the name of the map
      * @return the collaboration map, not <code>null</code>
+     *
+     * @since 1.0
      */
     public CollaborationMap getNamedMap(String name) {
         ensureActiveConnection();

@@ -19,6 +19,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+/**
+ * @author Vaadin Ltd
+ * @since 1.0
+ */
 public class JsonUtil {
 
     public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {

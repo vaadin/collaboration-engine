@@ -28,6 +28,7 @@ import com.vaadin.flow.shared.Registration;
  * <code>null</code> (see {@link CollaborationMessageList#setTopic(String)}).
  *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 public class CollaborationMessageInput extends Composite<MessageInput>
         implements HasSize, HasStyle {

@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+/**
+ * @author Vaadin Ltd
+ * @since 1.0
+ */
 class EventUtil {
     private EventUtil() {
         // Only static helpers
@@ -38,6 +42,8 @@ class EventUtil {
      * @param removeFailingListeners
      *            <code>true</code> to remove failing listeners from the list,
      *            <code>false</code> to not modify the list of listeners
+     *
+     * @since 1.0
      */
     static <T> void fireEvents(List<T> listeners, Consumer<T> action,
             boolean removeFailingListeners) {

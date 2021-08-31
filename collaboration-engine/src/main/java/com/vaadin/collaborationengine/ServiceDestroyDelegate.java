@@ -22,6 +22,7 @@ import com.vaadin.flow.shared.Registration;
  * constantly adding and removing listeners in the global list in the service.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 class ServiceDestroyDelegate {
 

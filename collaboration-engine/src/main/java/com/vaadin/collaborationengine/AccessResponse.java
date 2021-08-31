@@ -16,6 +16,7 @@ import java.util.function.Consumer;
  * @see CollaborationEngine#requestAccess(UserInfo, Consumer)
  *
  * @author Vaadin Ltd
+ * @since 3.0
  */
 public class AccessResponse {
 
@@ -30,6 +31,8 @@ public class AccessResponse {
      * not.
      *
      * @return {@code true} if the user has access, {@code false} otherwise.
+     *
+     * @since 3.0
      */
     public boolean hasAccess() {
         return hasAccess;

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * Event that is fired when the value in a collaboration map changes.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class MapChangeEvent extends EventObject {
 
@@ -33,6 +34,8 @@ public class MapChangeEvent extends EventObject {
      *            <code>null</code>
      * @param change
      *            detail of the change, not <code>null</code>
+     *
+     * @since 1.0
      */
     public MapChangeEvent(CollaborationMap source, MapChange change) {
         super(source);
@@ -51,6 +54,8 @@ public class MapChangeEvent extends EventObject {
      * Gets the updated map key.
      *
      * @return the updated map key, not <code>null</code>
+     *
+     * @since 1.0
      */
     public String getKey() {
         return key;
@@ -66,6 +71,8 @@ public class MapChangeEvent extends EventObject {
      *            <code>String</code>
      * @return the old map value, or <code>null</code> if no value was present
      *         previously
+     *
+     * @since 1.0
      */
     public <T> T getOldValue(Class<T> type) {
         return JsonUtil.toInstance(oldValue, type);
@@ -82,6 +89,8 @@ public class MapChangeEvent extends EventObject {
      *            parameter, e.g. <code>List<String>></code>
      * @return the old map value, or <code>null</code> if no value was present
      *         previously
+     *
+     * @since 1.0
      */
     public <T> T getOldValue(TypeReference<T> typeRef) {
         return JsonUtil.toInstance(oldValue, typeRef);
@@ -97,6 +106,8 @@ public class MapChangeEvent extends EventObject {
      *            <code>String</code>
      * @return the new map value, or <code>null</code> if the association was
      *         removed
+     *
+     * @since 1.0
      */
     public <T> T getValue(Class<T> type) {
         return JsonUtil.toInstance(value, type);
@@ -113,6 +124,8 @@ public class MapChangeEvent extends EventObject {
      *            <code>List<String>></code>
      * @return the new map value, or <code>null</code> if the association was
      *         removed
+     *
+     * @since 1.0
      */
     public <T> T getValue(TypeReference<T> typeRef) {
         return JsonUtil.toInstance(value, typeRef);

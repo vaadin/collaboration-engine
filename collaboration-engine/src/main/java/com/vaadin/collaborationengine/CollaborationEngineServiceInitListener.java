@@ -9,6 +9,9 @@ import com.vaadin.flow.server.VaadinServiceInitListener;
  * A {@link VaadinServiceInitListener} which uses the {@link Instantiator} to
  * find whether an instance of {@link CollaborationEngineConfiguration} is
  * provided as a bean in the current environment, using that instance if found.
+ *
+ * @author Vaadin Ltd
+ * @since 2.0
  */
 public class CollaborationEngineServiceInitListener
         implements VaadinServiceInitListener {

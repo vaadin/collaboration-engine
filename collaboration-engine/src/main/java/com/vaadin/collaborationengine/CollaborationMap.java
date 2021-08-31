@@ -23,6 +23,7 @@ import com.vaadin.flow.shared.Registration;
  * delivered as events to subscribers defined by other users.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public interface CollaborationMap extends HasExpirationTimeout {
 
@@ -39,6 +40,7 @@ public interface CollaborationMap extends HasExpirationTimeout {
      *             if the value in the map cannot be converted to an instance of
      *             the given class
      *
+     * @since 1.0
      */
     <T> T get(String key, Class<T> type);
 
@@ -55,6 +57,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      * @throws JsonConversionException
      *             if the value in the map cannot be converted to an instance of
      *             the given type reference
+     *
+     * @since 1.0
      */
     <T> T get(String key, TypeReference<T> type);
 
@@ -77,6 +81,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      *         completed.
      * @throws JsonConversionException
      *             if the given value isn't serializable as JSON string
+     *
+     * @since 1.0
      */
     CompletableFuture<Void> put(String key, Object value);
 
@@ -105,6 +111,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      *         proceed; <code>false</code> if the expected value was not present
      * @throws JsonConversionException
      *             if the given value isn't serializable as JSON string
+     *
+     * @since 1.0
      */
     CompletableFuture<Boolean> replace(String key, Object expectedValue,
             Object newValue);
@@ -115,6 +123,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      * keys are added or removed before the stream is processed.
      *
      * @return the stream of keys, not <code>null</code>
+     *
+     * @since 1.0
      */
     Stream<String> getKeys();
 
@@ -126,6 +136,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      *            the subscriber to use, not <code>null</code>
      * @return a handle that can be used for removing the subscription, not
      *         <code>null</code>
+     *
+     * @since 1.0
      */
     Registration subscribe(MapSubscriber subscriber);
 
@@ -133,6 +145,8 @@ public interface CollaborationMap extends HasExpirationTimeout {
      * Gets the topic connection which is used to propagate changes to this map.
      *
      * @return the topic connection used by this map, not <code>null</code>
+     *
+     * @since 1.0
      */
     TopicConnection getConnection();
 

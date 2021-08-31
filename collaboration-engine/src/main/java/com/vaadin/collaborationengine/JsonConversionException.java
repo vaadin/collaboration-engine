@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
  * conversion is necessary for sending the Java object over the network.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class JsonConversionException extends RuntimeException {
 

@@ -1,5 +1,9 @@
 package com.vaadin.collaborationengine;
 
+/**
+ * @author Vaadin Ltd
+ * @since 3.2
+ */
 final class MessageUtil {
     private MessageUtil() {
         // Only static helpers

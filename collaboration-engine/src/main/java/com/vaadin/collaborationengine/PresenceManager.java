@@ -28,6 +28,7 @@ import com.vaadin.flow.shared.Registration;
  * topic. A handler can be set to react when the presence of a user changes.
  *
  * @author Vaadin Ltd
+ * @since 3.2
  */
 public class PresenceManager {
 

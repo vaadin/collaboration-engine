@@ -17,6 +17,7 @@ package com.vaadin.collaborationengine;
  * </p>
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 @FunctionalInterface
 interface TopicActivationHandler {
@@ -30,6 +31,8 @@ interface TopicActivationHandler {
      * @param isActive
      *            {@code true} if the first topic connection was activated,
      *            {@code false} if the last topic connection was deactivated
+     *
+     * @since 1.0
      */
     void setActive(String topicId, boolean isActive);
 }

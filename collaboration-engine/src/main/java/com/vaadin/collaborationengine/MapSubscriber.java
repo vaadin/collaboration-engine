@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
  * {@link CollaborationMap#subscribe(MapSubscriber)}.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 @FunctionalInterface
 public interface MapSubscriber {
@@ -22,6 +23,8 @@ public interface MapSubscriber {
      *
      * @param event
      *            the map change event, not <code>null</code>
+     *
+     * @since 1.0
      */
     void onMapChange(MapChangeEvent event);
 }

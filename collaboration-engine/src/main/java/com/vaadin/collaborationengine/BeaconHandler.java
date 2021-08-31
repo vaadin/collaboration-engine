@@ -27,6 +27,7 @@ import java.util.UUID;
  * browser tab is closed.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 class BeaconHandler extends SynchronizedRequestHandler {
     private static final String BEACON_PATH = "/";

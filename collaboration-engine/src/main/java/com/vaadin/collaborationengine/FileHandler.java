@@ -31,6 +31,11 @@ import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfoWrapper;
 import com.vaadin.flow.internal.MessageDigestUtil;
 
+/**
+ *
+ * @author Vaadin Ltd
+ * @since 2.0
+ */
 class FileHandler {
 
     /**

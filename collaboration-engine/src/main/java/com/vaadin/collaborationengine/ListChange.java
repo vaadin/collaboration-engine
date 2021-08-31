@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * A single change that is emitted from the list data of a {@link Topic}.
  *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 class ListChange {
 
@@ -43,7 +44,7 @@ class ListChange {
 
     /**
      * Gets the item added to the list.
-     * 
+     *
      * @return the added item
      */
     public JsonNode getAddedItem() {

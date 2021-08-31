@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * starts/ends or when the license is expiring.
  *
  * @author Vaadin Ltd
+ * @since 3.0
  */
 public class LicenseEvent extends EventObject {
 

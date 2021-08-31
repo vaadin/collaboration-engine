@@ -18,6 +18,9 @@ import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
 /**
  * User information of a collaborating user, used with various features of the
  * collaboration engine.
+ *
+ * @author Vaadin Ltd
+ * @since 1.0
  */
 public class UserInfo {
 
@@ -32,6 +35,8 @@ public class UserInfo {
      *
      * @param userId
      *            the user id, not {@code null}
+     *
+     * @since 1.0
      */
     @JsonCreator
     public UserInfo(@JsonProperty("id") String userId) {
@@ -45,6 +50,8 @@ public class UserInfo {
      *            the user id, not {@code null}
      * @param name
      *            the name of the user
+     *
+     * @since 1.0
      */
     public UserInfo(String userId, String name) {
         this(userId);
@@ -68,6 +75,8 @@ public class UserInfo {
      *            the name of the user
      * @param imageUrl
      *            the URL of the user image
+     *
+     * @since 1.0
      */
     public UserInfo(String userId, String name, String imageUrl) {
         this(userId, name);
@@ -88,6 +97,8 @@ public class UserInfo {
      * Gets the user's unique identifier.
      *
      * @return the user's id, not {@code null}
+     *
+     * @since 1.0
      */
     public String getId() {
         return id;
@@ -97,6 +108,8 @@ public class UserInfo {
      * Gets the user's name.
      *
      * @return the user's name.
+     *
+     * @since 1.0
      */
     public String getName() {
         return name;
@@ -107,6 +120,8 @@ public class UserInfo {
      *
      * @param name
      *            the name to set
+     *
+     * @since 1.0
      */
     public void setName(String name) {
         this.name = name;
@@ -119,6 +134,8 @@ public class UserInfo {
      * explicitly set with {@link #setAbbreviation(String)}.
      *
      * @return the user's abbreviation
+     *
+     * @since 1.0
      */
     public String getAbbreviation() {
         return abbreviation;
@@ -129,6 +146,8 @@ public class UserInfo {
      *
      * @param abbreviation
      *            the abbreviation to set
+     *
+     * @since 1.0
      */
     public void setAbbreviation(String abbreviation) {
         this.abbreviation = abbreviation;
@@ -138,6 +157,8 @@ public class UserInfo {
      * Gets the url of the user's image.
      *
      * @return the image url
+     *
+     * @since 1.0
      */
     public String getImage() {
         return image;
@@ -153,6 +174,8 @@ public class UserInfo {
      *
      * @param imageUrl
      *            the image URL to set
+     *
+     * @since 1.0
      */
     public void setImage(String imageUrl) {
         this.image = imageUrl;
@@ -169,6 +192,8 @@ public class UserInfo {
      * automatically assigned by Collaboration Engine.
      *
      * @return the user's color index
+     *
+     * @since 1.0
      */
     public int getColorIndex() {
         return colorIndex;
@@ -183,6 +208,8 @@ public class UserInfo {
      * @param colorIndex
      *            the color index to set
      * @see #getColorIndex()
+     *
+     * @since 1.0
      */
     public void setColorIndex(int colorIndex) {
         this.colorIndex = colorIndex;

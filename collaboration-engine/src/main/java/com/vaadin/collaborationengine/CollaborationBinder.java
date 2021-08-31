@@ -58,6 +58,7 @@ import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
  * connected to the same topic via {@link TopicConnection}.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  *
  * @param <BEAN>
  *            the bean type
@@ -287,6 +288,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      *            the bean type to use, not <code>null</code>
      * @param localUser
      *            the information of the local user, not <code>null</code>
+     * @since 1.0
      */
     public CollaborationBinder(Class<BEAN> beanType, UserInfo localUser) {
         this(beanType, localUser, CollaborationEngine.getInstance());
@@ -632,6 +634,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      * @param bean
      *            the bean whose property values to read or {@code null} to
      *            clear bound fields
+     * @since 1.0
      */
     public void reset(BEAN bean) {
         super.readBean(bean);
@@ -655,6 +658,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      *            a supplier that is invoked to get a bean from which to read
      *            initial values. Only invoked if there are no property values
      *            in the topic, or if the topic id is <code>null</code>.
+     * @since 1.0
      */
     public void setTopic(String topicId,
             SerializableSupplier<BEAN> initialBeanSupplier) {
@@ -862,6 +866,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      * @param fieldType
      * @return the new binding builder
      *
+     * @since 1.0
      */
     public <FIELDVALUE> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
             HasValue<?, FIELDVALUE> field, Class<FIELDVALUE> fieldType) {
@@ -903,6 +908,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      *            {@code String.class} for {@code CheckboxGroup<String>}, not
      *            <code>null</code>
      * @return the new binding builder
+     *
+     * @since 1.0
      */
     public <FIELDVALUE extends Collection<ELEMENT>, ELEMENT> BindingBuilder<BEAN, FIELDVALUE> forMemberField(
             HasValue<?, FIELDVALUE> field,
@@ -940,6 +947,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      *            a callback that receives a value produced by the serializer
      *            callback (not <code>null</code>) and returns the field value
      *            to use. The callback cannot be <code>null</code>.
+     * @since 1.0
      */
     public <T> void setSerializer(Class<T> type,
             SerializableFunction<T, String> serializer,
@@ -1039,6 +1047,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      * (this is the default).
      *
      * @return the expiration timeout
+     *
+     * @since 3.1
      */
     @Override
     public Optional<Duration> getExpirationTimeout() {
@@ -1053,6 +1063,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      *
      * @param expirationTimeout
      *            the expiration timeout
+     *
+     * @since 3.1
      */
     @Override
     public void setExpirationTimeout(Duration expirationTimeout) {

@@ -30,6 +30,7 @@ import com.vaadin.flow.shared.Registration;
  * component for submitting messages.
  *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 public class CollaborationMessageList extends Composite<MessageList>
         implements HasSize, HasStyle {

@@ -16,12 +16,24 @@ import com.fasterxml.jackson.databind.JsonNode;
  * A change of the map data in a {@link Topic}
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class AbstractMapChange {
     private final String mapName;
     private final String key;
     private final JsonNode value;
 
+    /**
+     *
+     * @param mapName
+     *            Map name, not null.
+     * @param key
+     *            Map key, not null.
+     * @param value
+     *            {@link JsonNode}
+     *
+     * @since 1.0
+     */
     public AbstractMapChange(String mapName, String key, JsonNode value) {
         Objects.requireNonNull(mapName, "Map name can not be null.");
         Objects.requireNonNull(key, MessageUtil.Required.KEY);

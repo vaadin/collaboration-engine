@@ -14,6 +14,7 @@ package com.vaadin.collaborationengine;
  * Collaboration Engine.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class SystemUserInfo extends UserInfo {
 
@@ -28,6 +29,8 @@ public class SystemUserInfo extends UserInfo {
      * Gets the unique instance of system user info.
      *
      * @return the system user info instance, not {@code null}
+     *
+     * @since 1.0
      */
     public static SystemUserInfo getInstance() {
         return instance;

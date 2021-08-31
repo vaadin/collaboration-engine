@@ -19,6 +19,8 @@ import com.vaadin.flow.shared.Registration;
  * callback to handle connection deactivation (e.g. disabling an input field).
  *
  * @author Vaadin Ltd.
+ * @since 3.1
+ *
  * @see CollaborationMessageList#setSubmitter(CollaborationMessageSubmitter)
  */
 @FunctionalInterface

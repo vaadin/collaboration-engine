@@ -36,6 +36,7 @@ import com.vaadin.pro.licensechecker.LicenseChecker;
  * Use {@link #getInstance()} to get a reference to the singleton object.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 @JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
@@ -97,6 +98,8 @@ public class CollaborationEngine {
      * {@link VaadinService}.
      *
      * @return the {@link CollaborationEngine} instance
+     *
+     * @since 1.0
      */
     public static CollaborationEngine getInstance() {
         return getInstance(VaadinService.getCurrent());
@@ -107,6 +110,8 @@ public class CollaborationEngine {
      * {@link VaadinService}.
      *
      * @return the {@link CollaborationEngine} instance
+     *
+     * @since 3.0
      */
     public static CollaborationEngine getInstance(VaadinService vaadinService) {
         Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
@@ -161,6 +166,8 @@ public class CollaborationEngine {
      * @param configuration
      *            the configuration to provide for the Collaboration Engine
      * @return the configured Collaboration Engine instance
+     *
+     * @since 3.0
      */
     public static CollaborationEngine configure(VaadinService vaadinService,
             CollaborationEngineConfiguration configuration) {
@@ -212,6 +219,8 @@ public class CollaborationEngine {
      *            not {@code null}
      * @return the handle that can be used for configuring or closing the
      *         connection
+     *
+     * @since 1.0
      */
     public TopicConnectionRegistration openTopicConnection(Component component,
             String topicId, UserInfo localUser,
@@ -240,6 +249,8 @@ public class CollaborationEngine {
      *            not {@code null}
      * @return the handle that can be used for configuring or closing the
      *         connection
+     *
+     * @since 1.0
      */
     public TopicConnectionRegistration openTopicConnection(
             ConnectionContext context, String topicId, UserInfo localUser,
@@ -307,6 +318,8 @@ public class CollaborationEngine {
      *            the user requesting access
      * @param requestCallback
      *            the callback to accept the response
+     *
+     * @since 3.0
      */
     public void requestAccess(UserInfo user,
             Consumer<AccessResponse> requestCallback) {
@@ -347,6 +360,8 @@ public class CollaborationEngine {
      *            the user requesting access
      * @param requestCallback
      *            the callback to accept the response
+     *
+     * @since 3.0
      */
     public void requestAccess(ConnectionContext context, UserInfo user,
             Consumer<AccessResponse> requestCallback) {
@@ -374,6 +389,8 @@ public class CollaborationEngine {
      * @param userInfo
      *            user info
      * @return the color index
+     *
+     * @since 3.1
      */
     public int getUserColorIndex(UserInfo userInfo) {
         int currentColorIndex = userInfo.getColorIndex();

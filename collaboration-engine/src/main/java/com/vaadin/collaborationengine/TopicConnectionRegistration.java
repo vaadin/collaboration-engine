@@ -23,6 +23,7 @@ import com.vaadin.flow.shared.Registration;
  *      UserInfo, SerializableFunction)
  *
  * @author Vaadin Ltd
+ * @since 3.0
  */
 public class TopicConnectionRegistration implements Registration {
 

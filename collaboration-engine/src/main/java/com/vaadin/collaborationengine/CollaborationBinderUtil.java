@@ -28,6 +28,7 @@ import static com.vaadin.collaborationengine.JsonUtil.EDITORS_TYPE_REF;
  * Utility methods for {@link CollaborationBinder}.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class CollaborationBinderUtil {
 
@@ -57,6 +58,8 @@ public class CollaborationBinderUtil {
      *            the name of the property to update, not {@code null}
      * @param value
      *            the new value to set, can be {@code null} to clear the fields
+     *
+     * @since 1.0
      */
     public static void setFieldValue(TopicConnection topicConnection,
             String propertyName, Object value) {
@@ -89,6 +92,8 @@ public class CollaborationBinderUtil {
      * @param user
      *            information of the user to add as the editor of the field, not
      *            {@code null}
+     *
+     * @since 1.0
      */
     public static void addEditor(TopicConnection topicConnection,
             String propertyName, UserInfo user) {
@@ -118,6 +123,8 @@ public class CollaborationBinderUtil {
      * @param fieldIndex
      *            index of the focused element inside the field, for example a
      *            radio button inside a radio button group
+     *
+     * @since 1.0
      */
     public static void addEditor(TopicConnection topicConnection,
             String propertyName, UserInfo user, int fieldIndex) {

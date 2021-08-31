@@ -18,6 +18,7 @@ package com.vaadin.collaborationengine;
  * When being deactivated, the topic no longer has reference to the connection.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public interface ActivationHandler {
 
@@ -26,6 +27,7 @@ public interface ActivationHandler {
      *
      * @param active
      *            activate the connection if {@code true}, deactivate otherwise
+     * @since 1.0
      */
     void setActive(boolean active);
 }

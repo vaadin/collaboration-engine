@@ -25,6 +25,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 
+/**
+ *
+ * @author Vaadin Ltd
+ * @since 2.0
+ */
 class LicenseHandler {
 
     @JsonIgnoreProperties(ignoreUnknown = true)

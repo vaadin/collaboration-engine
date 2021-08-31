@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * A change that put a value to the map data of a {@link Topic}
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 class PutChange extends AbstractMapChange {
 

@@ -16,6 +16,7 @@ import java.util.Objects;
  * Message of a {@link CollaborationMessageList}.
  *
  * @author Vaadin Ltd
+ * @since 3.1
  */
 public class CollaborationMessage implements Serializable {
     private UserInfo user;

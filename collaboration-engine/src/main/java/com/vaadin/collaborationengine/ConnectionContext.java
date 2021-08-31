@@ -17,6 +17,7 @@ import com.vaadin.flow.shared.Registration;
  * Defining how a topic connection should handle incoming changes.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public interface ConnectionContext {
 
@@ -29,6 +30,8 @@ public interface ConnectionContext {
      * @return the registration for any logic that needs to be cleaned up if the
      *         connection is closed permanently, or <code>null</code> if there
      *         is nothing to clean up
+     *
+     * @since 1.0
      */
     Registration setActivationHandler(ActivationHandler handler);
 
@@ -37,6 +40,8 @@ public interface ConnectionContext {
      *
      * @param action
      *            the action to be executed in the context
+     *
+     * @since 1.0
      */
     void dispatchAction(Command action);
 
@@ -45,6 +50,8 @@ public interface ConnectionContext {
      * context.
      *
      * @return the {@link CompletableFuture} to be resolved
+     *
+     * @since 1.0
      */
     <T> CompletableFuture<T> createCompletableFuture();
 }

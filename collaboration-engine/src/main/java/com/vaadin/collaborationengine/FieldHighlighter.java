@@ -27,6 +27,10 @@ import elemental.json.Json;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 
+/**
+ * @author Vaadin Ltd
+ * @since 1.0
+ */
 class FieldHighlighter {
 
     static Registration setupForField(HasValue<?, ?> field, String propertyName,

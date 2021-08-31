@@ -16,6 +16,9 @@ import java.util.Optional;
  * topic, which provides methods to set an expiration timeout on the data which
  * will be cleared after the timeout has passed since the last connection to the
  * topic has been closed.
+ *
+ * @author Vaadin Ltd.
+ * @since 3.1
  */
 public interface HasExpirationTimeout {
 

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * this change has the latest snapshot of the changing data.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 class ReplaceChange extends AbstractMapChange {
     private final JsonNode expectedValue;

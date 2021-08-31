@@ -37,6 +37,7 @@ import com.vaadin.flow.shared.communication.PushMode;
  * {@link UI#access(Command)}.
  *
  * @author Vaadin Ltd
+ * @since 1.0
  */
 public class ComponentConnectionContext implements ConnectionContext {
 
@@ -55,6 +56,8 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     /**
      * Creates an empty component connection context.
+     *
+     * @since 1.0
      */
     public ComponentConnectionContext() {
         // Nothing to do here
@@ -66,6 +69,8 @@ public class ComponentConnectionContext implements ConnectionContext {
      *
      * @param component
      *            the component to use, not <code>null</code>
+     *
+     * @since 1.0
      */
     public ComponentConnectionContext(Component component) {
         addComponent(component);
@@ -78,6 +83,8 @@ public class ComponentConnectionContext implements ConnectionContext {
      * @param component
      *            the component to track, not <code>null</code>
      * @see #removeComponent(Component)
+     *
+     * @since 1.0
      */
     public void addComponent(Component component) {
         Objects.requireNonNull(component, "Component can't be null.");
@@ -103,6 +110,8 @@ public class ComponentConnectionContext implements ConnectionContext {
      * @param component
      *            the component to stop tracking, not <code>null</code>
      * @see #addComponent(Component)
+     *
+     * @since 1.0
      */
     public void removeComponent(Component component) {
         Objects.requireNonNull(component, "Component can't be null.");
