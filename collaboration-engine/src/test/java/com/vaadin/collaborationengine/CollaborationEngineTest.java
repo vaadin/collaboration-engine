@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,6 +56,15 @@ public class CollaborationEngineTest {
     public void correctVersionPassedToUsageStatistics() {
         String artifactVersion = System
                 .getProperty("collaboration-engine.version");
+
+        if (artifactVersion == null) {
+            String javaCommand = System.getProperty("sun.java.command");
+            Assume.assumeFalse(
+                    "Maven version property is not set when run through Eclipse",
+                    javaCommand != null && javaCommand.startsWith(
+                            "org.eclipse.jdt.internal.junit.runner.RemoteTestRunner"));
+        }
+
         Assert.assertThat(artifactVersion, CoreMatchers
                 .startsWith(CollaborationEngine.COLLABORATION_ENGINE_VERSION));
     }
