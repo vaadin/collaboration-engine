@@ -80,7 +80,9 @@ public class TopicConnection {
                     });
                 });
             } else {
-                deactivate();
+                context.dispatchAction(() -> {
+                    deactivate();
+                });
             }
             topicActivationHandler.accept(active);
         });

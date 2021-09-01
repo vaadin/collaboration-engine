@@ -1,6 +1,8 @@
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -165,5 +167,29 @@ public class TopicConnectionTest {
     public void getNamedMap_throwsIfInactive() {
         connectionRegistration.remove();
         connection.getNamedMap("foo");
+    }
+
+    @Test
+    public void immediateDeactivate_listenersRemoved() {
+        MockConnectionContext context = new MockConnectionContext();
+        List<Command> actions = new ArrayList<>();
+        context.setActionDispatcher(actions::add);
+
+        engine.openTopicConnection(context, "topic2",
+                SystemUserInfo.getInstance(), connection -> null);
+
+        context.activate();
+        context.deactivate();
+
+        Topic topic = engine.getTopic("topic2");
+        Assert.assertFalse(
+                "There should be no subscribers before dispatching actions",
+                topic.hasSubscribers());
+
+        actions.forEach(Command::execute);
+
+        Assert.assertFalse(
+                "There should be no subscribers after dispatching actions",
+                topic.hasSubscribers());
     }
 }

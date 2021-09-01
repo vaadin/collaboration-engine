@@ -431,4 +431,9 @@ public class CollaborationEngine {
             licenseHandler = new LicenseHandler(this);
         }
     }
+
+    // For testing
+    Topic getTopic(String topicId) {
+        return topics.get(topicId);
+    }
 }

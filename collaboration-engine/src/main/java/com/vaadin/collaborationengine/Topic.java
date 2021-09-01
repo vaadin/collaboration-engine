@@ -173,4 +173,9 @@ class Topic {
                 name -> new ArrayList<>());
     }
 
+    // For testing
+    boolean hasSubscribers() {
+        return !listChangeListeners.isEmpty() || !mapChangeListeners.isEmpty();
+    }
+
 }
