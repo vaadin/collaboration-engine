@@ -5,13 +5,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
@@ -63,8 +63,12 @@ public class CollaborationAvatarGroupTest {
         }
 
         Set<String> getItemNames() {
+            return getItemNamesStream().collect(Collectors.toSet());
+        }
+
+        Stream<String> getItemNamesStream() {
             return group.getContent().getItems().stream()
-                    .map(AvatarGroupItem::getName).collect(Collectors.toSet());
+                    .map(AvatarGroupItem::getName);
         }
     }
 
@@ -434,5 +438,26 @@ public class CollaborationAvatarGroupTest {
         client1.group.setOwnAvatarVisible(true);
         Assert.assertEquals(TestUtils.newHashSet("name1", "name2"),
                 client1.getItemNames());
+    }
+
+    @Test
+    public void attachGroup_orderPreserved() {
+        client1.attach();
+        clientInMultipleTabs1.attach();
+        client2.attach();
+        client1.getItemNames();
+        assertItemsInOrder(client1, "name1", "name5", "name2");
+        clientInMultipleTabs2.attach();
+        assertItemsInOrder(client1, "name1", "name5", "name2");
+        clientInMultipleTabs1.detach();
+        assertItemsInOrder(client1, "name1", "name5", "name2");
+        clientInMultipleTabs2.detach();
+        assertItemsInOrder(client1, "name1", "name2");
+    }
+
+    private void assertItemsInOrder(AvatarGroupTestClient client,
+            String... expectedItemNames) {
+        Assert.assertArrayEquals(expectedItemNames,
+                client.getItemNamesStream().toArray(String[]::new));
     }
 }
