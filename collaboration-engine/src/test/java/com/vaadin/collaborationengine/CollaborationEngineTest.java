@@ -1,7 +1,6 @@
 package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -14,9 +13,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
-import com.vaadin.collaborationengine.util.SpyConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
@@ -41,7 +39,7 @@ public class CollaborationEngineTest {
         VaadinService.setCurrent(service);
         collaborationEngine = TestUtil.createTestCollaborationEngine(service);
 
-        context = new EagerConnectionContext();
+        context = MockConnectionContext.createEager();
         connectionCallback = topicConnection -> () -> {
             // no impl
         };
@@ -123,7 +121,7 @@ public class CollaborationEngineTest {
                     return null;
                 });
 
-        ConnectionContext otherContext = new EagerConnectionContext();
+        ConnectionContext otherContext = MockConnectionContext.createEager();
         collaborationEngine.openTopicConnection(otherContext, "foo",
                 SystemUserInfo.getInstance(), topicConnection -> {
                     topics[1] = topicConnection.getTopic();
@@ -171,7 +169,7 @@ public class CollaborationEngineTest {
     @Test
     public void closeTopicConnection_garbageCollectedTheActivationHandler()
             throws InterruptedException {
-        SpyConnectionContext spyContext = new SpyConnectionContext();
+        MockConnectionContext spyContext = new MockConnectionContext();
         Registration registration = collaborationEngine
                 .openTopicConnection(spyContext, "foo",
                         SystemUserInfo.getInstance(), topic -> {
@@ -226,32 +224,22 @@ public class CollaborationEngineTest {
         AtomicBoolean callbackRun = new AtomicBoolean();
         AtomicReference<Command> pendingAction = new AtomicReference<>();
 
-        collaborationEngine.openTopicConnection(new ConnectionContext() {
-            @Override
-            public Registration setActivationHandler(
-                    ActivationHandler handler) {
-                handler.setActive(true);
-                return null;
-            }
+        MockConnectionContext context = MockConnectionContext.createEager();
+        context.setActionDispatcher(action -> {
+            boolean updated = pendingAction.compareAndSet(null, action);
+            Assert.assertTrue("There should not be a previous pending action",
+                    updated);
 
-            @Override
-            public void dispatchAction(Command action) {
-                boolean updated = pendingAction.compareAndSet(null, action);
-                Assert.assertTrue(
-                        "There should not be a previous pending action",
-                        updated);
-            }
-
-            @Override
-            public <T> CompletableFuture<T> createCompletableFuture() {
-                return new CompletableFuture<>();
-            }
-        }, "topic", SystemUserInfo.getInstance(), connection -> {
-            boolean previouslyRun = callbackRun.getAndSet(true);
-            Assert.assertFalse("Callback should have been run only once",
-                    previouslyRun);
-            return null;
         });
+
+        collaborationEngine.openTopicConnection(context, "topic",
+                SystemUserInfo.getInstance(), connection -> {
+                    boolean previouslyRun = callbackRun.getAndSet(true);
+                    Assert.assertFalse(
+                            "Callback should have been run only once",
+                            previouslyRun);
+                    return null;
+                });
 
         Assert.assertFalse(callbackRun.get());
 

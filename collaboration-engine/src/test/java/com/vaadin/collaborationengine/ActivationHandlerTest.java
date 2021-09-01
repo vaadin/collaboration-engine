@@ -7,18 +7,18 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.SpyConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.TestUtils;
 
 public class ActivationHandlerTest {
 
     private CollaborationEngine collaborationEngine;
-    private SpyConnectionContext context;
+    private MockConnectionContext context;
 
     @Before
     public void init() {
         collaborationEngine = TestUtil.createTestCollaborationEngine();
-        context = new SpyConnectionContext();
+        context = new MockConnectionContext();
     }
 
     @Test
@@ -50,7 +50,7 @@ public class ActivationHandlerTest {
         isCalled.set(false);
         context.deactivate();
 
-        SpyConnectionContext otherContext = new SpyConnectionContext();
+        MockConnectionContext otherContext = new MockConnectionContext();
         collaborationEngine.openTopicConnection(otherContext, "foo",
                 SystemUserInfo.getInstance(), topicConnection -> {
                     topicConnection.getNamedMap("map").put("bar", "baz");

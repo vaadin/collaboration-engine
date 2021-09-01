@@ -19,8 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
-import com.vaadin.flow.server.Command;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.flow.shared.Registration;
 
 public class CollaborationMapTest {
@@ -56,7 +55,7 @@ public class CollaborationMapTest {
 
     }
 
-    private ToggleableConnectionContext context;
+    private MockConnectionContext context;
     private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationMap map;
@@ -65,7 +64,7 @@ public class CollaborationMapTest {
 
     @Before
     public void init() {
-        context = new ToggleableConnectionContext();
+        context = MockConnectionContext.createEager();
         ce = TestUtil.createTestCollaborationEngine();
         registration = ce.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), topicConnection -> {
@@ -224,7 +223,8 @@ public class CollaborationMapTest {
 
     @Test
     public void put_contextCannotDispatch_unresolved() {
-        context.setAllowDispatch(false);
+        context.setActionDispatcher(ignore -> {
+        });
         CompletableFuture<Void> put = map.put("one", "first");
         Assert.assertFalse(put.isDone());
     }
@@ -232,7 +232,8 @@ public class CollaborationMapTest {
     @Test
     public void replace_contextCannotDispatch_unresolved() {
         map.put("one", "first");
-        context.setAllowDispatch(false);
+        context.setActionDispatcher(ignore -> {
+        });
         CompletableFuture<Boolean> replace = map.replace("one", "first",
                 "second");
         Assert.assertFalse(replace.isDone());
@@ -384,21 +385,5 @@ public class CollaborationMapTest {
     public void put_throwsIfInactiveConnection() {
         registration.remove();
         map.put("foo", "foo");
-    }
-
-    private class ToggleableConnectionContext extends EagerConnectionContext {
-
-        private boolean allowDispatch = true;
-
-        public void setAllowDispatch(boolean allowDispatch) {
-            this.allowDispatch = allowDispatch;
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            if (allowDispatch) {
-                action.execute();
-            }
-        }
     }
 }

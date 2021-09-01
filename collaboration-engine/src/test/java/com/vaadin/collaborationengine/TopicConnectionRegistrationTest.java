@@ -10,7 +10,7 @@ import java.util.stream.IntStream;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.flow.server.Command;
 
 public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
@@ -33,12 +33,8 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
         fillGraceQuota();
 
         List<Command> dispatchedActions = new ArrayList<>();
-        ConnectionContext context = new EagerConnectionContext() {
-            @Override
-            public void dispatchAction(Command action) {
-                dispatchedActions.add(action);
-            }
-        };
+        MockConnectionContext context = MockConnectionContext.createEager();
+        context.setActionDispatcher(dispatchedActions::add);
         TopicConnectionRegistration registration = openTopicConnection(context);
 
         AtomicInteger connectionFailedCallCount = new AtomicInteger(0);
@@ -57,7 +53,7 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
         fillGraceQuota();
 
         TopicConnectionRegistration registration = openTopicConnection(
-                new EagerConnectionContext());
+                MockConnectionContext.createEager());
 
         AtomicBoolean isCalled = new AtomicBoolean(false);
         registration.onConnectionFailed(e -> {
@@ -74,7 +70,7 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
 
     private void testOnConnectionFailed(boolean expectToFail) {
         TopicConnectionRegistration registration = openTopicConnection(
-                new EagerConnectionContext());
+                MockConnectionContext.createEager());
 
         AtomicInteger connectionFailedCallCount = new AtomicInteger(0);
         registration.onConnectionFailed(

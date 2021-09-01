@@ -10,7 +10,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
@@ -189,7 +189,7 @@ public class PresenceManagerTest {
     }
 
     private PresenceManager createActiveManager(UserInfo user, String topicId) {
-        return new PresenceManager(new EagerConnectionContext(), user, topicId,
-                ce);
+        return new PresenceManager(MockConnectionContext.createEager(), user,
+                topicId, ce);
     }
 }

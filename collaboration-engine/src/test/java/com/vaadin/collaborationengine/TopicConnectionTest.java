@@ -11,16 +11,17 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext.FailOnPurposeException;
 import com.vaadin.collaborationengine.util.MockService;
-import com.vaadin.collaborationengine.util.SpyConnectionContext.FailOnPurposeException;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 public class TopicConnectionTest {
 
-    private final EagerConnectionContext context = new EagerConnectionContext();
+    private final MockConnectionContext context = MockConnectionContext
+            .createEager();
 
     private final Set<String> activeTopics = new HashSet<>();
 

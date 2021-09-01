@@ -28,43 +28,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
-import com.vaadin.flow.server.Command;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class CollaborationListTest {
 
     private static final TypeReference<String> STRING_REF = new TypeReference<String>() {
     };
-
-    private static class ConnectionContextSpy extends EagerConnectionContext {
-
-        private boolean shouldCountDispatchedAction = false;
-
-        private int actionsDispatched = 0;
-
-        private boolean allowDispatch = true;
-
-        private void setAllowDispatch(boolean allowDispatch) {
-            this.allowDispatch = allowDispatch;
-        }
-
-        private void setShouldCountDispatchedAction(
-                boolean shouldCountDispatchedAction) {
-            this.shouldCountDispatchedAction = shouldCountDispatchedAction;
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            if (allowDispatch) {
-                super.dispatchAction(action);
-                if (shouldCountDispatchedAction) {
-                    actionsDispatched++;
-                    shouldCountDispatchedAction = false;
-                }
-            }
-        }
-
-    }
 
     private static class ListSubscriberSpy implements ListSubscriber {
 
@@ -86,7 +55,7 @@ public class CollaborationListTest {
         }
     }
 
-    private ConnectionContextSpy context;
+    private MockConnectionContext context;
     private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationList list;
@@ -95,7 +64,7 @@ public class CollaborationListTest {
 
     @Before
     public void init() {
-        context = new ConnectionContextSpy();
+        context = MockConnectionContext.createEager();
         ce = TestUtil.createTestCollaborationEngine();
         registration = ce.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), topicConnection -> {
@@ -176,15 +145,18 @@ public class CollaborationListTest {
 
     @Test
     public void listWithSubscriber_actionIsDispatchedInContext() {
-        list.subscribe(event -> context.setShouldCountDispatchedAction(true));
+        list.subscribe(ignore -> {
+        });
+        context.resetActionDispatchCount();
         list.append("foo");
-        Assert.assertEquals(1, context.actionsDispatched);
+        // One for the event, one for completing the future
+        Assert.assertEquals(2, context.getDispathActionCount());
     }
 
     @Test
     public void listWithMultipleSubscriber_actionsAreDispatchedInOwnContext() {
-        ConnectionContextSpy ctx1 = new ConnectionContextSpy();
-        ConnectionContextSpy ctx2 = new ConnectionContextSpy();
+        MockConnectionContext ctx1 = MockConnectionContext.createEager();
+        MockConnectionContext ctx2 = MockConnectionContext.createEager();
         AtomicReference<CollaborationList> list1 = new AtomicReference<>();
         AtomicReference<CollaborationList> list2 = new AtomicReference<>();
         ce.openTopicConnection(ctx1, "topic", SystemUserInfo.getInstance(),
@@ -197,20 +169,24 @@ public class CollaborationListTest {
                     list2.set(topicConnection.getNamedList("foo"));
                     return null;
                 });
-        list1.get()
-                .subscribe(event -> ctx1.setShouldCountDispatchedAction(true));
-        list2.get()
-                .subscribe(event -> ctx2.setShouldCountDispatchedAction(true));
+        list1.get().subscribe(ignore -> {
+        });
+        list2.get().subscribe(ignore -> {
+        });
+        ctx1.resetActionDispatchCount();
+        ctx2.resetActionDispatchCount();
         list1.get().append("foo");
 
-        Assert.assertEquals(1, ctx1.actionsDispatched);
-        Assert.assertEquals(1, ctx2.actionsDispatched);
+        // One dispatch for the event and one for completing the future
+        Assert.assertEquals(2, ctx1.getDispathActionCount());
+        // Just one dispatch for the event
+        Assert.assertEquals(1, ctx2.getDispathActionCount());
     }
 
     @Test
     public void multipleListsWithSubscribers_onlyOwnSubscriberIsNotified() {
-        ConnectionContextSpy ctx1 = new ConnectionContextSpy();
-        ConnectionContextSpy ctx2 = new ConnectionContextSpy();
+        MockConnectionContext ctx1 = MockConnectionContext.createEager();
+        MockConnectionContext ctx2 = MockConnectionContext.createEager();
         AtomicReference<CollaborationList> list1 = new AtomicReference<>();
         AtomicReference<CollaborationList> list2 = new AtomicReference<>();
         ce.openTopicConnection(ctx1, "topic", SystemUserInfo.getInstance(),
@@ -248,7 +224,8 @@ public class CollaborationListTest {
 
     @Test
     public void append_contextCannotDispatch_unresolved() {
-        context.setAllowDispatch(false);
+        context.setActionDispatcher(ignore -> {
+        });
         CompletableFuture<Void> append = list.append("foo");
         Assert.assertFalse(append.isDone());
     }

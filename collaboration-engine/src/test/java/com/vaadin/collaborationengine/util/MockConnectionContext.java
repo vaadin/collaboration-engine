@@ -1,13 +1,15 @@
 package com.vaadin.collaborationengine.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import com.vaadin.collaborationengine.ActivationHandler;
 import com.vaadin.collaborationengine.ConnectionContext;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
-public class SpyConnectionContext implements ConnectionContext {
+public class MockConnectionContext implements ConnectionContext {
 
     private ActivationHandler activationHandler;
 
@@ -15,13 +17,30 @@ public class SpyConnectionContext implements ConnectionContext {
 
     boolean throwOnClose = false;
 
+    private boolean eager;
+
+    private Consumer<Command> actionDispatcher = Command::execute;
+
+    private AtomicInteger actionDispatchCount = new AtomicInteger();
+
     public ActivationHandler getActivationHandler() {
         return activationHandler;
+    }
+
+    public void setEager(boolean eager) {
+        this.eager = eager;
+    }
+
+    public void setActionDispatcher(Consumer<Command> actionDispatcher) {
+        this.actionDispatcher = actionDispatcher;
     }
 
     @Override
     public Registration setActivationHandler(ActivationHandler handler) {
         this.activationHandler = handler;
+        if (eager) {
+            activate();
+        }
         return () -> {
             closed = true;
             activationHandler = null;
@@ -33,7 +52,16 @@ public class SpyConnectionContext implements ConnectionContext {
 
     @Override
     public void dispatchAction(Command action) {
-        action.execute();
+        actionDispatchCount.incrementAndGet();
+        actionDispatcher.accept(action);
+    }
+
+    public int getDispathActionCount() {
+        return actionDispatchCount.get();
+    }
+
+    public void resetActionDispatchCount() {
+        actionDispatchCount.set(0);
     }
 
     @Override
@@ -62,5 +90,11 @@ public class SpyConnectionContext implements ConnectionContext {
     }
 
     public static class FailOnPurposeException extends RuntimeException {
+    }
+
+    public static MockConnectionContext createEager() {
+        MockConnectionContext context = new MockConnectionContext();
+        context.setEager(true);
+        return context;
     }
 }

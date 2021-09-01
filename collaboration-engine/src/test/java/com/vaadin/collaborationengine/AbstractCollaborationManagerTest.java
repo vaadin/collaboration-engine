@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockService;
-import com.vaadin.collaborationengine.util.SpyConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinService;
 
@@ -36,7 +36,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void openTopicConnection_activationCallbackExectuted() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean activation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             activation.set(true);
@@ -53,7 +53,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void setActivationHandler_activateContext_handlerExecuted() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean activation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             return null;
@@ -73,7 +73,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void activateContext_setActivationHandler_handlerExecuted() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean activation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             return null;
@@ -90,7 +90,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void setDeactivationHandler_deactivateContext_handlerExecuted() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             return null;
@@ -107,7 +107,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void setDeactivationHandler_closeManager_handlerExecuted() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             return null;
@@ -123,7 +123,7 @@ public class AbstractCollaborationManagerTest {
     @Test
     public void replaceActivationHandler_existingRegistrationRemoved() {
         Manager manager = createManager();
-        SpyConnectionContext context = new SpyConnectionContext();
+        MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
         manager.openTopicConnection(context, connection -> {
             return null;

@@ -14,7 +14,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinService;
@@ -87,7 +87,8 @@ public class MessageManagerTest {
 
     @Test
     public void setHandler_submitMessage_connectionReactivates_handlerNotInvokedForOldMessage() {
-        EagerConnectionContext connectionContext = new EagerConnectionContext();
+        MockConnectionContext connectionContext = MockConnectionContext
+                .createEager();
         MessageManager manager = new MessageManager(connectionContext,
                 new UserInfo("foo"), TOPIC_ID, null, ce);
 
@@ -109,7 +110,8 @@ public class MessageManagerTest {
 
     @Test
     public void deactivateConnection_submitMessage_activateConnection_messageFutureCompletes() {
-        EagerConnectionContext connectionContext = new EagerConnectionContext();
+        MockConnectionContext connectionContext = MockConnectionContext
+                .createEager();
         MessageManager manager = new MessageManager(connectionContext,
                 new UserInfo("foo"), TOPIC_ID, null, ce);
 
@@ -125,7 +127,8 @@ public class MessageManagerTest {
 
     @Test
     public void withPersister_submitMessage_messageFutureCompletes() {
-        EagerConnectionContext connectionContext = new EagerConnectionContext();
+        MockConnectionContext connectionContext = MockConnectionContext
+                .createEager();
         Map<String, List<CollaborationMessage>> backend = new HashMap<>();
         CollaborationMessagePersister persister = CollaborationMessagePersister
                 .fromCallbacks(
@@ -162,7 +165,7 @@ public class MessageManagerTest {
     }
 
     private MessageManager createActiveAdapter(UserInfo user, String topicId) {
-        return new MessageManager(new EagerConnectionContext(), user, topicId,
-                null, ce);
+        return new MessageManager(MockConnectionContext.createEager(), user,
+                topicId, null, ce);
     }
 }

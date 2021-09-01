@@ -46,7 +46,7 @@ public class TestUtils {
 
     public static void openEagerConnection(CollaborationEngine ce,
             String topicId, Consumer<TopicConnection> handler) {
-        ce.openTopicConnection(new EagerConnectionContext(), topicId,
+        ce.openTopicConnection(MockConnectionContext.createEager(), topicId,
                 new UserInfo(UUID.randomUUID().toString()), topic -> {
                     handler.accept(topic);
                     return null;

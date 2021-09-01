@@ -1,17 +1,14 @@
 package com.vaadin.collaborationengine;
 
-import java.util.concurrent.CompletableFuture;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.flow.server.Command;
-import com.vaadin.flow.shared.Registration;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class ConnectionContextTest {
 
-    private SimpleConnectionContext simpleContext;
+    private MockConnectionContext context;
     private TopicConnection topicConnection;
     private CollaborationMap map;
 
@@ -19,9 +16,10 @@ public class ConnectionContextTest {
     public void init() {
         CollaborationEngine collaborationEngine = TestUtil
                 .createTestCollaborationEngine();
-        simpleContext = new SimpleConnectionContext();
 
-        collaborationEngine.openTopicConnection(simpleContext, "foo",
+        context = MockConnectionContext.createEager();
+
+        collaborationEngine.openTopicConnection(context, "foo",
                 SystemUserInfo.getInstance(), tc -> {
                     topicConnection = tc;
                     map = tc.getNamedMap("map");
@@ -36,40 +34,14 @@ public class ConnectionContextTest {
     public void subscribe_actionDispatchedThroughContext() {
         map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
-                simpleContext.isCalled);
+                context.getDispathActionCount() > 0);
     }
 
     @Test
     public void setTopicValue_actionDispatchedThroughContext() {
-        simpleContext.reset();
+        context.resetActionDispatchCount();
         map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
-                simpleContext.isCalled);
+                context.getDispathActionCount() > 0);
     }
-
-    static class SimpleConnectionContext implements ConnectionContext {
-        boolean isCalled = false;
-
-        @Override
-        public Registration setActivationHandler(ActivationHandler handler) {
-            handler.setActive(true);
-            return null;
-        }
-
-        @Override
-        public void dispatchAction(Command action) {
-            isCalled = true;
-            action.execute();
-        }
-
-        @Override
-        public <T> CompletableFuture<T> createCompletableFuture() {
-            return new CompletableFuture<>();
-        }
-
-        void reset() {
-            isCalled = false;
-        }
-    }
-
 }

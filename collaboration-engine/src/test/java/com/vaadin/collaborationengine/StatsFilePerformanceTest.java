@@ -18,7 +18,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class StatsFilePerformanceTest extends AbstractLicenseTest {
 
@@ -96,7 +96,7 @@ public class StatsFilePerformanceTest extends AbstractLicenseTest {
 
         final AtomicReference<Double> result = new AtomicReference<>(null);
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo(userId), topicConnection -> {
                     final long endTime = System.nanoTime();
                     result.set((endTime - startTime) / 1000000d);

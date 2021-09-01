@@ -1,7 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import static org.hamcrest.CoreMatchers.containsString;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,11 +19,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.ConnectionContextTest.SimpleConnectionContext;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
-import com.vaadin.collaborationengine.util.EagerConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.flow.component.UI;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class LicenseHandlerTest extends AbstractLicenseTest {
 
@@ -92,7 +91,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void openTopicConnection_userRegistered() {
-        ce.openTopicConnection(new EagerConnectionContext(), "foo",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "foo",
                 new UserInfo("steve"), topicConnection -> null);
         Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
                 .getStatistics();
@@ -267,7 +266,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 "[\"steve\"]");
         Files.write(statsFilePath, tamperedStats.getBytes());
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -278,7 +277,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("Missing required configuration property");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -290,7 +289,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -301,7 +300,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -313,7 +312,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("license file is not valid");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -330,7 +329,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("license file is not valid");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -348,7 +347,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("license file is not valid");
 
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -358,8 +357,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile("{checksum:\"foo\"}");
 
         try {
-            ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
-                    new UserInfo("user-id"), topicConnection -> null);
+            ce.openTopicConnection(MockConnectionContext.createEager(),
+                    "topic-id", new UserInfo("user-id"),
+                    topicConnection -> null);
         } catch (IllegalStateException e) {
             // expected
         }
@@ -368,7 +368,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expectMessage("license file is not valid");
 
         // open a second connection
-        ce.openTopicConnection(new EagerConnectionContext(), "topic-id",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -377,12 +377,12 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         List<String> users = generateIds(GRACE_QUOTA + 5);
         List<String> usersWithConnectionActivated = new ArrayList<>();
 
-        users.forEach(
-                userId -> ce.openTopicConnection(new EagerConnectionContext(),
-                        "topic", new UserInfo(userId), topicConnection -> {
-                            usersWithConnectionActivated.add(userId);
-                            return null;
-                        }));
+        users.forEach(userId -> ce.openTopicConnection(
+                MockConnectionContext.createEager(), "topic",
+                new UserInfo(userId), topicConnection -> {
+                    usersWithConnectionActivated.add(userId);
+                    return null;
+                }));
 
         Assert.assertEquals(users.subList(0, GRACE_QUOTA),
                 usersWithConnectionActivated);
@@ -392,11 +392,11 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void openTopicConnection_effectiveQuotaExceededButUserHasSeat_connectionActivated() {
         List<String> userIds = generateIds(GRACE_QUOTA + 5);
         userIds.forEach(userId -> ce.openTopicConnection(
-                new EagerConnectionContext(), "topic", new UserInfo(userId),
-                topicConnection -> null));
+                MockConnectionContext.createEager(), "topic",
+                new UserInfo(userId), topicConnection -> null));
 
         AtomicBoolean connectionActivated = new AtomicBoolean(false);
-        ce.openTopicConnection(new EagerConnectionContext(), "topic",
+        ce.openTopicConnection(MockConnectionContext.createEager(), "topic",
                 new UserInfo(userIds.get(0)), topicConnection -> {
                     Assert.assertFalse(connectionActivated.get());
                     connectionActivated.set(true);
@@ -557,10 +557,10 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void requestAccess_actionIsDispatched() {
         UserInfo user = new UserInfo("steve");
-        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        MockConnectionContext spyContext = new MockConnectionContext();
         ce.requestAccess(spyContext, user, result -> {
         });
-        Assert.assertTrue(spyContext.isCalled);
+        Assert.assertTrue(spyContext.getDispathActionCount() > 0);
     }
 
     @Test
@@ -585,7 +585,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void requestAccess_licenseCheckingNotEnabled_resolvesWithTrue() {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
-        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        MockConnectionContext spyContext = new MockConnectionContext();
         configuration.setLicenseCheckingEnabled(false);
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
@@ -598,7 +598,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void requestAccess_userHasAccess_resolvesWithTrue() {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
-        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        MockConnectionContext spyContext = new MockConnectionContext();
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
@@ -610,7 +610,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         fillGraceQuota();
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(true);
-        SimpleConnectionContext spyContext = new SimpleConnectionContext();
+        MockConnectionContext spyContext = new MockConnectionContext();
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
@@ -626,7 +626,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expectMessage("license file is not valid");
 
         UserInfo user = new UserInfo("steve");
-        ConnectionContext spyContext = new EagerConnectionContext();
+        ConnectionContext spyContext = MockConnectionContext.createEager();
         ce.requestAccess(spyContext, user, response -> {
         });
     }
