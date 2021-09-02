@@ -26,8 +26,8 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.shared.Registration;
 
 /**
- * Manager to handle messages sent to a topic. It allows to submit messages to a
- * topic and set an handler to react when a new message has been submitted.
+ * Manager to handle messages sent to a topic. It allows submitting messages to
+ * a topic and set a handler to react when a new message has been submitted.
  *
  * @author Vaadin Ltd
  */
