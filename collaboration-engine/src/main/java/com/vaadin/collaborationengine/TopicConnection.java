@@ -15,13 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.vaadin.collaborationengine.Topic.ListChangeNotifier;
 import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
@@ -49,11 +52,15 @@ public class TopicConnection {
 
     private boolean active;
 
-    TopicConnection(ConnectionContext context, Topic topic, UserInfo localUser,
+    private final BiConsumer<UUID, ObjectNode> distributor;
+
+    TopicConnection(ConnectionContext context, Topic topic,
+            BiConsumer<UUID, ObjectNode> distributor, UserInfo localUser,
             Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.context = context;
+        this.distributor = distributor;
         this.localUser = localUser;
         this.topicActivationHandler = topicActivationHandler;
 
@@ -61,21 +68,17 @@ public class TopicConnection {
             if (active) {
                 this.active = true;
                 context.dispatchAction(() -> {
-                    Registration mapChangeRegistration;
-                    Registration listChangeRegistration;
+                    Registration changeRegistration;
                     synchronized (this.topic) {
-                        mapChangeRegistration = this.topic
-                                .subscribeToMapChange(this::handleMapChange);
-                        listChangeRegistration = this.topic
-                                .subscribeToListChange(this::handleListChange);
+                        changeRegistration = this.topic
+                                .subscribeToChange(this::handleChange);
                     }
                     Registration callbackRegistration = connectionActivationCallback
                             .apply(this);
                     addRegistration(callbackRegistration);
                     addRegistration(() -> {
                         synchronized (this.topic) {
-                            mapChangeRegistration.remove();
-                            listChangeRegistration.remove();
+                            changeRegistration.remove();
                         }
                     });
                 });
@@ -88,20 +91,31 @@ public class TopicConnection {
         });
     }
 
-    private void handleMapChange(MapChange change) {
+    private void handleChange(ObjectNode change) {
         try {
-            EventUtil.fireEvents(subscribersPerMap.get(change.getMapName()),
-                    notifier -> notifier.onEntryChange(change), false);
-        } catch (RuntimeException e) {
-            deactivateAndClose();
-            throw e;
-        }
-    }
-
-    private void handleListChange(ListChange change) {
-        try {
-            EventUtil.fireEvents(subscribersPerList.get(change.getListName()),
-                    notifier -> notifier.onListChange(change), false);
+            String type = change.get(JsonUtil.CHANGE_TYPE).asText();
+            switch (type) {
+            case JsonUtil.CHANGE_TYPE_PUT:
+                String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
+                String key = change.get(JsonUtil.CHANGE_KEY).asText();
+                JsonNode oldValue = change.get(JsonUtil.CHANGE_OLD_VALUE);
+                JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+                MapChange mapChange = new MapChange(mapName, key, oldValue,
+                        newValue);
+                EventUtil.fireEvents(subscribersPerMap.get(mapName),
+                        notifier -> notifier.onEntryChange(mapChange), false);
+                break;
+            case JsonUtil.CHANGE_TYPE_APPEND:
+                String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+                JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+                ListChange listChange = new ListChange(listName, item);
+                EventUtil.fireEvents(subscribersPerList.get(listName),
+                        notifier -> notifier.onListChange(listChange), false);
+                break;
+            default:
+                throw new UnsupportedOperationException(
+                        "Type '" + type + "' is not a supported change type");
+            }
         } catch (RuntimeException e) {
             deactivateAndClose();
             throw e;
@@ -211,15 +225,16 @@ public class TopicConnection {
                 CompletableFuture<Boolean> contextFuture = context
                         .createCompletableFuture();
 
-                boolean isReplaced;
-                synchronized (topic) {
-                    isReplaced = topic.applyMapReplace(new ReplaceChange(name,
-                            key, JsonUtil.toJsonNode(expectedValue),
-                            JsonUtil.toJsonNode(newValue)));
+                ObjectNode change = JsonUtil.createPutChange(name, key,
+                        expectedValue, newValue);
 
-                }
-                context.dispatchAction(
-                        () -> contextFuture.complete(isReplaced));
+                UUID id = UUID.randomUUID();
+                topic.setChangeResultTracker(id, result -> {
+                    boolean isApplied = result != Topic.ChangeResult.REJECTED;
+                    context.dispatchAction(
+                            () -> contextFuture.complete(isApplied));
+                });
+                distributor.accept(id, change);
                 return contextFuture;
             }
 
@@ -231,12 +246,13 @@ public class TopicConnection {
                 CompletableFuture<Void> contextFuture = context
                         .createCompletableFuture();
 
-                synchronized (topic) {
-                    topic.applyMapChange(new PutChange(name, key,
-                            JsonUtil.toJsonNode(value)));
-                }
+                ObjectNode change = JsonUtil.createPutChange(name, key, null,
+                        value);
 
-                context.dispatchAction(() -> contextFuture.complete(null));
+                UUID id = UUID.randomUUID();
+                topic.setChangeResultTracker(id, result -> context
+                        .dispatchAction(() -> contextFuture.complete(null)));
+                distributor.accept(id, change);
                 return contextFuture;
             }
 
@@ -357,12 +373,13 @@ public class TopicConnection {
                 CompletableFuture<Void> contextFuture = context
                         .createCompletableFuture();
 
-                synchronized (topic) {
-                    JsonNode value = JsonUtil.toJsonNode(item);
-                    topic.applyListChange(new ListChange(name, value));
-                }
+                ObjectNode change = JsonUtil.createAppendChange(name, item);
 
-                context.dispatchAction(() -> contextFuture.complete(null));
+                UUID id = UUID.randomUUID();
+                topic.setChangeResultTracker(id, result -> {
+                    context.dispatchAction(() -> contextFuture.complete(null));
+                });
+                distributor.accept(id, change);
                 return contextFuture;
             }
 

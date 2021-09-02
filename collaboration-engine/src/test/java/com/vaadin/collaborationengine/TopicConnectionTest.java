@@ -184,12 +184,12 @@ public class TopicConnectionTest {
         Topic topic = engine.getTopic("topic2");
         Assert.assertFalse(
                 "There should be no subscribers before dispatching actions",
-                topic.hasSubscribers());
+                topic.hasChangeListeners());
 
         actions.forEach(Command::execute);
 
         Assert.assertFalse(
                 "There should be no subscribers after dispatching actions",
-                topic.hasSubscribers());
+                topic.hasChangeListeners());
     }
 }

@@ -11,9 +11,12 @@ package com.vaadin.collaborationengine;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +55,7 @@ public class CollaborationEngine {
     private Map<String, Topic> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
+    private Map<String, BiConsumer<UUID, ObjectNode>> distributors = new ConcurrentHashMap<>();
 
     private LicenseHandler licenseHandler;
 
@@ -288,6 +292,7 @@ public class CollaborationEngine {
         Topic topic = topics.computeIfAbsent(topicId, id -> new Topic(this));
 
         TopicConnection connection = new TopicConnection(context, topic,
+                distributors.computeIfAbsent(topicId, id -> topic::applyChange),
                 localUser, isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
         return new TopicConnectionRegistration(connection, context);

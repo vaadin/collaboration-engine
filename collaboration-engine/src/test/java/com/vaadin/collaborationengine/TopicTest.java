@@ -1,10 +1,14 @@
 package com.vaadin.collaborationengine;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.vaadin.collaborationengine.Topic.ChangeResult;
 
 public class TopicTest {
 
@@ -17,50 +21,58 @@ public class TopicTest {
 
     @Test
     public void applyChange_newMap_mapCreatedWithNewEntry() {
-        PutChange change = new PutChange("foo", "bar", MockJson.BAZ);
-        topic.applyMapChange(change);
+        ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.BAZ);
+        topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("baz", topic.getMapValue("foo", "bar").textValue());
     }
 
     @Test
     public void applyChange_existingMap_mapEntryUpdated() {
-        PutChange change = new PutChange("foo", "bar", MockJson.BAZ);
-        topic.applyMapChange(change);
-        PutChange change1 = new PutChange("foo", "bar", MockJson.QUX);
-        topic.applyMapChange(change1);
+        ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.BAZ);
+        topic.applyChange(UUID.randomUUID(), change);
+        ObjectNode change1 = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.QUX);
+        topic.applyChange(UUID.randomUUID(), change1);
 
         Assert.assertEquals("qux", topic.getMapValue("foo", "bar").textValue());
     }
 
     @Test
     public void applyChange_existingMap_emptyValue_mapEntryRemoved() {
-        PutChange change = new PutChange("foo", "bar", MockJson.BAZ);
-        topic.applyMapChange(change);
-        PutChange change1 = new PutChange("foo", "bar", null);
-        topic.applyMapChange(change1);
+        ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.BAZ);
+        topic.applyChange(UUID.randomUUID(), change);
+        ObjectNode change1 = JsonUtil.createPutChange("foo", "bar", null, null);
+        topic.applyChange(UUID.randomUUID(), change1);
 
         Assert.assertNull(topic.getMapValue("foo", "bar"));
     }
 
     @Test
     public void applyReplace_havingLatestExpectedValue_success() {
-        PutChange change = new PutChange("foo", "bar", MockJson.BAZ);
-        topic.applyMapChange(change);
-        ReplaceChange replaceChange = new ReplaceChange("foo", "bar",
+        ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.BAZ);
+        topic.applyChange(UUID.randomUUID(), change);
+        ObjectNode replaceChange = JsonUtil.createPutChange("foo", "bar",
                 MockJson.BAZ, MockJson.QUX);
 
-        Assert.assertTrue(topic.applyMapReplace(replaceChange));
+        Assert.assertEquals(ChangeResult.ACCEPTED,
+                topic.applyChange(UUID.randomUUID(), replaceChange));
         Assert.assertEquals("qux", topic.getMapValue("foo", "bar").textValue());
     }
 
     @Test
     public void applyReplace_havingWrongExpectedValue_fail() {
-        PutChange change = new PutChange("foo", "bar", MockJson.BAZ);
-        topic.applyMapChange(change);
-        ReplaceChange replaceChange = new ReplaceChange("foo", "bar",
+        ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
+                MockJson.BAZ);
+        topic.applyChange(UUID.randomUUID(), change);
+        ObjectNode replaceChange = JsonUtil.createPutChange("foo", "bar",
                 MockJson.FOO, MockJson.QUX);
 
-        Assert.assertFalse(topic.applyMapReplace(replaceChange));
+        Assert.assertEquals(ChangeResult.REJECTED,
+                topic.applyChange(UUID.randomUUID(), replaceChange));
         Assert.assertEquals("baz", topic.getMapValue("foo", "bar").textValue());
     }
 
@@ -68,19 +80,20 @@ public class TopicTest {
     public void throwingSubscriber_removedAndOthersStillInvoked() {
         AtomicInteger count = new AtomicInteger(0);
 
-        topic.subscribeToMapChange(event -> {
+        topic.subscribeToChange(event -> {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
                     "Throwing subscriber sould be run before working subscriber",
                     0, count.get());
-            throw new RuntimeException("Fail in purpose");
+            throw new RuntimeException("Fail on purpose");
         });
 
-        topic.subscribeToMapChange(event -> count.getAndIncrement());
+        topic.subscribeToChange(event -> count.getAndIncrement());
 
         try {
-            topic.applyMapChange(new PutChange("map", "key", MockJson.BAZ));
+            topic.applyChange(UUID.randomUUID(),
+                    JsonUtil.createPutChange("map", "key", null, MockJson.BAZ));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
         }
@@ -90,16 +103,17 @@ public class TopicTest {
                 1, count.get());
 
         // No try-catch needed - failing subscriber should have been removed
-        topic.applyMapChange(new PutChange("map", "key", MockJson.QUX));
+        topic.applyChange(UUID.randomUUID(),
+                JsonUtil.createPutChange("map", "key", null, MockJson.QUX));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());
     }
 
     @Test
-    public void applyListChange_listContainsAppendedItem() {
-        ListChange change = new ListChange("foo", MockJson.FOO);
-        topic.applyListChange(change);
+    public void applyChange_listContainsAppendedItem() {
+        ObjectNode change = JsonUtil.createAppendChange("foo", MockJson.FOO);
+        topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("foo",
                 topic.getListItems("foo").findFirst().get().textValue());
     }
@@ -108,19 +122,20 @@ public class TopicTest {
     public void throwingListSubscriber_removedAndOthersStillInvoked() {
         AtomicInteger count = new AtomicInteger(0);
 
-        topic.subscribeToListChange(event -> {
+        topic.subscribeToChange(event -> {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
                     "Throwing subscriber sould be run before working subscriber",
                     0, count.get());
-            throw new RuntimeException("Fail in purpose");
+            throw new RuntimeException("Fail on purpose");
         });
 
-        topic.subscribeToListChange(event -> count.getAndIncrement());
+        topic.subscribeToChange(event -> count.getAndIncrement());
 
         try {
-            topic.applyListChange(new ListChange("foo", MockJson.BAZ));
+            topic.applyChange(UUID.randomUUID(),
+                    JsonUtil.createAppendChange("foo", MockJson.BAZ));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
         }
@@ -130,7 +145,8 @@ public class TopicTest {
                 1, count.get());
 
         // No try-catch needed - failing subscriber should have been removed
-        topic.applyListChange(new ListChange("foo", MockJson.QUX));
+        topic.applyChange(UUID.randomUUID(),
+                JsonUtil.createAppendChange("foo", MockJson.QUX));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());

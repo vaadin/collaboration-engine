@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
@@ -24,6 +25,24 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * @since 1.0
  */
 public class JsonUtil {
+
+    static final String CHANGE_TYPE = "type";
+
+    static final String CHANGE_NAME = "name";
+
+    static final String CHANGE_KEY = "key";
+
+    static final String CHANGE_VALUE = "value";
+
+    static final String CHANGE_OLD_VALUE = "old-value";
+
+    static final String CHANGE_EXPECTED_VALUE = "expected-value";
+
+    static final String CHANGE_TYPE_PUT = "m-put";
+
+    static final String CHANGE_TYPE_APPEND = "l-append";
+
+    static final String CHANGE_ITEM = "item";
 
     public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
     };
@@ -88,4 +107,26 @@ public class JsonUtil {
         }
     }
 
+    public static ObjectNode createPutChange(String name, String key,
+            Object expectedValue, Object value) {
+        ObjectMapper objectMapper = createCustomMapper();
+        ObjectNode change = objectMapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_PUT);
+        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_KEY, key);
+        change.set(CHANGE_VALUE, toJsonNode(value));
+        if (expectedValue != null) {
+            change.set(CHANGE_EXPECTED_VALUE, toJsonNode(expectedValue));
+        }
+        return change;
+    }
+
+    public static ObjectNode createAppendChange(String name, Object item) {
+        ObjectMapper objectMapper = createCustomMapper();
+        ObjectNode change = objectMapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
+        change.put(CHANGE_NAME, name);
+        change.set(CHANGE_ITEM, toJsonNode(item));
+        return change;
+    }
 }

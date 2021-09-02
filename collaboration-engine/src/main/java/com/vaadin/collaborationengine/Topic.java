@@ -16,15 +16,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.shared.Registration;
 
 class Topic {
+
+    enum ChangeResult {
+        ACCEPTED, REJECTED, NOOP;
+    }
 
     @FunctionalInterface
     interface MapChangeNotifier {
@@ -38,30 +45,23 @@ class Topic {
 
     private final CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, JsonNode>> namedMapData = new HashMap<>();
-    private final List<MapChangeNotifier> mapChangeListeners = new ArrayList<>();
     private final Map<String, List<JsonNode>> namedListData = new HashMap<>();
-    private final List<ListChangeNotifier> listChangeListeners = new ArrayList<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
     final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
+    private final List<SerializableConsumer<ObjectNode>> changeListeners = new ArrayList<>();
+    private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
 
     Topic(CollaborationEngine collaborationEngine) {
         this.collaborationEngine = collaborationEngine;
     }
 
-    Registration subscribeToMapChange(MapChangeNotifier changeNotifier) {
+    Registration subscribeToChange(
+            SerializableConsumer<ObjectNode> changeListener) {
         clearExpiredData();
-        mapChangeListeners.add(changeNotifier);
+        changeListeners.add(changeListener);
         return Registration.combine(
-                () -> mapChangeListeners.remove(changeNotifier),
-                this::updateLastDisconnected);
-    }
-
-    Registration subscribeToListChange(ListChangeNotifier changeNotifier) {
-        clearExpiredData();
-        listChangeListeners.add(changeNotifier);
-        return Registration.combine(
-                () -> listChangeListeners.remove(changeNotifier),
+                () -> changeListeners.remove(changeListener),
                 this::updateLastDisconnected);
     }
 
@@ -84,19 +84,14 @@ class Topic {
     }
 
     private void updateLastDisconnected() {
-        if (mapChangeListeners.isEmpty() && listChangeListeners.isEmpty()) {
+        if (changeListeners.isEmpty()) {
             lastDisconnected = collaborationEngine.getClock().instant();
         }
     }
 
-    private void fireMapChangeEvent(MapChange change) {
-        EventUtil.fireEvents(mapChangeListeners,
-                listener -> listener.onEntryChange(change), true);
-    }
-
-    private void fireListChangeEvent(ListChange change) {
-        EventUtil.fireEvents(listChangeListeners,
-                listener -> listener.onListChange(change), true);
+    private void fireChangeEvent(ObjectNode change) {
+        EventUtil.fireEvents(changeListeners,
+                listener -> listener.accept(change), true);
     }
 
     Stream<MapChange> getMapData(String mapName) {
@@ -116,47 +111,64 @@ class Topic {
         return map.get(key).deepCopy();
     }
 
-    void applyMapChange(PutChange change) {
-        applyMapChange(change, null);
+    synchronized ChangeResult applyChange(UUID trackingId, ObjectNode change) {
+        String type = change.get(JsonUtil.CHANGE_TYPE).asText();
+        ChangeResult result;
+        switch (type) {
+        case JsonUtil.CHANGE_TYPE_PUT:
+            result = applyMapChange(change);
+            break;
+        case JsonUtil.CHANGE_TYPE_APPEND:
+            result = applyListChange(change);
+            break;
+        default:
+            throw new UnsupportedOperationException(
+                    "Type '" + type + "' is not a supported change type");
+        }
+        SerializableConsumer<ChangeResult> changeResultTracker = changeResultTrackers
+                .remove(trackingId);
+        if (changeResultTracker != null) {
+            changeResultTracker.accept(result);
+        }
+        if (ChangeResult.ACCEPTED.equals(result)) {
+            fireChangeEvent(change);
+        }
+        return result;
     }
 
-    boolean applyMapChange(PutChange change, Predicate<Object> condition) {
-        String mapName = change.getMapName();
-        String key = change.getKey();
+    ChangeResult applyMapChange(ObjectNode change) {
+        String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
+        String key = change.get(JsonUtil.CHANGE_KEY).asText();
+        JsonNode expectedValue = change.get(JsonUtil.CHANGE_EXPECTED_VALUE);
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
 
         Map<String, JsonNode> map = namedMapData.computeIfAbsent(mapName,
                 name -> new HashMap<>());
         JsonNode oldValue = map.containsKey(key) ? map.get(key)
                 : NullNode.getInstance();
 
-        if (condition != null && !condition.test(oldValue)) {
-            return false;
+        if (expectedValue != null && !Objects.equals(oldValue, expectedValue)) {
+            return ChangeResult.REJECTED;
         }
-        if (Objects.equals(oldValue, change.getValue())) {
-            return true;
+        if (Objects.equals(oldValue, newValue)) {
+            return ChangeResult.NOOP;
         }
 
-        JsonNode newValue = change.getValue() == null ? NullNode.getInstance()
-                : change.getValue();
+        // FIXME ugly (until proper topic data versioning)
+        change.set(JsonUtil.CHANGE_OLD_VALUE, oldValue);
         if (newValue instanceof NullNode) {
             map.remove(key);
         } else {
             map.put(key, newValue.deepCopy());
         }
-        fireMapChangeEvent(new MapChange(mapName, key, oldValue, newValue));
-        return true;
+        return ChangeResult.ACCEPTED;
     }
 
-    boolean applyMapReplace(ReplaceChange replaceChange) {
-        return applyMapChange(new PutChange(replaceChange), oldValue -> Objects
-                .equals(oldValue, replaceChange.getExpectedValue()));
-    }
-
-    void applyListChange(ListChange change) {
-        String listName = change.getListName();
-        JsonNode item = change.getAddedItem();
-        getList(listName).add(item);
-        fireListChangeEvent(new ListChange(listName, item));
+    ChangeResult applyListChange(ObjectNode change) {
+        String name = change.get(JsonUtil.CHANGE_NAME).asText();
+        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        getList(name).add(item);
+        return ChangeResult.ACCEPTED;
     }
 
     Stream<ListChange> getListChanges(String listName) {
@@ -173,9 +185,18 @@ class Topic {
                 name -> new ArrayList<>());
     }
 
-    // For testing
-    boolean hasSubscribers() {
-        return !listChangeListeners.isEmpty() || !mapChangeListeners.isEmpty();
+    void setChangeResultTracker(UUID id,
+            SerializableConsumer<ChangeResult> changeResultTracker) {
+        SerializableConsumer<ChangeResult> oldTracker = changeResultTrackers
+                .putIfAbsent(id, changeResultTracker);
+        if (oldTracker != null) {
+            throw new IllegalStateException(
+                    "Cannot set a change-result tracker for an id with one already set");
+        }
     }
 
+    // For testing
+    boolean hasChangeListeners() {
+        return !changeListeners.isEmpty();
+    }
 }
