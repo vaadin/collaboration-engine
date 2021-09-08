@@ -1012,8 +1012,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
                 elementType);
 
         return new JsonHandler<>(collection -> {
-            ArrayNode arrayNode = JsonUtil.createCustomMapper()
-                    .createArrayNode();
+            ArrayNode arrayNode = JsonUtil.getObjectMapper().createArrayNode();
 
             collection.forEach(element -> arrayNode
                     .add(elementConfiguration.serialize(element)));
@@ -1026,7 +1025,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
              */
             @SuppressWarnings("unchecked")
             FIELDVALUE collection = (FIELDVALUE) JsonUtil.toInstance(
-                    JsonUtil.createCustomMapper().createArrayNode(),
+                    JsonUtil.getObjectMapper().createArrayNode(),
                     collectionType);
 
             /*

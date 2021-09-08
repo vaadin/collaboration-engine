@@ -49,21 +49,20 @@ public class JsonUtil {
     public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
     };
 
-    private static class CustomMapper extends ObjectMapper {
-        public CustomMapper() {
-            registerModule(new JavaTimeModule());
-        }
+    private static final ObjectMapper mapper;
+    static {
+        mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
     }
 
     private JsonUtil() {
     }
 
-    static ObjectMapper createCustomMapper() {
-        return new CustomMapper();
+    static ObjectMapper getObjectMapper() {
+        return mapper;
     }
 
     static JsonNode toJsonNode(Object value) {
-        ObjectMapper mapper = createCustomMapper();
         try {
             return mapper.valueToTree(value);
         } catch (IllegalArgumentException e) {
@@ -78,9 +77,8 @@ public class JsonUtil {
         if (jsonNode == null) {
             return null;
         }
-        ObjectMapper objectMapper = createCustomMapper();
         try {
-            return objectMapper.treeToValue(jsonNode, type);
+            return mapper.treeToValue(jsonNode, type);
         } catch (JsonProcessingException e) {
             throw new JsonConversionException(
                     "Failed to parse the JSON node to " + type.getName(), e);
@@ -95,7 +93,6 @@ public class JsonUtil {
         if (jsonNode == null) {
             return null;
         }
-        ObjectMapper mapper = createCustomMapper();
         JavaType javaType = mapper.getTypeFactory().constructType(type);
         try {
             return mapper.readValue(mapper.treeAsTokens(jsonNode), javaType);
@@ -109,8 +106,7 @@ public class JsonUtil {
 
     public static ObjectNode createPutChange(String name, String key,
             Object expectedValue, Object value) {
-        ObjectMapper objectMapper = createCustomMapper();
-        ObjectNode change = objectMapper.createObjectNode();
+        ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_PUT);
         change.put(CHANGE_NAME, name);
         change.put(CHANGE_KEY, key);
@@ -122,8 +118,7 @@ public class JsonUtil {
     }
 
     public static ObjectNode createAppendChange(String name, Object item) {
-        ObjectMapper objectMapper = createCustomMapper();
-        ObjectNode change = objectMapper.createObjectNode();
+        ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
         change.put(CHANGE_NAME, name);
         change.set(CHANGE_ITEM, toJsonNode(item));
