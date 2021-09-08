@@ -11,15 +11,13 @@ package com.vaadin.collaborationengine;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vaadin.collaborationengine.Backend.EventLog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.JsModule;
@@ -44,6 +42,16 @@ import com.vaadin.pro.licensechecker.LicenseChecker;
 @JsModule("./field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
+    private static class TopicAndEventLog {
+        private final Topic topic;
+        private final EventLog eventLog;
+
+        public TopicAndEventLog(Topic topic, EventLog eventLog) {
+            this.topic = topic;
+            this.eventLog = eventLog;
+        }
+    }
+
     static final Logger LOGGER = LoggerFactory
             .getLogger(CollaborationEngine.class);
 
@@ -52,10 +60,9 @@ public class CollaborationEngine {
 
     static final int USER_COLOR_COUNT = 7;
 
-    private Map<String, Topic> topics = new ConcurrentHashMap<>();
+    private Map<String, TopicAndEventLog> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
-    private Map<String, BiConsumer<UUID, ObjectNode>> distributors = new ConcurrentHashMap<>();
 
     private LicenseHandler licenseHandler;
 
@@ -289,11 +296,21 @@ public class CollaborationEngine {
             }
         }
 
-        Topic topic = topics.computeIfAbsent(topicId, id -> new Topic(this));
+        TopicAndEventLog topicAndConnection = topics.computeIfAbsent(topicId,
+                id -> {
+                    Topic topic = new Topic(this);
 
-        TopicConnection connection = new TopicConnection(context, topic,
-                distributors.computeIfAbsent(topicId, id -> topic::applyChange),
-                localUser, isActive -> updateTopicActivation(topicId, isActive),
+                    EventLog eventLog = configuration.getBackend()
+                            .openEventLog(id);
+                    eventLog.subscribe(topic::applyChange);
+
+                    return new TopicAndEventLog(topic, eventLog);
+                });
+        TopicConnection connection = new TopicConnection(context,
+                topicAndConnection.topic,
+                topicAndConnection.eventLog::submitEvent, localUser,
+                isActive -> updateTopicActivation(topicId, isActive),
+
                 connectionActivationCallback);
         return new TopicConnectionRegistration(connection, context);
     }
@@ -439,6 +456,6 @@ public class CollaborationEngine {
 
     // For testing
     Topic getTopic(String topicId) {
-        return topics.get(topicId);
+        return topics.get(topicId).topic;
     }
 }

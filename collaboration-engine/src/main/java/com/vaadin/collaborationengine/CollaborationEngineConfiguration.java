@@ -29,6 +29,8 @@ public class CollaborationEngineConfiguration {
     private String configuredDataDir;
     private boolean automaticallyActivatePush = DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH;
 
+    private Backend backend = new LocalBackend();
+
     /**
      * Creates a new Collaboration Engine configuration with the provided
      * handler for license events.
@@ -132,6 +134,28 @@ public class CollaborationEngineConfiguration {
 
     boolean isLicenseCheckingEnabled() {
         return vaadinService.getDeploymentConfiguration().isProductionMode();
+    }
+
+    /**
+     * Sets the backend implementation to use. A backend can be used to
+     * distribute changes between multiple nodes in a cluster. By default, a
+     * local in-memory backend is used.
+     *
+     * @param backend
+     *            the backend to use, not <code>null</code>
+     */
+    public void setBackend(Backend backend) {
+        this.backend = Objects.requireNonNull(backend);
+    }
+
+    /**
+     * Gets the configured backend implementation.
+     *
+     * @see #setBackend(Backend)
+     * @return the backend implementation, not <code>null</code>
+     */
+    public Backend getBackend() {
+        return backend;
     }
 
     Path getDataDirPath() {

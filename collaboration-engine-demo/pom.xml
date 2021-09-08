@@ -82,6 +82,12 @@
             <artifactId>collaboration-engine</artifactId>
             <version>4.0-SNAPSHOT</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-all</artifactId>
+            <version>4.2.1</version>
+        </dependency>
 
         <!-- Added to provide logging output as Vaadin uses -->
         <!-- the unbound SLF4J no-operation (NOP) logger implementation -->
@@ -113,7 +119,7 @@
                 <configuration>
                     <!-- If using IntelliJ IDEA with autocompilation, this
                         might cause lots of unnecessary compilations in the background. -->
-                    <scanIntervalSeconds>2</scanIntervalSeconds>
+                    <scanIntervalSeconds>0</scanIntervalSeconds>
                     <!-- Use war output directory to get the webpack files -->
                     <webAppConfig>
                         <allowDuplicateFragmentNames>true
