@@ -1,9 +1,10 @@
 package com.vaadin.collaborationengine.util;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
+import com.vaadin.collaborationengine.ActionDispatcher;
 import com.vaadin.collaborationengine.ActivationHandler;
 import com.vaadin.collaborationengine.ConnectionContext;
 import com.vaadin.flow.server.Command;
@@ -19,7 +20,11 @@ public class MockConnectionContext implements ConnectionContext {
 
     private boolean eager;
 
-    private Consumer<Command> actionDispatcher = Command::execute;
+    private ActionDispatcher actionDispatcher = new MockActionDispatcher();
+
+    private Executor executor;
+
+    private boolean executorExplicitlySet;
 
     private AtomicInteger actionDispatchCount = new AtomicInteger();
 
@@ -31,29 +36,28 @@ public class MockConnectionContext implements ConnectionContext {
         this.eager = eager;
     }
 
-    public void setActionDispatcher(Consumer<Command> actionDispatcher) {
-        this.actionDispatcher = actionDispatcher;
+    public void setExecutor(Executor executor) {
+        this.executor = executor;
+        executorExplicitlySet = true;
     }
 
     @Override
-    public Registration setActivationHandler(ActivationHandler handler) {
-        this.activationHandler = handler;
+    public Registration init(ActivationHandler activationHandler,
+            Executor executor) {
+
+        this.activationHandler = activationHandler;
+        if (!executorExplicitlySet) {
+            this.executor = executor;
+        }
         if (eager) {
             activate();
         }
         return () -> {
             closed = true;
-            activationHandler = null;
             if (throwOnClose) {
                 throw new FailOnPurposeException();
             }
         };
-    }
-
-    @Override
-    public void dispatchAction(Command action) {
-        actionDispatchCount.incrementAndGet();
-        actionDispatcher.accept(action);
     }
 
     public int getDispathActionCount() {
@@ -64,17 +68,12 @@ public class MockConnectionContext implements ConnectionContext {
         actionDispatchCount.set(0);
     }
 
-    @Override
-    public <T> CompletableFuture<T> createCompletableFuture() {
-        return new CompletableFuture<>();
-    }
-
     public void activate() {
-        activationHandler.setActive(true);
+        activationHandler.accept(actionDispatcher);
     }
 
     public void deactivate() {
-        activationHandler.setActive(false);
+        activationHandler.accept(null);
     }
 
     public boolean isThrowOnClose() {
@@ -89,6 +88,10 @@ public class MockConnectionContext implements ConnectionContext {
         return closed;
     }
 
+    public ActionDispatcher getActionDispatcher() {
+        return actionDispatcher;
+    }
+
     public static class FailOnPurposeException extends RuntimeException {
     }
 
@@ -96,5 +99,20 @@ public class MockConnectionContext implements ConnectionContext {
         MockConnectionContext context = new MockConnectionContext();
         context.setEager(true);
         return context;
+    }
+
+    public class MockActionDispatcher implements ActionDispatcher {
+
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            return new CompletableFuture<>();
+        }
+
+        @Override
+        public void dispatchAction(Command action) {
+            actionDispatchCount.incrementAndGet();
+            executor.execute(action::execute);
+        }
+
     }
 }

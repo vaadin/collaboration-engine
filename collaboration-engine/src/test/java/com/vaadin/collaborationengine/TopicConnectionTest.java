@@ -29,7 +29,7 @@ public class TopicConnectionTest {
 
     private final VaadinService service = new MockService();
 
-    private final CollaborationEngine engine = new CollaborationEngine(
+    private final CollaborationEngine engine = new TestUtil.TestCollaborationEngine(
             (topicId, isActive) -> {
                 if (isActive) {
                     activeTopics.add(topicId);
@@ -172,21 +172,25 @@ public class TopicConnectionTest {
     @Test
     public void immediateDeactivate_listenersRemoved() {
         MockConnectionContext context = new MockConnectionContext();
-        List<Command> actions = new ArrayList<>();
-        context.setActionDispatcher(actions::add);
-
+        List<Runnable> actions = new ArrayList<>();
+        context.setExecutor(actions::add);
         engine.openTopicConnection(context, "topic2",
                 SystemUserInfo.getInstance(), connection -> null);
 
         context.activate();
+        Assert.assertEquals("One action should have been dispatched", 1,
+                actions.size());
+
         context.deactivate();
+        Assert.assertEquals("One more action should have been dispatched", 2,
+                actions.size());
 
         Topic topic = engine.getTopic("topic2");
         Assert.assertFalse(
                 "There should be no subscribers before dispatching actions",
                 topic.hasChangeListeners());
 
-        actions.forEach(Command::execute);
+        actions.forEach(Runnable::run);
 
         Assert.assertFalse(
                 "There should be no subscribers after dispatching actions",

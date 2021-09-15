@@ -8,15 +8,16 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +47,11 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private volatile UI ui;
 
-    private List<Command> pendingActions = new ArrayList<>();
-
-    private ActivationHandler activationHandler;
+    private final ConcurrentLinkedQueue<Command> inbox = new ConcurrentLinkedQueue<>();
+    private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
+    private final AtomicBoolean active = new AtomicBoolean();
+    private Consumer<ActionDispatcher> activationHandler;
+    private Executor backgroundRunner;
     private Registration beaconListener;
     private Registration destroyListener;
 
@@ -144,7 +147,7 @@ public class ComponentConnectionContext implements ConnectionContext {
                 flushPendingActionsIfActive();
 
                 if (activationHandler != null) {
-                    activationHandler.setActive(true);
+                    activate();
                 }
 
             } else if (componentUi != ui) {
@@ -165,17 +168,19 @@ public class ComponentConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public Registration setActivationHandler(
-            ActivationHandler activationHandler) {
+    public Registration init(ActivationHandler activationHandler,
+            Executor backgroundRunner) {
         if (this.activationHandler != null) {
             throw new IllegalStateException(
-                    "An activation handler has already been set for this context");
+                    "This context has already been initialized");
         }
         this.activationHandler = Objects.requireNonNull(activationHandler,
                 "Activation handler cannot be null");
+        this.backgroundRunner = Objects.requireNonNull(backgroundRunner,
+                "Background runner cannot be null");
 
         if (this.ui != null) {
-            activationHandler.setActive(true);
+            activate();
         }
 
         return () -> {
@@ -188,6 +193,12 @@ public class ComponentConnectionContext implements ConnectionContext {
         };
     }
 
+    private void activate() {
+        if (this.activationHandler != null && !this.active.getAndSet(true)) {
+            this.activationHandler.accept(this.actionDispatcher);
+        }
+    }
+
     private void deactivateConnection() {
         if (beaconListener != null) {
             beaconListener.remove();
@@ -197,54 +208,63 @@ public class ComponentConnectionContext implements ConnectionContext {
             destroyListener.remove();
             destroyListener = null;
         }
-        if (activationHandler != null) {
-            activationHandler.setActive(false);
+        if (activationHandler != null && ui != null
+                && active.getAndSet(false)) {
+            activationHandler.accept(null);
         }
     }
 
-    /**
-     * Executes the given action by holding the session lock. This is done by
-     * using {@link UI#access(Command)} on the UI that the component(s)
-     * associated with this context belong to. This ensures that any UI changes
-     * are pushed to the client in real-time if {@link Push} is enabled.
-     * <p>
-     * If this context is not active (none of the components are attached to a
-     * UI), the action is postponed until the connection becomes active.
-     *
-     * @param action
-     *            the action to dispatch
-     */
-    @Override
-    public void dispatchAction(Command action) {
-        synchronized (pendingActions) {
-            pendingActions.add(action);
+    class ActionDispatcherImpl implements ActionDispatcher {
+        /**
+         * Executes the given action by holding the session lock. This is done
+         * by using {@link UI#access(Command)} on the UI that the component(s)
+         * associated with this context belong to. This ensures that any UI
+         * changes are pushed to the client in real-time if {@link Push} is
+         * enabled.
+         * <p>
+         * If this context is not active (none of the components are attached to
+         * a UI), the action is postponed until the connection becomes active.
+         *
+         * @param action
+         *            the action to dispatch
+         */
+        @Override
+        public void dispatchAction(Command action) {
+            inbox.add(action);
+            flushPendingActionsIfActive();
         }
-        flushPendingActionsIfActive();
-    }
 
-    @Override
-    public <T> CompletableFuture<T> createCompletableFuture() {
-        UI localUI = this.ui;
-        if (localUI == null) {
-            throw new IllegalStateException(
-                    "The topic connection within this context maybe deactivated."
-                            + "Make sure the context has at least one component attached to the UI.");
+        @Override
+        public <T> CompletableFuture<T> createCompletableFuture() {
+            UI localUI = ComponentConnectionContext.this.ui;
+            if (localUI == null) {
+                throw new IllegalStateException(
+                        "The topic connection within this context maybe deactivated."
+                                + "Make sure the context has at least one component attached to the UI.");
+            }
+            return new DeadlockDetectingCompletableFuture<>(
+                    localUI.getSession());
         }
-        return new DeadlockDetectingCompletableFuture<>(localUI.getSession());
     }
 
     private void flushPendingActionsIfActive() {
         UI localUI = this.ui;
-        if (localUI != null) {
-            localUI.access(() -> {
-                List<Command> pendingActionsCopy;
-                synchronized (pendingActions) {
-                    pendingActionsCopy = new ArrayList<>(pendingActions);
-                    pendingActions.clear();
-                }
-                pendingActionsCopy.forEach(Command::execute);
-            });
+        if (localUI == null || backgroundRunner == null) {
+            return;
         }
+        backgroundRunner.execute(() -> executePendingCommands(localUI));
+    }
+
+    private void executePendingCommands(UI localUI) {
+        localUI.access(() -> {
+            while (true) {
+                Command command = inbox.poll();
+                if (command == null) {
+                    break;
+                }
+                command.execute();
+            }
+        });
     }
 
     private static void checkForPush(UI ui) {

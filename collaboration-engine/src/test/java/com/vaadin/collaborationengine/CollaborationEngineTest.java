@@ -180,7 +180,7 @@ public class CollaborationEngineTest {
         WeakReference weakRef = new WeakReference(
                 spyContext.getActivationHandler());
         registration.remove();
-
+        spyContext = null;
         Assert.assertTrue(
                 "Expect ActivationHandler to be garbage-collected when connection closed",
                 TestUtils.isGarbageCollected(weakRef));
@@ -222,10 +222,10 @@ public class CollaborationEngineTest {
     @Test
     public void openConnection_callbackRunThroughDispatch() {
         AtomicBoolean callbackRun = new AtomicBoolean();
-        AtomicReference<Command> pendingAction = new AtomicReference<>();
+        AtomicReference<Runnable> pendingAction = new AtomicReference<>();
 
         MockConnectionContext context = MockConnectionContext.createEager();
-        context.setActionDispatcher(action -> {
+        context.setExecutor(action -> {
             boolean updated = pendingAction.compareAndSet(null, action);
             Assert.assertTrue("There should not be a previous pending action",
                     updated);
@@ -243,7 +243,7 @@ public class CollaborationEngineTest {
 
         Assert.assertFalse(callbackRun.get());
 
-        pendingAction.get().execute();
+        pendingAction.get().run();
 
         Assert.assertTrue(callbackRun.get());
     }

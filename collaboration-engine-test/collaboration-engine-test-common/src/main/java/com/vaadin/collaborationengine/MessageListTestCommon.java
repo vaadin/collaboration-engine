@@ -15,6 +15,8 @@ import com.vaadin.testbench.TestBenchTestCase;
 
 public class MessageListTestCommon extends AbstractCollaborativeViewTest {
 
+    private static final String HELLO_USERS = "hello users";
+
     @Override
     public String getRoute() {
         return "chat";
@@ -43,12 +45,12 @@ public class MessageListTestCommon extends AbstractCollaborativeViewTest {
     @Before
     public void init() {
         client1 = new ClientState(this);
-        $("button").id("next-topic").click();
+        clickButton("next-topic");
     }
 
     @After
     public void reset() {
-        $("button").id("reset-user-counter").click();
+        clickButton("reset-user-counter");
     }
 
     @Test
@@ -56,53 +58,60 @@ public class MessageListTestCommon extends AbstractCollaborativeViewTest {
 
         Assert.assertEquals("Expected the message list to be empty", 0,
                 client1.getMessages().size());
-        client1.submitMessage("hello users");
+        client1.submitMessage(HELLO_USERS);
 
         Assert.assertEquals("Expected message list to contain one message", 1,
                 client1.getMessages().size());
-        Assert.assertEquals("Expected a message with the text 'hello users'",
-                "hello users", client1.getMessages().get(0).getText());
+        assertMessage(HELLO_USERS, client1.getMessages().get(0));
 
         ClientState client2 = new ClientState(addClient());
         Assert.assertEquals(
                 "Expected a second connected client to see the one message", 1,
                 client2.getMessages().size());
-        Assert.assertEquals(
-                "Expected a a second connected client to see the text 'hello users'",
-                "hello users", client2.getMessages().get(0).getText());
+        assertMessage(HELLO_USERS, client2.getMessages().get(0));
 
-        client2.submitMessage("hi");
+        final String hi = "hi";
+        client2.submitMessage(hi);
         Assert.assertEquals("Expected the sender to get the additional message",
                 2, client2.getMessages().size());
         Assert.assertEquals(
                 "Expected the first client to get the additional message", 2,
                 client1.getMessages().size());
-        Assert.assertEquals("Expected the sender to see the text 'hi'", "hi",
-                client2.getMessages().get(1).getText());
-        Assert.assertEquals("Expected the first client to see the text 'hi'",
-                "hi", client1.getMessages().get(1).getText());
+        assertMessage(hi, client2.getMessages().get(1));
+        assertMessage(hi, client1.getMessages().get(1));
     }
 
     @Test
     public void disconnectAndConnectToTopic_messageListUpdated() {
 
-        client1.submitMessage("hello users");
+        client1.submitMessage(HELLO_USERS);
+        waitUntil(webDriver -> !client1.getMessages().isEmpty(), 5);
         Assert.assertEquals("Expected message list to contain one message", 1,
                 client1.getMessages().size());
-        Assert.assertEquals("Expected a message with the text 'hello users'",
-                "hello users", client1.getMessages().get(0).getText());
+        assertMessage(HELLO_USERS, client1.getMessages().get(0));
 
-        $("button").id("set-topic-null").click();
+        clickButton("set-topic-null");
 
+        waitUntil(webDriver -> client1.getMessages().isEmpty(), 5);
         Assert.assertEquals("Expected message list to be empty", 0,
                 client1.getMessages().size());
 
-        $("button").id("set-topic").click();
+        clickButton("set-topic");
 
+        waitUntil(webDriver -> !client1.getMessages().isEmpty(), 5);
         Assert.assertEquals(
                 "Expected message list to contain message after connecting to topic again",
                 1, client1.getMessages().size());
-        Assert.assertEquals("Expected a message with the text 'hello users'",
-                "hello users", client1.getMessages().get(0).getText());
+        assertMessage(HELLO_USERS, client1.getMessages().get(0));
+    }
+
+    private void clickButton(String id) {
+        $("button").id(id).click();
+    }
+
+    private void assertMessage(String expected, MessageElement actual) {
+        Assert.assertEquals(String
+                .format("Expected a message with the text '%s'", expected),
+                expected, actual.getText());
     }
 }

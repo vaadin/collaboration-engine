@@ -149,8 +149,9 @@ public class CollaborationListTest {
         });
         context.resetActionDispatchCount();
         list.append("foo");
-        // One for the event, one for completing the future
-        Assert.assertEquals(2, context.getDispathActionCount());
+        // One for the event, one for addToInbox and one for completing the
+        // future
+        Assert.assertEquals(3, context.getDispathActionCount());
     }
 
     @Test
@@ -177,10 +178,11 @@ public class CollaborationListTest {
         ctx2.resetActionDispatchCount();
         list1.get().append("foo");
 
-        // One dispatch for the event and one for completing the future
-        Assert.assertEquals(2, ctx1.getDispathActionCount());
-        // Just one dispatch for the event
-        Assert.assertEquals(1, ctx2.getDispathActionCount());
+        // One dispatch for the event, ond for addToInbox and one for completing
+        // the future
+        Assert.assertEquals(3, ctx1.getDispathActionCount());
+        // One dispatch for the event and one for addToInbox
+        Assert.assertEquals(2, ctx2.getDispathActionCount());
     }
 
     @Test
@@ -224,7 +226,8 @@ public class CollaborationListTest {
 
     @Test
     public void append_contextCannotDispatch_unresolved() {
-        context.setActionDispatcher(ignore -> {
+        context.init(ignore -> {
+        }, ignore -> {
         });
         CompletableFuture<Void> append = list.append("foo");
         Assert.assertFalse(append.isDone());

@@ -41,54 +41,27 @@ import com.vaadin.flow.shared.Registration;
 public class TopicConnection {
 
     private final Topic topic;
-    private final ConnectionContext context;
     private final UserInfo localUser;
-    private Registration closeRegistration;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
-
     private final Consumer<Boolean> topicActivationHandler;
     private final Map<String, List<MapChangeNotifier>> subscribersPerMap = new HashMap<>();
     private final Map<String, List<ListChangeNotifier>> subscribersPerList = new HashMap<>();
-
-    private boolean active;
-
     private final BiConsumer<UUID, ObjectNode> distributor;
+    private final SerializableFunction<TopicConnection, Registration> connectionActivationCallback;
+    private Registration closeRegistration;
+    private ActionDispatcher actionDispatcher;
 
-    TopicConnection(ConnectionContext context, Topic topic,
-            BiConsumer<UUID, ObjectNode> distributor, UserInfo localUser,
-            Consumer<Boolean> topicActivationHandler,
+    TopicConnection(CollaborationEngine ce, ConnectionContext context,
+            Topic topic, BiConsumer<UUID, ObjectNode> distributor,
+            UserInfo localUser, Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
-        this.context = context;
         this.distributor = distributor;
         this.localUser = localUser;
         this.topicActivationHandler = topicActivationHandler;
-
-        closeRegistration = context.setActivationHandler(active -> {
-            if (active) {
-                this.active = true;
-                context.dispatchAction(() -> {
-                    Registration changeRegistration;
-                    synchronized (this.topic) {
-                        changeRegistration = this.topic
-                                .subscribeToChange(this::handleChange);
-                    }
-                    Registration callbackRegistration = connectionActivationCallback
-                            .apply(this);
-                    addRegistration(callbackRegistration);
-                    addRegistration(() -> {
-                        synchronized (this.topic) {
-                            changeRegistration.remove();
-                        }
-                    });
-                });
-            } else {
-                context.dispatchAction(() -> {
-                    deactivate();
-                });
-            }
-            topicActivationHandler.accept(active);
-        });
+        this.connectionActivationCallback = connectionActivationCallback;
+        this.closeRegistration = context.init(this::acceptActionDispatcher,
+                ce.getExecutorService());
     }
 
     private void handleChange(ObjectNode change) {
@@ -135,6 +108,10 @@ public class TopicConnection {
      */
     public UserInfo getUserInfo() {
         return localUser;
+    }
+
+    private boolean isActive() {
+        return this.actionDispatcher != null;
     }
 
     private void addRegistration(Registration registration) {
@@ -203,7 +180,7 @@ public class TopicConnection {
                     MapChangeNotifier mapChangeNotifier = mapChange -> {
                         MapChangeEvent event = new MapChangeEvent(this,
                                 mapChange);
-                        context.dispatchAction(
+                        actionDispatcher.dispatchAction(
                                 () -> subscriber.onMapChange(event));
                     };
                     topic.getMapData(name)
@@ -222,7 +199,7 @@ public class TopicConnection {
                 ensureActiveConnection();
                 Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
-                CompletableFuture<Boolean> contextFuture = context
+                CompletableFuture<Boolean> contextFuture = actionDispatcher
                         .createCompletableFuture();
 
                 ObjectNode change = JsonUtil.createPutChange(name, key,
@@ -231,7 +208,7 @@ public class TopicConnection {
                 UUID id = UUID.randomUUID();
                 topic.setChangeResultTracker(id, result -> {
                     boolean isApplied = result != Topic.ChangeResult.REJECTED;
-                    context.dispatchAction(
+                    actionDispatcher.dispatchAction(
                             () -> contextFuture.complete(isApplied));
                 });
                 distributor.accept(id, change);
@@ -243,14 +220,14 @@ public class TopicConnection {
                 ensureActiveConnection();
                 Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
-                CompletableFuture<Void> contextFuture = context
+                CompletableFuture<Void> contextFuture = actionDispatcher
                         .createCompletableFuture();
 
                 ObjectNode change = JsonUtil.createPutChange(name, key, null,
                         value);
 
                 UUID id = UUID.randomUUID();
-                topic.setChangeResultTracker(id, result -> context
+                topic.setChangeResultTracker(id, result -> actionDispatcher
                         .dispatchAction(() -> contextFuture.complete(null)));
                 distributor.accept(id, change);
                 return contextFuture;
@@ -329,7 +306,7 @@ public class TopicConnection {
                     ListChangeNotifier changeNotifier = listChange -> {
                         ListChangeEvent event = new ListChangeEvent(this,
                                 listChange);
-                        context.dispatchAction(
+                        actionDispatcher.dispatchAction(
                                 () -> subscriber.onListChange(event));
                     };
                     topic.getListChanges(name)
@@ -370,14 +347,15 @@ public class TopicConnection {
                 ensureActiveConnection();
                 Objects.requireNonNull(item, "The item cannot be null");
 
-                CompletableFuture<Void> contextFuture = context
+                CompletableFuture<Void> contextFuture = actionDispatcher
                         .createCompletableFuture();
 
                 ObjectNode change = JsonUtil.createAppendChange(name, item);
 
                 UUID id = UUID.randomUUID();
                 topic.setChangeResultTracker(id, result -> {
-                    context.dispatchAction(() -> contextFuture.complete(null));
+                    actionDispatcher
+                            .dispatchAction(() -> contextFuture.complete(null));
                 });
                 distributor.accept(id, change);
                 return contextFuture;
@@ -426,21 +404,59 @@ public class TopicConnection {
     }
 
     void closeWithoutDeactivating() {
-        try {
-            if (closeRegistration != null) {
+        if (closeRegistration != null) {
+            try {
                 closeRegistration.remove();
+            } finally {
                 closeRegistration = null;
+                if (actionDispatcher != null) {
+                    this.topicActivationHandler.accept(false);
+                    this.actionDispatcher = null;
+                }
             }
-        } finally {
-            topicActivationHandler.accept(false);
-            this.active = false;
         }
     }
 
     private void ensureActiveConnection() {
-        if (!active) {
+        if (!isActive()) {
             throw new IllegalStateException("Cannot perform this "
                     + "operation on a deactivated connection.");
+        }
+    }
+
+    private void acceptActionDispatcher(ActionDispatcher actionDispatcher) {
+        if (actionDispatcher != null) {
+            this.actionDispatcher = actionDispatcher;
+            actionDispatcher.dispatchAction(() -> {
+                topicActivationHandler.accept(true);
+                Registration changeRegistration;
+                synchronized (this.topic) {
+                    changeRegistration = this.topic.subscribeToChange(
+                            change -> this.actionDispatcher.dispatchAction(
+                                    () -> handleChange(change)));
+                }
+                Registration callbackRegistration = connectionActivationCallback
+                        .apply(this);
+                addRegistration(callbackRegistration);
+                addRegistration(() -> {
+                    synchronized (this.topic) {
+                        changeRegistration.remove();
+                    }
+                });
+            });
+        } else {
+            if (this.actionDispatcher == null) {
+                throw new IllegalStateException(
+                        "The topic connection is already inactive.");
+            }
+            this.actionDispatcher.dispatchAction(() -> {
+                try {
+                    this.deactivate();
+                } finally {
+                    topicActivationHandler.accept(false);
+                    this.actionDispatcher = null;
+                }
+            });
         }
     }
 }

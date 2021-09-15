@@ -558,6 +558,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void requestAccess_actionIsDispatched() {
         UserInfo user = new UserInfo("steve");
         MockConnectionContext spyContext = new MockConnectionContext();
+        spyContext.setEager(true);
         ce.requestAccess(spyContext, user, result -> {
         });
         Assert.assertTrue(spyContext.getDispathActionCount() > 0);
@@ -586,6 +587,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
         MockConnectionContext spyContext = new MockConnectionContext();
+        spyContext.setEager(true);
         configuration.setLicenseCheckingEnabled(false);
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
@@ -599,6 +601,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(false);
         MockConnectionContext spyContext = new MockConnectionContext();
+        spyContext.setEager(true);
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
@@ -611,6 +614,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         AtomicBoolean result = new AtomicBoolean(true);
         MockConnectionContext spyContext = new MockConnectionContext();
+        spyContext.setEager(true);
         ce.requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
@@ -626,7 +630,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expectMessage("license file is not valid");
 
         UserInfo user = new UserInfo("steve");
-        ConnectionContext spyContext = MockConnectionContext.createEager();
+        MockConnectionContext spyContext = MockConnectionContext.createEager();
         ce.requestAccess(spyContext, user, response -> {
         });
     }

@@ -8,6 +8,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.function.Consumer;
+
 /**
  * Defines when to execute the connection callback
  * <p>
@@ -20,14 +22,6 @@ package com.vaadin.collaborationengine;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public interface ActivationHandler {
+public interface ActivationHandler extends Consumer<ActionDispatcher> {
 
-    /**
-     * Activates or deactivates a connection
-     *
-     * @param active
-     *            activate the connection if {@code true}, deactivate otherwise
-     * @since 1.0
-     */
-    void setActive(boolean active);
 }

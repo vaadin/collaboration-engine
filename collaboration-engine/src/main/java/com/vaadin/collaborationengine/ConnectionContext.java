@@ -8,9 +8,8 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
-import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -22,36 +21,27 @@ import com.vaadin.flow.shared.Registration;
 public interface ConnectionContext {
 
     /**
-     * Sets an instance of {@link ActivationHandler} to the current context.
-     * This method should include logic for updating the activation status.
+     * Initializes the connection context with a {@link ActivationHandler} and
+     * an {@link Executor}.
+     * <p>
+     * The method {@link ActivationHandler#accept(Object)} from the provided
+     * {@link ActivationHandler} should be called with an
+     * {@link ActionDispatcher} when this ConnectionContext is activated. When
+     * this ConnectionContext is deactivated, it should call
+     * {@link ActivationHandler#accept(Object)} with a null parameter.
+     * <p>
+     * The {@link ActionDispatcher} should ensure synchronization within the
+     * context of this ConnectionContext.
      *
-     * @param handler
+     * @param activationHandler
      *            the handler for activation changes
+     * @param executor
+     *            executor that should be used by the handler to execute
+     *            background tasks. Not <code>null</code>
      * @return the registration for any logic that needs to be cleaned up if the
      *         connection is closed permanently, or <code>null</code> if there
      *         is nothing to clean up
-     *
-     * @since 1.0
      */
-    Registration setActivationHandler(ActivationHandler handler);
+    Registration init(ActivationHandler activationHandler, Executor executor);
 
-    /**
-     * Dispatches the given action.
-     *
-     * @param action
-     *            the action to be executed in the context
-     *
-     * @since 1.0
-     */
-    void dispatchAction(Command action);
-
-    /**
-     * Gets a completable future that needs to be resolved within the current
-     * context.
-     *
-     * @return the {@link CompletableFuture} to be resolved
-     *
-     * @since 1.0
-     */
-    <T> CompletableFuture<T> createCompletableFuture();
 }

@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import com.vaadin.flow.server.Command;
 
 public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
@@ -32,19 +33,18 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
     public void onConnectionFailed_calledThroughDispatchAction() {
         fillGraceQuota();
 
-        List<Command> dispatchedActions = new ArrayList<>();
+        List<Runnable> executedActions = new ArrayList<>();
         MockConnectionContext context = MockConnectionContext.createEager();
-        context.setActionDispatcher(dispatchedActions::add);
+        context.setExecutor(executedActions::add);
         TopicConnectionRegistration registration = openTopicConnection(context);
-
         AtomicInteger connectionFailedCallCount = new AtomicInteger(0);
         registration.onConnectionFailed(
                 e -> connectionFailedCallCount.incrementAndGet());
-
         Assert.assertEquals(0, connectionFailedCallCount.get());
-        Assert.assertEquals(1, dispatchedActions.size());
+        Assert.assertEquals(1, executedActions.size());
+        Assert.assertEquals(1, context.getDispathActionCount());
 
-        dispatchedActions.get(0).execute();
+        executedActions.get(0).run();
         Assert.assertEquals(1, connectionFailedCallCount.get());
     }
 

@@ -25,7 +25,8 @@ public class TopicActivationTest {
         component = new TestComponent();
 
         topicActivationHandler = new SpyTopicActivationHandler();
-        collaborationEngine = new CollaborationEngine(topicActivationHandler);
+        collaborationEngine = new TestUtil.TestCollaborationEngine(
+                topicActivationHandler);
         TestUtil.configureTestCollaborationEngine(ui.getSession().getService(),
                 collaborationEngine);
 

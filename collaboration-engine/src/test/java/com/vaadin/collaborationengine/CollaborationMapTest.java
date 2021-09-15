@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,11 +57,12 @@ public class CollaborationMapTest {
     }
 
     private MockConnectionContext context;
-    private CollaborationEngine ce;
+    private TestUtil.TestCollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationMap map;
     private MapSubscriberSpy spy;
     private TopicConnectionRegistration registration;
+    private ActionDispatcher dispatcher;
 
     @Before
     public void init() {
@@ -223,7 +225,8 @@ public class CollaborationMapTest {
 
     @Test
     public void put_contextCannotDispatch_unresolved() {
-        context.setActionDispatcher(ignore -> {
+        context.init(ignore -> {
+        }, command -> {
         });
         CompletableFuture<Void> put = map.put("one", "first");
         Assert.assertFalse(put.isDone());
@@ -232,7 +235,8 @@ public class CollaborationMapTest {
     @Test
     public void replace_contextCannotDispatch_unresolved() {
         map.put("one", "first");
-        context.setActionDispatcher(ignore -> {
+        context.init(ignore -> {
+        }, command -> {
         });
         CompletableFuture<Boolean> replace = map.replace("one", "first",
                 "second");
@@ -386,4 +390,16 @@ public class CollaborationMapTest {
         registration.remove();
         map.put("foo", "foo");
     }
+
+    @Test
+    public void put_useThreadPool() {
+        ce.setAsynchronous(true);
+        Thread current = Thread.currentThread();
+        map.subscribe(event -> {
+            Assert.assertNotSame(current, Thread.currentThread());
+        });
+        map.put("foo", "foo");
+
+    }
+
 }

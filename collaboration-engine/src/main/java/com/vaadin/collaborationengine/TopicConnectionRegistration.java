@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.util.EventObject;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
@@ -64,12 +65,14 @@ public class TopicConnectionRegistration implements Registration {
     }
 
     private TopicConnection topicConnection;
-    private final ConnectionContext connectionContext;
+    private ConnectionContext connectionContext;
+    private Executor executor;
 
     TopicConnectionRegistration(TopicConnection topicConnection,
-            ConnectionContext connectionContext) {
+            ConnectionContext connectionContext, Executor executor) {
         this.topicConnection = topicConnection;
         this.connectionContext = connectionContext;
+        this.executor = executor;
     }
 
     /**
@@ -79,7 +82,10 @@ public class TopicConnectionRegistration implements Registration {
     public void remove() {
         if (topicConnection != null) {
             topicConnection.deactivateAndClose();
+            topicConnection = null;
         }
+        connectionContext = null;
+        executor = null;
     }
 
     /**
@@ -92,7 +98,7 @@ public class TopicConnectionRegistration implements Registration {
      * runs immediately.
      * <p>
      * The action is executed through
-     * {@link ConnectionContext#dispatchAction(Command)} of the connection
+     * {@link ActionDispatcher#dispatchAction(Command)} of the connection
      * context that was used to open the connection.
      *
      * @param connectionFailedAction
@@ -110,9 +116,14 @@ public class TopicConnectionRegistration implements Registration {
          * standalone CE server.
          */
         if (topicConnection == null) {
-            ConnectionFailedEvent event = new ConnectionFailedEvent(this);
-            connectionContext.dispatchAction(
-                    () -> connectionFailedAction.onConnectionFailed(event));
+            connectionContext
+                    .init(new SingleUseActivationHandler(actionDispatcher -> {
+                        ConnectionFailedEvent event = new ConnectionFailedEvent(
+                                this);
+                        actionDispatcher
+                                .dispatchAction(() -> connectionFailedAction
+                                        .onConnectionFailed(event));
+                    }), executor);
         }
     }
 

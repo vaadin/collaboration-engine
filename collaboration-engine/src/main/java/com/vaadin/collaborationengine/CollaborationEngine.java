@@ -12,6 +12,9 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -71,6 +74,8 @@ public class CollaborationEngine {
     private final TopicActivationHandler topicActivationHandler;
 
     private Clock clock = Clock.systemUTC();
+
+    private ExecutorService executorService;
 
     static {
         UsageStatistics.markAsUsed(COLLABORATION_ENGINE_NAME,
@@ -209,6 +214,11 @@ public class CollaborationEngine {
             LicenseChecker.checkLicense(COLLABORATION_ENGINE_NAME,
                     COLLABORATION_ENGINE_VERSION);
         }
+        ce.executorService = Executors
+                .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        vaadinService.addServiceDestroyListener(e -> {
+            ce.executorService.shutdown();
+        });
         return ce;
     }
 
@@ -240,6 +250,10 @@ public class CollaborationEngine {
         ConnectionContext context = new ComponentConnectionContext(component);
         return openTopicConnection(context, topicId, localUser,
                 connectionActivationCallback);
+    }
+
+    Executor getExecutorService() {
+        return executorService;
     }
 
     /**
@@ -292,7 +306,8 @@ public class CollaborationEngine {
                                 + "license events handled by your LicenseEventHandler for "
                                 + "more details.",
                         localUser.getId());
-                return new TopicConnectionRegistration(null, context);
+                return new TopicConnectionRegistration(null, context,
+                        getExecutorService());
             }
         }
 
@@ -306,13 +321,13 @@ public class CollaborationEngine {
 
                     return new TopicAndEventLog(topic, eventLog);
                 });
-        TopicConnection connection = new TopicConnection(context,
+        TopicConnection connection = new TopicConnection(this, context,
                 topicAndConnection.topic,
                 topicAndConnection.eventLog::submitEvent, localUser,
                 isActive -> updateTopicActivation(topicId, isActive),
-
                 connectionActivationCallback);
-        return new TopicConnectionRegistration(connection, context);
+        return new TopicConnectionRegistration(connection, context,
+                getExecutorService());
     }
 
     /**
@@ -393,14 +408,15 @@ public class CollaborationEngine {
                 "AccessResponse cannot be null");
 
         // Will handle remote connection here
+        context.init(new SingleUseActivationHandler(actionDispatcher -> {
+            ensureConfigAndLicenseHandlerInitialization();
+            final boolean hasAccess = !configuration.isLicenseCheckingEnabled()
+                    || licenseHandler.registerUser(user.getId());
 
-        ensureConfigAndLicenseHandlerInitialization();
-        final boolean hasAccess = configuration.isLicenseCheckingEnabled()
-                ? licenseHandler.registerUser(user.getId())
-                : true;
-
-        AccessResponse response = new AccessResponse(hasAccess);
-        context.dispatchAction(() -> requestCallback.accept(response));
+            AccessResponse response = new AccessResponse(hasAccess);
+            actionDispatcher
+                    .dispatchAction(() -> requestCallback.accept(response));
+        }), getExecutorService());
     }
 
     /**

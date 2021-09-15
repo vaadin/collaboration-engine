@@ -105,7 +105,8 @@ public abstract class AbstractLicenseTest {
         configuration.setDataDirPath(testDataDir);
         configuration.setLicenseCheckingEnabled(true);
 
-        ce = CollaborationEngine.configure(service, configuration);
+        ce = CollaborationEngine.configure(service, configuration,
+                new TestUtil.TestCollaborationEngine(), true);
     }
 
     @After
