@@ -89,6 +89,11 @@ public class MockService extends VaadinService {
                     }
 
                     @Override
+                    public boolean isDevModeSessionSerializationEnabled() {
+                        return false;
+                    }
+
+                    @Override
                     public boolean isProductionMode() {
                         return productionMode;
                     }

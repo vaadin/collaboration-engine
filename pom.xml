@@ -11,7 +11,7 @@
     <parent>
         <groupId>com.vaadin</groupId>
         <artifactId>vaadin-parent</artifactId>
-        <version>2.0.2</version>
+        <version>2.0.3</version>
     </parent>
 
     <licenses>
@@ -35,8 +35,8 @@
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
-        <flow.version>8.0.0.alpha3</flow.version>
-        <vaadin.version>21.0.0.alpha2</vaadin.version>
+        <flow.version>8.0.1</flow.version>
+        <vaadin.version>21.0.1</vaadin.version>
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
 
