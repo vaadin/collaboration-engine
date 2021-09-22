@@ -84,7 +84,42 @@ public interface CollaborationMap extends HasExpirationTimeout {
      *
      * @since 1.0
      */
-    CompletableFuture<Void> put(String key, Object value);
+    default CompletableFuture<Void> put(String key, Object value) {
+        return put(key, value, EntryScope.TOPIC);
+    }
+
+    /**
+     * Associates the given value with the given key and scope. This method can
+     * also be used to remove an association by passing <code>null</code> as the
+     * value. Subscribers are notified if the new value isn't
+     * <code>equals()</code> with the old value.
+     * <p>
+     * The given value must be JSON-serializable so it can be sent over the
+     * network when Collaboration Engine is hosted in a standalone server.
+     * <p>
+     * The <code>scope</code> parameter specifies the scope of the entry, which
+     * is either one of {@link EntryScope#TOPIC} to keep the entry in the map
+     * until explicitly removed, or {@link EntryScope#CONNECTION} to
+     * automatically remove the entry when the connection which put the entry is
+     * deactivated. Putting the same value will update the ownership and the
+     * scope of the entry, but listeners won't be invoked.
+     *
+     * @param key
+     *            the string key for which to make an association, not
+     *            <code>null</code>
+     * @param value
+     *            the value to set, or <code>null</code> to remove the
+     *            association
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return a completable future that is resolved when the data update is
+     *         completed.
+     * @throws JsonConversionException
+     *             if the given value isn't serializable as JSON string
+     *
+     * @since 4.0
+     */
+    CompletableFuture<Void> put(String key, Object value, EntryScope scope);
 
     /**
      * Atomically replaces the value for a key if and only if the current value

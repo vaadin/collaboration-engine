@@ -80,7 +80,7 @@ public class TopicTest {
     public void throwingSubscriber_removedAndOthersStillInvoked() {
         AtomicInteger count = new AtomicInteger(0);
 
-        topic.subscribeToChange(event -> {
+        topic.subscribeToChange((id, event) -> {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
@@ -89,7 +89,7 @@ public class TopicTest {
             throw new RuntimeException("Fail on purpose");
         });
 
-        topic.subscribeToChange(event -> count.getAndIncrement());
+        topic.subscribeToChange((id, event) -> count.getAndIncrement());
 
         try {
             topic.applyChange(UUID.randomUUID(),
@@ -122,7 +122,7 @@ public class TopicTest {
     public void throwingListSubscriber_removedAndOthersStillInvoked() {
         AtomicInteger count = new AtomicInteger(0);
 
-        topic.subscribeToChange(event -> {
+        topic.subscribeToChange((id, event) -> {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
@@ -131,7 +131,7 @@ public class TopicTest {
             throw new RuntimeException("Fail on purpose");
         });
 
-        topic.subscribeToChange(event -> count.getAndIncrement());
+        topic.subscribeToChange((id, event) -> count.getAndIncrement());
 
         try {
             topic.applyChange(UUID.randomUUID(),

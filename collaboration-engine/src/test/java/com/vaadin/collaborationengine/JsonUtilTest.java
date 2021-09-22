@@ -3,8 +3,11 @@ package com.vaadin.collaborationengine;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -90,5 +93,23 @@ public class JsonUtilTest {
                 userJson.get("abbreviation").textValue());
         Assert.assertEquals("my-image", userJson.get("image").textValue());
         Assert.assertEquals(5, userJson.get("colorIndex").intValue());
+    }
+
+    @Test
+    public void literalNull_toUUID_returnsNull() {
+        Assert.assertNull(JsonUtil.toUUID(null));
+    }
+
+    @Test
+    public void nullJsonNode_toUUID_returnsNull() {
+        Assert.assertNull(JsonUtil.toUUID(NullNode.instance));
+    }
+
+    @Test
+    public void uuidString_toUUID_returnsUUID() {
+        UUID uuid = UUID.randomUUID();
+        ObjectNode node = JsonUtil.getObjectMapper().createObjectNode();
+        node.put("uuid", uuid.toString());
+        Assert.assertEquals(uuid, JsonUtil.toUUID(node.get("uuid")));
     }
 }

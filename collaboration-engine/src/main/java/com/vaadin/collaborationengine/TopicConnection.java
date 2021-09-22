@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.vaadin.collaborationengine.Topic.ChangeResult;
 import com.vaadin.collaborationengine.Topic.ListChangeNotifier;
 import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
 import com.vaadin.flow.function.SerializableFunction;
@@ -46,6 +47,10 @@ public class TopicConnection {
     private final Consumer<Boolean> topicActivationHandler;
     private final Map<String, List<MapChangeNotifier>> subscribersPerMap = new HashMap<>();
     private final Map<String, List<ListChangeNotifier>> subscribersPerList = new HashMap<>();
+    private final Map<String, Map<String, UUID>> connectionScopedMapKeys = new HashMap<>();
+
+    private volatile boolean cleanupPending;
+
     private final BiConsumer<UUID, ObjectNode> distributor;
     private final SerializableFunction<TopicConnection, Registration> connectionActivationCallback;
     private Registration closeRegistration;
@@ -64,26 +69,15 @@ public class TopicConnection {
                 ce.getExecutorService());
     }
 
-    private void handleChange(ObjectNode change) {
+    private void handleChange(UUID id, ObjectNode change) {
         try {
             String type = change.get(JsonUtil.CHANGE_TYPE).asText();
             switch (type) {
             case JsonUtil.CHANGE_TYPE_PUT:
-                String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
-                String key = change.get(JsonUtil.CHANGE_KEY).asText();
-                JsonNode oldValue = change.get(JsonUtil.CHANGE_OLD_VALUE);
-                JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
-                MapChange mapChange = new MapChange(mapName, key, oldValue,
-                        newValue);
-                EventUtil.fireEvents(subscribersPerMap.get(mapName),
-                        notifier -> notifier.onEntryChange(mapChange), false);
+                handlePutChange(id, change);
                 break;
             case JsonUtil.CHANGE_TYPE_APPEND:
-                String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-                JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-                ListChange listChange = new ListChange(listName, item);
-                EventUtil.fireEvents(subscribersPerList.get(listName),
-                        notifier -> notifier.onListChange(listChange), false);
+                handleAppendChange(change);
                 break;
             default:
                 throw new UnsupportedOperationException(
@@ -93,6 +87,37 @@ public class TopicConnection {
             deactivateAndClose();
             throw e;
         }
+    }
+
+    private void handlePutChange(UUID id, ObjectNode change) {
+        String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
+        String key = change.get(JsonUtil.CHANGE_KEY).asText();
+        JsonNode oldValue = change.get(JsonUtil.CHANGE_OLD_VALUE);
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+        MapChange mapChange = new MapChange(mapName, key, oldValue, newValue);
+        Map<String, UUID> keys = connectionScopedMapKeys.get(mapName);
+        // If there is a connection scoped entry for the same key with a
+        // different id, cleanup the existing entry
+        if (keys != null && !Objects.equals(id, keys.get(key))) {
+            UUID uuid = keys.get(key);
+            if (!Objects.equals(
+                    JsonUtil.toUUID(change.get(JsonUtil.CHANGE_EXPECTED_ID)),
+                    uuid)) {
+                keys.remove(key);
+            }
+        }
+        if (!Objects.equals(oldValue, newValue)) {
+            EventUtil.fireEvents(subscribersPerMap.get(mapName),
+                    notifier -> notifier.onEntryChange(mapChange), false);
+        }
+    }
+
+    private void handleAppendChange(ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        ListChange listChange = new ListChange(listName, item);
+        EventUtil.fireEvents(subscribersPerList.get(listName),
+                notifier -> notifier.onListChange(listChange), false);
     }
 
     Topic getTopic() {
@@ -216,7 +241,8 @@ public class TopicConnection {
             }
 
             @Override
-            public CompletableFuture<Void> put(String key, Object value) {
+            public CompletableFuture<Void> put(String key, Object value,
+                    EntryScope scope) {
                 ensureActiveConnection();
                 Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
@@ -227,8 +253,19 @@ public class TopicConnection {
                         value);
 
                 UUID id = UUID.randomUUID();
-                topic.setChangeResultTracker(id, result -> actionDispatcher
-                        .dispatchAction(() -> contextFuture.complete(null)));
+                topic.setChangeResultTracker(id, result -> {
+                    if (scope == EntryScope.CONNECTION
+                            && result == ChangeResult.ACCEPTED) {
+                        connectionScopedMapKeys
+                                .computeIfAbsent(name, k -> new HashMap<>())
+                                .put(key, id);
+                        if (!cleanupPending) {
+                            cleanupScopedData();
+                        }
+                    }
+                    actionDispatcher
+                            .dispatchAction(() -> contextFuture.complete(null));
+                });
                 distributor.accept(id, change);
                 return contextFuture;
             }
@@ -395,8 +432,23 @@ public class TopicConnection {
         }
     }
 
+    private void cleanupScopedData() {
+        synchronized (topic) {
+            connectionScopedMapKeys.forEach(
+                    (mapName, mapKeys) -> mapKeys.forEach((key, id) -> {
+                        ObjectNode change = JsonUtil.createPutChange(mapName,
+                                key, null, null);
+                        change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
+                        distributor.accept(UUID.randomUUID(), change);
+                    }));
+            connectionScopedMapKeys.clear();
+            cleanupPending = false;
+        }
+    }
+
     void deactivateAndClose() {
         try {
+            cleanupScopedData();
             deactivate();
         } finally {
             closeWithoutDeactivating();
@@ -427,19 +479,14 @@ public class TopicConnection {
     private void acceptActionDispatcher(ActionDispatcher actionDispatcher) {
         if (actionDispatcher != null) {
             this.actionDispatcher = actionDispatcher;
-            actionDispatcher.dispatchAction(() -> {
+            this.actionDispatcher.dispatchAction(() -> {
                 topicActivationHandler.accept(true);
-                Registration changeRegistration;
-                synchronized (this.topic) {
-                    changeRegistration = this.topic.subscribeToChange(
-                            change -> this.actionDispatcher.dispatchAction(
-                                    () -> handleChange(change)));
-                }
+                Registration changeRegistration = subscribeToChange();
                 Registration callbackRegistration = connectionActivationCallback
                         .apply(this);
                 addRegistration(callbackRegistration);
                 addRegistration(() -> {
-                    synchronized (this.topic) {
+                    synchronized (topic) {
                         changeRegistration.remove();
                     }
                 });
@@ -457,6 +504,13 @@ public class TopicConnection {
                     this.actionDispatcher = null;
                 }
             });
+        }
+    }
+
+    private Registration subscribeToChange() {
+        synchronized (topic) {
+            return topic.subscribeToChange((id, change) -> actionDispatcher
+                    .dispatchAction(() -> handleChange(id, change)));
         }
     }
 }

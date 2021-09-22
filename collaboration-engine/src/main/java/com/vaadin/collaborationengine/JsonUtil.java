@@ -11,6 +11,7 @@ package com.vaadin.collaborationengine;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -35,6 +36,8 @@ public class JsonUtil {
     static final String CHANGE_VALUE = "value";
 
     static final String CHANGE_OLD_VALUE = "old-value";
+
+    static final String CHANGE_EXPECTED_ID = "expected-id";
 
     static final String CHANGE_EXPECTED_VALUE = "expected-value";
 
@@ -104,7 +107,15 @@ public class JsonUtil {
         }
     }
 
-    public static ObjectNode createPutChange(String name, String key,
+    static UUID toUUID(JsonNode jsonNode) {
+        if (jsonNode == null || jsonNode.isNull()) {
+            return null;
+        } else {
+            return UUID.fromString(jsonNode.asText());
+        }
+    }
+
+    static ObjectNode createPutChange(String name, String key,
             Object expectedValue, Object value) {
         ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_PUT);
@@ -117,7 +128,7 @@ public class JsonUtil {
         return change;
     }
 
-    public static ObjectNode createAppendChange(String name, Object item) {
+    static ObjectNode createAppendChange(String name, Object item) {
         ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
         change.put(CHANGE_NAME, name);

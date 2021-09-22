@@ -402,4 +402,32 @@ public class CollaborationMapTest {
 
     }
 
+    @Test
+    public void putWithConnectionScope_connectionDeactivated_entryRemoved() {
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        context.deactivate();
+        context.activate();
+        String foo = map.get("foo", String.class);
+        Assert.assertNull(foo);
+    }
+
+    @Test
+    public void putWithTopicScope_putSameValueWithConnectionScope_connectionDeactivated_entryRemoved() {
+        map.put("foo", "foo");
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        context.deactivate();
+        context.activate();
+        String foo = map.get("foo", String.class);
+        Assert.assertNull(foo);
+    }
+
+    @Test
+    public void putWithConnectionScope_putWithTopicScope_connectionDeactivated_entryNotRemoved() {
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        map.put("foo", "bar");
+        context.deactivate();
+        context.activate();
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("bar", foo);
+    }
 }

@@ -24,13 +24,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.shared.Registration;
 
 class Topic {
 
     enum ChangeResult {
-        ACCEPTED, REJECTED, NOOP;
+        ACCEPTED, REJECTED;
     }
 
     @FunctionalInterface
@@ -43,13 +44,25 @@ class Topic {
         void onListChange(ListChange listChange);
     }
 
+    private static class Entry {
+
+        private final UUID revisionId;
+
+        private final JsonNode data;
+
+        public Entry(UUID id, JsonNode data) {
+            this.revisionId = id;
+            this.data = data;
+        }
+    }
+
     private final CollaborationEngine collaborationEngine;
-    private final Map<String, Map<String, JsonNode>> namedMapData = new HashMap<>();
+    private final Map<String, Map<String, Entry>> namedMapData = new HashMap<>();
     private final Map<String, List<JsonNode>> namedListData = new HashMap<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
     final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
-    private final List<SerializableConsumer<ObjectNode>> changeListeners = new ArrayList<>();
+    private final List<SerializableBiConsumer<UUID, ObjectNode>> changeListeners = new ArrayList<>();
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
 
     Topic(CollaborationEngine collaborationEngine) {
@@ -57,7 +70,7 @@ class Topic {
     }
 
     Registration subscribeToChange(
-            SerializableConsumer<ObjectNode> changeListener) {
+            SerializableBiConsumer<UUID, ObjectNode> changeListener) {
         clearExpiredData();
         changeListeners.add(changeListener);
         return Registration.combine(
@@ -89,26 +102,26 @@ class Topic {
         }
     }
 
-    private void fireChangeEvent(ObjectNode change) {
+    private void fireChangeEvent(UUID id, ObjectNode change) {
         EventUtil.fireEvents(changeListeners,
-                listener -> listener.accept(change), true);
+                listener -> listener.accept(id, change), true);
     }
 
     Stream<MapChange> getMapData(String mapName) {
-        Map<String, JsonNode> mapData = namedMapData.get(mapName);
+        Map<String, Entry> mapData = namedMapData.get(mapName);
         if (mapData == null) {
             return Stream.empty();
         }
         return mapData.entrySet().stream().map(entry -> new MapChange(mapName,
-                entry.getKey(), null, entry.getValue()));
+                entry.getKey(), null, entry.getValue().data));
     }
 
     JsonNode getMapValue(String mapName, String key) {
-        Map<String, JsonNode> map = namedMapData.get(mapName);
+        Map<String, Entry> map = namedMapData.get(mapName);
         if (map == null || !map.containsKey(key)) {
             return null;
         }
-        return map.get(key).deepCopy();
+        return map.get(key).data.deepCopy();
     }
 
     synchronized ChangeResult applyChange(UUID trackingId, ObjectNode change) {
@@ -116,7 +129,7 @@ class Topic {
         ChangeResult result;
         switch (type) {
         case JsonUtil.CHANGE_TYPE_PUT:
-            result = applyMapChange(change);
+            result = applyMapChange(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_APPEND:
             result = applyListChange(change);
@@ -131,27 +144,31 @@ class Topic {
             changeResultTracker.accept(result);
         }
         if (ChangeResult.ACCEPTED.equals(result)) {
-            fireChangeEvent(change);
+            fireChangeEvent(trackingId, change);
         }
         return result;
     }
 
-    ChangeResult applyMapChange(ObjectNode change) {
+    ChangeResult applyMapChange(UUID changeId, ObjectNode change) {
         String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
         String key = change.get(JsonUtil.CHANGE_KEY).asText();
         JsonNode expectedValue = change.get(JsonUtil.CHANGE_EXPECTED_VALUE);
+        JsonNode expectedId = change.get(JsonUtil.CHANGE_EXPECTED_ID);
         JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
 
-        Map<String, JsonNode> map = namedMapData.computeIfAbsent(mapName,
+        Map<String, Entry> map = namedMapData.computeIfAbsent(mapName,
                 name -> new HashMap<>());
-        JsonNode oldValue = map.containsKey(key) ? map.get(key)
+        JsonNode oldValue = map.containsKey(key) ? map.get(key).data
                 : NullNode.getInstance();
+        UUID oldChangeId = map.containsKey(key) ? map.get(key).revisionId
+                : null;
 
-        if (expectedValue != null && !Objects.equals(oldValue, expectedValue)) {
+        if (expectedId != null
+                && !Objects.equals(oldChangeId, JsonUtil.toUUID(expectedId))) {
             return ChangeResult.REJECTED;
         }
-        if (Objects.equals(oldValue, newValue)) {
-            return ChangeResult.NOOP;
+        if (expectedValue != null && !Objects.equals(oldValue, expectedValue)) {
+            return ChangeResult.REJECTED;
         }
 
         // FIXME ugly (until proper topic data versioning)
@@ -159,7 +176,7 @@ class Topic {
         if (newValue instanceof NullNode) {
             map.remove(key);
         } else {
-            map.put(key, newValue.deepCopy());
+            map.put(key, new Entry(changeId, newValue.deepCopy()));
         }
         return ChangeResult.ACCEPTED;
     }
