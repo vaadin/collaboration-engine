@@ -3,6 +3,7 @@ package com.vaadin.collaborationengine;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.flow.server.VaadinService;
@@ -30,6 +31,8 @@ public class CollaborationEngineConfiguration {
     private boolean automaticallyActivatePush = DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH;
 
     private Backend backend = new LocalBackend();
+
+    private ExecutorService executorService;
 
     /**
      * Creates a new Collaboration Engine configuration with the provided
@@ -156,6 +159,33 @@ public class CollaborationEngineConfiguration {
      */
     public Backend getBackend() {
         return backend;
+    }
+
+    /**
+     * Gets the configured {@link ExecutorService} which will be used to
+     * dispatch actions asynchronously. A custom executor service can be
+     * configured with {@link #setExecutorService(ExecutorService)}.
+     *
+     * @return the configured executor service, or <code>null</code> if not set
+     */
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    /**
+     * Sets the {@link ExecutorService} which will be used to dispatch actions
+     * asynchronously. An executor service set with this method won't be
+     * shutdown automatically, so the developer should take care of that if
+     * needed. If not configured, Collaboration Engine will use a thread pool
+     * with a fixed number of threads equal to the number of available
+     * processors and will take care of shutting it down.
+     *
+     * @param executorService
+     *            the executor service, or <code>null</code> to remove a
+     *            previously configured one
+     */
+    public void setExecutorService(ExecutorService executorService) {
+        this.executorService = executorService;
     }
 
     Path getDataDirPath() {

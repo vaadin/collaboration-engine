@@ -7,8 +7,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.VaadinService;
 

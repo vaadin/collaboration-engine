@@ -1,6 +1,8 @@
 package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,12 +15,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.vaadin.collaborationengine.TestUtil.TestCollaborationEngine;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
-import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
@@ -298,5 +300,53 @@ public class CollaborationEngineTest {
         configuration.setDataDir("bar");
         String dataDir = configuration.getDataDirPath().toString();
         Assert.assertEquals("foo", dataDir);
+    }
+
+    @Test
+    public void serviceExecutorConfigured_isUsedToDispatchActions() {
+        VaadinService service = new MockService();
+        AtomicBoolean executorUsed = new AtomicBoolean();
+        ExecutorService customExecutor = Executors
+                .newSingleThreadExecutor(runnable -> {
+                    executorUsed.set(true);
+                    return new Thread(runnable);
+                });
+
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service, customExecutor);
+        ce.setAsynchronous(true);
+        ce.openTopicConnection(MockConnectionContext.createEager(), "foo",
+                new UserInfo("foo"), connection -> null);
+
+        Assert.assertTrue(executorUsed.get());
+        customExecutor.shutdown();
+    }
+
+    @Test
+    public void serviceExecutorNotConfigured_defaultOneIsSet() {
+        Assert.assertNotNull(collaborationEngine.getExecutorService());
+    }
+
+    @Test
+    public void serviceDestroy_defaultExecutorServiceIsShutdown() {
+        service.destroy();
+
+        Assert.assertTrue(
+                collaborationEngine.getExecutorService().isShutdown());
+    }
+
+    @Test
+    public void serviceDestroy_customExecutorServiceNotShutdown() {
+        VaadinService service = new MockService();
+        ExecutorService customExecutor = Executors.newSingleThreadExecutor();
+
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service, customExecutor);
+        ce.setAsynchronous(true);
+
+        service.destroy();
+
+        Assert.assertFalse(customExecutor.isShutdown());
+        customExecutor.shutdown();
     }
 }

@@ -12,6 +12,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;

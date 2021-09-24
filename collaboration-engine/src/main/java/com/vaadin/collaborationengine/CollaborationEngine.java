@@ -12,7 +12,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -205,6 +204,16 @@ public class CollaborationEngine {
         configuration.setVaadinService(vaadinService);
         ce.configuration = configuration;
 
+        ExecutorService executorService = ce.configuration.getExecutorService();
+        if (executorService == null) {
+            ce.executorService = Executors.newFixedThreadPool(
+                    Runtime.getRuntime().availableProcessors());
+            vaadinService.addServiceDestroyListener(
+                    event -> ce.executorService.shutdown());
+        } else {
+            ce.executorService = executorService;
+        }
+
         if (storeInService) {
             // Avoid storing from inside computeIfAbsent
             vaadinService.getContext().setAttribute(CollaborationEngine.class,
@@ -214,11 +223,6 @@ public class CollaborationEngine {
             LicenseChecker.checkLicense(COLLABORATION_ENGINE_NAME,
                     COLLABORATION_ENGINE_VERSION);
         }
-        ce.executorService = Executors
-                .newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        vaadinService.addServiceDestroyListener(e -> {
-            ce.executorService.shutdown();
-        });
         return ce;
     }
 
@@ -252,7 +256,7 @@ public class CollaborationEngine {
                 connectionActivationCallback);
     }
 
-    Executor getExecutorService() {
+    ExecutorService getExecutorService() {
         return executorService;
     }
 
