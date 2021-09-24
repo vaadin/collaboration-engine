@@ -50,6 +50,11 @@
             <artifactId>vaadin-radio-button-testbench</artifactId>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-dialog-testbench</artifactId>
+            <scope>compile</scope>
+        </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
         <dependency>

@@ -162,7 +162,6 @@ public class ComponentConnectionContext implements ConnectionContext {
             if (attachedComponents.isEmpty()) {
                 // Last detach
                 deactivateConnection();
-                ui = null;
             }
         }
     }
@@ -189,7 +188,6 @@ public class ComponentConnectionContext implements ConnectionContext {
             componentListeners.clear();
             attachedComponents.clear();
             deactivateConnection();
-            ui = null;
         };
     }
 
@@ -211,6 +209,7 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (activationHandler != null && ui != null
                 && active.getAndSet(false)) {
             activationHandler.accept(null);
+            actionDispatcher.dispatchAction(() -> ui = null);
         }
     }
 
