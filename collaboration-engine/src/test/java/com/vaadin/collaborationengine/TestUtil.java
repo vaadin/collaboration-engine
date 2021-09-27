@@ -1,8 +1,13 @@
 package com.vaadin.collaborationengine;
 
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -10,6 +15,30 @@ import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.flow.server.VaadinService;
 
 public class TestUtil {
+
+    private static ReferenceQueue<VaadinService> serviceReferenceQueue = new ReferenceQueue<>();
+    private static Map<WeakReference<VaadinService>, ExecutorService> executorServices = new ConcurrentHashMap<>();
+
+    /*
+     * Wait for VaadinService instances to be garbage collected and shut down
+     * the corresponding CE executor service.
+     */
+    private static Thread executorServiceShutdownThread = new Thread(() -> {
+        while (true) {
+            try {
+                Reference<? extends VaadinService> collectedServiceReference = serviceReferenceQueue
+                        .remove();
+                executorServices.remove(collectedServiceReference).shutdown();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return;
+            }
+        }
+    });
+    static {
+        executorServiceShutdownThread.setDaemon(true);
+        executorServiceShutdownThread.start();
+    }
 
     public static class MockConfiguration
             extends CollaborationEngineConfiguration {
@@ -95,6 +124,29 @@ public class TestUtil {
             CollaborationEngine ce,
             CollaborationEngineConfiguration configuration) {
         CollaborationEngine.configure(service, configuration, ce, true);
+
+        /*
+         * Hook up the executor service to be shut down when the VaadinService
+         * instance is garbage collected
+         */
+        executorServices.put(
+                new WeakReference<>(service, serviceReferenceQueue),
+                getRealExecutorService(ce));
+    }
+
+    private static ExecutorService getRealExecutorService(
+            CollaborationEngine ce) {
+        if (ce instanceof TestCollaborationEngine) {
+            /*
+             * Get the underlying executor since the wrapper has a back
+             * reference to the CE instance which would prevent it from being
+             * garbage collected
+             */
+            return ((TestCollaborationEngine) ce)
+                    .getUnderlyingExecutorService();
+        } else {
+            return ce.getExecutorService();
+        }
     }
 
     static class TestCollaborationEngine extends CollaborationEngine {
@@ -111,6 +163,10 @@ public class TestUtil {
 
         public void setAsynchronous(boolean asynchronous) {
             this.asynchronous = asynchronous;
+        }
+
+        public ExecutorService getUnderlyingExecutorService() {
+            return super.getExecutorService();
         }
 
         @Override
