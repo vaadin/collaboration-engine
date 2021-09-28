@@ -58,8 +58,7 @@ public class MessageManager extends AbstractCollaborationManager {
     private final Map<CollaborationMessage, CompletableFuture<Void>> persistedMessageFutures = new LinkedHashMap<>();
 
     /**
-     * Creates a new manager for the provided component, with the provided local
-     * user and topic id.
+     * Creates a new manager for the given component.
      *
      * @param component
      *            the component which holds UI access, not {@code null}
@@ -74,8 +73,7 @@ public class MessageManager extends AbstractCollaborationManager {
     }
 
     /**
-     * Creates a new manager for the provided component, with the provided local
-     * user, topic id and message persister.
+     * Creates a new persisting manager for the given component.
      *
      * @param component
      *            the component which holds UI access, not {@code null}
@@ -92,7 +90,38 @@ public class MessageManager extends AbstractCollaborationManager {
                 persister, CollaborationEngine.getInstance());
     }
 
-    MessageManager(ConnectionContext context, UserInfo localUser,
+    /**
+     * Creates a new manager for the given connection context.
+     *
+     * @param context
+     *            the context that manages connection status, not {@code null}
+     * @param localUser
+     *            the information of the local user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, not {@code null}
+     * @param collaborationEngine
+     *            the collaboration engine instance to use, not {@code null}
+     */
+    public MessageManager(ConnectionContext context, UserInfo localUser,
+            String topicId, CollaborationEngine collaborationEngine) {
+        this(context, localUser, topicId, null, collaborationEngine);
+    }
+
+    /**
+     * Creates a new persisting manager for the given connection context.
+     *
+     * @param context
+     *            the context that manages connection status, not {@code null}
+     * @param localUser
+     *            the information of the local user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, not {@code null}
+     * @param persister
+     *            the persister to read/write messages to an external source
+     * @param collaborationEngine
+     *            the collaboration engine instance to use, not {@code null}
+     */
+    public MessageManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationMessagePersister persister,
             CollaborationEngine collaborationEngine) {
         super(localUser, topicId, collaborationEngine);

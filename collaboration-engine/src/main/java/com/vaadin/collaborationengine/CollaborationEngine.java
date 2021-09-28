@@ -76,6 +76,10 @@ public class CollaborationEngine {
 
     private ExecutorService executorService;
 
+    private VaadinService vaadinService;
+
+    private SystemConnectionContext systemContext;
+
     static {
         UsageStatistics.markAsUsed(COLLABORATION_ENGINE_NAME,
                 COLLABORATION_ENGINE_VERSION);
@@ -117,7 +121,12 @@ public class CollaborationEngine {
      * @since 1.0
      */
     public static CollaborationEngine getInstance() {
-        return getInstance(VaadinService.getCurrent());
+        VaadinService service = VaadinService.getCurrent();
+        if (service == null) {
+            throw new IllegalStateException(
+                    "Cannot get the current CollaborationEngine instance when there is no current VaadinService instance.");
+        }
+        return getInstance(service);
     }
 
     /**
@@ -203,6 +212,8 @@ public class CollaborationEngine {
         }
         configuration.setVaadinService(vaadinService);
         ce.configuration = configuration;
+        ce.vaadinService = vaadinService;
+        ce.systemContext = new SystemConnectionContext(ce);
 
         ExecutorService executorService = ce.configuration.getExecutorService();
         if (executorService == null) {
@@ -260,6 +271,16 @@ public class CollaborationEngine {
         return executorService;
     }
 
+    private void assertConfigured() {
+        if (configuration == null) {
+            throw new IllegalStateException(
+                    "Collaboration Engine is missing required configuration "
+                            + "that should be provided by a VaadinServiceInitListener. "
+                            + "Collaboration Engine is supported only in a Vaadin application, "
+                            + "where VaadinService initialization is expected to happen before usage.");
+        }
+    }
+
     /**
      * Opens a connection to the collaboration topic with the provided id based
      * on a generic context definition. If the topic with the provided id does
@@ -290,13 +311,7 @@ public class CollaborationEngine {
         Objects.requireNonNull(connectionActivationCallback,
                 "Callback for connection activation can't be null");
 
-        if (configuration == null) {
-            throw new IllegalStateException(
-                    "Collaboration Engine is missing required configuration "
-                            + "that should be provided by a VaadinServiceInitListener. "
-                            + "Collaboration Engine is supported only in a Vaadin application, "
-                            + "where VaadinService initialization is expected to happen before usage.");
-        }
+        assertConfigured();
 
         ensureConfigAndLicenseHandlerInitialization();
         if (configuration.isLicenseCheckingEnabled()) {
@@ -477,5 +492,23 @@ public class CollaborationEngine {
     // For testing
     Topic getTopic(String topicId) {
         return topics.get(topicId).topic;
+    }
+
+    VaadinService getVaadinService() {
+        return vaadinService;
+    }
+
+    /**
+     * Gets a system connection context for this collaboration engine instance.
+     * The system connection context can be used when Collaboration Engine is
+     * used in situations that aren't directly associated with a UI, such as
+     * from a background thread or when integrating with external services.
+     *
+     * @return a system connection context instance, not <code>null</code>
+     */
+    public SystemConnectionContext getSystemContext() {
+        assertConfigured();
+
+        return systemContext;
     }
 }

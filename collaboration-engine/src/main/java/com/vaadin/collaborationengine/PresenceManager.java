@@ -51,8 +51,7 @@ public class PresenceManager {
     private TopicConnectionRegistration topicRegistration;
 
     /**
-     * Creates a new manager for the provided component, with the provided local
-     * user and topic id.
+     * Creates a new manager for the provided component.
      * <p>
      * The provided user information is used to set the presence of the local
      * user with {@link #markAsPresent(boolean)} (the default is {@code false}).
@@ -71,13 +70,28 @@ public class PresenceManager {
                 CollaborationEngine.getInstance());
     }
 
-    PresenceManager(ConnectionContext connectionContext, UserInfo localUser,
+    /**
+     * Creates a new manager for the provided connection context.
+     * <p>
+     * The provided user information is used to set the presence of the local
+     * user with {@link #markAsPresent(boolean)} (the default is {@code false}).
+     * <p>
+     *
+     * @param context
+     *            the context that manages connection status, not {@code null}
+     * @param localUser
+     *            the information of the local user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, not {@code null}
+     * @param collaborationEngine
+     *            the collaboration engine instance to use, not {@code null}
+     */
+    PresenceManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
         this.localUser = Objects.requireNonNull(localUser);
         this.topicId = Objects.requireNonNull(topicId);
         this.topicRegistration = collaborationEngine.openTopicConnection(
-                connectionContext, topicId, localUser,
-                this::onConnectionActivate);
+                context, topicId, localUser, this::onConnectionActivate);
     }
 
     /**

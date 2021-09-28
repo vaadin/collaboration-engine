@@ -1,10 +1,5 @@
 package com.vaadin.collaborationengine.util;
 
-import com.vaadin.flow.theme.AbstractTheme;
-import com.vaadin.testbench.ScreenshotOnFailureRule;
-import com.vaadin.testbench.TestBench;
-import com.vaadin.testbench.TestBenchDriverProxy;
-import com.vaadin.testbench.TestBenchTestCase;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.After;
 import org.junit.Assert;
@@ -16,6 +11,12 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+
+import com.vaadin.flow.theme.AbstractTheme;
+import com.vaadin.testbench.ScreenshotOnFailureRule;
+import com.vaadin.testbench.TestBench;
+import com.vaadin.testbench.TestBenchDriverProxy;
+import com.vaadin.testbench.TestBenchTestCase;
 
 /**
  * Base class for TestBench IntegrationTests on chrome.
@@ -125,8 +126,13 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
      * @return URL to route
      */
     protected String getURL() {
+        String path = getRoute();
+        return getURL(path);
+    }
+
+    protected String getURL(String path) {
         return String.format("http://%s:%d/%s", getDeploymentHostname(),
-                SERVER_PORT, getRoute());
+                SERVER_PORT, path);
     }
 
     /**

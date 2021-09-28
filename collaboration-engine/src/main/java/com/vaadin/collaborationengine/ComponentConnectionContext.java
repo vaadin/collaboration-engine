@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -47,7 +46,7 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private volatile UI ui;
 
-    private final ConcurrentLinkedQueue<Command> inbox = new ConcurrentLinkedQueue<>();
+    private final ExecutionQueue inbox = new ExecutionQueue();
     private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
     private final AtomicBoolean active = new AtomicBoolean();
     private Consumer<ActionDispatcher> activationHandler;
@@ -251,19 +250,8 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (localUI == null || backgroundRunner == null) {
             return;
         }
-        backgroundRunner.execute(() -> executePendingCommands(localUI));
-    }
-
-    private void executePendingCommands(UI localUI) {
-        localUI.access(() -> {
-            while (true) {
-                Command command = inbox.poll();
-                if (command == null) {
-                    break;
-                }
-                command.execute();
-            }
-        });
+        backgroundRunner
+                .execute(() -> localUI.access(inbox::runPendingCommands));
     }
 
     private static void checkForPush(UI ui) {
