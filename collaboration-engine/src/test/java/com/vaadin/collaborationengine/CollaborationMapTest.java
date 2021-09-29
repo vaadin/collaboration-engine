@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -400,6 +399,22 @@ public class CollaborationMapTest {
         });
         map.put("foo", "foo");
 
+    }
+
+    @Test
+    public void putWithConnectionScope_connectionRemainsActive_entryRetained() {
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void reactivatedConnection_putWithConnectionScope_entryRetained() {
+        context.deactivate();
+        context.activate();
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        String foo = map.get("foo", String.class);
+        Assert.assertEquals("foo", foo);
     }
 
     @Test

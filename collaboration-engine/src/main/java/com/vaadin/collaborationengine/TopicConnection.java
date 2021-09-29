@@ -423,6 +423,7 @@ public class TopicConnection {
 
     private void deactivate() {
         try {
+            cleanupScopedData();
             EventUtil.fireEvents(deactivateRegistrations, Registration::remove,
                     false);
             deactivateRegistrations.clear();
@@ -448,7 +449,6 @@ public class TopicConnection {
 
     void deactivateAndClose() {
         try {
-            cleanupScopedData();
             deactivate();
         } finally {
             closeWithoutDeactivating();
@@ -480,6 +480,7 @@ public class TopicConnection {
         if (actionDispatcher != null) {
             this.actionDispatcher = actionDispatcher;
             this.actionDispatcher.dispatchAction(() -> {
+                cleanupPending = true;
                 topicActivationHandler.accept(true);
                 Registration changeRegistration = subscribeToChange();
                 Registration callbackRegistration = connectionActivationCallback
