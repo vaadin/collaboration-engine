@@ -8,6 +8,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import javax.servlet.ServletContext;
+
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +38,14 @@ import com.vaadin.pro.licensechecker.LicenseChecker;
  * Vaadin applications. It's used by sending and subscribing to changes between
  * collaborators via {@link TopicConnection collaboration topics}.
  * <p>
- * Use {@link #getInstance()} to get a reference to the singleton object.
+ * Use {@link #getInstance()} to get a reference to the singleton object in
+ * cases where Vaadin's thread locals are defined (such as in UI code invoked by
+ * the framework). In other circumstances, an instance can be found as an
+ * attribute in the runtime context (typically {@link ServletContext}) using the
+ * fully qualified class name of this class as the attribute name. That instance
+ * will only be available after explicitly calling
+ * {@link #configure(VaadinService, CollaborationEngineConfiguration)} during
+ * startup or calling {@link #getInstance()} at least once.
  *
  * @author Vaadin Ltd
  * @since 1.0
@@ -115,6 +124,14 @@ public class CollaborationEngine {
     /**
      * Gets the {@link CollaborationEngine} instance from the current
      * {@link VaadinService}.
+     * <p>
+     * Situations without a current {@code VaadinService} can also find the
+     * corresponding instance by looking it up from the runtime context (such as
+     * {@link ServletContext}) using {@code CollaborationEngine.class.getName()}
+     * as the attribute name. That instance will only be available after
+     * explicitly calling
+     * {@link #configure(VaadinService, CollaborationEngineConfiguration)}
+     * during startup or calling {@link #getInstance()} at least once.
      *
      * @return the {@link CollaborationEngine} instance
      *
