@@ -170,30 +170,58 @@ public class TopicConnectionTest {
     }
 
     @Test
-    public void immediateDeactivate_listenersRemoved() {
+    public void immediateDeactivate_connectionNotActivated() {
         MockConnectionContext context = new MockConnectionContext();
         List<Runnable> actions = new ArrayList<>();
         context.setExecutor(actions::add);
+
         engine.openTopicConnection(context, "topic2",
-                SystemUserInfo.getInstance(), connection -> null);
+                SystemUserInfo.getInstance(), connection -> {
+                    Assert.fail("Activation should never run");
+                    return null;
+                });
 
         context.activate();
-        Assert.assertEquals("One action should have been dispatched", 1,
-                actions.size());
-
         context.deactivate();
-        Assert.assertEquals("One more action should have been dispatched", 2,
-                actions.size());
 
         Topic topic = engine.getTopic("topic2");
         Assert.assertFalse(
                 "There should be no subscribers before dispatching actions",
                 topic.hasChangeListeners());
 
+        Assert.assertFalse("There should be pending actions",
+                actions.isEmpty());
         actions.forEach(Runnable::run);
 
         Assert.assertFalse(
                 "There should be no subscribers after dispatching actions",
                 topic.hasChangeListeners());
+    }
+
+    @Test
+    public void immediateReactivate_deactivateNeverHappened() {
+        MockConnectionContext context = new MockConnectionContext();
+        List<Runnable> actions = new ArrayList<>();
+        context.setExecutor(actions::add);
+
+        AtomicInteger activationCount = new AtomicInteger();
+
+        engine.openTopicConnection(context, "topic2",
+                SystemUserInfo.getInstance(), connection -> {
+                    activationCount.incrementAndGet();
+                    return () -> Assert.fail("Deactivation should never run");
+                });
+        context.activate();
+        actions.forEach(Runnable::run);
+        actions.clear();
+
+        Assert.assertEquals("Sanity check", 1, activationCount.get());
+
+        context.deactivate();
+        context.activate();
+
+        actions.forEach(Runnable::run);
+        Assert.assertEquals("Activation should have run only once", 1,
+                activationCount.get());
     }
 }

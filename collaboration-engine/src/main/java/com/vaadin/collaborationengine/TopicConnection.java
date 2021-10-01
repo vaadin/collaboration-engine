@@ -54,6 +54,12 @@ public class TopicConnection {
     private final SerializableFunction<TopicConnection, Registration> connectionActivationCallback;
     private Registration closeRegistration;
     private ActionDispatcher actionDispatcher;
+    /**
+     * Whether activation has happened, which isn't necessarily the same as
+     * being active because of the asynchronous step before activation is
+     * actually applied.
+     */
+    private boolean activated;
 
     TopicConnection(CollaborationEngine ce, ConnectionContext context,
             Topic topic, BiConsumer<UUID, ObjectNode> distributor,
@@ -465,8 +471,36 @@ public class TopicConnection {
 
     private void acceptActionDispatcher(ActionDispatcher actionDispatcher) {
         if (actionDispatcher != null) {
-            this.actionDispatcher = actionDispatcher;
-            this.actionDispatcher.dispatchAction(() -> {
+            if (activated) {
+                throw new IllegalStateException(
+                        "The topic connection is already active.");
+            }
+            activated = true;
+
+            if (this.actionDispatcher != null) {
+                /*
+                 * Activation while already active based on non-null dispatcher
+                 * means that deactivation has been triggered but its dispatch
+                 * has not yet run. The dispatch will be ignored based on the
+                 * flag which means that there's also no need to activate things
+                 * again.
+                 */
+                return;
+            }
+
+            actionDispatcher.dispatchAction(() -> {
+                if (!activated) {
+                    /*
+                     * Activation canceled while waiting for dispatch.
+                     */
+                    return;
+                }
+                if (this.actionDispatcher != null) {
+                    throw new IllegalStateException(
+                            "Activation dispatch is run out-of-order.");
+                }
+
+                this.actionDispatcher = actionDispatcher;
                 cleanupPending = true;
                 topicActivationHandler.accept(true);
                 Registration changeRegistration = subscribeToChange();
@@ -480,11 +514,33 @@ public class TopicConnection {
                 });
             });
         } else {
-            if (this.actionDispatcher == null) {
+            if (!activated) {
                 throw new IllegalStateException(
                         "The topic connection is already inactive.");
             }
+            activated = false;
+            if (this.actionDispatcher == null) {
+                /*
+                 * Deactivation while already inactive based on null dispatcher
+                 * means that activation has been triggered but its dispatch has
+                 * not yet run. The dispatch will be ignored based on the flag
+                 * which means that there's also no need to deactivate things
+                 * again.
+                 */
+                return;
+            }
             this.actionDispatcher.dispatchAction(() -> {
+                if (activated) {
+                    /*
+                     * Deactivation canceled while waiting for dispatch.
+                     */
+                    return;
+                }
+                if (this.actionDispatcher == null) {
+                    throw new IllegalStateException(
+                            "Deactivation dispatch is run out-of-order.");
+                }
+
                 try {
                     this.deactivate();
                 } finally {
