@@ -26,9 +26,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.vaadin.collaborationengine.Topic.ChangeDetails;
 import com.vaadin.collaborationengine.Topic.ChangeResult;
-import com.vaadin.collaborationengine.Topic.ListChangeNotifier;
-import com.vaadin.collaborationengine.Topic.MapChangeNotifier;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -45,8 +44,8 @@ public class TopicConnection {
     private final UserInfo localUser;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
     private final Consumer<Boolean> topicActivationHandler;
-    private final Map<String, List<MapChangeNotifier>> subscribersPerMap = new HashMap<>();
-    private final Map<String, List<ListChangeNotifier>> subscribersPerList = new HashMap<>();
+    private final Map<String, List<Consumer<MapChange>>> subscribersPerMap = new HashMap<>();
+    private final Map<String, List<Consumer<ListChange>>> subscribersPerList = new HashMap<>();
     private final Map<String, Map<String, UUID>> connectionScopedMapKeys = new HashMap<>();
 
     private volatile boolean cleanupPending;
@@ -69,19 +68,16 @@ public class TopicConnection {
                 ce.getExecutorService());
     }
 
-    private void handleChange(UUID id, ObjectNode change) {
+    private void handleChange(UUID id, ChangeDetails change) {
         try {
-            String type = change.get(JsonUtil.CHANGE_TYPE).asText();
-            switch (type) {
-            case JsonUtil.CHANGE_TYPE_PUT:
-                handlePutChange(id, change);
-                break;
-            case JsonUtil.CHANGE_TYPE_APPEND:
-                handleAppendChange(change);
-                break;
-            default:
+            if (change instanceof MapChange) {
+                handlePutChange(id, (MapChange) change);
+            } else if (change instanceof ListChange) {
+                handleAppendChange((ListChange) change);
+            } else {
                 throw new UnsupportedOperationException(
-                        "Type '" + type + "' is not a supported change type");
+                        "Type '" + change.getClass().getName()
+                                + "' is not a supported change type");
             }
         } catch (RuntimeException e) {
             deactivateAndClose();
@@ -89,35 +85,28 @@ public class TopicConnection {
         }
     }
 
-    private void handlePutChange(UUID id, ObjectNode change) {
-        String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
-        String key = change.get(JsonUtil.CHANGE_KEY).asText();
-        JsonNode oldValue = change.get(JsonUtil.CHANGE_OLD_VALUE);
-        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
-        MapChange mapChange = new MapChange(mapName, key, oldValue, newValue);
-        Map<String, UUID> keys = connectionScopedMapKeys.get(mapName);
+    private void handlePutChange(UUID id, MapChange mapChange) {
+        String mapName = mapChange.getMapName();
+        String key = mapChange.getKey();
+
         // If there is a connection scoped entry for the same key with a
         // different id, cleanup the existing entry
+        Map<String, UUID> keys = connectionScopedMapKeys.get(mapName);
         if (keys != null && !Objects.equals(id, keys.get(key))) {
             UUID uuid = keys.get(key);
-            if (!Objects.equals(
-                    JsonUtil.toUUID(change.get(JsonUtil.CHANGE_EXPECTED_ID)),
-                    uuid)) {
+            if (!Objects.equals(mapChange.getExpectedId(), uuid)) {
                 keys.remove(key);
             }
         }
-        if (!Objects.equals(oldValue, newValue)) {
+        if (mapChange.hasChanges()) {
             EventUtil.fireEvents(subscribersPerMap.get(mapName),
-                    notifier -> notifier.onEntryChange(mapChange), false);
+                    notifier -> notifier.accept(mapChange), false);
         }
     }
 
-    private void handleAppendChange(ObjectNode change) {
-        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-        ListChange listChange = new ListChange(listName, item);
-        EventUtil.fireEvents(subscribersPerList.get(listName),
-                notifier -> notifier.onListChange(listChange), false);
+    private void handleAppendChange(ListChange listChange) {
+        EventUtil.fireEvents(subscribersPerList.get(listChange.getListName()),
+                notifier -> notifier.accept(listChange), false);
     }
 
     Topic getTopic() {
@@ -146,15 +135,15 @@ public class TopicConnection {
     }
 
     private Registration subscribeToMap(String mapName,
-            MapChangeNotifier mapChangeNotifier) {
+            Consumer<MapChange> mapChangeNotifier) {
         subscribersPerMap.computeIfAbsent(mapName, key -> new ArrayList<>())
                 .add(mapChangeNotifier);
         return () -> unsubscribeFromMap(mapName, mapChangeNotifier);
     }
 
     private void unsubscribeFromMap(String mapName,
-            MapChangeNotifier mapChangeNotifier) {
-        List<MapChangeNotifier> notifiers = subscribersPerMap.get(mapName);
+            Consumer<MapChange> mapChangeNotifier) {
+        List<Consumer<MapChange>> notifiers = subscribersPerMap.get(mapName);
         if (notifiers == null) {
             return;
         }
@@ -165,15 +154,15 @@ public class TopicConnection {
     }
 
     private Registration subscribeToList(String listName,
-            ListChangeNotifier changeNotifier) {
+            Consumer<ListChange> changeNotifier) {
         subscribersPerList.computeIfAbsent(listName, key -> new ArrayList<>())
                 .add(changeNotifier);
         return () -> unsubscribeFromList(listName, changeNotifier);
     }
 
     private void unsubscribeFromList(String listName,
-            ListChangeNotifier changeNotifier) {
-        List<ListChangeNotifier> notifiers = subscribersPerList.get(listName);
+            Consumer<ListChange> changeNotifier) {
+        List<Consumer<ListChange>> notifiers = subscribersPerList.get(listName);
         if (notifiers == null) {
             return;
         }
@@ -202,14 +191,13 @@ public class TopicConnection {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
 
                 synchronized (topic) {
-                    MapChangeNotifier mapChangeNotifier = mapChange -> {
+                    Consumer<MapChange> mapChangeNotifier = mapChange -> {
                         MapChangeEvent event = new MapChangeEvent(this,
                                 mapChange);
                         actionDispatcher.dispatchAction(
                                 () -> subscriber.onMapChange(event));
                     };
-                    topic.getMapData(name)
-                            .forEach(mapChangeNotifier::onEntryChange);
+                    topic.getMapData(name).forEach(mapChangeNotifier);
 
                     Registration registration = subscribeToMap(name,
                             mapChangeNotifier);
@@ -340,14 +328,13 @@ public class TopicConnection {
                 Objects.requireNonNull(subscriber, "Subscriber cannot be null");
 
                 synchronized (topic) {
-                    ListChangeNotifier changeNotifier = listChange -> {
+                    Consumer<ListChange> changeNotifier = listChange -> {
                         ListChangeEvent event = new ListChangeEvent(this,
                                 listChange);
                         actionDispatcher.dispatchAction(
                                 () -> subscriber.onListChange(event));
                     };
-                    topic.getListChanges(name)
-                            .forEach(changeNotifier::onListChange);
+                    topic.getListChanges(name).forEach(changeNotifier);
 
                     Registration registration = subscribeToList(name,
                             changeNotifier);

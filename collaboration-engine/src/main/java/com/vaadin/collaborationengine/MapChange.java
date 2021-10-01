@@ -8,43 +8,52 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.Objects;
+import java.util.UUID;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
-/**
- * A single change that is emitted from the map data of a {@link Topic}.
- *
- * @author Vaadin Ltd
- * @since 1.0
- */
-public class MapChange extends AbstractMapChange {
-    private final JsonNode oldValue;
+import com.vaadin.collaborationengine.Topic.ChangeDetails;
 
-    /**
-     *
-     * @param mapName
-     *            Map name, not null.
-     * @param key
-     *            Map key, not null.
-     * @param oldValue
-     *            the old value ({@link JsonNode})
-     * @param newValue
-     *            the new value ({@link JsonNode})
-     *
-     * @since 1.0
-     */
-    public MapChange(String mapName, String key, JsonNode oldValue,
-            JsonNode newValue) {
-        super(mapName, key, newValue);
+class MapChange implements ChangeDetails {
+    private final String mapName;
+    private final String key;
+    private final JsonNode value;
+    private final JsonNode oldValue;
+    private final UUID expectedId;
+
+    MapChange(String mapName, String key, JsonNode oldValue, JsonNode newValue,
+            UUID expectedId) {
+        Objects.requireNonNull(mapName, "Map name can not be null.");
+        Objects.requireNonNull(key, MessageUtil.Required.KEY);
+        this.mapName = mapName;
+        this.key = key;
+        this.value = newValue;
         this.oldValue = oldValue;
+        this.expectedId = expectedId;
     }
 
-    /**
-     *
-     * @return The value before the current change.
-     *
-     * @since 1.0
-     */
-    public JsonNode getOldValue() {
+    JsonNode getOldValue() {
         return oldValue;
+    }
+
+    String getMapName() {
+        return mapName;
+    }
+
+    String getKey() {
+        return key;
+    }
+
+    JsonNode getValue() {
+        return value;
+    }
+
+    UUID getExpectedId() {
+        return expectedId;
+    }
+
+    boolean hasChanges() {
+        return !Objects.equals(getOldValue(), getValue());
     }
 }

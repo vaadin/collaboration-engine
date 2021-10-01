@@ -34,14 +34,12 @@ class Topic {
         ACCEPTED, REJECTED;
     }
 
-    @FunctionalInterface
-    interface MapChangeNotifier {
-        void onEntryChange(MapChange mapChange);
-    }
-
-    @FunctionalInterface
-    interface ListChangeNotifier {
-        void onListChange(ListChange listChange);
+    /**
+     * Marker interface to have something more specific than Object in method
+     * signatures.
+     */
+    interface ChangeDetails {
+        // Marker interface
     }
 
     private static class Entry {
@@ -62,7 +60,7 @@ class Topic {
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
     final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
-    private final List<SerializableBiConsumer<UUID, ObjectNode>> changeListeners = new ArrayList<>();
+    private final List<SerializableBiConsumer<UUID, ChangeDetails>> changeListeners = new ArrayList<>();
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
 
     Topic(CollaborationEngine collaborationEngine) {
@@ -70,7 +68,7 @@ class Topic {
     }
 
     Registration subscribeToChange(
-            SerializableBiConsumer<UUID, ObjectNode> changeListener) {
+            SerializableBiConsumer<UUID, ChangeDetails> changeListener) {
         clearExpiredData();
         changeListeners.add(changeListener);
         return Registration.combine(
@@ -102,18 +100,13 @@ class Topic {
         }
     }
 
-    private void fireChangeEvent(UUID id, ObjectNode change) {
-        EventUtil.fireEvents(changeListeners,
-                listener -> listener.accept(id, change), true);
-    }
-
     Stream<MapChange> getMapData(String mapName) {
         Map<String, Entry> mapData = namedMapData.get(mapName);
         if (mapData == null) {
             return Stream.empty();
         }
         return mapData.entrySet().stream().map(entry -> new MapChange(mapName,
-                entry.getKey(), null, entry.getValue().data));
+                entry.getKey(), null, entry.getValue().data, null));
     }
 
     JsonNode getMapValue(String mapName, String key) {
@@ -126,30 +119,34 @@ class Topic {
 
     synchronized ChangeResult applyChange(UUID trackingId, ObjectNode change) {
         String type = change.get(JsonUtil.CHANGE_TYPE).asText();
-        ChangeResult result;
+        ChangeDetails details;
         switch (type) {
         case JsonUtil.CHANGE_TYPE_PUT:
-            result = applyMapChange(trackingId, change);
+            details = applyMapChange(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_APPEND:
-            result = applyListChange(change);
+            details = applyListChange(change);
             break;
         default:
             throw new UnsupportedOperationException(
                     "Type '" + type + "' is not a supported change type");
         }
+        ChangeResult result = details != null ? ChangeResult.ACCEPTED
+                : ChangeResult.REJECTED;
+
         SerializableConsumer<ChangeResult> changeResultTracker = changeResultTrackers
                 .remove(trackingId);
         if (changeResultTracker != null) {
             changeResultTracker.accept(result);
         }
         if (ChangeResult.ACCEPTED.equals(result)) {
-            fireChangeEvent(trackingId, change);
+            EventUtil.fireEvents(changeListeners,
+                    listener -> listener.accept(trackingId, details), true);
         }
         return result;
     }
 
-    ChangeResult applyMapChange(UUID changeId, ObjectNode change) {
+    ChangeDetails applyMapChange(UUID changeId, ObjectNode change) {
         String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
         String key = change.get(JsonUtil.CHANGE_KEY).asText();
         JsonNode expectedValue = change.get(JsonUtil.CHANGE_EXPECTED_VALUE);
@@ -165,27 +162,26 @@ class Topic {
 
         if (expectedId != null
                 && !Objects.equals(oldChangeId, JsonUtil.toUUID(expectedId))) {
-            return ChangeResult.REJECTED;
+            return null;
         }
         if (expectedValue != null && !Objects.equals(oldValue, expectedValue)) {
-            return ChangeResult.REJECTED;
+            return null;
         }
 
-        // FIXME ugly (until proper topic data versioning)
-        change.set(JsonUtil.CHANGE_OLD_VALUE, oldValue);
         if (newValue instanceof NullNode) {
             map.remove(key);
         } else {
             map.put(key, new Entry(changeId, newValue.deepCopy()));
         }
-        return ChangeResult.ACCEPTED;
+        return new MapChange(mapName, key, oldValue, newValue,
+                JsonUtil.toUUID(expectedId));
     }
 
-    ChangeResult applyListChange(ObjectNode change) {
+    ChangeDetails applyListChange(ObjectNode change) {
         String name = change.get(JsonUtil.CHANGE_NAME).asText();
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
         getList(name).add(item);
-        return ChangeResult.ACCEPTED;
+        return new ListChange(name, item);
     }
 
     Stream<ListChange> getListChanges(String listName) {
