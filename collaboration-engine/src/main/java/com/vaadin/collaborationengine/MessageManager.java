@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.CollaborationMessagePersister.FetchQuery;
 import com.vaadin.collaborationengine.CollaborationMessagePersister.PersistRequest;
-import com.vaadin.collaborationengine.NewMessageHandler.MessageContext;
+import com.vaadin.collaborationengine.MessageHandler.MessageContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.shared.Registration;
 
@@ -47,7 +47,7 @@ public class MessageManager extends AbstractCollaborationManager {
 
     private CollaborationList list;
 
-    private NewMessageHandler newMessageHandler;
+    private MessageHandler messageHandler;
 
     private CollaborationMessage lastSeenMessage;
 
@@ -130,7 +130,8 @@ public class MessageManager extends AbstractCollaborationManager {
     }
 
     /**
-     * Sets a handler which will be invoked when a message is submitted.
+     * Sets a handler which will be invoked for all messages already in the
+     * topic and when a new message is submitted.
      * <p>
      * The handler accepts a {@link MessageContext} as a parameter which
      * contains a reference to the sent message.
@@ -139,11 +140,11 @@ public class MessageManager extends AbstractCollaborationManager {
      *            the message handler, or {@code null} to remove an existing
      *            handler
      */
-    public void setNewMessageHandler(NewMessageHandler handler) {
-        newMessageHandler = handler;
+    public void setMessageHandler(MessageHandler handler) {
+        messageHandler = handler;
         lastSeenMessage = null;
         catchupMode = false;
-        if (newMessageHandler != null) {
+        if (messageHandler != null) {
             getMessages().forEach(this::applyHandler);
         }
     }
@@ -231,9 +232,9 @@ public class MessageManager extends AbstractCollaborationManager {
     private void applyHandler(CollaborationMessage message) {
         if (!catchupMode) {
             lastSeenMessage = message;
-            if (newMessageHandler != null) {
+            if (messageHandler != null) {
                 MessageContext context = new DefaultMessageContext(message);
-                newMessageHandler.handleNewMessage(context);
+                messageHandler.handleMessage(context);
             }
         } else if (message.equals(lastSeenMessage)) {
             catchupMode = false;

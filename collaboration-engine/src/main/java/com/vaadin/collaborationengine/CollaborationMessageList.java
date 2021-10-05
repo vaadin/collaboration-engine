@@ -170,7 +170,7 @@ public class CollaborationMessageList extends Composite<MessageList>
             messageManager = new MessageManager(
                     new ComponentConnectionContext(this), localUser, topicId,
                     persister, ce);
-            messageManager.setNewMessageHandler(context -> {
+            messageManager.setMessageHandler(context -> {
                 CollaborationMessage message = context.getMessage();
                 messageCache.add(message);
                 refreshMessages();

@@ -60,7 +60,7 @@ public class MessageManagerTest {
         List<CollaborationMessage> list = new ArrayList<>();
         MessageManager manager = createActiveManager();
 
-        manager.setNewMessageHandler(context -> {
+        manager.setMessageHandler(context -> {
             CollaborationMessage message = context.getMessage();
             list.add(message);
         });
@@ -76,7 +76,7 @@ public class MessageManagerTest {
         MessageManager manager = createActiveManager();
 
         manager.submit("text");
-        manager.setNewMessageHandler(context -> {
+        manager.setMessageHandler(context -> {
             CollaborationMessage message = context.getMessage();
             list.add(message);
         });
@@ -93,7 +93,7 @@ public class MessageManagerTest {
                 new UserInfo("foo"), TOPIC_ID, null, ce);
 
         List<CollaborationMessage> list = new ArrayList<>();
-        manager.setNewMessageHandler(context -> {
+        manager.setMessageHandler(context -> {
             CollaborationMessage message = context.getMessage();
             list.add(message);
         });

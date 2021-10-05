@@ -14,19 +14,19 @@ import java.io.Serializable;
  * Functional interface that defines how to handle a message when it is added to
  * a topic.
  *
- * @see MessageManager#setNewMessageHandler(NewMessageHandler)
+ * @see MessageManager#setMessageHandler(MessageHandler)
  * @author Vaadin Ltd
  */
 @FunctionalInterface
-public interface NewMessageHandler extends Serializable {
+public interface MessageHandler extends Serializable {
 
     /**
-     * The context of the new message.
+     * The context of the message.
      */
     interface MessageContext extends Serializable {
 
         /**
-         * Gets the new message.
+         * Gets the message.
          *
          * @return the message, not {@code null}
          */
@@ -39,5 +39,5 @@ public interface NewMessageHandler extends Serializable {
      * @param context
      *            the context of the message, not {@code null}
      */
-    void handleNewMessage(MessageContext context);
+    void handleMessage(MessageContext context);
 }
