@@ -40,6 +40,266 @@ import com.vaadin.flow.shared.Registration;
  */
 public class TopicConnection {
 
+    class CollaborationMapImplementation implements CollaborationMap {
+        private final String name;
+
+        private CollaborationMapImplementation(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public Registration subscribe(MapSubscriber subscriber) {
+            ensureActiveConnection();
+            Objects.requireNonNull(subscriber, "Subscriber cannot be null");
+
+            synchronized (topic) {
+                Consumer<MapChange> mapChangeNotifier = mapChange -> {
+                    MapChangeEvent event = new MapChangeEvent(this, mapChange);
+                    actionDispatcher.dispatchAction(
+                            () -> subscriber.onMapChange(event));
+                };
+                topic.getMapData(name).forEach(mapChangeNotifier);
+
+                Registration registration = subscribeToMap(name,
+                        mapChangeNotifier);
+                addRegistration(registration);
+                return registration;
+            }
+        }
+
+        @Override
+        public CompletableFuture<Boolean> replace(String key,
+                Object expectedValue, Object newValue) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key, MessageUtil.Required.KEY);
+
+            CompletableFuture<Boolean> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            ObjectNode change = JsonUtil.createPutChange(name, key,
+                    expectedValue, newValue);
+
+            UUID id = UUID.randomUUID();
+            topic.setChangeResultTracker(id, result -> {
+                boolean isApplied = result != Topic.ChangeResult.REJECTED;
+                actionDispatcher.dispatchAction(
+                        () -> contextFuture.complete(isApplied));
+            });
+            distributor.accept(id, change);
+            return contextFuture;
+        }
+
+        @Override
+        public CompletableFuture<Void> put(String key, Object value,
+                EntryScope scope) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key, MessageUtil.Required.KEY);
+
+            CompletableFuture<Void> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            ObjectNode change = JsonUtil.createPutChange(name, key, null,
+                    value);
+
+            UUID id = UUID.randomUUID();
+            topic.setChangeResultTracker(id, result -> {
+                if (scope == EntryScope.CONNECTION
+                        && result == ChangeResult.ACCEPTED) {
+                    connectionScopedMapKeys
+                            .computeIfAbsent(name, k -> new HashMap<>())
+                            .put(key, id);
+                    if (!cleanupPending) {
+                        cleanupScopedData();
+                    }
+                }
+                actionDispatcher
+                        .dispatchAction(() -> contextFuture.complete(null));
+            });
+            distributor.accept(id, change);
+            return contextFuture;
+        }
+
+        @Override
+        public Stream<String> getKeys() {
+            ensureActiveConnection();
+            synchronized (topic) {
+                List<String> snapshot = topic.getMapData(name)
+                        .map(MapChange::getKey).collect(Collectors.toList());
+                return snapshot.stream();
+            }
+        }
+
+        @Override
+        public <T> T get(String key, Class<T> type) {
+            return JsonUtil.toInstance(get(key), type);
+        }
+
+        @Override
+        public <T> T get(String key, TypeReference<T> type) {
+            return JsonUtil.toInstance(get(key), type);
+        }
+
+        private JsonNode get(String key) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key, MessageUtil.Required.KEY);
+
+            synchronized (topic) {
+                return topic.getMapValue(name, key);
+            }
+        }
+
+        @Override
+        public TopicConnection getConnection() {
+            return TopicConnection.this;
+        }
+
+        @Override
+        public Optional<Duration> getExpirationTimeout() {
+            Duration expirationTimeout = topic.mapExpirationTimeouts.get(name);
+            return Optional.ofNullable(expirationTimeout);
+        }
+
+        @Override
+        public void setExpirationTimeout(Duration expirationTimeout) {
+            if (expirationTimeout == null) {
+                topic.mapExpirationTimeouts.remove(name);
+            } else {
+                topic.mapExpirationTimeouts.put(name, expirationTimeout);
+            }
+        }
+
+        private Registration subscribeToMap(String mapName,
+                Consumer<MapChange> mapChangeNotifier) {
+            subscribersPerMap.computeIfAbsent(mapName, key -> new ArrayList<>())
+                    .add(mapChangeNotifier);
+            return () -> unsubscribeFromMap(mapName, mapChangeNotifier);
+        }
+
+        private void unsubscribeFromMap(String mapName,
+                Consumer<MapChange> mapChangeNotifier) {
+            List<Consumer<MapChange>> notifiers = subscribersPerMap
+                    .get(mapName);
+            if (notifiers == null) {
+                return;
+            }
+            notifiers.remove(mapChangeNotifier);
+            if (notifiers.isEmpty()) {
+                subscribersPerMap.remove(mapName);
+            }
+        }
+    }
+
+    class CollaborationListImplementation implements CollaborationList {
+        private final String name;
+
+        private CollaborationListImplementation(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public Registration subscribe(ListSubscriber subscriber) {
+            ensureActiveConnection();
+            Objects.requireNonNull(subscriber, "Subscriber cannot be null");
+
+            synchronized (topic) {
+                Consumer<ListChange> changeNotifier = listChange -> {
+                    ListChangeEvent event = new ListChangeEvent(this,
+                            listChange);
+                    actionDispatcher.dispatchAction(
+                            () -> subscriber.onListChange(event));
+                };
+                topic.getListChanges(name).forEach(changeNotifier);
+
+                Registration registration = subscribeToList(name,
+                        changeNotifier);
+                addRegistration(registration);
+                return registration;
+            }
+        }
+
+        @Override
+        public <T> List<T> getItems(Class<T> type) {
+            ensureActiveConnection();
+            Objects.requireNonNull(type, "The type can't be null");
+            synchronized (topic) {
+                return topic.getListItems(name)
+                        .map(node -> JsonUtil.toInstance(node, type))
+                        .collect(Collectors.toList());
+            }
+        }
+
+        @Override
+        public <T> List<T> getItems(TypeReference<T> type) {
+            ensureActiveConnection();
+            Objects.requireNonNull(type, "The type reference cannot be null");
+            synchronized (topic) {
+                return topic.getListItems(name)
+                        .map(node -> JsonUtil.toInstance(node, type))
+                        .collect(Collectors.toList());
+            }
+        }
+
+        @Override
+        public CompletableFuture<Void> append(Object item) {
+            ensureActiveConnection();
+            Objects.requireNonNull(item, "The item cannot be null");
+
+            CompletableFuture<Void> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            ObjectNode change = JsonUtil.createAppendChange(name, item);
+
+            UUID id = UUID.randomUUID();
+            topic.setChangeResultTracker(id, result -> {
+                actionDispatcher
+                        .dispatchAction(() -> contextFuture.complete(null));
+            });
+            distributor.accept(id, change);
+            return contextFuture;
+        }
+
+        @Override
+        public TopicConnection getConnection() {
+            return TopicConnection.this;
+        }
+
+        @Override
+        public Optional<Duration> getExpirationTimeout() {
+            Duration expirationTimeout = topic.listExpirationTimeouts.get(name);
+            return Optional.ofNullable(expirationTimeout);
+        }
+
+        @Override
+        public void setExpirationTimeout(Duration expirationTimeout) {
+            if (expirationTimeout == null) {
+                topic.listExpirationTimeouts.remove(name);
+            } else {
+                topic.listExpirationTimeouts.put(name, expirationTimeout);
+            }
+        }
+
+        private Registration subscribeToList(String listName,
+                Consumer<ListChange> changeNotifier) {
+            subscribersPerList
+                    .computeIfAbsent(listName, key -> new ArrayList<>())
+                    .add(changeNotifier);
+            return () -> unsubscribeFromList(listName, changeNotifier);
+        }
+
+        private void unsubscribeFromList(String listName,
+                Consumer<ListChange> changeNotifier) {
+            List<Consumer<ListChange>> notifiers = subscribersPerList
+                    .get(listName);
+            if (notifiers == null) {
+                return;
+            }
+            notifiers.remove(changeNotifier);
+            if (notifiers.isEmpty()) {
+                subscribersPerList.remove(listName);
+            }
+        }
+    }
+
     private final Topic topic;
     private final UserInfo localUser;
     private final List<Registration> deactivateRegistrations = new ArrayList<>();
@@ -140,44 +400,6 @@ public class TopicConnection {
         }
     }
 
-    private Registration subscribeToMap(String mapName,
-            Consumer<MapChange> mapChangeNotifier) {
-        subscribersPerMap.computeIfAbsent(mapName, key -> new ArrayList<>())
-                .add(mapChangeNotifier);
-        return () -> unsubscribeFromMap(mapName, mapChangeNotifier);
-    }
-
-    private void unsubscribeFromMap(String mapName,
-            Consumer<MapChange> mapChangeNotifier) {
-        List<Consumer<MapChange>> notifiers = subscribersPerMap.get(mapName);
-        if (notifiers == null) {
-            return;
-        }
-        notifiers.remove(mapChangeNotifier);
-        if (notifiers.isEmpty()) {
-            subscribersPerMap.remove(mapName);
-        }
-    }
-
-    private Registration subscribeToList(String listName,
-            Consumer<ListChange> changeNotifier) {
-        subscribersPerList.computeIfAbsent(listName, key -> new ArrayList<>())
-                .add(changeNotifier);
-        return () -> unsubscribeFromList(listName, changeNotifier);
-    }
-
-    private void unsubscribeFromList(String listName,
-            Consumer<ListChange> changeNotifier) {
-        List<Consumer<ListChange>> notifiers = subscribersPerList.get(listName);
-        if (notifiers == null) {
-            return;
-        }
-        notifiers.remove(changeNotifier);
-        if (notifiers.isEmpty()) {
-            subscribersPerList.remove(listName);
-        }
-    }
-
     /**
      * Gets a collaboration map that can be used to track multiple values in a
      * single topic.
@@ -190,131 +412,7 @@ public class TopicConnection {
      */
     public CollaborationMap getNamedMap(String name) {
         ensureActiveConnection();
-        return new CollaborationMap() {
-            @Override
-            public Registration subscribe(MapSubscriber subscriber) {
-                ensureActiveConnection();
-                Objects.requireNonNull(subscriber, "Subscriber cannot be null");
-
-                synchronized (topic) {
-                    Consumer<MapChange> mapChangeNotifier = mapChange -> {
-                        MapChangeEvent event = new MapChangeEvent(this,
-                                mapChange);
-                        actionDispatcher.dispatchAction(
-                                () -> subscriber.onMapChange(event));
-                    };
-                    topic.getMapData(name).forEach(mapChangeNotifier);
-
-                    Registration registration = subscribeToMap(name,
-                            mapChangeNotifier);
-                    addRegistration(registration);
-                    return registration;
-                }
-            }
-
-            @Override
-            public CompletableFuture<Boolean> replace(String key,
-                    Object expectedValue, Object newValue) {
-                ensureActiveConnection();
-                Objects.requireNonNull(key, MessageUtil.Required.KEY);
-
-                CompletableFuture<Boolean> contextFuture = actionDispatcher
-                        .createCompletableFuture();
-
-                ObjectNode change = JsonUtil.createPutChange(name, key,
-                        expectedValue, newValue);
-
-                UUID id = UUID.randomUUID();
-                topic.setChangeResultTracker(id, result -> {
-                    boolean isApplied = result != Topic.ChangeResult.REJECTED;
-                    actionDispatcher.dispatchAction(
-                            () -> contextFuture.complete(isApplied));
-                });
-                distributor.accept(id, change);
-                return contextFuture;
-            }
-
-            @Override
-            public CompletableFuture<Void> put(String key, Object value,
-                    EntryScope scope) {
-                ensureActiveConnection();
-                Objects.requireNonNull(key, MessageUtil.Required.KEY);
-
-                CompletableFuture<Void> contextFuture = actionDispatcher
-                        .createCompletableFuture();
-
-                ObjectNode change = JsonUtil.createPutChange(name, key, null,
-                        value);
-
-                UUID id = UUID.randomUUID();
-                topic.setChangeResultTracker(id, result -> {
-                    if (scope == EntryScope.CONNECTION
-                            && result == ChangeResult.ACCEPTED) {
-                        connectionScopedMapKeys
-                                .computeIfAbsent(name, k -> new HashMap<>())
-                                .put(key, id);
-                        if (!cleanupPending) {
-                            cleanupScopedData();
-                        }
-                    }
-                    actionDispatcher
-                            .dispatchAction(() -> contextFuture.complete(null));
-                });
-                distributor.accept(id, change);
-                return contextFuture;
-            }
-
-            @Override
-            public Stream<String> getKeys() {
-                ensureActiveConnection();
-                synchronized (topic) {
-                    List<String> snapshot = topic.getMapData(name)
-                            .map(MapChange::getKey)
-                            .collect(Collectors.toList());
-                    return snapshot.stream();
-                }
-            }
-
-            @Override
-            public <T> T get(String key, Class<T> type) {
-                return JsonUtil.toInstance(get(key), type);
-            }
-
-            @Override
-            public <T> T get(String key, TypeReference<T> type) {
-                return JsonUtil.toInstance(get(key), type);
-            }
-
-            private JsonNode get(String key) {
-                ensureActiveConnection();
-                Objects.requireNonNull(key, MessageUtil.Required.KEY);
-
-                synchronized (topic) {
-                    return topic.getMapValue(name, key);
-                }
-            }
-
-            @Override
-            public TopicConnection getConnection() {
-                return TopicConnection.this;
-            }
-
-            @Override
-            public Optional<Duration> getExpirationTimeout() {
-                Duration expirationTimeout = topic.mapExpirationTimeouts
-                        .get(name);
-                return Optional.ofNullable(expirationTimeout);
-            }
-
-            @Override
-            public void setExpirationTimeout(Duration expirationTimeout) {
-                if (expirationTimeout == null) {
-                    topic.mapExpirationTimeouts.remove(name);
-                } else {
-                    topic.mapExpirationTimeouts.put(name, expirationTimeout);
-                }
-            }
-        };
+        return new CollaborationMapImplementation(name);
     }
 
     /**
@@ -327,91 +425,7 @@ public class TopicConnection {
      */
     public CollaborationList getNamedList(String name) {
         ensureActiveConnection();
-        return new CollaborationList() {
-            @Override
-            public Registration subscribe(ListSubscriber subscriber) {
-                ensureActiveConnection();
-                Objects.requireNonNull(subscriber, "Subscriber cannot be null");
-
-                synchronized (topic) {
-                    Consumer<ListChange> changeNotifier = listChange -> {
-                        ListChangeEvent event = new ListChangeEvent(this,
-                                listChange);
-                        actionDispatcher.dispatchAction(
-                                () -> subscriber.onListChange(event));
-                    };
-                    topic.getListChanges(name).forEach(changeNotifier);
-
-                    Registration registration = subscribeToList(name,
-                            changeNotifier);
-                    addRegistration(registration);
-                    return registration;
-                }
-            }
-
-            @Override
-            public <T> List<T> getItems(Class<T> type) {
-                ensureActiveConnection();
-                Objects.requireNonNull(type, "The type can't be null");
-                synchronized (topic) {
-                    return topic.getListItems(name)
-                            .map(node -> JsonUtil.toInstance(node, type))
-                            .collect(Collectors.toList());
-                }
-            }
-
-            @Override
-            public <T> List<T> getItems(TypeReference<T> type) {
-                ensureActiveConnection();
-                Objects.requireNonNull(type,
-                        "The type reference cannot be null");
-                synchronized (topic) {
-                    return topic.getListItems(name)
-                            .map(node -> JsonUtil.toInstance(node, type))
-                            .collect(Collectors.toList());
-                }
-            }
-
-            @Override
-            public CompletableFuture<Void> append(Object item) {
-                ensureActiveConnection();
-                Objects.requireNonNull(item, "The item cannot be null");
-
-                CompletableFuture<Void> contextFuture = actionDispatcher
-                        .createCompletableFuture();
-
-                ObjectNode change = JsonUtil.createAppendChange(name, item);
-
-                UUID id = UUID.randomUUID();
-                topic.setChangeResultTracker(id, result -> {
-                    actionDispatcher
-                            .dispatchAction(() -> contextFuture.complete(null));
-                });
-                distributor.accept(id, change);
-                return contextFuture;
-            }
-
-            @Override
-            public TopicConnection getConnection() {
-                return TopicConnection.this;
-            }
-
-            @Override
-            public Optional<Duration> getExpirationTimeout() {
-                Duration expirationTimeout = topic.listExpirationTimeouts
-                        .get(name);
-                return Optional.ofNullable(expirationTimeout);
-            }
-
-            @Override
-            public void setExpirationTimeout(Duration expirationTimeout) {
-                if (expirationTimeout == null) {
-                    topic.listExpirationTimeouts.remove(name);
-                } else {
-                    topic.listExpirationTimeouts.put(name, expirationTimeout);
-                }
-            }
-        };
+        return new CollaborationListImplementation(name);
     }
 
     private void deactivate() {
