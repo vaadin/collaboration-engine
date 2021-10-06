@@ -44,9 +44,9 @@ public class PresenceManagerTest {
         List<UserInfo> users = new ArrayList<>();
 
         manager.markAsPresent(true);
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
 
         Assert.assertTrue(users.contains(user));
@@ -58,9 +58,9 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
         manager.markAsPresent(true);
 
@@ -74,9 +74,9 @@ public class PresenceManagerTest {
         PresenceManager bar = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        bar.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        bar.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
         foo.markAsPresent(true);
 
@@ -89,9 +89,9 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
         manager.markAsPresent(false);
 
@@ -104,8 +104,8 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
             return () -> {
             };
         });
@@ -123,9 +123,9 @@ public class PresenceManagerTest {
         PresenceManager barManager = createActiveManager(bar);
         List<UserInfo> users = new ArrayList<>();
 
-        fooManager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        fooManager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
         fooManager.markAsPresent(true);
         barManager.markAsPresent(true);
@@ -142,9 +142,9 @@ public class PresenceManagerTest {
         List<UserInfo> users = new ArrayList<>();
 
         manager.markAsPresent(true);
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
 
         Assert.assertTrue(users.contains(user));
@@ -156,12 +156,12 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         List<UserInfo> users = new ArrayList<>();
 
-        manager.setNewUserHandler(newUser -> {
-            users.add(newUser);
-            return () -> users.remove(newUser);
+        manager.setPresenceHandler(context -> {
+            users.add(context.getUser());
+            return () -> users.remove(context.getUser());
         });
         manager.markAsPresent(true);
-        manager.setNewUserHandler(null);
+        manager.setPresenceHandler(null);
 
         Assert.assertTrue(users.isEmpty());
     }

@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
@@ -44,7 +45,7 @@ public class PresenceManager {
 
     private CollaborationMap map;
 
-    private NewUserHandler newUserHandler;
+    private PresenceHandler presenceHandler;
 
     private boolean markAsPresent = false;
 
@@ -163,10 +164,30 @@ public class PresenceManager {
      * @param handler
      *            the user presence handler, or {@code null} to remove an
      *            existing handler
+     * @deprecated Use {@link #setPresenceHandler(PresenceHandler)} instead
      */
+    @Deprecated
     public void setNewUserHandler(NewUserHandler handler) {
+        setPresenceHandler(context -> handler.handleNewUser(context.getUser()));
+    }
+
+    /**
+     * Sets a handler which will be invoked when a user becomes present.
+     * <p>
+     * The handler accepts a {@link PresenceContext} instance as a parameter and
+     * should return a {@link Registration} which will be removed when the user
+     * stops being present.
+     * <p>
+     * Replacing an existing handler will remove all registrations from the
+     * previous one.
+     *
+     * @param handler
+     *            the user presence handler, or {@code null} to remove an
+     *            existing handler
+     */
+    public void setPresenceHandler(PresenceHandler handler) {
         removeAllRegistrations();
-        this.newUserHandler = handler;
+        this.presenceHandler = handler;
         if (handler != null) {
             getUsers().forEach(this::applyHandler);
         }
@@ -214,7 +235,7 @@ public class PresenceManager {
                 diff(oldUsersList, newUsersList).map(UserInfo::getId)
                         .forEach(this::removeRegistration);
             }
-            if (newUsersList != null && newUserHandler != null) {
+            if (newUsersList != null && presenceHandler != null) {
                 diff(newUsersList, oldUsersList).forEach(this::applyHandler);
             }
         }
@@ -229,9 +250,9 @@ public class PresenceManager {
     }
 
     private void applyHandler(UserInfo user) {
-        if (newUserHandler != null) {
-            handlerRegistrations.put(user.getId(),
-                    newUserHandler.handleNewUser(user));
+        if (presenceHandler != null) {
+            handlerRegistrations.put(user.getId(), presenceHandler
+                    .handlePresence(new DefaultPresenceContext(user)));
         }
     }
 
@@ -261,5 +282,19 @@ public class PresenceManager {
                 updateUsers(map, updater);
             }
         });
+    }
+
+    static class DefaultPresenceContext implements PresenceContext {
+
+        private final UserInfo user;
+
+        public DefaultPresenceContext(UserInfo user) {
+            this.user = user;
+        }
+
+        @Override
+        public UserInfo getUser() {
+            return user;
+        }
     }
 }
