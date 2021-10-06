@@ -4,12 +4,17 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.TestUtil.TestCollaborationEngine;
+import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.SpyActivationHandler;
 import com.vaadin.collaborationengine.util.TestComponent;
@@ -290,7 +295,7 @@ public class ComponentConnectionContextTest {
         activationHandler.getActionDispatcher().dispatchAction(command);
         Assert.assertEquals(Collections.emptyList(), executed);
 
-        ui.getAccessTasks().forEach(Command::execute);
+        ui.runAccessTasks();
 
         Assert.assertEquals("Command should have been passed to UI.access",
                 Arrays.asList("command"), executed);
@@ -594,6 +599,96 @@ public class ComponentConnectionContextTest {
                 beaconHandler.getListeners().isEmpty());
         activationHandler.assertInactive(
                 "Should have been deactivated by registration.remove");
+    }
+
+    @Test
+    public void connectionWithModifyingUnregistration_detachThenAttach_unregisterBeforeRegister() {
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(ui.getSession().getService());
+
+        List<String> log = createEagerMapEventCollector(ce, "topic", "map");
+
+        ui.setExecuteAccessTasks(false);
+        ui.add(component);
+
+        ce.openTopicConnection(component, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    CollaborationMap map = connection.getNamedMap("map");
+                    map.put("key", "active");
+                    return () -> map.put("key", null);
+                });
+
+        ui.runAccessTasks();
+
+        Assert.assertEquals("Santiy check", Arrays.asList("active"), log);
+
+        ui.remove(component);
+        ui.runAccessTasks();
+
+        ui.add(component);
+        ui.runAccessTasks();
+
+        Assert.assertEquals(Arrays.asList("active", null, "active"), log);
+    }
+
+    @Test
+    public void connectionWithModifyingUnregistration_immediateReattach_unregisterBeforeRegister() {
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(ui.getSession().getService());
+
+        List<String> log = createEagerMapEventCollector(ce, "topic", "map");
+
+        ui.setExecuteAccessTasks(false);
+        ui.add(component);
+
+        ce.openTopicConnection(component, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    CollaborationMap map = connection.getNamedMap("map");
+                    map.put("key", "active");
+                    return () -> map.put("key", null);
+                });
+
+        ui.runAccessTasks();
+
+        Assert.assertEquals("Santiy check", Arrays.asList("active"), log);
+
+        ui.remove(component);
+        ui.add(component);
+        ui.runAccessTasks();
+
+        /*
+         * There's only one activation entry in the list on the latest version
+         * that includes the fix that skips deactivation is activation happens
+         * quickly enough. For older versions, there would instead be three
+         * entries: "active", null, "active"
+         */
+        Assert.assertEquals(Arrays.asList("active"), log);
+    }
+
+    private List<String> createEagerMapEventCollector(
+            TestCollaborationEngine ce, String topicId, String mapName) {
+        List<String> log = new ArrayList<>();
+        MockConnectionContext spyContext = MockConnectionContext.createEager();
+        spyContext.setExecutor(Runnable::run);
+        ce.openTopicConnection(spyContext, topicId,
+                SystemUserInfo.getInstance(), connection -> {
+                    return connection.getNamedMap(mapName).subscribe(
+                            event -> log.add(event.getValue(String.class)));
+                });
+        return log;
+    }
+
+    private static void ensureSingleThreadExecutorTasksAreRun(
+            ExecutorService executorService)
+            throws InterruptedException, ExecutionException {
+        /*
+         * The submitted task will be the last one in the executor's queue.
+         * Assuming it's a single-threaded executor, that means that anything
+         * else in that queue has already been run when our submitted task is
+         * run. We do thus only have to block until our own task is run.
+         */
+        executorService.submit(() -> {
+        }).get();
     }
 
     public BeaconHandler getBeaconHandler(MockUI mockUI) {

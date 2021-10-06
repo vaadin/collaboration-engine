@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,22 @@ import com.vaadin.flow.shared.communication.PushMode;
  */
 public class ComponentConnectionContext implements ConnectionContext {
 
+    private enum State {
+        /**
+         * Fully active. ui has been set.
+         */
+        ACTIVE,
+        /**
+         * Inactivation has been initiated. ui is still set, but will be cleared
+         * as soon as the inbox is purged.
+         */
+        INACTIVATING,
+        /**
+         * Fully inactive. ui has been cleared.
+         */
+        INACTIVE;
+    }
+
     private final Map<Component, Registration> componentListeners = new HashMap<>();
     private final Set<Component> attachedComponents = new HashSet<>();
 
@@ -48,7 +65,8 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private final ExecutionQueue inbox = new ExecutionQueue();
     private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
-    private final AtomicBoolean active = new AtomicBoolean();
+    private final AtomicReference<State> state = new AtomicReference<>(
+            State.INACTIVE);
     private Consumer<ActionDispatcher> activationHandler;
     private Executor backgroundRunner;
     private Registration beaconListener;
@@ -191,7 +209,8 @@ public class ComponentConnectionContext implements ConnectionContext {
     }
 
     private void activate() {
-        if (this.activationHandler != null && !this.active.getAndSet(true)) {
+        if (this.activationHandler != null
+                && state.getAndSet(State.ACTIVE) != State.ACTIVE) {
             this.activationHandler.accept(this.actionDispatcher);
         }
     }
@@ -206,9 +225,17 @@ public class ComponentConnectionContext implements ConnectionContext {
             destroyListener = null;
         }
         if (activationHandler != null && ui != null
-                && active.getAndSet(false)) {
+                && state.compareAndSet(State.ACTIVE, State.INACTIVATING)) {
             activationHandler.accept(null);
-            actionDispatcher.dispatchAction(() -> ui = null);
+            if (inbox.isEmpty()) {
+                inactivateIfDeactivating();
+            }
+        }
+    }
+
+    private void inactivateIfDeactivating() {
+        if (state.compareAndSet(State.INACTIVATING, State.INACTIVE)) {
+            this.ui = null;
         }
     }
 
@@ -250,8 +277,10 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (localUI == null || backgroundRunner == null) {
             return;
         }
-        backgroundRunner
-                .execute(() -> localUI.access(inbox::runPendingCommands));
+        backgroundRunner.execute(() -> localUI.access(() -> {
+            inbox.runPendingCommands();
+            inactivateIfDeactivating();
+        }));
     }
 
     private static void checkForPush(UI ui) {

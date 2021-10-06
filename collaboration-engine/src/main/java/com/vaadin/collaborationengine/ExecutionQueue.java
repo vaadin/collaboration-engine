@@ -28,4 +28,8 @@ class ExecutionQueue {
             command.execute();
         }
     }
+
+    boolean isEmpty() {
+        return inbox.isEmpty();
+    }
 }

@@ -51,4 +51,13 @@ public class MockUI extends UI {
     public void setExecuteAccessTasks(boolean executeAccessTasks) {
         this.executeAccessTasks = executeAccessTasks;
     }
+
+    public void runAccessTasks() {
+        // Need to this the hard way since a task might add another task
+        while (!accessTasks.isEmpty()) {
+            ArrayList<Command> copy = new ArrayList<>(accessTasks);
+            accessTasks.clear();
+            copy.forEach(Command::execute);
+        }
+    }
 }
