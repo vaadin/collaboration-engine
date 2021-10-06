@@ -1,6 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
@@ -23,9 +22,8 @@ public class ReattachFieldTestCommon
         assertUserTags(client2.textField, "User 1");
 
         client1.textField.setValue("foo");
-        Assert.assertEquals(
-                "TextField value was not propagated to the other client", "foo",
-                client2.textField.getValue());
+        // Value should be propagated to the other client
+        waitUntil(driver -> "foo".equals(client2.textField.getValue()), 3);
 
         client1.blur();
         assertNoUserTags(client2.textField);
