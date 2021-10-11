@@ -6,36 +6,22 @@ For the full License, see http://vaadin.com/license/cvrl-1
 */
 import { applyShadyStyle } from '../css-helpers.js';
 
-const getOutlineRoot = (field) => {
-  switch (field.tagName.toLowerCase()) {
-    /* c8 ignore next 6 */
+const getOutlineTarget = (element) => {
+  switch (element.tagName.toLowerCase()) {
+    /* c8 ignore next */
+    case 'vaadin-big-decimal-field':
     case 'vaadin-combo-box':
     case 'vaadin-date-picker':
     case 'vaadin-date-time-picker-date-picker':
     case 'vaadin-date-time-picker-time-picker':
+    case 'vaadin-email-field':
+    case 'vaadin-integer-field':
+    case 'vaadin-number-field':
+    case 'vaadin-password-field':
     case 'vaadin-select':
-    case 'vaadin-time-picker':
-      return field.focusElement;
-    default:
-      return field;
-  }
-};
-
-const getOutlineTarget = (element) => {
-  switch (element.tagName.toLowerCase()) {
-    /* c8 ignore next */
     case 'vaadin-text-area':
     case 'vaadin-text-field':
-    case 'vaadin-password-field':
-    case 'vaadin-email-field':
-    case 'vaadin-number-field':
-    case 'vaadin-integer-field':
-    case 'vaadin-big-decimal-field':
-    case 'vaadin-select-text-field':
-    case 'vaadin-date-picker-text-field':
-    case 'vaadin-time-picker-text-field':
-    case 'vaadin-date-time-picker-date-text-field':
-    case 'vaadin-date-time-picker-time-text-field':
+    case 'vaadin-time-picker':
       return element.shadowRoot.querySelector('[part="input-field"]');
     /* c8 ignore next */
     case 'vaadin-checkbox':
@@ -53,8 +39,7 @@ const fields = new WeakMap();
 
 export const initOutline = (field) => {
   if (!fields.has(field)) {
-    // Get root component to apply styles
-    const root = getOutlineRoot(field);
+    const root = field;
 
     // Get target to attach instance
     const target = getOutlineTarget(root);

@@ -24,9 +24,9 @@
       (async () => {
         const theme = window.location.search.replace(/.*theme=(\w+).*/, '$1') || 'lumo';
 
-        await import('@vaadin/vaadin-date-time-picker/theme/' + theme + '/vaadin-date-time-picker.js');
-
         const { FieldHighlighter } = await import('../../theme/' + theme + '/vaadin-field-highlighter.js');
+
+        await import('@vaadin/vaadin-date-time-picker/theme/' + theme + '/vaadin-date-time-picker.js');
 
         const field = document.querySelector('vaadin-date-time-picker');
         FieldHighlighter.init(field);

@@ -1,11 +1,13 @@
 import { expect } from '@bundled-es-modules/chai';
 import sinon from 'sinon';
 import { afterNextRender } from '@polymer/polymer/lib/utils/render-status.js';
-import { fixture, html } from '@open-wc/testing-helpers';
+import { fixture } from '@open-wc/testing-helpers';
+import { html, render } from 'lit';
 import '@vaadin/vaadin-checkbox/vaadin-checkbox-group.js';
 import '@vaadin/vaadin-date-picker/vaadin-date-picker.js';
 import '@vaadin/vaadin-date-time-picker/vaadin-date-time-picker.js';
 import '@vaadin/vaadin-select/vaadin-select.js';
+import '@vaadin/vaadin-text-field/vaadin-text-field.js';
 import '@vaadin/vaadin-list-box/vaadin-list-box.js';
 import '@vaadin/vaadin-item/vaadin-item.js';
 import '@vaadin/vaadin-radio-button/vaadin-radio-button.js';
@@ -32,9 +34,9 @@ describe('field components', () => {
   }
 
   function open(elem, callback) {
-    const overlay = elem.$.overlay || elem._overlayElement;
+    const overlay = elem.$.overlay || elem._overlayElement;
     listenForEvent(overlay, 'vaadin-overlay-open', callback);
-    const event = new CustomEvent('keydown', {bubbles: true, composed: true});
+    const event = new CustomEvent('keydown', { bubbles: true, composed: true });
     event.key = 'ArrowDown';
     elem.focusElement.dispatchEvent(event);
   }
@@ -189,7 +191,6 @@ describe('field components', () => {
             done();
           });
         });
-        field.dispatchEvent(new Event('focus'));
         field.focus();
         field.click();
       });
@@ -198,17 +199,23 @@ describe('field components', () => {
 
   describe('select', () => {
     beforeEach(async () => {
-      field = await fixture(html`
-        <vaadin-select>
-          <template>
+      field = await fixture(html`<vaadin-select></vaadin-select>`);
+      field.renderer = (root) => {
+        if (root.firstChild) {
+          return;
+        }
+
+        render(
+          html`
             <vaadin-list-box>
               <vaadin-item>Foo</vaadin-item>
               <vaadin-item>Bar</vaadin-item>
               <vaadin-item>Baz</vaadin-item>
             </vaadin-list-box>
-          </template>
-        </vaadin-select>
-      `);
+          `,
+          root
+        );
+      };
       highlighter = FieldHighlighter.init(field);
       overlay = field._overlayElement;
       showSpy = sinon.spy();
@@ -271,7 +278,6 @@ describe('field components', () => {
           document.body.click();
         });
       });
-
     });
 
     describe('phone', () => {
@@ -309,9 +315,9 @@ describe('field components', () => {
     beforeEach(async () => {
       field = await fixture(html`
         <vaadin-checkbox-group>
-          <vaadin-checkbox value="1">Checkbox <b>1</b></vaadin-checkbox>
-          <vaadin-checkbox value="2">Checkbox <b>2</b></vaadin-checkbox>
-          <vaadin-checkbox value="3">Checkbox <b>3</b></vaadin-checkbox>
+          <vaadin-checkbox value="1" label="Checkbox 1"></vaadin-checkbox>
+          <vaadin-checkbox value="2" label="Checkbox 2"></vaadin-checkbox>
+          <vaadin-checkbox value="3" label="Checkbox 3"></vaadin-checkbox>
         </vaadin-checkbox-group>
       `);
       highlighter = FieldHighlighter.init(field);
@@ -367,9 +373,9 @@ describe('field components', () => {
     beforeEach(async () => {
       field = await fixture(html`
         <vaadin-radio-group>
-          <vaadin-radio-button value="1">Radio <b>1</b></vaadin-radio-button>
-          <vaadin-radio-button value="2">Radio <b>2</b></vaadin-radio-button>
-          <vaadin-radio-button value="3">Radio <b>3</b></vaadin-radio-button>
+          <vaadin-radio-button value="1" label="Radio 1"></vaadin-radio-button>
+          <vaadin-radio-button value="2" label="Radio 2"></vaadin-radio-button>
+          <vaadin-radio-button value="3" label="Radio 3"></vaadin-radio-button>
         </vaadin-radio-group>
       `);
       highlighter = FieldHighlighter.init(field);
@@ -426,8 +432,8 @@ describe('field components', () => {
     beforeEach(async () => {
       field = await fixture(html`<vaadin-date-time-picker></vaadin-date-time-picker>`);
       highlighter = FieldHighlighter.init(field);
-      date = field.$.customField.inputs[0];
-      time = field.$.customField.inputs[1];
+      date = field.__inputs[0];
+      time = field.__inputs[1];
       overlay = field.$.overlay;
       showSpy = sinon.spy();
       hideSpy = sinon.spy();
@@ -462,6 +468,7 @@ describe('field components', () => {
     });
 
     it('should dispatch vaadin-highlight-hide event on moving focus to time picker', () => {
+      date.focus();
       focusout(date, time);
       focusin(time, date);
       expect(hideSpy.callCount).to.equal(1);
@@ -469,6 +476,7 @@ describe('field components', () => {
     });
 
     it('should dispatch second vaadin-highlight-show event on moving focus to time picker', () => {
+      date.focus();
       focusout(date, time);
       focusin(time, date);
       expect(showSpy.callCount).to.equal(2);
@@ -476,6 +484,7 @@ describe('field components', () => {
     });
 
     it('should dispatch vaadin-highlight-hide event on moving focus to date picker', () => {
+      time.focus();
       focusout(time, date);
       focusin(date, time);
       expect(hideSpy.callCount).to.equal(1);
@@ -483,6 +492,7 @@ describe('field components', () => {
     });
 
     it('should dispatch second vaadin-highlight-show event on moving focus to date picker', () => {
+      time.focus();
       focusout(time, date);
       focusin(date, time);
       expect(showSpy.callCount).to.equal(2);
@@ -507,8 +517,8 @@ describe('field components', () => {
       const user1 = { id: 'a', name: 'foo', fieldIndex: 0 };
       const user2 = { id: 'b', name: 'var', fieldIndex: 1 };
       FieldHighlighter.setUsers(field, [user1, user2]);
-      expect(getComputedStyle(getOutline(date.focusElement)).opacity).to.equal('1');
-      expect(getComputedStyle(getOutline(time.focusElement)).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(date)).opacity).to.equal('1');
+      expect(getComputedStyle(getOutline(time)).opacity).to.equal('1');
     });
   });
 

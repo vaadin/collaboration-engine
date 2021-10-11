@@ -8,7 +8,7 @@ import { FieldObserver } from './vaadin-field-observer.js';
 
 export class CheckboxGroupObserver extends FieldObserver {
   getFields() {
-    return this.component._checkboxes;
+    return this.component.__checkboxes;
   }
 
   getFocusTarget(event) {

@@ -26,7 +26,7 @@ export class DatePickerObserver extends ComponentObserver {
     // Here we set the flag to ignore related focusout events and then to
     // mark date picker as being edited by user (to show field highlight).
     // We have to use capture phase in order to catch this event early.
-    datePicker.addEventListener('focus', (event) => this.onFocus(event), true);
+    datePicker.addEventListener('blur', (event) => this.onBlur(event), true);
 
     datePicker.addEventListener('opened-changed', (event) => this.onOpenedChanged(event));
 
@@ -37,15 +37,10 @@ export class DatePickerObserver extends ComponentObserver {
     datePicker.addEventListener('focusout', (event) => this.onFocusOut(event));
   }
 
-  onFocus(event) {
+  onBlur(event) {
     const datePicker = this.datePicker;
     if (datePicker._fullscreen && event.relatedTarget !== this.overlay) {
       this.fullscreenFocus = true;
-
-      if (datePicker.opened) {
-        this.fullscreenFocus = false;
-        this.showOutline(datePicker);
-      }
     }
   }
 
@@ -85,6 +80,11 @@ export class DatePickerObserver extends ComponentObserver {
   }
 
   onOpenedChanged(event) {
+    if (event.detail.value === true && this.fullscreenFocus) {
+      this.fullscreenFocus = false;
+      this.showOutline(this.datePicker);
+    }
+
     // closing after previously moving focus away.
     if (event.detail.value === false && this.blurWhileOpened) {
       this.blurWhileOpened = false;

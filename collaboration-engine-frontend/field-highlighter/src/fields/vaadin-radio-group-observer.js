@@ -8,7 +8,7 @@ import { FieldObserver } from './vaadin-field-observer.js';
 
 export class RadioGroupObserver extends FieldObserver {
   getFields() {
-    return this.component._radioButtons;
+    return this.component.__radioButtons;
   }
 
   getFocusTarget(event) {

@@ -50,6 +50,6 @@ export class DateTimePickerObserver extends ComponentObserver {
   }
 
   getFields() {
-    return this.component.$.customField.inputs;
+    return this.component.__inputs;
   }
 }

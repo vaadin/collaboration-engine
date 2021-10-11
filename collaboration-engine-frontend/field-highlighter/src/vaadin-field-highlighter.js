@@ -6,7 +6,7 @@ For the full License, see http://vaadin.com/license/cvrl-1
 */
 import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { IronA11yAnnouncer } from '@polymer/iron-a11y-announcer/iron-a11y-announcer.js';
-import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
+import { DirMixin } from '@vaadin/component-base/src/dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { DatePickerObserver } from './fields/vaadin-date-picker-observer.js';
 import { DateTimePickerObserver } from './fields/vaadin-date-time-picker-observer.js';

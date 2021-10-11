@@ -8,7 +8,7 @@ import { PolymerElement, html } from '@polymer/polymer/polymer-element.js';
 import { Debouncer } from '@polymer/polymer/lib/utils/debounce.js';
 import { timeOut } from '@polymer/polymer/lib/utils/async.js';
 import { calculateSplices } from '@polymer/polymer/lib/utils/array-splice.js';
-import { DirMixin } from '@vaadin/vaadin-element-mixin/vaadin-dir-mixin.js';
+import { DirMixin } from '@vaadin/component-base/src/dir-mixin.js';
 import { ThemableMixin } from '@vaadin/vaadin-themable-mixin/vaadin-themable-mixin.js';
 import { registerStyles, css } from '@vaadin/vaadin-themable-mixin/register-styles.js';
 import { OverlayElement } from '@vaadin/vaadin-overlay/vaadin-overlay.js';

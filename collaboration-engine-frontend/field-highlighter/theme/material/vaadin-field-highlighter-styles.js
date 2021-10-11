@@ -5,8 +5,12 @@ registerStyles(
   css`
     :host {
       transition: opacity 0.3s;
+      padding: 0 !important;
     }
 
+    :host([context$='picker']),
+    :host([context$='combo-box']),
+    :host([context$='select']),
     :host([context$='area']),
     :host([context$='field']) {
       top: auto;

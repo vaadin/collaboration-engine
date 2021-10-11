@@ -13,6 +13,8 @@ registerStyles(
   css`
     :host {
       transition: opacity 0.3s;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
     }
 
     :host::before {
