@@ -146,7 +146,10 @@ public class CollaborationEngineConfiguration {
      *
      * @param backend
      *            the backend to use, not <code>null</code>
+     * @deprecated setting a backend is an experimental feature and as such
+     *             discouraged to be used in production environments
      */
+    @Deprecated
     public void setBackend(Backend backend) {
         this.backend = Objects.requireNonNull(backend);
     }
