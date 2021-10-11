@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Vaadin Ltd
+ * Copyright (C) 2021 Vaadin Ltd
  *
  * This program is available under Commercial Vaadin Runtime License 1.0
  * (CVRLv1).
