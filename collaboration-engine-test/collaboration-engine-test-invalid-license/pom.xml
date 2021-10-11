@@ -17,6 +17,8 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-spring-boot-starter</artifactId>
+            <!-- This needs to be fixed -->
+            <version>22.0-SNAPSHOT</version>
             <exclusions>
                 <!-- Excluding so that webjars are not included. -->
                 <exclusion>

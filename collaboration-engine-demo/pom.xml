@@ -53,8 +53,8 @@
 
         <dependency>
             <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-testbench</artifactId>
-            <version>${vaadin.version}</version>
+            <artifactId>vaadin-testbench-core</artifactId>
+            <version>${testbench.version}</version>
             <scope>test</scope>
         </dependency>
 

@@ -35,9 +35,9 @@
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
-        <flow.version>9.0-SNAPSHOT</flow.version>
+        <flow.version>9.0.0.alpha9</flow.version>
         <testbench.version>7.0.1</testbench.version>
-        <vaadin.version>22.0-SNAPSHOT</vaadin.version>
+        <vaadin.version>22.0.0.alpha7</vaadin.version>
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
 
