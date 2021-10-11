@@ -36,9 +36,12 @@
 
         <!-- Versions to keep in sync with the targeted platform version: -->
         <flow.version>8.0.1</flow.version>
+        <testbench.version>7.0.1</testbench.version>
         <vaadin.version>21.0.1</vaadin.version>
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
+
+        <flow.cdi.version>13.0.0</flow.cdi.version>
 
         <junit.version>4.12</junit.version>
         <jetty.version>9.4.28.v20200408</jetty.version>

@@ -61,8 +61,8 @@
                 -->
                 <plugin>
                     <groupId>com.vaadin</groupId>
-                    <artifactId>vaadin-maven-plugin</artifactId>
-                    <version>${vaadin.version}</version>
+                    <artifactId>flow-maven-plugin</artifactId>
+                    <version>${flow.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -81,7 +81,7 @@
             </plugin>
             <plugin>
                 <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-maven-plugin</artifactId>
+                <artifactId>flow-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -170,8 +170,8 @@
                         </plugin>
                         <plugin>
                             <groupId>com.vaadin</groupId>
-                            <artifactId>vaadin-maven-plugin</artifactId>
-                            <version>${vaadin.version}</version>
+                            <artifactId>flow-maven-plugin</artifactId>
+                            <version>${flow.version}</version>
                             <executions>
                                 <execution>
                                     <goals>
