@@ -9,7 +9,6 @@
     "@vaadin/checkbox": "22.0.0-alpha7",
     "@vaadin/checkbox-group": "22.0.0-alpha7",
     "@vaadin/common-frontend": "0.0.17",
-    "@vaadin/cookie-consent": "22.0.0-alpha7",
     "@vaadin/dialog": "22.0.0-alpha7",
     "@vaadin/email-field": "22.0.0-alpha7",
     "@vaadin/flow-frontend": "./target/flow-frontend",
@@ -47,6 +46,7 @@
     "html-webpack-plugin": "4.5.1",
     "lit-css-loader": "0.1.0",
     "loader-utils": "2.0.0",
+    "tsconfig-paths-webpack-plugin": "3.5.1",
     "typescript": "4.4.3",
     "webpack": "4.46.0",
     "webpack-cli": "4.9.0",
@@ -66,7 +66,6 @@
       "@vaadin/checkbox": "22.0.0-alpha7",
       "@vaadin/checkbox-group": "22.0.0-alpha7",
       "@vaadin/common-frontend": "0.0.17",
-      "@vaadin/cookie-consent": "22.0.0-alpha7",
       "@vaadin/dialog": "22.0.0-alpha7",
       "@vaadin/email-field": "22.0.0-alpha7",
       "@vaadin/horizontal-layout": "22.0.0-alpha7",
@@ -98,6 +97,7 @@
       "html-webpack-plugin": "4.5.1",
       "lit-css-loader": "0.1.0",
       "loader-utils": "2.0.0",
+      "tsconfig-paths-webpack-plugin": "3.5.1",
       "typescript": "4.4.3",
       "webpack": "4.46.0",
       "webpack-cli": "4.9.0",
@@ -108,6 +108,6 @@
       "workbox-precaching": "6.2.0",
       "workbox-webpack-plugin": "6.2.0"
     },
-    "hash": "7c199769148973b3ecd21319d5b36eb11519bc89910e75bdbdfbd9f568fe55c0"
+    "hash": "2369cd1a769428c5377a8f5e00cc30f08416e4b1186db6cd8a3ee5a24c83c6fd"
   }
 }
