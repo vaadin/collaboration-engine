@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -219,28 +220,98 @@ public class TopicConnection {
 
         @Override
         public <T> List<T> getItems(Class<T> type) {
-            ensureActiveConnection();
-            Objects.requireNonNull(type, "The type can't be null");
-            synchronized (topic) {
-                return topic.getListItems(name)
-                        .map(node -> JsonUtil.toInstance(node, type))
-                        .collect(Collectors.toList());
-            }
+            return getItems(JsonUtil.fromJsonConverter(type));
         }
 
         @Override
         public <T> List<T> getItems(TypeReference<T> type) {
+            return getItems(JsonUtil.fromJsonConverter(type));
+        }
+
+        private <T> List<T> getItems(Function<JsonNode, T> converter) {
             ensureActiveConnection();
-            Objects.requireNonNull(type, "The type reference cannot be null");
+            synchronized (topic) {
+                return topic.getListItems(name).map(item -> item.value)
+                        .map(converter).collect(Collectors.toList());
+            }
+        }
+
+        /**
+         * Gets the list item identifier by the given key as instance of the
+         * given class.
+         *
+         * @param <T>
+         *            the type of the value from <code>type</code> parameter,
+         *            e.g. <code>String</code>
+         * @param key
+         *            the key of the requested item, not <code>null</code>
+         * @param type
+         *            the expected type of the item, not <code>null</code>
+         * @return the requested item
+         * @throws JsonConversionException
+         *             if the value in the list cannot be converted to an
+         *             instance of the given class
+         */
+        public <T> T getItem(ListKey key, Class<T> type) {
+            return getItem(key, JsonUtil.fromJsonConverter(type));
+        }
+
+        /**
+         * Gets the list item identifier by the given key as instance of the
+         * given type reference.
+         *
+         * @param <T>
+         *            the type reference of the value from <code>type</code>
+         *            parameter, e.g. <code>List<String></code>
+         * @param key
+         *            the key of the requested item, not <code>null</code>
+         * @param type
+         *            the expected type reference of the item, not
+         *            <code>null</code>
+         * @return the requested item
+         * @throws JsonConversionException
+         *             if the value in the list cannot be converted to an
+         *             instance of the given class
+         */
+        public <T> T getItem(ListKey key, TypeReference<T> type) {
+            return getItem(key, JsonUtil.fromJsonConverter(type));
+        }
+
+        private <T> T getItem(ListKey key, Function<JsonNode, T> converter) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+            synchronized (topic) {
+                return converter.apply(topic.getListValue(name, key.getKey()));
+            }
+        }
+
+        /**
+         * Gets the keys for all the items on the list.
+         *
+         * @return the keys
+         */
+        public Stream<ListKey> getKeys() {
+            ensureActiveConnection();
             synchronized (topic) {
                 return topic.getListItems(name)
-                        .map(node -> JsonUtil.toInstance(node, type))
-                        .collect(Collectors.toList());
+                        .map(item -> new ListKey(item.id))
+                        .collect(Collectors.toList()).stream();
             }
         }
 
         @Override
         public CompletableFuture<Void> append(Object item) {
+            return insertLast(item).getCompletableFuture();
+        }
+
+        /**
+         * Inserts the given item as the last item of the list.
+         *
+         * @param item
+         *            the item
+         * @return the result of the operation
+         */
+        public ListInsertResult<Void> insertLast(Object item) {
             ensureActiveConnection();
             Objects.requireNonNull(item, "The item cannot be null");
 
@@ -255,6 +326,39 @@ public class TopicConnection {
                         .dispatchAction(() -> contextFuture.complete(null));
             });
             distributor.accept(id, change);
+            return new ListInsertResult<>(new ListKey(id), contextFuture);
+        }
+
+        /**
+         * Sets a new value for the item identified by the given key.
+         * <p>
+         * It return the result of the operation as a {@link CompletableFuture}
+         * which resolves to <code>true<code> if the operation succeeds,
+         * <code>false</code> otherwise.
+         *
+         * @param key
+         *            the item key, not <code>null</code>
+         * @param value
+         *            the new value of the item
+         * @return the result of the operation
+         */
+        public CompletableFuture<Boolean> set(ListKey key, Object value) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+
+            CompletableFuture<Boolean> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            ObjectNode change = JsonUtil.createListSetChange(name,
+                    key.getKey().toString(), value);
+
+            UUID id = UUID.randomUUID();
+            topic.setChangeResultTracker(id, result -> {
+                actionDispatcher.dispatchAction(() -> contextFuture
+                        .complete(result != ChangeResult.REJECTED));
+            });
+            distributor.accept(id, change);
+
             return contextFuture;
         }
 

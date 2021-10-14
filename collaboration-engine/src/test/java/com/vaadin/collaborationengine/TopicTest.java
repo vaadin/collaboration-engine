@@ -115,7 +115,7 @@ public class TopicTest {
         ObjectNode change = JsonUtil.createAppendChange("foo", MockJson.FOO);
         topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("foo",
-                topic.getListItems("foo").findFirst().get().textValue());
+                topic.getListItems("foo").findFirst().get().value.textValue());
     }
 
     @Test

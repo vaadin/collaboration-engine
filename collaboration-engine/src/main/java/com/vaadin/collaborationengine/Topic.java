@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.vaadin.collaborationengine.EntryList.ListEntrySnapshot;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.shared.Registration;
@@ -56,7 +58,7 @@ class Topic {
 
     private final CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, Entry>> namedMapData = new HashMap<>();
-    private final Map<String, List<JsonNode>> namedListData = new HashMap<>();
+    private final Map<String, EntryList> namedListData = new HashMap<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
     final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
     private Instant lastDisconnected;
@@ -87,7 +89,7 @@ class Topic {
             });
             listExpirationTimeouts.forEach((name, timeout) -> {
                 if (now.isAfter(lastDisconnected.plus(timeout))) {
-                    namedListData.get(name).clear();
+                    getList(name).ifPresent(EntryList::clear);
                 }
             });
         }
@@ -125,7 +127,10 @@ class Topic {
             details = applyMapChange(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_APPEND:
-            details = applyListChange(change);
+            details = applyListAppend(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_LIST_SET:
+            details = applyListSet(change);
             break;
         default:
             throw new UnsupportedOperationException(
@@ -177,25 +182,60 @@ class Topic {
                 JsonUtil.toUUID(expectedId));
     }
 
-    ChangeDetails applyListChange(ObjectNode change) {
-        String name = change.get(JsonUtil.CHANGE_NAME).asText();
+    ChangeDetails applyListAppend(UUID id, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-        getList(name).add(item);
-        return new ListChange(name, item);
+        ListEntrySnapshot insertedEntry = getOrCreateList(listName)
+                .insertLast(id, item);
+
+        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
+                null, insertedEntry.prev, null, null);
+    }
+
+    private ChangeDetails applyListSet(ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+        EntryList list = getOrCreateList(listName);
+
+        ListEntrySnapshot entry = list.getEntry(key);
+        if (entry == null) {
+            return null;
+        }
+
+        if (newValue.isNull()) {
+            list.remove(key);
+            return new ListChange(listName, ListChangeType.SET, key,
+                    entry.value, null, entry.prev, null, entry.next, null);
+        } else {
+            JsonNode oldValue = entry.value;
+            list.setValue(key, newValue);
+            return new ListChange(listName, ListChangeType.SET, key, oldValue,
+                    newValue, entry.prev, entry.prev, entry.next, entry.next);
+        }
     }
 
     Stream<ListChange> getListChanges(String listName) {
-        return getListItems(listName)
-                .map(item -> new ListChange(listName, item));
+        return getListItems(listName).map(
+                item -> new ListChange(listName, ListChangeType.INSERT, item.id,
+                        null, item.value, null, item.prev, null, null));
     }
 
-    Stream<JsonNode> getListItems(String listName) {
-        return getList(listName).stream();
+    Stream<ListEntrySnapshot> getListItems(String listName) {
+        return getList(listName).map(EntryList::stream)
+                .orElseGet(Stream::empty);
     }
 
-    private List<JsonNode> getList(String listName) {
-        return namedListData.computeIfAbsent(listName,
-                name -> new ArrayList<>());
+    JsonNode getListValue(String listName, UUID key) {
+        return getList(listName).map(list -> list.getValue(key)).orElse(null);
+    }
+
+    private EntryList getOrCreateList(String listName) {
+        return namedListData.computeIfAbsent(listName, name -> new EntryList());
+    }
+
+    private Optional<EntryList> getList(String listName) {
+        return Optional.ofNullable(namedListData.get(listName));
     }
 
     void setChangeResultTracker(UUID id,

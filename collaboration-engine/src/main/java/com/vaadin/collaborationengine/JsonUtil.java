@@ -11,7 +11,9 @@ package com.vaadin.collaborationengine;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -44,6 +46,8 @@ public class JsonUtil {
     static final String CHANGE_TYPE_PUT = "m-put";
 
     static final String CHANGE_TYPE_APPEND = "l-append";
+
+    static final String CHANGE_TYPE_LIST_SET = "l-set";
 
     static final String CHANGE_ITEM = "item";
 
@@ -88,8 +92,18 @@ public class JsonUtil {
         }
     }
 
+    static <T> Function<JsonNode, T> fromJsonConverter(Class<T> type) {
+        Objects.requireNonNull(type, "The type can't be null");
+        return jsonNode -> toInstance(jsonNode, type);
+    }
+
     static <T> T toInstance(JsonNode jsonNode, TypeReference<T> type) {
+        Objects.requireNonNull(type, "The type reference cannot be null");
         return (T) toInstance(jsonNode, type.getType());
+    }
+
+    static <T> Function<JsonNode, T> fromJsonConverter(TypeReference<T> type) {
+        return jsonNode -> toInstance(jsonNode, type);
     }
 
     static Object toInstance(JsonNode jsonNode, Type type) {
@@ -133,6 +147,16 @@ public class JsonUtil {
         change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
         change.put(CHANGE_NAME, name);
         change.set(CHANGE_ITEM, toJsonNode(item));
+        return change;
+    }
+
+    static ObjectNode createListSetChange(String name, String id,
+            Object value) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_LIST_SET);
+        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_KEY, id);
+        change.set(CHANGE_VALUE, toJsonNode(value));
         return change;
     }
 }

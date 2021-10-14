@@ -18,16 +18,22 @@ package com.vaadin.collaborationengine;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.TopicConnection.CollaborationListImplementation;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class CollaborationListTest {
@@ -35,7 +41,7 @@ public class CollaborationListTest {
     private static final TypeReference<String> STRING_REF = new TypeReference<String>() {
     };
 
-    private static class ListSubscriberSpy implements ListSubscriber {
+    private static class ListAppendSpy implements ListSubscriber {
 
         private final LinkedList<String> expectedItems = new LinkedList<>();
 
@@ -55,11 +61,23 @@ public class CollaborationListTest {
         }
     }
 
+    private static class EventCollector extends ArrayList<ListChangeEvent>
+            implements ListSubscriber {
+        @Override
+        public void onListChange(ListChangeEvent event) {
+            add(event);
+        }
+    }
+
     private MockConnectionContext context;
     private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationList list;
-    private ListSubscriberSpy spy;
+    // This field is here only to test API that is not yet public
+    @Deprecated()
+    private CollaborationListImplementation privateList;
+    private ListAppendSpy appendSpy;
+    private EventCollector eventCollector;
     private TopicConnectionRegistration registration;
 
     @Before
@@ -70,9 +88,11 @@ public class CollaborationListTest {
                 SystemUserInfo.getInstance(), topicConnection -> {
                     connection = topicConnection;
                     list = connection.getNamedList("foo");
+                    privateList = (CollaborationListImplementation) list;
                     return null;
                 });
-        spy = new ListSubscriberSpy();
+        appendSpy = new ListAppendSpy();
+        eventCollector = new EventCollector();
     }
 
     @Test
@@ -116,17 +136,17 @@ public class CollaborationListTest {
         list.append("foo");
         list.append("bar");
 
-        spy.addExpectedEvent("foo");
-        spy.addExpectedEvent("bar");
+        appendSpy.addExpectedEvent("foo");
+        appendSpy.addExpectedEvent("bar");
 
-        list.subscribe(spy);
+        list.subscribe(appendSpy);
 
-        spy.assertNoExpectedEvents();
+        appendSpy.assertNoExpectedEvents();
     }
 
     @Test
     public void listWithRemovedSubscriber_appendItem_subscriberNotNotified() {
-        list.subscribe(spy).remove();
+        list.subscribe(appendSpy).remove();
 
         list.append("foo"); // Spy would throw if notified of unexpected "foo"
     }
@@ -135,9 +155,9 @@ public class CollaborationListTest {
     public void listWithSubscriber_addAnotherSubscriber_noEventForOldSubscriber() {
         list.append("foo");
 
-        spy.addExpectedEvent("foo");
-        list.subscribe(spy);
-        spy.assertNoExpectedEvents();
+        appendSpy.addExpectedEvent("foo");
+        list.subscribe(appendSpy);
+        appendSpy.assertNoExpectedEvents();
 
         list.subscribe(event -> {
         }); // Spy would throw if notified again
@@ -202,8 +222,8 @@ public class CollaborationListTest {
                     return null;
                 });
 
-        ListSubscriberSpy spy1 = new ListSubscriberSpy();
-        ListSubscriberSpy spy2 = new ListSubscriberSpy();
+        ListAppendSpy spy1 = new ListAppendSpy();
+        ListAppendSpy spy2 = new ListAppendSpy();
 
         list1.get().subscribe(spy1);
         list2.get().subscribe(spy2);
@@ -331,5 +351,168 @@ public class CollaborationListTest {
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         String foo = list.getItems(String.class).get(0);
         Assert.assertEquals("foo", foo);
+    }
+
+    @Test
+    public void threeItems_removeFirst_twoRemaining() {
+        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+
+        privateList.set(keys.get(0), null);
+
+        assertValues(privateList, "two", "three");
+    }
+
+    @Test
+    public void threeItems_removeMiddle_twoRemaining() {
+        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+
+        privateList.set(keys.get(1), null);
+
+        assertValues(privateList, "one", "three");
+    }
+
+    @Test
+    public void threeItems_removeLast_twoRemaining() {
+        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+
+        privateList.set(keys.get(2), null);
+
+        assertValues(privateList, "one", "two");
+    }
+
+    @Test
+    public void oneItem_removeIt_listEmpty() {
+        ListKey key = privateList.insertLast("one").getKey();
+
+        privateList.set(key, null);
+
+        assertValues(privateList);
+    }
+
+    @Test
+    public void listEmptied_addOne_nothingCorrupted() {
+        ListKey key = privateList.insertLast("one").getKey();
+        privateList.set(key, null);
+
+        list.append("another");
+
+        assertValues(privateList, "another");
+    }
+
+    @Test
+    public void listWithItem_setValue_valueSet()
+            throws InterruptedException, ExecutionException {
+        ListKey key = privateList.insertLast("one").getKey();
+
+        Boolean result = privateList.set(key, "two").get();
+
+        assertValues(privateList, "two");
+        Assert.assertEquals(Boolean.TRUE, result);
+    }
+
+    @Test
+    public void listWithRemovedItem_setValue_negativeResult()
+            throws InterruptedException, ExecutionException {
+        ListKey key = privateList.insertLast("one").getKey();
+        privateList.set(key, null);
+
+        Boolean result = privateList.set(key, "two").get();
+
+        Assert.assertEquals(Boolean.FALSE, result);
+    }
+
+    @Test
+    public void emptyListWithSubscriber_appendItems_eventDetailsComplete() {
+        list.subscribe(eventCollector);
+
+        ListKey key1 = privateList.insertLast("one").getKey();
+        ListKey key2 = privateList.insertLast("two").getKey();
+
+        Assert.assertEquals(2, eventCollector.size());
+        assertEvent(ListChangeType.INSERT, key1, null, "one", null, null, null,
+                null, eventCollector.get(0));
+
+        assertEvent(ListChangeType.INSERT, key2, null, "two", null, key1, null,
+                null, eventCollector.get(1));
+    }
+
+    @Test
+    public void populatedList_subscribe_eventDetailsComplete() {
+        ListKey key1 = privateList.insertLast("one").getKey();
+        ListKey key2 = privateList.insertLast("two").getKey();
+
+        list.subscribe(eventCollector);
+
+        Assert.assertEquals(2, eventCollector.size());
+        assertEvent(ListChangeType.INSERT, key1, null, "one", null, null, null,
+                null, eventCollector.get(0));
+
+        assertEvent(ListChangeType.INSERT, key2, null, "two", null, key1, null,
+                null, eventCollector.get(1));
+    }
+
+    @Test
+    public void populatedListWithSubscriber_changeItems_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        keys.forEach(key -> privateList.set(key,
+                privateList.getItem(key, String.class).toUpperCase()));
+
+        Assert.assertEquals(3, eventCollector.size());
+        assertEvent(ListChangeType.SET, keys.get(0), "one", "ONE", null, null,
+                keys.get(1), keys.get(1), eventCollector.get(0));
+        assertEvent(ListChangeType.SET, keys.get(1), "two", "TWO", keys.get(0),
+                keys.get(0), keys.get(2), keys.get(2), eventCollector.get(1));
+        assertEvent(ListChangeType.SET, keys.get(2), "three", "THREE",
+                keys.get(1), keys.get(1), null, null, eventCollector.get(2));
+    }
+
+    @Test
+    public void populatedListWithSubscriber_removeMiddleItem_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        privateList.set(keys.get(1), null);
+
+        Assert.assertEquals(1, eventCollector.size());
+        assertEvent(ListChangeType.SET, keys.get(1), "two", null, keys.get(0),
+                null, keys.get(2), null, eventCollector.get(0));
+    }
+
+    private static List<ListKey> insertLast(
+            CollaborationListImplementation list, String... values) {
+        return Stream.of(values).map(list::insertLast)
+                .map(ListInsertResult::getKey).collect(Collectors.toList());
+    }
+
+    private static void assertEvent(ListChangeType type, ListKey key,
+            String oldValue, String value, ListKey oldAfter, ListKey after,
+            ListKey oldBefore, ListKey before, ListChangeEvent event) {
+        Assert.assertEquals(type, event.getType());
+        Assert.assertEquals(key, event.getKey());
+        Assert.assertEquals(oldValue, event.getOldValue(String.class));
+        Assert.assertEquals(oldValue, event.getOldValue(STRING_REF));
+        Assert.assertEquals(value, event.getValue(String.class));
+        Assert.assertEquals(value, event.getValue(STRING_REF));
+        Assert.assertEquals(oldAfter, event.getOldAfter());
+        Assert.assertEquals(after, event.getAfter());
+        Assert.assertEquals(oldBefore, event.getOldBefore());
+        Assert.assertEquals(before, event.getBefore());
+    }
+
+    private static void assertValues(CollaborationListImplementation list,
+            String... values) {
+        Assert.assertEquals(Arrays.asList(values), list.getItems(String.class));
+        Assert.assertEquals(Arrays.asList(values), list.getItems(STRING_REF));
+
+        Assert.assertEquals(Arrays.asList(values),
+                list.getKeys().map(key -> list.getItem(key, String.class))
+                        .collect(Collectors.toList()));
+        Assert.assertEquals(Arrays.asList(values),
+                list.getKeys().map(key -> list.getItem(key, STRING_REF))
+                        .collect(Collectors.toList()));
     }
 }
