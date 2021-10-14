@@ -35,14 +35,12 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-flow</artifactId>
-            <version>${vaadin.version}</version>
             <!-- Should be updated to provided scope
                 once avatar is included in V14 -->
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-messages-flow</artifactId>
-            <version>${vaadin.version}</version>
             <!-- Should be updated to provided scope
                 once messages is included in V14 -->
         </dependency>

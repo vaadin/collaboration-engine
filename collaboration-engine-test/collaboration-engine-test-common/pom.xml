@@ -39,43 +39,36 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-messages-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-text-field-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-checkbox-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-radio-button-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-dialog-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-button-testbench</artifactId>
-            <version>${vaadin.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -95,37 +88,31 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-button-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-dialog-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-checkbox-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-ordered-layout-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-radio-button-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-text-field-flow</artifactId>
-            <version>${vaadin.version}</version>
         </dependency>
     </dependencies>
 

@@ -119,7 +119,6 @@
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-spring-boot-starter</artifactId>
-                <version>${vaadin.version}</version>
             </dependency>
 
             <dependency>
@@ -163,7 +162,6 @@
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-testbench</artifactId>
             <scope>test</scope>
-            <version>${vaadin.version}</version>
         </dependency>
     </dependencies>
 </project>
