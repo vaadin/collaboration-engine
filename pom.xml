@@ -35,11 +35,12 @@
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
-        <flow.version>9.0.0.alpha9</flow.version>
+        <flow.version>9.0.0.alpha10</flow.version>
         <testbench.version>7.0.1</testbench.version>
-        <vaadin.version>22.0.0.alpha7</vaadin.version>
-
+        <vaadin.version>22.0.0.alpha8</vaadin.version>
+        <vaadin.spring.version>19.0.0.alpha4</vaadin.spring.version>
         <vaadin.lumo.version>${vaadin.version}</vaadin.lumo.version>
+        <spring-boot.version>2.5.5</spring-boot.version>
 
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.11.2</jackson.version>
@@ -106,9 +107,10 @@
             </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-spring-boot-starter</artifactId>
-                <version>${vaadin.version}</version>
+                <artifactId>vaadin-spring</artifactId>
+                <version>${vaadin.spring.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-avatar-testbench</artifactId>
@@ -160,6 +162,14 @@
                 <artifactId>vaadin-radio-button-flow</artifactId>
                 <version>${vaadin.version}</version>
             </dependency>
+            <!-- Spring -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <!-- End Spring -->
+
         </dependencies>
     </dependencyManagement>
 

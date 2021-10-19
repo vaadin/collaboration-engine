@@ -118,8 +118,17 @@
 
             <dependency>
                 <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-spring-boot-starter</artifactId>
+                <artifactId>vaadin-spring</artifactId>
+                <version>${vaadin.spring.version}</version>
             </dependency>
+
+            <!-- Spring -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-web</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            <!-- End Spring -->
 
             <dependency>
                 <groupId>com.vaadin</groupId>
