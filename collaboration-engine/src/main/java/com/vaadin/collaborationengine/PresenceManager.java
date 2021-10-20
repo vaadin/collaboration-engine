@@ -87,7 +87,7 @@ public class PresenceManager {
      * @param collaborationEngine
      *            the collaboration engine instance to use, not {@code null}
      */
-    PresenceManager(ConnectionContext context, UserInfo localUser,
+    public PresenceManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
         this.localUser = Objects.requireNonNull(localUser);
         this.topicId = Objects.requireNonNull(topicId);
