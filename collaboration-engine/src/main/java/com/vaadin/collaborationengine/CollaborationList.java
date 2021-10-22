@@ -68,7 +68,32 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @throws JsonConversionException
      *             if the given item isn't serializable as JSON string
      */
-    CompletableFuture<Void> append(Object item);
+    default CompletableFuture<Void> append(Object item) {
+        return append(item, EntryScope.TOPIC);
+    }
+
+    /**
+     * Appends the given item to the list with the given scope.
+     * <p>
+     * The given item must be JSON-serializable so it can be sent over the
+     * network when Collaboration Engine is hosted in a standalone server.
+     * <p>
+     * The <code>scope</code> parameter specifies the scope of the entry, which
+     * is either one of {@link EntryScope#TOPIC} to keep the entry in the list
+     * until explicitly removed, or {@link EntryScope#CONNECTION} to
+     * automatically remove the entry when the connection which put the entry is
+     * deactivated.
+     *
+     * @param item
+     *            the item to append, not <code>null</code>
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return a completable future that is resolved when the item has been
+     *         appended to the list
+     * @throws JsonConversionException
+     *             if the given item isn't serializable as JSON string
+     */
+    CompletableFuture<Void> append(Object item, EntryScope scope);
 
     /**
      * Subscribes to changes to this list. When subscribing, the subscriber will

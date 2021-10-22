@@ -29,9 +29,11 @@ class ListChange implements ChangeDetails {
     private final UUID oldBefore;
     private final UUID before;
 
+    private final UUID expectedId;
+
     ListChange(String listName, ListChangeType type, UUID key,
             JsonNode oldValue, JsonNode value, UUID oldAfter, UUID after,
-            UUID oldBefore, UUID before) {
+            UUID oldBefore, UUID before, UUID expectedId) {
         this.listName = listName;
         this.type = type;
         this.key = key;
@@ -41,6 +43,7 @@ class ListChange implements ChangeDetails {
         this.before = before;
         this.oldAfter = oldAfter;
         this.after = after;
+        this.expectedId = expectedId;
     }
 
     String getListName() {
@@ -77,5 +80,9 @@ class ListChange implements ChangeDetails {
 
     UUID getBefore() {
         return before;
+    }
+
+    UUID getExpectedId() {
+        return expectedId;
     }
 }

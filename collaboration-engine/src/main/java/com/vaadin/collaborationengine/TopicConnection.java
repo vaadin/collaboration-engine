@@ -300,8 +300,8 @@ public class TopicConnection {
         }
 
         @Override
-        public CompletableFuture<Void> append(Object item) {
-            return insertLast(item).getCompletableFuture();
+        public CompletableFuture<Void> append(Object item, EntryScope scope) {
+            return insertLast(item, scope).getCompletableFuture();
         }
 
         /**
@@ -312,6 +312,20 @@ public class TopicConnection {
          * @return the result of the operation
          */
         public ListInsertResult<Void> insertLast(Object item) {
+            return insertLast(item, EntryScope.TOPIC);
+        }
+
+        /**
+         * Inserts the given item as the last item of the list, with the given
+         * scope.
+         *
+         * @param item
+         *            the item
+         * @scope the scope of the entry
+         * @return the result of the operation
+         */
+        public ListInsertResult<Void> insertLast(Object item,
+                EntryScope scope) {
             ensureActiveConnection();
             Objects.requireNonNull(item, "The item cannot be null");
 
@@ -322,6 +336,15 @@ public class TopicConnection {
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
+                if (scope == EntryScope.CONNECTION
+                        && result == ChangeResult.ACCEPTED) {
+                    connectionScopedListItems
+                            .computeIfAbsent(name, k -> new HashMap<>())
+                            .put(id, id);
+                }
+                if (!cleanupPending) {
+                    cleanupScopedData();
+                }
                 actionDispatcher
                         .dispatchAction(() -> contextFuture.complete(null));
             });
@@ -343,6 +366,27 @@ public class TopicConnection {
          * @return the result of the operation
          */
         public CompletableFuture<Boolean> set(ListKey key, Object value) {
+            return set(key, value, EntryScope.TOPIC);
+        }
+
+        /**
+         * Sets a new value for the item identified by the given key, with the
+         * given scope.
+         * <p>
+         * It return the result of the operation as a {@link CompletableFuture}
+         * which resolves to <code>true<code> if the operation succeeds,
+         * <code>false</code> otherwise.
+         *
+         * @param key
+         *            the item key, not <code>null</code>
+         * @param value
+         *            the new value of the item
+         * @param scope
+         *            the scope of the entry
+         * @return the result of the operation
+         */
+        public CompletableFuture<Boolean> set(ListKey key, Object value,
+                EntryScope scope) {
             ensureActiveConnection();
             Objects.requireNonNull(key);
 
@@ -354,6 +398,15 @@ public class TopicConnection {
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
+                if (scope == EntryScope.CONNECTION
+                        && result == ChangeResult.ACCEPTED) {
+                    connectionScopedListItems
+                            .computeIfAbsent(name, k -> new HashMap<>())
+                            .put(key.getKey(), id);
+                }
+                if (!cleanupPending) {
+                    cleanupScopedData();
+                }
                 actionDispatcher.dispatchAction(() -> contextFuture
                         .complete(result != ChangeResult.REJECTED));
             });
@@ -411,6 +464,7 @@ public class TopicConnection {
     private final Map<String, List<Consumer<MapChange>>> subscribersPerMap = new HashMap<>();
     private final Map<String, List<Consumer<ListChange>>> subscribersPerList = new HashMap<>();
     private final Map<String, Map<String, UUID>> connectionScopedMapKeys = new HashMap<>();
+    private final Map<String, Map<UUID, UUID>> connectionScopedListItems = new HashMap<>();
 
     private volatile boolean cleanupPending;
 
@@ -443,7 +497,7 @@ public class TopicConnection {
             if (change instanceof MapChange) {
                 handlePutChange(id, (MapChange) change);
             } else if (change instanceof ListChange) {
-                handleAppendChange((ListChange) change);
+                handleListChange(id, (ListChange) change);
             } else {
                 throw new UnsupportedOperationException(
                         "Type '" + change.getClass().getName()
@@ -474,7 +528,19 @@ public class TopicConnection {
         }
     }
 
-    private void handleAppendChange(ListChange listChange) {
+    private void handleListChange(UUID id, ListChange listChange) {
+        String listName = listChange.getListName();
+        UUID key = listChange.getKey();
+
+        // If there is a connection scoped entry for the same key with a
+        // different id, cleanup the existing entry
+        Map<UUID, UUID> keys = connectionScopedListItems.get(listName);
+        if (keys != null && !Objects.equals(id, keys.get(key))) {
+            UUID uuid = keys.get(key);
+            if (!Objects.equals(listChange.getExpectedId(), uuid)) {
+                keys.remove(key);
+            }
+        }
         EventUtil.fireEvents(subscribersPerList.get(listChange.getListName()),
                 notifier -> notifier.accept(listChange), false);
     }
@@ -554,6 +620,14 @@ public class TopicConnection {
                         distributor.accept(UUID.randomUUID(), change);
                     }));
             connectionScopedMapKeys.clear();
+            connectionScopedListItems.forEach(
+                    (listName, listItems) -> listItems.forEach((key, id) -> {
+                        ObjectNode change = JsonUtil.createListSetChange(
+                                listName, key.toString(), null);
+                        change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
+                        distributor.accept(UUID.randomUUID(), change);
+                    }));
+            connectionScopedListItems.clear();
             cleanupPending = false;
         }
     }

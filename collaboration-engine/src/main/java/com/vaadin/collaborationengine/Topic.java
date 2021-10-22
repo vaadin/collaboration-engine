@@ -130,7 +130,7 @@ class Topic {
             details = applyListAppend(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_LIST_SET:
-            details = applyListSet(change);
+            details = applyListSet(trackingId, change);
             break;
         default:
             throw new UnsupportedOperationException(
@@ -186,39 +186,46 @@ class Topic {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
         ListEntrySnapshot insertedEntry = getOrCreateList(listName)
-                .insertLast(id, item);
+                .insertLast(id, item, id);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, null);
+                null, insertedEntry.prev, null, null, null);
     }
 
-    private ChangeDetails applyListSet(ObjectNode change) {
+    private ChangeDetails applyListSet(UUID trackingId, ObjectNode change) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
         JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+        UUID expectedId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_EXPECTED_ID));
         EntryList list = getOrCreateList(listName);
 
         ListEntrySnapshot entry = list.getEntry(key);
         if (entry == null) {
             return null;
         }
-
+        if (expectedId != null
+                && !Objects.equals(entry.revisionId, expectedId)) {
+            return null;
+        }
         if (newValue.isNull()) {
             list.remove(key);
             return new ListChange(listName, ListChangeType.SET, key,
-                    entry.value, null, entry.prev, null, entry.next, null);
+                    entry.value, null, entry.prev, null, entry.next, null,
+                    expectedId);
         } else {
             JsonNode oldValue = entry.value;
-            list.setValue(key, newValue);
+            list.setValue(key, newValue, trackingId);
             return new ListChange(listName, ListChangeType.SET, key, oldValue,
-                    newValue, entry.prev, entry.prev, entry.next, entry.next);
+                    newValue, entry.prev, entry.prev, entry.next, entry.next,
+                    expectedId);
         }
     }
 
     Stream<ListChange> getListChanges(String listName) {
         return getListItems(listName).map(
                 item -> new ListChange(listName, ListChangeType.INSERT, item.id,
-                        null, item.value, null, item.prev, null, null));
+                        null, item.value, null, item.prev, null, null, null));
     }
 
     Stream<ListEntrySnapshot> getListItems(String listName) {

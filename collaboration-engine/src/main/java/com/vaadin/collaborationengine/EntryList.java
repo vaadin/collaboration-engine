@@ -27,6 +27,7 @@ class EntryList {
         JsonNode value;
         UUID prev;
         UUID next;
+        UUID revisionId;
     }
 
     static class ListEntrySnapshot {
@@ -34,12 +35,14 @@ class EntryList {
         final JsonNode value;
         final UUID prev;
         final UUID next;
+        final UUID revisionId;
 
         ListEntrySnapshot(UUID id, ListEntry entry) {
             this.id = id;
             this.value = entry.value;
             this.prev = entry.prev;
             this.next = entry.next;
+            this.revisionId = entry.revisionId;
         }
     }
 
@@ -53,9 +56,10 @@ class EntryList {
         tail = null;
     }
 
-    ListEntrySnapshot insertLast(UUID key, JsonNode value) {
+    ListEntrySnapshot insertLast(UUID key, JsonNode value, UUID revisionId) {
         ListEntry item = new ListEntry();
         item.value = Objects.requireNonNull(value);
+        item.revisionId = revisionId;
         item.prev = tail;
 
         entries.put(Objects.requireNonNull(key), item);
@@ -121,7 +125,9 @@ class EntryList {
         }
     }
 
-    void setValue(UUID key, JsonNode newValue) {
-        entries.get(key).value = newValue;
+    void setValue(UUID key, JsonNode newValue, UUID revisionId) {
+        ListEntry listEntry = entries.get(key);
+        listEntry.value = newValue;
+        listEntry.revisionId = revisionId;
     }
 }

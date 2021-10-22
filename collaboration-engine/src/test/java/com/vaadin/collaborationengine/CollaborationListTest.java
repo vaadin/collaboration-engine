@@ -482,6 +482,36 @@ public class CollaborationListTest {
                 null, keys.get(2), null, eventCollector.get(0));
     }
 
+    @Test
+    public void insertLastWithConnectionScope_connectiondDeactivated_entryRemoved() {
+        ListKey key = privateList.insertLast("foo", EntryScope.CONNECTION)
+                .getKey();
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(privateList.getItem(key, String.class));
+        Assert.assertEquals(0, privateList.getKeys().count());
+    }
+
+    @Test
+    public void insertLastWithTopicScope_setWithConnectionScope_connectionDeactivated_entryRemoved() {
+        ListKey key = privateList.insertLast("foo").getKey();
+        privateList.set(key, "foo", EntryScope.CONNECTION);
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(privateList.getItem(key, String.class));
+        Assert.assertEquals(0, privateList.getKeys().count());
+    }
+
+    @Test
+    public void insertLastWithConnectionScope_setWithTopicScope_connectionDeactivated_entryNotRemoved() {
+        ListKey key = privateList.insertLast("foo", EntryScope.CONNECTION)
+                .getKey();
+        privateList.set(key, "foo");
+        context.deactivate();
+        context.activate();
+        Assert.assertEquals("foo", privateList.getItem(key, String.class));
+    }
+
     private static List<ListKey> insertLast(
             CollaborationListImplementation list, String... values) {
         return Stream.of(values).map(list::insertLast)
