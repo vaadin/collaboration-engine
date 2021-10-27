@@ -38,6 +38,26 @@ public class PresenceManagerTest {
     }
 
     @Test
+    public void markAsPresentTrue_connectionDeactivated_userRemoved() {
+        UserInfo foo = new UserInfo("foo");
+        UserInfo bar = new UserInfo("bar");
+        PresenceManager manager = createActiveManager(foo);
+        PresenceManager spyManager = createActiveManager(bar);
+        AtomicBoolean userRemoved = new AtomicBoolean();
+        spyManager.setPresenceHandler(context -> {
+            UserInfo user = context.getUser();
+            return () -> {
+                if (user.getId().equals("foo")) {
+                    userRemoved.set(true);
+                }
+            };
+        });
+        manager.markAsPresent(true);
+        manager.close();
+        Assert.assertTrue(userRemoved.get());
+    }
+
+    @Test
     public void markAsPresentTrue_setHandler_handlerInvoked() {
         UserInfo user = new UserInfo("foo");
         PresenceManager manager = createActiveManager(user);
@@ -173,10 +193,9 @@ public class PresenceManagerTest {
         manager.markAsPresent(true);
         AtomicBoolean done = new AtomicBoolean(false);
         TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
-            List<UserInfo> mapValue = topicConnection
-                    .getNamedMap(PresenceManager.MAP_NAME)
-                    .get(PresenceManager.MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
-            List<String> ids = mapValue.stream().map(UserInfo::getId)
+            List<String> ids = topicConnection
+                    .getNamedList(PresenceManager.LIST_NAME)
+                    .getItems(UserInfo.class).stream().map(UserInfo::getId)
                     .collect(Collectors.toList());
             Assert.assertTrue(ids.contains("foo"));
             done.set(true);

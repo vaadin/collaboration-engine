@@ -8,19 +8,12 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -33,23 +26,30 @@ import com.vaadin.flow.shared.Registration;
  */
 public class PresenceManager {
 
-    static final String MAP_NAME = PresenceManager.class.getName();
+    private static class UserEntry {
+        private int count = 0;
+        private Registration registration;
+    }
 
-    static final String MAP_KEY = "users";
+    static final String LIST_NAME = PresenceManager.class.getName();
 
-    private final Map<String, Registration> handlerRegistrations = new ConcurrentHashMap<>();
+    private final Map<String, UserEntry> userEntries = new LinkedHashMap<>();
 
     private final UserInfo localUser;
 
     private final String topicId;
 
-    private CollaborationMap map;
+    private ListKey ownPresenceKey;
+
+    private TopicConnection.CollaborationListImplementation list;
 
     private PresenceHandler presenceHandler;
 
     private boolean markAsPresent = false;
 
     private TopicConnectionRegistration topicRegistration;
+
+    private Registration subscribeRegistration;
 
     /**
      * Creates a new manager for the provided component.
@@ -128,7 +128,7 @@ public class PresenceManager {
      *            {@code false} to set as not present
      */
     public void markAsPresent(boolean markAsPresent) {
-        if (this.markAsPresent != markAsPresent && map != null) {
+        if (this.markAsPresent != markAsPresent && list != null) {
             if (markAsPresent) {
                 addLocalUserToTopic();
             } else {
@@ -139,16 +139,15 @@ public class PresenceManager {
     }
 
     private void addLocalUserToTopic() {
-        updateUsers(map,
-                oldValue -> Stream.concat(oldValue, Stream.of(localUser)));
+        assert ownPresenceKey == null;
+        ownPresenceKey = list.insertLast(localUser, EntryScope.CONNECTION)
+                .getKey();
     }
 
     private void removeLocalUserFromTopic() {
-        updateUsers(map, oldValue -> {
-            List<UserInfo> users = oldValue.collect(Collectors.toList());
-            users.remove(localUser);
-            return users.stream();
-        });
+        assert ownPresenceKey != null;
+        list.set(ownPresenceKey, null);
+        ownPresenceKey = null;
     }
 
     /**
@@ -186,102 +185,86 @@ public class PresenceManager {
      *            existing handler
      */
     public void setPresenceHandler(PresenceHandler handler) {
-        removeAllRegistrations();
+        resetEntries();
         this.presenceHandler = handler;
-        if (handler != null) {
-            getUsers().forEach(this::applyHandler);
-        }
-    }
-
-    /**
-     * Gets the stream of users whose are currently marked as present. If the
-     * topic is currently set to {@code null} the stream will be empty.
-     *
-     * @return the stream of users, not {@code null}
-     */
-    private Stream<UserInfo> getUsers() {
-        if (map != null) {
-            List<UserInfo> list = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
-            return list != null ? list.stream().distinct() : Stream.empty();
-        } else {
-            return Stream.empty();
+        if (handler != null && list != null) {
+            subscribeRegistration = list.subscribe(this::onListChange);
         }
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        map = topicConnection.getNamedMap(MAP_NAME);
-        map.subscribe(this::onMapChange);
+        list = (TopicConnection.CollaborationListImplementation) topicConnection
+                .getNamedList(LIST_NAME);
         if (markAsPresent) {
             addLocalUserToTopic();
+        }
+        if (this.presenceHandler != null && subscribeRegistration == null) {
+            subscribeRegistration = list.subscribe(this::onListChange);
         }
         return this::onConnectionDeactivate;
     }
 
     private void onConnectionDeactivate() {
-        if (markAsPresent) {
-            removeLocalUserFromTopic();
-        }
-        map = null;
-        removeAllRegistrations();
+        ownPresenceKey = null;
+        list = null;
+        resetEntries();
     }
 
-    private void onMapChange(MapChangeEvent event) {
-        if (event.getKey().equals(MAP_KEY)) {
-            List<UserInfo> oldUsersList = event
-                    .getOldValue(JsonUtil.LIST_USER_TYPE_REF);
-            List<UserInfo> newUsersList = event
-                    .getValue(JsonUtil.LIST_USER_TYPE_REF);
-            if (oldUsersList != null) {
-                diff(oldUsersList, newUsersList).map(UserInfo::getId)
-                        .forEach(this::removeRegistration);
+    private void onListChange(ListChangeEvent event) {
+        switch (event.getType()) {
+        case INSERT:
+            handleNewUser(event.getValue(UserInfo.class));
+            break;
+        case SET:
+            if (event.getValue(UserInfo.class) == null) {
+                handleRemovedUser(event.getOldValue(UserInfo.class));
+            } else {
+                throw new UnsupportedOperationException(
+                        "Cannot update an existing entry");
             }
-            if (newUsersList != null && presenceHandler != null) {
-                diff(newUsersList, oldUsersList).forEach(this::applyHandler);
+            break;
+        case MOVE:
+            // Unexpected, but no problem in ignoring
+            break;
+        }
+    }
+
+    private void handleRemovedUser(UserInfo removedUser) {
+        UserEntry userEntry = userEntries.get(removedUser.getId());
+        if (--userEntry.count == 0) {
+            removeRegistration(userEntry);
+            userEntries.remove(removedUser.getId());
+        }
+    }
+
+    private void handleNewUser(UserInfo addedUser) {
+        UserEntry userEntry = userEntries.computeIfAbsent(addedUser.getId(),
+                ignore -> new UserEntry());
+        if (userEntry.count++ == 0) {
+            if (presenceHandler != null) {
+                assert userEntry.registration == null;
+                userEntry.registration = presenceHandler
+                        .handlePresence(new DefaultPresenceContext(addedUser));
             }
         }
     }
 
-    private Stream<UserInfo> diff(List<UserInfo> x, List<UserInfo> y) {
-        Set<UserInfo> set = new LinkedHashSet<>(x);
-        if (y != null) {
-            set.removeAll(y);
-        }
-        return set.stream();
-    }
-
-    private void applyHandler(UserInfo user) {
-        if (presenceHandler != null) {
-            handlerRegistrations.put(user.getId(), presenceHandler
-                    .handlePresence(new DefaultPresenceContext(user)));
-        }
-    }
-
-    private void removeRegistration(String key) {
-        Registration registration = handlerRegistrations.remove(key);
+    private void removeRegistration(UserEntry entry) {
+        Registration registration = entry.registration;
         if (registration != null) {
             registration.remove();
+            entry.registration = null;
         }
     }
 
-    private void removeAllRegistrations() {
-        List<String> keys = new ArrayList<>(handlerRegistrations.keySet());
-        keys.forEach(this::removeRegistration);
-    }
+    private void resetEntries() {
+        if (subscribeRegistration != null) {
+            subscribeRegistration.remove();
+            subscribeRegistration = null;
+        }
 
-    private void updateUsers(CollaborationMap map,
-            SerializableFunction<Stream<UserInfo>, Stream<UserInfo>> updater) {
-        List<UserInfo> oldUsers = map.get(MAP_KEY, JsonUtil.LIST_USER_TYPE_REF);
-
-        Stream<UserInfo> oldUsersStream = oldUsers == null ? Stream.empty()
-                : oldUsers.stream();
-        List<UserInfo> newUsers = updater.apply(oldUsersStream)
-                .collect(Collectors.toList());
-
-        map.replace(MAP_KEY, oldUsers, newUsers).thenAccept(success -> {
-            if (!success) {
-                updateUsers(map, updater);
-            }
-        });
+        userEntries.values().forEach(this::removeRegistration);
+        userEntries.clear();
     }
 
     static class DefaultPresenceContext implements PresenceContext {

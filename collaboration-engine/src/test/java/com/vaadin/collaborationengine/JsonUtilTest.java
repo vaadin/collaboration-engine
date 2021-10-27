@@ -1,6 +1,5 @@
 package com.vaadin.collaborationengine;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -40,32 +39,9 @@ public class JsonUtilTest {
     }
 
     @Test
-    public void usersList_toJsonAndBack_returnsEqualUsers() {
-        List<UserInfo> users = Arrays.asList(new UserInfo("1"),
-                new UserInfo("2"));
-        JsonNode usersNode = JsonUtil.toJsonNode(users);
-        Assert.assertEquals(users,
-                JsonUtil.toInstance(usersNode, JsonUtil.LIST_USER_TYPE_REF));
-    }
-
-    @Test
-    public void emptyUsersList_toJsonAndBack_returnsEmptyList() {
-        Assert.assertEquals(Collections.emptyList(), JsonUtil.toInstance(
-                JsonUtil.toJsonNode(Collections.emptyList()), List.class));
-    }
-
-    @Test
-    public void nullUsersList_toJsonAndBack_returnsNull() {
-        Assert.assertNull(
-                JsonUtil.toInstance(JsonUtil.toJsonNode(null), Object.class));
-    }
-
-    @Test
     public void userInfo_toJsonAndBack_allPropertiesPreserved() {
         UserInfo deserializedUser = JsonUtil
-                .toInstance(JsonUtil.toJsonNode(Arrays.asList(user)),
-                        JsonUtil.LIST_USER_TYPE_REF)
-                .get(0);
+                .toInstance(JsonUtil.toJsonNode(user), UserInfo.class);
 
         Assert.assertEquals("my-id", deserializedUser.getId());
         Assert.assertEquals("my-name", deserializedUser.getName());
