@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.After;
 import org.junit.Before;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.TestBean;
@@ -94,16 +94,18 @@ public class AbstractCollaborationBinderTest {
     }
 
     protected <T> T getSharedValue(String key, Class<T> type) {
-        return JsonUtil.toInstance(getFieldState(key).value, type);
+        return JsonUtil.toInstance(getFieldValue(key), type);
     }
 
-    protected FieldState getFieldState(String key) {
-        return CollaborationBinderUtil.getFieldState(topicConnection, key);
+    protected JsonNode getFieldValue(String key) {
+        return CollaborationBinderUtil.getFieldValue(topicConnection, key);
     }
 
     protected List<UserInfo> getEditors(String key) {
-        return getFieldState(key).editors.stream()
-                .map(focusedEditor -> focusedEditor.user)
+        return CollaborationBinderUtil.getList(topicConnection)
+                .getItems(CollaborationBinder.FocusedEditor.class).stream()
+                .filter(f -> f.propertyName.equals(key))
+                .map(focusedEditor -> focusedEditor.user).distinct()
                 .collect(Collectors.toList());
     }
 

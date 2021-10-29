@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
 
 import static com.vaadin.collaborationengine.JsonUtil.EDITORS_TYPE_REF;
@@ -32,11 +31,8 @@ import static com.vaadin.collaborationengine.JsonUtil.EDITORS_TYPE_REF;
  */
 public class CollaborationBinderUtil {
 
-    private static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
+    static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
             .getName();
-
-    private static final FieldState EMPTY_FIELD_STATE = new FieldState(
-            NullNode.getInstance(), Collections.emptyList());
 
     private CollaborationBinderUtil() {
         // Utility methods only
@@ -68,8 +64,7 @@ public class CollaborationBinderUtil {
                 "Topic connection can't be null.");
         Objects.requireNonNull(propertyName, "Property name can't be null.");
 
-        updateMapValue(topicConnection, propertyName,
-                state -> withFieldValue(state, value));
+        getMap(topicConnection).put(propertyName, value);
     }
 
     /**
@@ -134,11 +129,10 @@ public class CollaborationBinderUtil {
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
 
-        updateMapValue(topicConnection, propertyName, jsonNode -> withEditors(
-                jsonNode,
-                editors -> Stream.concat(editors.filter(
-                        focusedEditor -> !focusedEditor.user.equals(user)),
-                        Stream.of(new FocusedEditor(user, fieldIndex)))));
+        CollaborationList list = topicConnection
+                .getNamedList(COLLABORATION_BINDER_MAP_NAME);
+        list.append(new FocusedEditor(user, fieldIndex, propertyName),
+                EntryScope.CONNECTION);
     }
 
     /**
@@ -170,59 +164,28 @@ public class CollaborationBinderUtil {
                 "Topic connection can't be null.");
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
-
-        updateMapValue(topicConnection, propertyName,
-                jsonNode -> withEditors(jsonNode, editors -> editors
-                        .filter(editor -> !editor.user.equals(user))));
-    }
-
-    private static void updateMapValue(TopicConnection topicConnection,
-            String propertyName, Function<ObjectNode, ObjectNode> updater) {
-        CollaborationMap map = getMap(topicConnection);
-        ObjectNode oldValue = map.get(propertyName, ObjectNode.class);
-        JsonNode newValue = updater.apply(oldValue);
-        map.replace(propertyName, oldValue, newValue).thenAccept(success -> {
-            if (!success) {
-                updateMapValue(topicConnection, propertyName, updater);
+        TopicConnection.CollaborationListImplementation list = (TopicConnection.CollaborationListImplementation) getList(
+                topicConnection);
+        list.getKeys().forEach(key -> {
+            FocusedEditor editor = list.getItem(key, FocusedEditor.class);
+            if (editor.propertyName.equals(propertyName)
+                    && editor.user.equals(user)) {
+                list.set(key, null);
             }
         });
     }
 
-    static FieldState getFieldState(TopicConnection topic,
-            String propertyName) {
-        FieldState fieldState = getMap(topic).get(propertyName,
-                FieldState.class);
-        return fieldState == null ? EMPTY_FIELD_STATE : fieldState;
+    static JsonNode getFieldValue(TopicConnection topic, String propertyName) {
+        JsonNode result = getMap(topic).get(propertyName, JsonNode.class);
+        return result != null ? result : NullNode.getInstance();
     }
 
     static CollaborationMap getMap(TopicConnection topic) {
         return topic.getNamedMap(COLLABORATION_BINDER_MAP_NAME);
     }
 
-    private static ObjectNode withFieldValue(ObjectNode fieldState,
-            Object newValue) {
-        if (fieldState == null) {
-            fieldState = (ObjectNode) JsonUtil.toJsonNode(EMPTY_FIELD_STATE);
-        }
-
-        ObjectNode jsonNode = fieldState.deepCopy();
-        jsonNode.set("value", JsonUtil.toJsonNode(newValue));
-        return jsonNode;
+    static CollaborationList getList(TopicConnection topic) {
+        return topic.getNamedList(COLLABORATION_BINDER_MAP_NAME);
     }
 
-    private static ObjectNode withEditors(ObjectNode fieldState,
-            Function<Stream<FocusedEditor>, Stream<FocusedEditor>> updater) {
-        if (fieldState == null) {
-            fieldState = (ObjectNode) JsonUtil.toJsonNode(EMPTY_FIELD_STATE);
-        }
-
-        ObjectNode fieldStateNode = fieldState.deepCopy();
-        List<FocusedEditor> editors = JsonUtil
-                .toInstance(fieldStateNode.get("editors"), EDITORS_TYPE_REF);
-
-        List<FocusedEditor> newEditors = updater.apply(editors.stream())
-                .collect(Collectors.toList());
-        fieldStateNode.set("editors", JsonUtil.toJsonNode(newEditors));
-        return fieldStateNode;
-    }
 }

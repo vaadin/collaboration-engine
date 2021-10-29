@@ -123,19 +123,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
     }
 
-    static final class FieldState {
-        public final JsonNode value;
-        public final List<FocusedEditor> editors;
-
-        @JsonCreator
-        public FieldState(@JsonProperty("value") JsonNode value,
-                @JsonProperty("editors") List<FocusedEditor> editors) {
-            this.value = value;
-            this.editors = Collections
-                    .unmodifiableList(new ArrayList<>(editors));
-        }
-    }
-
     /**
      * Maps the focused user to the index of the focused element inside the
      * field. The index is needed for components such as radio button group,
@@ -145,12 +132,15 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     static final class FocusedEditor {
         public final UserInfo user;
         public final int fieldIndex;
+        public final String propertyName;
 
         @JsonCreator
         public FocusedEditor(@JsonProperty("user") UserInfo user,
-                @JsonProperty("fieldIndex") int fieldIndex) {
+                @JsonProperty("fieldIndex") int fieldIndex,
+                @JsonProperty("propertyName") String propertyName) {
             this.user = user;
             this.fieldIndex = fieldIndex;
+            this.propertyName = propertyName;
         }
     }
 
@@ -407,18 +397,37 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     private void onMapChange(MapChangeEvent event) {
         getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
             String propertyName = event.getKey();
-
-            FieldState fieldState = CollaborationBinderUtil.getFieldState(topic,
+            JsonNode value = CollaborationBinderUtil.getFieldValue(topic,
                     propertyName);
 
-            setFieldValueFromFieldState(field, propertyName, fieldState);
-
-            fieldHighlighter.setEditors(field, fieldState.editors, localUser);
+            setFieldValueFromFieldState(field, propertyName, value);
         });
     }
 
+    private void onListChange(ListChangeEvent event) {
+        FocusedEditor newValue = event.getValue(FocusedEditor.class);
+        FocusedEditor oldValue = event.getOldValue(FocusedEditor.class);
+        if (newValue != null && oldValue == null) {
+            updateFieldHighlighterEditors(event.getSource(), newValue);
+        } else if (newValue == null && oldValue != null) {
+            updateFieldHighlighterEditors(event.getSource(), oldValue);
+        }
+    }
+
+    private void updateFieldHighlighterEditors(CollaborationList list,
+            FocusedEditor newValue) {
+        getBinding(newValue.propertyName).map(Binding::getField)
+                .ifPresent(field -> {
+                    List<FocusedEditor> editors = list
+                            .getItems(FocusedEditor.class).stream()
+                            .filter(f -> f.propertyName
+                                    .equals(newValue.propertyName))
+                            .collect(Collectors.toList());
+                    fieldHighlighter.setEditors(field, editors, localUser);
+                });
+    }
+
     private void onConnectionDeactivate() {
-        fieldToPropertyName.values().forEach(this::removeEditor);
         topic = null;
     }
 
@@ -429,13 +438,12 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
             return;
         }
         setFieldValueFromFieldState(field, propertyName,
-                CollaborationBinderUtil.getFieldState(topic, propertyName));
+                CollaborationBinderUtil.getFieldValue(topic, propertyName));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void setFieldValueFromFieldState(HasValue field,
-            String propertyName, FieldState fieldState) {
-        JsonNode stateValue = fieldState.value;
+            String propertyName, JsonNode stateValue) {
         if (stateValue instanceof NullNode) {
             field.clear();
         } else {
@@ -694,8 +702,10 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
         this.topic = topic;
 
         CollaborationMap map = getMap(topic);
-
         map.subscribe(this::onMapChange);
+
+        CollaborationList list = CollaborationBinderUtil.getList(topic);
+        list.subscribe(this::onListChange);
 
         if (expirationTimeout != null) {
             map.setExpirationTimeout(expirationTimeout);

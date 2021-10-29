@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.util.TestEnum;
 
 import static com.vaadin.collaborationengine.MockJson.LIST_BIG_DECIMAL_TYPE_REF;
@@ -58,11 +58,11 @@ public class CollaborationBinderUtilTest
     @Test
     public void setFieldValue_nullValue_convertedToNullNode() {
         assertNullNode("", CollaborationBinderUtil
-                .getFieldState(topicConnection, "nonExistingProperty").value);
+                .getFieldValue(topicConnection, "nonExistingProperty"));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value", null);
         assertNullNode("", CollaborationBinderUtil
-                .getFieldState(topicConnection, "value").value);
+                .getFieldValue(topicConnection, "value"));
     }
 
     @Test
@@ -113,10 +113,9 @@ public class CollaborationBinderUtilTest
         BiConsumer<Object, Class<?>> test = (value, type) -> {
             CollaborationBinderUtil.setFieldValue(topicConnection, "propName",
                     JsonUtil.toJsonNode(value));
-            FieldState fieldState = CollaborationBinderUtil
-                    .getFieldState(topicConnection, "propName");
-            Assert.assertEquals(value,
-                    JsonUtil.toInstance(fieldState.value, type));
+            JsonNode fieldValue = CollaborationBinderUtil
+                    .getFieldValue(topicConnection, "propName");
+            Assert.assertEquals(value, JsonUtil.toInstance(fieldValue, type));
         };
 
         test.accept("foo", String.class);
@@ -137,10 +136,10 @@ public class CollaborationBinderUtilTest
         BiConsumer<Object, TypeReference<?>> test = (value, typeRef) -> {
             CollaborationBinderUtil.setFieldValue(topicConnection, "propName",
                     JsonUtil.toJsonNode(value));
-            FieldState fieldState = CollaborationBinderUtil
-                    .getFieldState(topicConnection, "propName");
+            JsonNode fieldValue = CollaborationBinderUtil
+                    .getFieldValue(topicConnection, "propName");
             Assert.assertEquals(value,
-                    JsonUtil.toInstance(fieldState.value, typeRef));
+                    JsonUtil.toInstance(fieldValue, typeRef));
         };
 
         List<BigDecimal> bigDecimalList = Arrays.asList(new BigDecimal(2.5),

@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FieldState;
 import com.vaadin.collaborationengine.util.GenericTestField;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
@@ -41,7 +41,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         field.setValue("foo");
         assertNullNode(
                 "Collaborative value shouldn't be updated in inactivated connection",
-                getFieldState("value").value);
+                getFieldValue("value"));
     }
 
     @Test
@@ -136,7 +136,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         field.setValue("foo");
         assertNullNode(
                 "Map shouldn't have changed after setting the field value",
-                getFieldState("value").value);
+                getFieldValue("value"));
 
         setSharedValue("value", MockJson.BAZ);
         Assert.assertEquals(
@@ -164,7 +164,7 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         field.setValue("bar");
         assertNullNode(
                 "Binder which has a deactivated connection should not update the map",
-                getFieldState("value").value);
+                getFieldValue("value"));
     }
 
     @Test
@@ -404,10 +404,10 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach();
         client.field.setValue("foo");
 
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(map.getConnection(), "value");
+        JsonNode value = CollaborationBinderUtil
+                .getFieldValue(map.getConnection(), "value");
 
-        String mapValue = JsonUtil.toInstance(fieldState.value, String.class);
+        String mapValue = JsonUtil.toInstance(value, String.class);
         Assert.assertEquals("foo", mapValue);
     }
 
@@ -467,11 +467,11 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach(field);
 
         field.setValue(Arrays.asList(1d, 0.1d));
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "value");
+        JsonNode value = CollaborationBinderUtil.getFieldValue(topicConnection,
+                "value");
 
-        Assert.assertEquals(Arrays.asList(1d, 0.1d), JsonUtil
-                .toInstance(fieldState.value, MockJson.LIST_DOUBLE_TYPE_REF));
+        Assert.assertEquals(Arrays.asList(1d, 0.1d),
+                JsonUtil.toInstance(value, MockJson.LIST_DOUBLE_TYPE_REF));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value",
                 JsonUtil.toJsonNode(Arrays.asList(0.1d, 1d)));
@@ -492,19 +492,19 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach(field);
 
         field.setValue(Arrays.asList(new TestBean("one"), new TestBean("two")));
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "testBeans");
+        JsonNode value = CollaborationBinderUtil.getFieldValue(topicConnection,
+                "testBeans");
 
-        Assert.assertEquals(Arrays.asList("one", "two"), JsonUtil
-                .toInstance(fieldState.value, MockJson.LIST_STRING_TYPE_REF));
+        Assert.assertEquals(Arrays.asList("one", "two"),
+                JsonUtil.toInstance(value, MockJson.LIST_STRING_TYPE_REF));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "testBeans",
                 JsonUtil.toJsonNode(Arrays.asList("three", "four")));
 
-        List<TestBean> value = field.getValue();
-        Assert.assertEquals(2, value.size());
-        Assert.assertEquals("three", value.get(0).getValue());
-        Assert.assertEquals("four", value.get(1).getValue());
+        List<TestBean> fieldValue = field.getValue();
+        Assert.assertEquals(2, fieldValue.size());
+        Assert.assertEquals("three", fieldValue.get(0).getValue());
+        Assert.assertEquals("four", fieldValue.get(1).getValue());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -534,19 +534,19 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach(field);
 
         field.setValue(Arrays.asList(new TestBean("one"), new TestBean("two")));
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "value");
+        JsonNode value = CollaborationBinderUtil.getFieldValue(topicConnection,
+                "value");
 
-        Assert.assertEquals(Arrays.asList("one", "two"), JsonUtil
-                .toInstance(fieldState.value, MockJson.LIST_STRING_TYPE_REF));
+        Assert.assertEquals(Arrays.asList("one", "two"),
+                JsonUtil.toInstance(value, MockJson.LIST_STRING_TYPE_REF));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value",
                 JsonUtil.toJsonNode(Arrays.asList("three", "four")));
 
-        List<TestBean> value = field.getValue();
-        Assert.assertEquals(2, value.size());
-        Assert.assertEquals("three", value.get(0).getValue());
-        Assert.assertEquals("four", value.get(1).getValue());
+        List<TestBean> fieldValue = field.getValue();
+        Assert.assertEquals(2, fieldValue.size());
+        Assert.assertEquals("three", fieldValue.get(0).getValue());
+        Assert.assertEquals("four", fieldValue.get(1).getValue());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -566,11 +566,10 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach(field);
 
         field.setValue(new TestBean("Lorem"));
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "testBean");
-        Assert.assertEquals(TextNode.class, fieldState.value.getClass());
-        Assert.assertEquals("Lorem",
-                JsonUtil.toInstance(fieldState.value, String.class));
+        JsonNode value = CollaborationBinderUtil.getFieldValue(topicConnection,
+                "testBean");
+        Assert.assertEquals(TextNode.class, value.getClass());
+        Assert.assertEquals("Lorem", JsonUtil.toInstance(value, String.class));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "testBean",
                 JsonUtil.toJsonNode("Ipsum"));
@@ -589,11 +588,10 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.attach(field);
 
         field.setValue(new TestBean("Lorem"));
-        FieldState fieldState = CollaborationBinderUtil
-                .getFieldState(topicConnection, "value");
-        Assert.assertEquals(TextNode.class, fieldState.value.getClass());
-        Assert.assertEquals("Lorem",
-                JsonUtil.toInstance(fieldState.value, String.class));
+        JsonNode value = CollaborationBinderUtil.getFieldValue(topicConnection,
+                "value");
+        Assert.assertEquals(TextNode.class, value.getClass());
+        Assert.assertEquals("Lorem", JsonUtil.toInstance(value, String.class));
 
         CollaborationBinderUtil.setFieldValue(topicConnection, "value",
                 JsonUtil.toJsonNode("Ipsum"));
