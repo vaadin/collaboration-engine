@@ -53,6 +53,7 @@ public class MockConnectionContext implements ConnectionContext {
             activate();
         }
         return () -> {
+            deactivate();
             closed = true;
             if (throwOnClose) {
                 throw new FailOnPurposeException();

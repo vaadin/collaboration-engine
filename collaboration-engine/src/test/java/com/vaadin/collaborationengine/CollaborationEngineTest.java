@@ -178,7 +178,7 @@ public class CollaborationEngineTest {
                             // no impl
                             return null;
                         });
-
+        spyContext.activate();
         WeakReference weakRef = new WeakReference(
                 spyContext.getActivationHandler());
         registration.remove();

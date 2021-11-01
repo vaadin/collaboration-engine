@@ -598,6 +598,14 @@ public class TopicConnection {
         return new CollaborationListImplementation(name);
     }
 
+    void deactivateAndClose() {
+        try {
+            deactivate();
+        } finally {
+            closeWithoutDeactivating();
+        }
+    }
+
     private void deactivate() {
         try {
             cleanupScopedData();
@@ -605,8 +613,22 @@ public class TopicConnection {
                     false);
             deactivateRegistrations.clear();
         } catch (RuntimeException e) {
+            if (actionDispatcher != null) {
+                this.topicActivationHandler.accept(false);
+                this.actionDispatcher = null;
+            }
             closeWithoutDeactivating();
             throw e;
+        }
+    }
+
+    private void closeWithoutDeactivating() {
+        if (closeRegistration != null) {
+            try {
+                closeRegistration.remove();
+            } finally {
+                closeRegistration = null;
+            }
         }
     }
 
@@ -629,28 +651,6 @@ public class TopicConnection {
                     }));
             connectionScopedListItems.clear();
             cleanupPending = false;
-        }
-    }
-
-    void deactivateAndClose() {
-        try {
-            deactivate();
-        } finally {
-            closeWithoutDeactivating();
-        }
-    }
-
-    void closeWithoutDeactivating() {
-        if (closeRegistration != null) {
-            try {
-                closeRegistration.remove();
-            } finally {
-                closeRegistration = null;
-                if (actionDispatcher != null) {
-                    this.topicActivationHandler.accept(false);
-                    this.actionDispatcher = null;
-                }
-            }
         }
     }
 
