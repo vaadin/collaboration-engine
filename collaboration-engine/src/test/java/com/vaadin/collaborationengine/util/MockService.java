@@ -9,6 +9,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import com.vaadin.flow.di.Lookup;
 import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.DefaultDeploymentConfiguration;
 import com.vaadin.flow.server.PwaRegistry;
@@ -80,7 +81,37 @@ public class MockService extends VaadinService {
 
                     @Override
                     public VaadinContext getContext() {
-                        return null;
+                        return new VaadinContext() {
+                            @Override
+                            public <T> T getAttribute(Class<T> type,
+                                    Supplier<T> defaultValueSupplier) {
+                                if (Lookup.class.isAssignableFrom(type)) {
+                                    return type.cast(Lookup.of(this));
+                                }
+                                return null;
+                            }
+
+                            @Override
+                            public <T> void setAttribute(Class<T> clazz,
+                                    T value) {
+
+                            }
+
+                            @Override
+                            public void removeAttribute(Class<?> clazz) {
+
+                            }
+
+                            @Override
+                            public Enumeration<String> getContextParameterNames() {
+                                return null;
+                            }
+
+                            @Override
+                            public String getContextParameter(String name) {
+                                return null;
+                            }
+                        };
                     }
 
                     @Override
