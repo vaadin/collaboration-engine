@@ -657,7 +657,7 @@ public class TopicConnection {
     private void ensureActiveConnection() {
         if (!isActive()) {
             throw new IllegalStateException("Cannot perform this "
-                    + "operation on a deactivated connection.");
+                    + "operation on a connection that is inactive or about to become inactive.");
         }
     }
 
@@ -734,10 +734,10 @@ public class TopicConnection {
                 }
 
                 try {
+                    this.actionDispatcher = null;
                     this.deactivate();
                 } finally {
                     topicActivationHandler.accept(false);
-                    this.actionDispatcher = null;
                 }
             });
         }
@@ -745,8 +745,13 @@ public class TopicConnection {
 
     private Registration subscribeToChange() {
         synchronized (topic) {
-            return topic.subscribeToChange((id, change) -> actionDispatcher
-                    .dispatchAction(() -> handleChange(id, change)));
+            return topic.subscribeToChange((id, change) -> {
+                // Dispatch only if we're still active
+                if (actionDispatcher != null) {
+                    actionDispatcher
+                            .dispatchAction(() -> handleChange(id, change));
+                }
+            });
         }
     }
 }

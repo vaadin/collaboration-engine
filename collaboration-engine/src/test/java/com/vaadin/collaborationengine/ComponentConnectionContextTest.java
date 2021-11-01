@@ -602,7 +602,7 @@ public class ComponentConnectionContextTest {
     }
 
     @Test
-    public void connectionWithModifyingUnregistration_detachThenAttach_unregisterBeforeRegister() {
+    public void connectionWithModifyingUnregistration_detach_throwsWithoutDataChange() {
         TestCollaborationEngine ce = TestUtil
                 .createTestCollaborationEngine(ui.getSession().getService());
 
@@ -622,13 +622,16 @@ public class ComponentConnectionContextTest {
 
         Assert.assertEquals("Santiy check", Arrays.asList("active"), log);
 
-        ui.remove(component);
-        ui.runAccessTasks();
+        try {
+            ui.remove(component);
+            ui.runAccessTasks();
 
-        ui.add(component);
-        ui.runAccessTasks();
+            Assert.fail("Should have thrown IllegalStateException");
+        } catch (IllegalStateException e) {
+            // Expected
+        }
 
-        Assert.assertEquals(Arrays.asList("active", null, "active"), log);
+        Assert.assertEquals(Arrays.asList("active"), log);
     }
 
     @Test
