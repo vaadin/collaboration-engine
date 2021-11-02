@@ -54,13 +54,23 @@ token=$2
 versionBase=`getBaseVersion $version`
 pomBase=`getBaseVersion $pomVersion`
 
-### Get the master branch version for components
+### Get the master branch version for CE
 masterPom=`curl -s "https://$token@raw.githubusercontent.com/vaadin/collaboration-engine-internal/master/pom.xml"`
 masterMajorMinor=`echo "$masterPom" | grep '<version>' | cut -d '>' -f2 |cut -d '<' -f1 | grep "^$base" | head -1 | cut -d '-' -f1`
 
 ### Load versions file for this platform release
 branch=$versionBase
-[ $branch = $masterMajorMinor ] && branch=master
+if [ $branch = $masterMajorMinor ]
+then
+  branch=master
+else
+  customPom=`curl -s "https://$token@raw.githubusercontent.com/vaadin/collaboration-engine-internal/$versionBase/pom.xml"`
+  customMajorMinor=`echo "$customPom" | grep '<vaadin.component.version>' | cut -d '>' -f2 |cut -d '<' -f1 | grep "^$base" | head -1 | cut -d '-' -f1`
+  branch=`getBaseVersion $customMajorMinor`
+fi
+
+echo $branch
+
 versions=`curl -s "https://raw.githubusercontent.com/vaadin/platform/$branch/versions.json"`
 [ $? != 0 ] && branch=master && versions=`curl -s "https://raw.githubusercontent.com/vaadin/platform/$branch/versions.json"`
 
