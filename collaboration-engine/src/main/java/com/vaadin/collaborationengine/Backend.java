@@ -70,4 +70,21 @@ public interface Backend {
      * @return an object representing the event log, not <code>null</code>
      */
     EventLog openEventLog(String logId);
+
+    /**
+     * Get the event log of this backend node membership events. The returned
+     * object can be used to subscribe to events dispatched when a node joins or
+     * leaves the backend.
+     *
+     * @return the object representing the membership event log, not
+     *         <code>null</code>
+     */
+    EventLog getMembershipEventLog();
+
+    /**
+     * Gets the unique identifier of this backend node.
+     *
+     * @return the node id, not <code>null</code>
+     */
+    UUID getNodeId();
 }

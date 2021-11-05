@@ -13,11 +13,13 @@ import javax.servlet.ServletContext;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -349,11 +351,16 @@ public class CollaborationEngine {
 
         TopicAndEventLog topicAndConnection = topics.computeIfAbsent(topicId,
                 id -> {
-                    Topic topic = new Topic(this);
-
                     EventLog eventLog = configuration.getBackend()
                             .openEventLog(id);
+
+                    Topic topic = new Topic(this, eventLog::submitEvent);
                     eventLog.subscribe(topic::applyChange);
+
+                    UUID nodeId = configuration.getBackend().getNodeId();
+                    ObjectNode nodeEvent = JsonUtil.createNodeJoin(nodeId);
+
+                    eventLog.submitEvent(UUID.randomUUID(), nodeEvent);
 
                     return new TopicAndEventLog(topic, eventLog);
                 });

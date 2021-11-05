@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 /**
+ * Utility methods to create JSON nodes.
+ *
  * @author Vaadin Ltd
  * @since 1.0
  */
@@ -51,12 +53,21 @@ public class JsonUtil {
 
     static final String CHANGE_ITEM = "item";
 
+    public static final String CHANGE_NODE_ID = "node-id";
+
+    public static final String CHANGE_NODE_JOIN = "node-join";
+
+    public static final String CHANGE_NODE_LEAVE = "node-leave";
+
+    public static final String CHANGE_SCOPE_OWNER = "scope-owner";
+
     public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
     };
     public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
     };
 
     private static final ObjectMapper mapper;
+
     static {
         mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
@@ -130,33 +141,71 @@ public class JsonUtil {
     }
 
     static ObjectNode createPutChange(String name, String key,
-            Object expectedValue, Object value) {
+            Object expectedValue, Object value, UUID scopeOwnerId) {
         ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_PUT);
         change.put(CHANGE_NAME, name);
         change.put(CHANGE_KEY, key);
         change.set(CHANGE_VALUE, toJsonNode(value));
+        if (scopeOwnerId != null) {
+            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
+        }
         if (expectedValue != null) {
             change.set(CHANGE_EXPECTED_VALUE, toJsonNode(expectedValue));
         }
         return change;
     }
 
-    static ObjectNode createAppendChange(String name, Object item) {
+    static ObjectNode createAppendChange(String name, Object item,
+            UUID scopeOwnerId) {
         ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
         change.put(CHANGE_NAME, name);
         change.set(CHANGE_ITEM, toJsonNode(item));
+        if (scopeOwnerId != null) {
+            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
+        }
         return change;
     }
 
-    static ObjectNode createListSetChange(String name, String id,
-            Object value) {
+    static ObjectNode createListSetChange(String name, String id, Object value,
+            UUID scopeOwnerId) {
         ObjectNode change = mapper.createObjectNode();
         change.put(CHANGE_TYPE, CHANGE_TYPE_LIST_SET);
         change.put(CHANGE_NAME, name);
         change.put(CHANGE_KEY, id);
         change.set(CHANGE_VALUE, toJsonNode(value));
+        if (scopeOwnerId != null) {
+            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
+        }
         return change;
+    }
+
+    /**
+     * Creates a JSON payload of a node join event.
+     *
+     * @param id
+     *            the node id, not <code>null</code>
+     * @return the payload
+     */
+    public static ObjectNode createNodeJoin(UUID id) {
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_JOIN);
+        payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
+        return payload;
+    }
+
+    /**
+     * Creates a JSON payload of a node leave event.
+     *
+     * @param id
+     *            the node id, not <code>null</code>
+     * @return the payload
+     */
+    public static ObjectNode createNodeLeave(UUID id) {
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_LEAVE);
+        payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
+        return payload;
     }
 }

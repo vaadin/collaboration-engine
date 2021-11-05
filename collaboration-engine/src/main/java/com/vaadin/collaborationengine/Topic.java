@@ -13,12 +13,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -50,9 +55,12 @@ class Topic {
 
         private final JsonNode data;
 
-        public Entry(UUID id, JsonNode data) {
+        private final UUID scopeOwnerId;
+
+        public Entry(UUID id, JsonNode data, UUID scopeOwnerId) {
             this.revisionId = id;
             this.data = data;
+            this.scopeOwnerId = scopeOwnerId;
         }
     }
 
@@ -64,9 +72,68 @@ class Topic {
     private Instant lastDisconnected;
     private final List<SerializableBiConsumer<UUID, ChangeDetails>> changeListeners = new ArrayList<>();
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
+    private final List<UUID> backendNodes = new ArrayList<>();
+    private boolean leader;
+    private final BiConsumer<UUID, ObjectNode> distributor;
 
-    Topic(CollaborationEngine collaborationEngine) {
+    Topic(CollaborationEngine collaborationEngine,
+            BiConsumer<UUID, ObjectNode> distributor) {
         this.collaborationEngine = collaborationEngine;
+        this.distributor = distributor;
+        Backend backend = this.collaborationEngine.getConfiguration()
+                .getBackend();
+        backend.getMembershipEventLog().subscribe((changeId, changeNode) -> {
+            String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
+            if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
+                handleNodeLeave(changeNode);
+            }
+        });
+    }
+
+    UUID getCurrentNodeId() {
+        return collaborationEngine.getConfiguration().getBackend().getNodeId();
+    }
+
+    synchronized void handleNodeLeave(ObjectNode changeNode) {
+        UUID nodeId = UUID
+                .fromString(changeNode.get(JsonUtil.CHANGE_NODE_ID).asText());
+        Backend backend = this.collaborationEngine.getConfiguration()
+                .getBackend();
+        backendNodes.remove(nodeId);
+        if (!backendNodes.isEmpty()
+                && backendNodes.get(0).equals(backend.getNodeId())) {
+            becomeLeader();
+        }
+        if (leader) {
+            cleanupStaleEntries(nodeId::equals);
+        }
+    }
+
+    private void cleanupStaleEntries(Predicate<UUID> isStale) {
+        namedMapData.entrySet().stream().flatMap(
+                map -> map.getValue().entrySet().stream().filter(entry -> {
+                    return isStale.test(entry.getValue().scopeOwnerId);
+                }).map(entry -> {
+                    ObjectNode change = JsonUtil.createPutChange(map.getKey(),
+                            entry.getKey(), null, null, null);
+                    change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                            entry.getValue().revisionId.toString());
+                    return change;
+                })).collect(Collectors.toList()).forEach(change -> {
+                    distributor.accept(UUID.randomUUID(), change);
+                });
+        namedListData.entrySet().stream()
+                .flatMap(list -> list.getValue().stream().filter(entry -> {
+                    return isStale.test(entry.scopeOwnerId);
+                }).map(entry -> {
+                    ObjectNode change = JsonUtil.createListSetChange(
+                            list.getKey(), entry.id.toString(), null, null);
+                    change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                            entry.revisionId.toString());
+                    return change;
+                })).collect(Collectors.toList()).forEach(change -> {
+                    distributor.accept(UUID.randomUUID(), change);
+                });
     }
 
     Registration subscribeToChange(
@@ -132,6 +199,15 @@ class Topic {
         case JsonUtil.CHANGE_TYPE_LIST_SET:
             details = applyListSet(trackingId, change);
             break;
+        case JsonUtil.CHANGE_NODE_JOIN:
+            UUID nodeId = UUID
+                    .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
+            if (backendNodes.isEmpty() && collaborationEngine.getConfiguration()
+                    .getBackend().getNodeId().equals(nodeId)) {
+                becomeLeader();
+            }
+            backendNodes.add(nodeId);
+            return ChangeResult.ACCEPTED;
         default:
             throw new UnsupportedOperationException(
                     "Type '" + type + "' is not a supported change type");
@@ -149,6 +225,16 @@ class Topic {
                     listener -> listener.accept(trackingId, details), true);
         }
         return result;
+    }
+
+    private void becomeLeader() {
+        leader = true;
+        Set<UUID> backendNodesCopy = new HashSet<>(backendNodes);
+        cleanupStaleEntries(id -> !backendNodesCopy.contains(id));
+    }
+
+    boolean isLeader() {
+        return leader;
     }
 
     ChangeDetails applyMapChange(UUID changeId, ObjectNode change) {
@@ -176,7 +262,8 @@ class Topic {
         if (newValue instanceof NullNode) {
             map.remove(key);
         } else {
-            map.put(key, new Entry(changeId, newValue.deepCopy()));
+            map.put(key, new Entry(changeId, newValue.deepCopy(),
+                    JsonUtil.toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER))));
         }
         return new MapChange(mapName, key, oldValue, newValue,
                 JsonUtil.toUUID(expectedId));
@@ -185,8 +272,10 @@ class Topic {
     ChangeDetails applyListAppend(UUID id, ObjectNode change) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        UUID scopeOwnerId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
         ListEntrySnapshot insertedEntry = getOrCreateList(listName)
-                .insertLast(id, item, id);
+                .insertLast(id, item, id, scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
                 null, insertedEntry.prev, null, null, null);
@@ -215,7 +304,9 @@ class Topic {
                     expectedId);
         } else {
             JsonNode oldValue = entry.value;
-            list.setValue(key, newValue, trackingId);
+            UUID scopeOwnerId = JsonUtil
+                    .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+            list.setValue(key, newValue, trackingId, scopeOwnerId);
             return new ListChange(listName, ListChangeType.SET, key, oldValue,
                     newValue, entry.prev, entry.prev, entry.next, entry.next,
                     expectedId);

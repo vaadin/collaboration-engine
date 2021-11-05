@@ -78,7 +78,7 @@ public class TopicConnection {
                     .createCompletableFuture();
 
             ObjectNode change = JsonUtil.createPutChange(name, key,
-                    expectedValue, newValue);
+                    expectedValue, newValue, null);
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
@@ -99,13 +99,13 @@ public class TopicConnection {
             CompletableFuture<Void> contextFuture = actionDispatcher
                     .createCompletableFuture();
 
-            ObjectNode change = JsonUtil.createPutChange(name, key, null,
-                    value);
+            boolean connectionScope = scope == EntryScope.CONNECTION;
+            ObjectNode change = JsonUtil.createPutChange(name, key, null, value,
+                    connectionScope ? topic.getCurrentNodeId() : null);
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
-                if (scope == EntryScope.CONNECTION
-                        && result == ChangeResult.ACCEPTED) {
+                if (connectionScope && result == ChangeResult.ACCEPTED) {
                     connectionScopedMapKeys
                             .computeIfAbsent(name, k -> new HashMap<>())
                             .put(key, id);
@@ -332,12 +332,13 @@ public class TopicConnection {
             CompletableFuture<Void> contextFuture = actionDispatcher
                     .createCompletableFuture();
 
-            ObjectNode change = JsonUtil.createAppendChange(name, item);
+            boolean connectionScope = scope == EntryScope.CONNECTION;
+            ObjectNode change = JsonUtil.createAppendChange(name, item,
+                    connectionScope ? topic.getCurrentNodeId() : null);
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
-                if (scope == EntryScope.CONNECTION
-                        && result == ChangeResult.ACCEPTED) {
+                if (connectionScope && result == ChangeResult.ACCEPTED) {
                     connectionScopedListItems
                             .computeIfAbsent(name, k -> new HashMap<>())
                             .put(id, id);
@@ -393,13 +394,14 @@ public class TopicConnection {
             CompletableFuture<Boolean> contextFuture = actionDispatcher
                     .createCompletableFuture();
 
+            boolean connectionScope = scope == EntryScope.CONNECTION;
             ObjectNode change = JsonUtil.createListSetChange(name,
-                    key.getKey().toString(), value);
+                    key.getKey().toString(), value,
+                    connectionScope ? topic.getCurrentNodeId() : null);
 
             UUID id = UUID.randomUUID();
             topic.setChangeResultTracker(id, result -> {
-                if (scope == EntryScope.CONNECTION
-                        && result == ChangeResult.ACCEPTED) {
+                if (connectionScope && result == ChangeResult.ACCEPTED) {
                     connectionScopedListItems
                             .computeIfAbsent(name, k -> new HashMap<>())
                             .put(key.getKey(), id);
@@ -637,7 +639,7 @@ public class TopicConnection {
             connectionScopedMapKeys.forEach(
                     (mapName, mapKeys) -> mapKeys.forEach((key, id) -> {
                         ObjectNode change = JsonUtil.createPutChange(mapName,
-                                key, null, null);
+                                key, null, null, null);
                         change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
                         distributor.accept(UUID.randomUUID(), change);
                     }));
@@ -645,7 +647,7 @@ public class TopicConnection {
             connectionScopedListItems.forEach(
                     (listName, listItems) -> listItems.forEach((key, id) -> {
                         ObjectNode change = JsonUtil.createListSetChange(
-                                listName, key.toString(), null);
+                                listName, key.toString(), null, null);
                         change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
                         distributor.accept(UUID.randomUUID(), change);
                     }));

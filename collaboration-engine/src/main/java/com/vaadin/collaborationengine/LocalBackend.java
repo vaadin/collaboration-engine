@@ -49,8 +49,35 @@ public class LocalBackend implements Backend {
         }
     }
 
+    private final UUID id = UUID.randomUUID();
+
     @Override
     public EventLog openEventLog(String topicId) {
         return new LocalEventLog(topicId);
+    }
+
+    @Override
+    public EventLog getMembershipEventLog() {
+        return new EventLog() {
+
+            @Override
+            public Registration subscribe(
+                    BiConsumer<UUID, ObjectNode> eventConsumer) {
+                ObjectNode event = JsonUtil.createNodeJoin(id);
+                eventConsumer.accept(UUID.randomUUID(), event);
+                return () -> {
+                };
+            }
+
+            @Override
+            public void submitEvent(UUID trackingId, ObjectNode eventPayload) {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    @Override
+    public UUID getNodeId() {
+        return id;
     }
 }

@@ -14,12 +14,15 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.hazelcast.cluster.MembershipEvent;
+import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.collection.IList;
 import com.hazelcast.collection.ItemEvent;
 import com.hazelcast.collection.ItemListener;
 import com.hazelcast.core.HazelcastInstance;
 
 import com.vaadin.collaborationengine.Backend;
+import com.vaadin.collaborationengine.JsonUtil;
 import com.vaadin.flow.shared.Registration;
 
 public class HazelcastBackend implements Backend {
@@ -92,12 +95,42 @@ public class HazelcastBackend implements Backend {
 
     private final HazelcastInstance hz;
 
+    private final IList<IdAndEvent> membershipEvents;
+
     public HazelcastBackend(HazelcastInstance hz) {
         this.hz = Objects.requireNonNull(hz);
+        membershipEvents = this.hz
+                .getList(HazelcastBackend.class.getName() + ".membership");
+        this.hz.getCluster().addMembershipListener(new MembershipListener() {
+
+            @Override
+            public void memberRemoved(MembershipEvent membershipEvent) {
+                UUID id = membershipEvent.getMember().getUuid();
+                ObjectNode event = JsonUtil.createNodeLeave(id);
+                membershipEvents.add(new IdAndEvent(UUID.randomUUID(), event));
+            }
+
+            @Override
+            public void memberAdded(MembershipEvent membershipEvent) {
+                UUID id = membershipEvent.getMember().getUuid();
+                ObjectNode event = JsonUtil.createNodeJoin(id);
+                membershipEvents.add(new IdAndEvent(UUID.randomUUID(), event));
+            }
+        });
     }
 
     @Override
     public EventLog openEventLog(String topicId) {
         return new HazelcastEventLog(hz.getList(topicId));
+    }
+
+    @Override
+    public UUID getNodeId() {
+        return hz.getCluster().getLocalMember().getUuid();
+    }
+
+    @Override
+    public EventLog getMembershipEventLog() {
+        return new HazelcastEventLog(membershipEvents);
     }
 }

@@ -28,6 +28,7 @@ class EntryList {
         UUID prev;
         UUID next;
         UUID revisionId;
+        UUID scopeOwnerId;
     }
 
     static class ListEntrySnapshot {
@@ -36,6 +37,7 @@ class EntryList {
         final UUID prev;
         final UUID next;
         final UUID revisionId;
+        final UUID scopeOwnerId;
 
         ListEntrySnapshot(UUID id, ListEntry entry) {
             this.id = id;
@@ -43,6 +45,7 @@ class EntryList {
             this.prev = entry.prev;
             this.next = entry.next;
             this.revisionId = entry.revisionId;
+            this.scopeOwnerId = entry.scopeOwnerId;
         }
     }
 
@@ -56,10 +59,12 @@ class EntryList {
         tail = null;
     }
 
-    ListEntrySnapshot insertLast(UUID key, JsonNode value, UUID revisionId) {
+    ListEntrySnapshot insertLast(UUID key, JsonNode value, UUID revisionId,
+            UUID scopeOwnerId) {
         ListEntry item = new ListEntry();
         item.value = Objects.requireNonNull(value);
         item.revisionId = revisionId;
+        item.scopeOwnerId = scopeOwnerId;
         item.prev = tail;
 
         entries.put(Objects.requireNonNull(key), item);
@@ -125,9 +130,11 @@ class EntryList {
         }
     }
 
-    void setValue(UUID key, JsonNode newValue, UUID revisionId) {
+    void setValue(UUID key, JsonNode newValue, UUID revisionId,
+            UUID scopeOwnerId) {
         ListEntry listEntry = entries.get(key);
         listEntry.value = newValue;
         listEntry.revisionId = revisionId;
+        listEntry.scopeOwnerId = scopeOwnerId;
     }
 }

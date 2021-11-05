@@ -16,13 +16,13 @@ public class TopicTest {
 
     @Before
     public void init() {
-        topic = new Topic(new CollaborationEngine());
+        topic = new Topic(TestUtil.createTestCollaborationEngine(), null);
     }
 
     @Test
     public void applyChange_newMap_mapCreatedWithNewEntry() {
         ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.BAZ);
+                MockJson.BAZ, null);
         topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("baz", topic.getMapValue("foo", "bar").textValue());
     }
@@ -30,10 +30,10 @@ public class TopicTest {
     @Test
     public void applyChange_existingMap_mapEntryUpdated() {
         ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.BAZ);
+                MockJson.BAZ, null);
         topic.applyChange(UUID.randomUUID(), change);
         ObjectNode change1 = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.QUX);
+                MockJson.QUX, null);
         topic.applyChange(UUID.randomUUID(), change1);
 
         Assert.assertEquals("qux", topic.getMapValue("foo", "bar").textValue());
@@ -42,9 +42,10 @@ public class TopicTest {
     @Test
     public void applyChange_existingMap_emptyValue_mapEntryRemoved() {
         ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.BAZ);
+                MockJson.BAZ, null);
         topic.applyChange(UUID.randomUUID(), change);
-        ObjectNode change1 = JsonUtil.createPutChange("foo", "bar", null, null);
+        ObjectNode change1 = JsonUtil.createPutChange("foo", "bar", null, null,
+                null);
         topic.applyChange(UUID.randomUUID(), change1);
 
         Assert.assertNull(topic.getMapValue("foo", "bar"));
@@ -53,10 +54,10 @@ public class TopicTest {
     @Test
     public void applyReplace_havingLatestExpectedValue_success() {
         ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.BAZ);
+                MockJson.BAZ, null);
         topic.applyChange(UUID.randomUUID(), change);
         ObjectNode replaceChange = JsonUtil.createPutChange("foo", "bar",
-                MockJson.BAZ, MockJson.QUX);
+                MockJson.BAZ, MockJson.QUX, null);
 
         Assert.assertEquals(ChangeResult.ACCEPTED,
                 topic.applyChange(UUID.randomUUID(), replaceChange));
@@ -66,10 +67,10 @@ public class TopicTest {
     @Test
     public void applyReplace_havingWrongExpectedValue_fail() {
         ObjectNode change = JsonUtil.createPutChange("foo", "bar", null,
-                MockJson.BAZ);
+                MockJson.BAZ, null);
         topic.applyChange(UUID.randomUUID(), change);
         ObjectNode replaceChange = JsonUtil.createPutChange("foo", "bar",
-                MockJson.FOO, MockJson.QUX);
+                MockJson.FOO, MockJson.QUX, null);
 
         Assert.assertEquals(ChangeResult.REJECTED,
                 topic.applyChange(UUID.randomUUID(), replaceChange));
@@ -92,8 +93,8 @@ public class TopicTest {
         topic.subscribeToChange((id, event) -> count.getAndIncrement());
 
         try {
-            topic.applyChange(UUID.randomUUID(),
-                    JsonUtil.createPutChange("map", "key", null, MockJson.BAZ));
+            topic.applyChange(UUID.randomUUID(), JsonUtil.createPutChange("map",
+                    "key", null, MockJson.BAZ, null));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
         }
@@ -103,8 +104,8 @@ public class TopicTest {
                 1, count.get());
 
         // No try-catch needed - failing subscriber should have been removed
-        topic.applyChange(UUID.randomUUID(),
-                JsonUtil.createPutChange("map", "key", null, MockJson.QUX));
+        topic.applyChange(UUID.randomUUID(), JsonUtil.createPutChange("map",
+                "key", null, MockJson.QUX, null));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());
@@ -112,7 +113,8 @@ public class TopicTest {
 
     @Test
     public void applyChange_listContainsAppendedItem() {
-        ObjectNode change = JsonUtil.createAppendChange("foo", MockJson.FOO);
+        ObjectNode change = JsonUtil.createAppendChange("foo", MockJson.FOO,
+                null);
         topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("foo",
                 topic.getListItems("foo").findFirst().get().value.textValue());
@@ -135,7 +137,7 @@ public class TopicTest {
 
         try {
             topic.applyChange(UUID.randomUUID(),
-                    JsonUtil.createAppendChange("foo", MockJson.BAZ));
+                    JsonUtil.createAppendChange("foo", MockJson.BAZ, null));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
         }
@@ -146,7 +148,7 @@ public class TopicTest {
 
         // No try-catch needed - failing subscriber should have been removed
         topic.applyChange(UUID.randomUUID(),
-                JsonUtil.createAppendChange("foo", MockJson.QUX));
+                JsonUtil.createAppendChange("foo", MockJson.QUX, null));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());
