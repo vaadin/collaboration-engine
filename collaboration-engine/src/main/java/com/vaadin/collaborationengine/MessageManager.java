@@ -196,7 +196,7 @@ public class MessageManager extends AbstractCollaborationManager {
             fetchPersistedList();
             return future;
         } else {
-            return list.append(message);
+            return list.insertLast(message).getCompletableFuture();
         }
     }
 
@@ -225,8 +225,11 @@ public class MessageManager extends AbstractCollaborationManager {
     }
 
     private void onListChange(ListChangeEvent event) {
-        event.getAddedItem(CollaborationMessage.class)
-                .ifPresent(this::applyHandler);
+        CollaborationMessage message = event
+                .getValue(CollaborationMessage.class);
+        if (message != null) {
+            applyHandler(message);
+        }
     }
 
     private void applyHandler(CollaborationMessage message) {
@@ -269,15 +272,16 @@ public class MessageManager extends AbstractCollaborationManager {
     private void handlePersistedMessage(CollaborationMessage message) {
         CompletableFuture<Void> future = persistedMessageFutures
                 .remove(message);
-        list.append(message).whenComplete((result, throwable) -> {
-            if (future != null) {
-                if (throwable != null) {
-                    future.completeExceptionally(throwable);
-                } else {
-                    future.complete(result);
-                }
-            }
-        });
+        list.insertLast(message).getCompletableFuture()
+                .whenComplete((result, throwable) -> {
+                    if (future != null) {
+                        if (throwable != null) {
+                            future.completeExceptionally(throwable);
+                        } else {
+                            future.complete(result);
+                        }
+                    }
+                });
     }
 
     private List<CollaborationMessage> getRecentMessages() {

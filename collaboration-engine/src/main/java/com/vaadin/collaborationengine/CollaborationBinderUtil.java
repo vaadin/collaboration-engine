@@ -8,20 +8,12 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
-
-import static com.vaadin.collaborationengine.JsonUtil.EDITORS_TYPE_REF;
 
 /**
  * Utility methods for {@link CollaborationBinder}.
@@ -131,7 +123,7 @@ public class CollaborationBinderUtil {
 
         CollaborationList list = topicConnection
                 .getNamedList(COLLABORATION_BINDER_MAP_NAME);
-        list.append(new FocusedEditor(user, fieldIndex, propertyName),
+        list.insertLast(new FocusedEditor(user, fieldIndex, propertyName),
                 EntryScope.CONNECTION);
     }
 
@@ -164,8 +156,7 @@ public class CollaborationBinderUtil {
                 "Topic connection can't be null.");
         Objects.requireNonNull(propertyName, "Property name can't be null.");
         Objects.requireNonNull(user, "User can't be null.");
-        TopicConnection.CollaborationListImplementation list = (TopicConnection.CollaborationListImplementation) getList(
-                topicConnection);
+        CollaborationList list = getList(topicConnection);
         list.getKeys().forEach(key -> {
             FocusedEditor editor = list.getItem(key, FocusedEditor.class);
             if (editor.propertyName.equals(propertyName)

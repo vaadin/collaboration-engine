@@ -33,7 +33,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.TopicConnection.CollaborationListImplementation;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class CollaborationListTest {
@@ -47,7 +46,7 @@ public class CollaborationListTest {
 
         @Override
         public void onListChange(ListChangeEvent event) {
-            String item = event.getAddedItem(String.class).get();
+            String item = event.getValue(String.class);
             String expected = expectedItems.removeFirst();
             Assert.assertTrue(item.equals(expected));
         }
@@ -73,9 +72,6 @@ public class CollaborationListTest {
     private CollaborationEngine ce;
     private TopicConnection connection;
     private CollaborationList list;
-    // This field is here only to test API that is not yet public
-    @Deprecated()
-    private CollaborationListImplementation privateList;
     private ListAppendSpy appendSpy;
     private EventCollector eventCollector;
     private TopicConnectionRegistration registration;
@@ -88,7 +84,7 @@ public class CollaborationListTest {
                 SystemUserInfo.getInstance(), topicConnection -> {
                     connection = topicConnection;
                     list = connection.getNamedList("foo");
-                    privateList = (CollaborationListImplementation) list;
+                    list = list;
                     return null;
                 });
         appendSpy = new ListAppendSpy();
@@ -97,13 +93,13 @@ public class CollaborationListTest {
 
     @Test
     public void listWithItem_getItemsByClass() {
-        list.append("foo");
+        list.insertLast("foo");
         Assert.assertEquals("foo", list.getItems(String.class).get(0));
     }
 
     @Test
     public void listWithItem_getItemsByTypeReference() {
-        list.append("foo");
+        list.insertLast("foo");
         Assert.assertEquals("foo", list.getItems(STRING_REF).get(0));
     }
 
@@ -112,10 +108,10 @@ public class CollaborationListTest {
             throws ExecutionException, InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         list.subscribe(event -> {
-            String item = event.getAddedItem(String.class).get();
+            String item = event.getValue(String.class);
             future.complete(item);
         });
-        list.append("foo");
+        list.insertLast("foo");
         Assert.assertEquals("foo", future.get());
     }
 
@@ -124,17 +120,17 @@ public class CollaborationListTest {
             throws ExecutionException, InterruptedException {
         CompletableFuture<String> future = new CompletableFuture<>();
         list.subscribe(event -> {
-            String item = event.getAddedItem(STRING_REF).get();
+            String item = event.getValue(STRING_REF);
             future.complete(item);
         });
-        list.append("foo");
+        list.insertLast("foo");
         Assert.assertEquals("foo", future.get());
     }
 
     @Test
     public void listWithItems_subscribe_eventsForItems() {
-        list.append("foo");
-        list.append("bar");
+        list.insertLast("foo");
+        list.insertLast("bar");
 
         appendSpy.addExpectedEvent("foo");
         appendSpy.addExpectedEvent("bar");
@@ -148,12 +144,13 @@ public class CollaborationListTest {
     public void listWithRemovedSubscriber_appendItem_subscriberNotNotified() {
         list.subscribe(appendSpy).remove();
 
-        list.append("foo"); // Spy would throw if notified of unexpected "foo"
+        list.insertLast("foo"); // Spy would throw if notified of unexpected
+                                // "foo"
     }
 
     @Test
     public void listWithSubscriber_addAnotherSubscriber_noEventForOldSubscriber() {
-        list.append("foo");
+        list.insertLast("foo");
 
         appendSpy.addExpectedEvent("foo");
         list.subscribe(appendSpy);
@@ -168,7 +165,7 @@ public class CollaborationListTest {
         list.subscribe(ignore -> {
         });
         context.resetActionDispatchCount();
-        list.append("foo");
+        list.insertLast("foo");
         // One for the event, one for addToInbox and one for completing the
         // future
         Assert.assertEquals(3, context.getDispathActionCount());
@@ -196,7 +193,7 @@ public class CollaborationListTest {
         });
         ctx1.resetActionDispatchCount();
         ctx2.resetActionDispatchCount();
-        list1.get().append("foo");
+        list1.get().insertLast("foo");
 
         // One dispatch for the event, ond for addToInbox and one for completing
         // the future
@@ -231,8 +228,8 @@ public class CollaborationListTest {
         spy1.addExpectedEvent("foo");
         spy2.addExpectedEvent("bar");
 
-        list1.get().append("foo");
-        list2.get().append("bar");
+        list1.get().insertLast("foo");
+        list2.get().insertLast("bar");
 
         spy1.assertNoExpectedEvents();
         spy2.assertNoExpectedEvents();
@@ -240,7 +237,8 @@ public class CollaborationListTest {
 
     @Test
     public void append_contextCanDispatch_resolved() {
-        CompletableFuture<Void> append = list.append("foo");
+        CompletableFuture<Void> append = list.insertLast("foo")
+                .getCompletableFuture();
         Assert.assertTrue(append.isDone());
     }
 
@@ -249,7 +247,8 @@ public class CollaborationListTest {
         context.init(ignore -> {
         }, ignore -> {
         });
-        CompletableFuture<Void> append = list.append("foo");
+        CompletableFuture<Void> append = list.insertLast("foo")
+                .getCompletableFuture();
         Assert.assertFalse(append.isDone());
     }
 
@@ -269,14 +268,14 @@ public class CollaborationListTest {
     @Test(expected = IllegalStateException.class)
     public void append_throwsIfInactiveConnection() {
         registration.remove();
-        list.append("foo");
+        list.insertLast("foo");
     }
 
     @Test
     public void expirationTimeout_listClearedAfterTimeout() {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
-        list.append("foo");
+        list.insertLast("foo");
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         AtomicReference<CollaborationList> newList = new AtomicReference<>();
@@ -293,7 +292,7 @@ public class CollaborationListTest {
     public void expirationTimeout_listNotClearedBeforeTimeout() {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
-        list.append("foo");
+        list.insertLast("foo");
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.minusMinutes(1)));
         AtomicReference<CollaborationList> newList = new AtomicReference<>();
@@ -310,7 +309,7 @@ public class CollaborationListTest {
     public void expirationTimeout_timeoutRemovedWhenSetToNull() {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
-        list.append("foo");
+        list.insertLast("foo");
         registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         list.setExpirationTimeout(null);
@@ -328,7 +327,7 @@ public class CollaborationListTest {
     public void expirationTimeout_connectionOpened_listClearCancelled() {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
-        list.append("foo");
+        list.insertLast("foo");
         registration.remove();
         AtomicReference<CollaborationList> newList = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
@@ -345,7 +344,7 @@ public class CollaborationListTest {
     public void expirationTimeout_multipleConnectionsOpened_closeOne_listClearNotScheduled() {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
-        list.append("foo");
+        list.insertLast("foo");
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
                 connection -> null).remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
@@ -355,68 +354,68 @@ public class CollaborationListTest {
 
     @Test
     public void threeItems_removeFirst_twoRemaining() {
-        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
 
-        privateList.set(keys.get(0), null);
+        list.set(keys.get(0), null);
 
-        assertValues(privateList, "two", "three");
+        assertValues(list, "two", "three");
     }
 
     @Test
     public void threeItems_removeMiddle_twoRemaining() {
-        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
 
-        privateList.set(keys.get(1), null);
+        list.set(keys.get(1), null);
 
-        assertValues(privateList, "one", "three");
+        assertValues(list, "one", "three");
     }
 
     @Test
     public void threeItems_removeLast_twoRemaining() {
-        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
 
-        privateList.set(keys.get(2), null);
+        list.set(keys.get(2), null);
 
-        assertValues(privateList, "one", "two");
+        assertValues(list, "one", "two");
     }
 
     @Test
     public void oneItem_removeIt_listEmpty() {
-        ListKey key = privateList.insertLast("one").getKey();
+        ListKey key = list.insertLast("one").getKey();
 
-        privateList.set(key, null);
+        list.set(key, null);
 
-        assertValues(privateList);
+        assertValues(list);
     }
 
     @Test
     public void listEmptied_addOne_nothingCorrupted() {
-        ListKey key = privateList.insertLast("one").getKey();
-        privateList.set(key, null);
+        ListKey key = list.insertLast("one").getKey();
+        list.set(key, null);
 
-        list.append("another");
+        list.insertLast("another");
 
-        assertValues(privateList, "another");
+        assertValues(list, "another");
     }
 
     @Test
     public void listWithItem_setValue_valueSet()
             throws InterruptedException, ExecutionException {
-        ListKey key = privateList.insertLast("one").getKey();
+        ListKey key = list.insertLast("one").getKey();
 
-        Boolean result = privateList.set(key, "two").get();
+        Boolean result = list.set(key, "two").get();
 
-        assertValues(privateList, "two");
+        assertValues(list, "two");
         Assert.assertEquals(Boolean.TRUE, result);
     }
 
     @Test
     public void listWithRemovedItem_setValue_negativeResult()
             throws InterruptedException, ExecutionException {
-        ListKey key = privateList.insertLast("one").getKey();
-        privateList.set(key, null);
+        ListKey key = list.insertLast("one").getKey();
+        list.set(key, null);
 
-        Boolean result = privateList.set(key, "two").get();
+        Boolean result = list.set(key, "two").get();
 
         Assert.assertEquals(Boolean.FALSE, result);
     }
@@ -425,8 +424,8 @@ public class CollaborationListTest {
     public void emptyListWithSubscriber_appendItems_eventDetailsComplete() {
         list.subscribe(eventCollector);
 
-        ListKey key1 = privateList.insertLast("one").getKey();
-        ListKey key2 = privateList.insertLast("two").getKey();
+        ListKey key1 = list.insertLast("one").getKey();
+        ListKey key2 = list.insertLast("two").getKey();
 
         Assert.assertEquals(2, eventCollector.size());
         assertEvent(ListChangeType.INSERT, key1, null, "one", null, null, null,
@@ -438,8 +437,8 @@ public class CollaborationListTest {
 
     @Test
     public void populatedList_subscribe_eventDetailsComplete() {
-        ListKey key1 = privateList.insertLast("one").getKey();
-        ListKey key2 = privateList.insertLast("two").getKey();
+        ListKey key1 = list.insertLast("one").getKey();
+        ListKey key2 = list.insertLast("two").getKey();
 
         list.subscribe(eventCollector);
 
@@ -453,12 +452,12 @@ public class CollaborationListTest {
 
     @Test
     public void populatedListWithSubscriber_changeItems_eventDetailsComplete() {
-        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
         list.subscribe(eventCollector);
         eventCollector.clear();
 
-        keys.forEach(key -> privateList.set(key,
-                privateList.getItem(key, String.class).toUpperCase()));
+        keys.forEach(key -> list.set(key,
+                list.getItem(key, String.class).toUpperCase()));
 
         Assert.assertEquals(3, eventCollector.size());
         assertEvent(ListChangeType.SET, keys.get(0), "one", "ONE", null, null,
@@ -471,11 +470,11 @@ public class CollaborationListTest {
 
     @Test
     public void populatedListWithSubscriber_removeMiddleItem_eventDetailsComplete() {
-        List<ListKey> keys = insertLast(privateList, "one", "two", "three");
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
         list.subscribe(eventCollector);
         eventCollector.clear();
 
-        privateList.set(keys.get(1), null);
+        list.set(keys.get(1), null);
 
         Assert.assertEquals(1, eventCollector.size());
         assertEvent(ListChangeType.SET, keys.get(1), "two", null, keys.get(0),
@@ -484,36 +483,34 @@ public class CollaborationListTest {
 
     @Test
     public void insertLastWithConnectionScope_connectiondDeactivated_entryRemoved() {
-        ListKey key = privateList.insertLast("foo", EntryScope.CONNECTION)
-                .getKey();
+        ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
         context.deactivate();
         context.activate();
-        Assert.assertNull(privateList.getItem(key, String.class));
-        Assert.assertEquals(0, privateList.getKeys().count());
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(0, list.getKeys().count());
     }
 
     @Test
     public void insertLastWithTopicScope_setWithConnectionScope_connectionDeactivated_entryRemoved() {
-        ListKey key = privateList.insertLast("foo").getKey();
-        privateList.set(key, "foo", EntryScope.CONNECTION);
+        ListKey key = list.insertLast("foo").getKey();
+        list.set(key, "foo", EntryScope.CONNECTION);
         context.deactivate();
         context.activate();
-        Assert.assertNull(privateList.getItem(key, String.class));
-        Assert.assertEquals(0, privateList.getKeys().count());
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(0, list.getKeys().count());
     }
 
     @Test
     public void insertLastWithConnectionScope_setWithTopicScope_connectionDeactivated_entryNotRemoved() {
-        ListKey key = privateList.insertLast("foo", EntryScope.CONNECTION)
-                .getKey();
-        privateList.set(key, "foo");
+        ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
+        list.set(key, "foo");
         context.deactivate();
         context.activate();
-        Assert.assertEquals("foo", privateList.getItem(key, String.class));
+        Assert.assertEquals("foo", list.getItem(key, String.class));
     }
 
-    private static List<ListKey> insertLast(
-            CollaborationListImplementation list, String... values) {
+    private static List<ListKey> insertLast(CollaborationList list,
+            String... values) {
         return Stream.of(values).map(list::insertLast)
                 .map(ListInsertResult::getKey).collect(Collectors.toList());
     }
@@ -533,8 +530,7 @@ public class CollaborationListTest {
         Assert.assertEquals(before, event.getBefore());
     }
 
-    private static void assertValues(CollaborationListImplementation list,
-            String... values) {
+    private static void assertValues(CollaborationList list, String... values) {
         Assert.assertEquals(Arrays.asList(values), list.getItems(String.class));
         Assert.assertEquals(Arrays.asList(values), list.getItems(STRING_REF));
 

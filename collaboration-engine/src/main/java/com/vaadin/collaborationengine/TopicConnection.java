@@ -236,43 +236,12 @@ public class TopicConnection {
             }
         }
 
-        /**
-         * Gets the list item identifier by the given key as instance of the
-         * given class.
-         *
-         * @param <T>
-         *            the type of the value from <code>type</code> parameter,
-         *            e.g. <code>String</code>
-         * @param key
-         *            the key of the requested item, not <code>null</code>
-         * @param type
-         *            the expected type of the item, not <code>null</code>
-         * @return the requested item
-         * @throws JsonConversionException
-         *             if the value in the list cannot be converted to an
-         *             instance of the given class
-         */
+        @Override
         public <T> T getItem(ListKey key, Class<T> type) {
             return getItem(key, JsonUtil.fromJsonConverter(type));
         }
 
-        /**
-         * Gets the list item identifier by the given key as instance of the
-         * given type reference.
-         *
-         * @param <T>
-         *            the type reference of the value from <code>type</code>
-         *            parameter, e.g. <code>List<String></code>
-         * @param key
-         *            the key of the requested item, not <code>null</code>
-         * @param type
-         *            the expected type reference of the item, not
-         *            <code>null</code>
-         * @return the requested item
-         * @throws JsonConversionException
-         *             if the value in the list cannot be converted to an
-         *             instance of the given class
-         */
+        @Override
         public <T> T getItem(ListKey key, TypeReference<T> type) {
             return getItem(key, JsonUtil.fromJsonConverter(type));
         }
@@ -285,11 +254,7 @@ public class TopicConnection {
             }
         }
 
-        /**
-         * Gets the keys for all the items on the list.
-         *
-         * @return the keys
-         */
+        @Override
         public Stream<ListKey> getKeys() {
             ensureActiveConnection();
             synchronized (topic) {
@@ -300,30 +265,6 @@ public class TopicConnection {
         }
 
         @Override
-        public CompletableFuture<Void> append(Object item, EntryScope scope) {
-            return insertLast(item, scope).getCompletableFuture();
-        }
-
-        /**
-         * Inserts the given item as the last item of the list.
-         *
-         * @param item
-         *            the item
-         * @return the result of the operation
-         */
-        public ListInsertResult<Void> insertLast(Object item) {
-            return insertLast(item, EntryScope.TOPIC);
-        }
-
-        /**
-         * Inserts the given item as the last item of the list, with the given
-         * scope.
-         *
-         * @param item
-         *            the item
-         * @scope the scope of the entry
-         * @return the result of the operation
-         */
         public ListInsertResult<Void> insertLast(Object item,
                 EntryScope scope) {
             ensureActiveConnection();
@@ -353,39 +294,7 @@ public class TopicConnection {
             return new ListInsertResult<>(new ListKey(id), contextFuture);
         }
 
-        /**
-         * Sets a new value for the item identified by the given key.
-         * <p>
-         * It return the result of the operation as a {@link CompletableFuture}
-         * which resolves to <code>true<code> if the operation succeeds,
-         * <code>false</code> otherwise.
-         *
-         * @param key
-         *            the item key, not <code>null</code>
-         * @param value
-         *            the new value of the item
-         * @return the result of the operation
-         */
-        public CompletableFuture<Boolean> set(ListKey key, Object value) {
-            return set(key, value, EntryScope.TOPIC);
-        }
-
-        /**
-         * Sets a new value for the item identified by the given key, with the
-         * given scope.
-         * <p>
-         * It return the result of the operation as a {@link CompletableFuture}
-         * which resolves to <code>true<code> if the operation succeeds,
-         * <code>false</code> otherwise.
-         *
-         * @param key
-         *            the item key, not <code>null</code>
-         * @param value
-         *            the new value of the item
-         * @param scope
-         *            the scope of the entry
-         * @return the result of the operation
-         */
+        @Override
         public CompletableFuture<Boolean> set(ListKey key, Object value,
                 EntryScope scope) {
             ensureActiveConnection();

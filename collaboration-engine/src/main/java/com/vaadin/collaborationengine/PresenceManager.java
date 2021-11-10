@@ -41,7 +41,7 @@ public class PresenceManager {
 
     private ListKey ownPresenceKey;
 
-    private TopicConnection.CollaborationListImplementation list;
+    private CollaborationList list;
 
     private PresenceHandler presenceHandler;
 
@@ -193,8 +193,7 @@ public class PresenceManager {
     }
 
     private Registration onConnectionActivate(TopicConnection topicConnection) {
-        list = (TopicConnection.CollaborationListImplementation) topicConnection
-                .getNamedList(LIST_NAME);
+        list = topicConnection.getNamedList(LIST_NAME);
         if (markAsPresent) {
             addLocalUserToTopic();
         }

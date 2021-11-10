@@ -246,7 +246,7 @@ public class BackendTest {
 
         node1.openTopicConnection(node1.getSystemContext(), "topic",
                 new UserInfo("foo"), conn -> {
-                    conn.getNamedList("list").append("value",
+                    conn.getNamedList("list").insertLast("value",
                             EntryScope.CONNECTION);
                     return null;
                 });

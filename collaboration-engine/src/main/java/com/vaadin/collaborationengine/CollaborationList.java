@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -56,6 +57,116 @@ public interface CollaborationList extends HasExpirationTimeout {
     <T> List<T> getItems(TypeReference<T> type);
 
     /**
+     * Gets the list item identifier by the given key as instance of the given
+     * class.
+     *
+     * @param <T>
+     *            the type of the value from <code>type</code> parameter, e.g.
+     *            <code>String</code>
+     * @param key
+     *            the key of the requested item, not <code>null</code>
+     * @param type
+     *            the expected type of the item, not <code>null</code>
+     * @return the requested item
+     * @throws JsonConversionException
+     *             if the value in the list cannot be converted to an instance
+     *             of the given class
+     * @since 4.1
+     */
+    <T> T getItem(ListKey key, Class<T> type);
+
+    /**
+     * Gets the list item identifier by the given key as instance of the given
+     * type reference.
+     *
+     * @param <T>
+     *            the type reference of the value from <code>type</code>
+     *            parameter, e.g. <code>List<String></code>
+     * @param key
+     *            the key of the requested item, not <code>null</code>
+     * @param type
+     *            the expected type reference of the item, not <code>null</code>
+     * @return the requested item
+     * @throws JsonConversionException
+     *             if the value in the list cannot be converted to an instance
+     *             of the given class
+     * @since 4.1
+     */
+    <T> T getItem(ListKey key, TypeReference<T> type);
+
+    /**
+     * Gets the keys for all the items on the list.
+     *
+     * @return the keys
+     * @since 4.1
+     */
+    Stream<ListKey> getKeys();
+
+    /**
+     * Inserts the given item as the last item of the list.
+     *
+     * @param item
+     *            the item, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     * @since 4.1
+     */
+    default ListInsertResult<Void> insertLast(Object item) {
+        return insertLast(item, EntryScope.TOPIC);
+    }
+
+    /**
+     * Inserts the given item as the last item of the list, with the given
+     * scope.
+     *
+     * @param item
+     *            the item, not <code>null</code>
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     * @since 4.1
+     */
+    ListInsertResult<Void> insertLast(Object item, EntryScope scope);
+
+    /**
+     * Sets a new value for the item identified by the given key.
+     * <p>
+     * It return the result of the operation as a {@link CompletableFuture}
+     * which resolves to <code>true<code> if the operation succeeds,
+     * <code>false</code> otherwise.
+     *
+     * @param key
+     *            the item key, not <code>null</code>
+     * @param value
+     *            the new value of the item
+     * @return a completable future that is resolved when the operation has
+     *         completed, not <code>null</code>
+     * @since 4.1
+     */
+    default CompletableFuture<Boolean> set(ListKey key, Object value) {
+        return set(key, value, EntryScope.TOPIC);
+    }
+
+    /**
+     * Sets a new value for the item identified by the given key, with the given
+     * scope.
+     * <p>
+     * It return the result of the operation as a {@link CompletableFuture}
+     * which resolves to <code>true<code> if the operation succeeds,
+     * <code>false</code> otherwise.
+     *
+     * @param key
+     *            the item key, not <code>null</code>
+     * @param value
+     *            the new value of the item
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return a completable future that is resolved when the operation has
+     *         completed, not <code>null</code>
+     * @since 4.1
+     */
+    CompletableFuture<Boolean> set(ListKey key, Object value, EntryScope scope);
+
+    /**
      * Appends the given item to the list.
      * <p>
      * The given item must be JSON-serializable so it can be sent over the
@@ -67,7 +178,9 @@ public interface CollaborationList extends HasExpirationTimeout {
      *         appended to the list
      * @throws JsonConversionException
      *             if the given item isn't serializable as JSON string
+     * @deprecated Use {@link #insertLast(Object)}
      */
+    @Deprecated
     default CompletableFuture<Void> append(Object item) {
         return append(item, EntryScope.TOPIC);
     }
@@ -92,8 +205,12 @@ public interface CollaborationList extends HasExpirationTimeout {
      *         appended to the list
      * @throws JsonConversionException
      *             if the given item isn't serializable as JSON string
+     * @deprecated Use {@link #insertLast(Object, EntryScope)}
      */
-    CompletableFuture<Void> append(Object item, EntryScope scope);
+    @Deprecated
+    default CompletableFuture<Void> append(Object item, EntryScope scope) {
+        return insertLast(item, scope).getCompletableFuture();
+    }
 
     /**
      * Subscribes to changes to this list. When subscribing, the subscriber will
