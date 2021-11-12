@@ -13,8 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
@@ -64,8 +66,23 @@ public class BackendTest {
         }
 
         @Override
-        public Registration subscribe(BiConsumer<UUID, ObjectNode> consumer) {
-            events.forEach(e -> consumer.accept(e.id, e.event));
+        public Registration subscribe(UUID newerThan,
+                BiConsumer<UUID, ObjectNode> consumer) {
+            Predicate<IdAndEvent> filter = e -> true;
+            if (newerThan != null) {
+                filter = new Predicate<IdAndEvent>() {
+                    boolean found;
+
+                    @Override
+                    public boolean test(IdAndEvent idAndEvent) {
+                        boolean result = found;
+                        found = found || newerThan.equals(idAndEvent.id);
+                        return result;
+                    }
+                };
+            }
+            events.stream().filter(filter)
+                    .forEach(e -> consumer.accept(e.id, e.event));
             consumers.add(consumer);
             return () -> consumers.remove(consumer);
         }
@@ -90,6 +107,15 @@ public class BackendTest {
         public UUID getNodeId() {
             return id;
         }
+
+        @Override
+        public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public void submitSnapshot(String name, ObjectNode snapshot) {
+        }
     }
 
     @Before
@@ -110,7 +136,7 @@ public class BackendTest {
         UUID nodeId = node.getConfiguration().getBackend().getNodeId();
         AtomicBoolean joined = new AtomicBoolean();
 
-        membershipLog.subscribe((eventId, event) -> {
+        membershipLog.subscribe(null, (eventId, event) -> {
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             joined.set(JsonUtil.CHANGE_NODE_JOIN.equals(type)
@@ -127,7 +153,7 @@ public class BackendTest {
         UUID nodeId = node.getConfiguration().getBackend().getNodeId();
         AtomicBoolean left = new AtomicBoolean();
 
-        membershipLog.subscribe((eventId, event) -> {
+        membershipLog.subscribe(null, (eventId, event) -> {
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             left.set(JsonUtil.CHANGE_NODE_LEAVE.equals(type)

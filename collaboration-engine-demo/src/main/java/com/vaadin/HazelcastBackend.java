@@ -11,6 +11,7 @@ package com.vaadin;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,6 +21,7 @@ import com.hazelcast.collection.IList;
 import com.hazelcast.collection.ItemEvent;
 import com.hazelcast.collection.ItemListener;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.map.IMap;
 
 import com.vaadin.collaborationengine.Backend;
 import com.vaadin.collaborationengine.JsonUtil;
@@ -42,6 +44,8 @@ public class HazelcastBackend implements Backend {
         private BiConsumer<UUID, ObjectNode> eventConsumer;
         private int nextEventIndex = 0;
 
+        private UUID newerThan;
+
         private HazelcastEventLog(IList<IdAndEvent> list) {
             this.list = list;
         }
@@ -49,17 +53,25 @@ public class HazelcastBackend implements Backend {
         private synchronized void deliverEvents() {
             while (nextEventIndex < list.size()) {
                 IdAndEvent idAndEvent = list.get(nextEventIndex++);
-                eventConsumer.accept(idAndEvent.trackingId, idAndEvent.event);
+                if (this.newerThan == null) {
+                    eventConsumer.accept(idAndEvent.trackingId,
+                            idAndEvent.event);
+                } else {
+                    if (idAndEvent.trackingId.equals(newerThan)) {
+                        this.newerThan = null;
+                    }
+                }
             }
         }
 
         @Override
-        public synchronized Registration subscribe(
+        public synchronized Registration subscribe(UUID newerThan,
                 BiConsumer<UUID, ObjectNode> eventConsumer) {
             if (this.eventConsumer != null) {
                 throw new IllegalStateException();
             }
 
+            this.newerThan = newerThan;
             this.eventConsumer = eventConsumer;
             nextEventIndex = 0;
 
@@ -97,10 +109,14 @@ public class HazelcastBackend implements Backend {
 
     private final IList<IdAndEvent> membershipEvents;
 
+    private final IMap<String, ObjectNode> snapshots;
+
     public HazelcastBackend(HazelcastInstance hz) {
         this.hz = Objects.requireNonNull(hz);
         membershipEvents = this.hz
                 .getList(HazelcastBackend.class.getName() + ".membership");
+        this.snapshots = hz
+                .getMap(HazelcastBackend.class.getName() + ".snapshots");
         this.hz.getCluster().addMembershipListener(new MembershipListener() {
 
             @Override
@@ -127,6 +143,16 @@ public class HazelcastBackend implements Backend {
     @Override
     public UUID getNodeId() {
         return hz.getCluster().getLocalMember().getUuid();
+    }
+
+    @Override
+    public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
+        return CompletableFuture.completedFuture(snapshots.get(name));
+    }
+
+    @Override
+    public void submitSnapshot(String name, ObjectNode snapshot) {
+        snapshots.put(name, snapshot);
     }
 
     @Override

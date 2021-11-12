@@ -21,11 +21,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -49,21 +52,74 @@ class Topic {
         // Marker interface
     }
 
-    private static class Entry {
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    static class Entry {
 
-        private final UUID revisionId;
+        final UUID revisionId;
 
-        private final JsonNode data;
+        final JsonNode data;
 
-        private final UUID scopeOwnerId;
+        final UUID scopeOwnerId;
 
-        public Entry(UUID id, JsonNode data, UUID scopeOwnerId) {
+        @JsonCreator
+        public Entry(@JsonProperty("id") UUID id,
+                @JsonProperty("data") JsonNode data,
+                @JsonProperty("scopeOwnerId") UUID scopeOwnerId) {
             this.revisionId = id;
             this.data = data;
             this.scopeOwnerId = scopeOwnerId;
         }
     }
 
+    static class Snapshot {
+        private static final TypeReference<Map<String, EntryList>> LISTS_TYPE = new TypeReference<Map<String, EntryList>>() {
+        };
+        private static final TypeReference<Map<String, Map<String, Entry>>> MAPS_TYPE = new TypeReference<Map<String, Map<String, Entry>>>() {
+        };
+        private static final TypeReference<List<UUID>> BACKEND_NODES_TYPE = new TypeReference<List<UUID>>() {
+        };
+
+        private static final String LATEST = "latest";
+        private static final String LISTS = "lists";
+        private static final String MAPS = "maps";
+        private static final String BACKEND_NODES = "backend-nodes";
+        private final ObjectNode objectNode;
+
+        Snapshot(ObjectNode objectNode) {
+            this.objectNode = Objects.requireNonNull(objectNode);
+        }
+
+        static Snapshot fromTopic(Topic topic, UUID latestChangeId) {
+            ObjectNode objectNode = JsonUtil.getObjectMapper()
+                    .createObjectNode();
+            objectNode.put(LATEST, latestChangeId.toString());
+            objectNode.set(LISTS, JsonUtil.toJsonNode(topic.namedListData));
+            objectNode.set(MAPS, JsonUtil.toJsonNode(topic.namedMapData));
+            objectNode.set(BACKEND_NODES,
+                    JsonUtil.toJsonNode(topic.backendNodes));
+            return new Snapshot(objectNode);
+        }
+
+        ObjectNode toObjectNode() {
+            return objectNode;
+        }
+
+        Map<String, EntryList> getLists() {
+            return JsonUtil.toInstance(objectNode.get(LISTS), LISTS_TYPE);
+        }
+
+        Map<String, Map<String, Entry>> getMaps() {
+            return JsonUtil.toInstance(objectNode.get(MAPS), MAPS_TYPE);
+        }
+
+        List<UUID> getBackendNodes() {
+            return JsonUtil.toInstance(objectNode.get(BACKEND_NODES),
+                    BACKEND_NODES_TYPE);
+        }
+
+    }
+
+    private final String id;
     private final CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, Entry>> namedMapData = new HashMap<>();
     private final Map<String, EntryList> namedListData = new HashMap<>();
@@ -73,25 +129,46 @@ class Topic {
     private final List<SerializableBiConsumer<UUID, ChangeDetails>> changeListeners = new ArrayList<>();
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
     private final List<UUID> backendNodes = new ArrayList<>();
+    private final Backend.EventLog eventLog;
     private boolean leader;
-    private final BiConsumer<UUID, ObjectNode> distributor;
+    private int changeCount;
 
-    Topic(CollaborationEngine collaborationEngine,
-            BiConsumer<UUID, ObjectNode> distributor) {
+    Topic(String id, CollaborationEngine collaborationEngine,
+            Backend.EventLog eventLog) {
+        this.id = id;
         this.collaborationEngine = collaborationEngine;
-        this.distributor = distributor;
-        Backend backend = this.collaborationEngine.getConfiguration()
-                .getBackend();
-        backend.getMembershipEventLog().subscribe((changeId, changeNode) -> {
-            String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
-            if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
-                handleNodeLeave(changeNode);
-            }
-        });
+        this.eventLog = eventLog;
+        final Backend backend = getBackend();
+        backend.getMembershipEventLog().subscribe(null,
+                (changeId, changeNode) -> {
+                    String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
+                    if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
+                        handleNodeLeave(changeNode);
+                    }
+                });
+        backend.loadLatestSnapshot(id).thenAccept(this::initializeFromSnapshot);
     }
 
     UUID getCurrentNodeId() {
-        return collaborationEngine.getConfiguration().getBackend().getNodeId();
+        return getBackend().getNodeId();
+    }
+
+    private Backend getBackend() {
+        return collaborationEngine.getConfiguration().getBackend();
+    }
+
+    private void initializeFromSnapshot(ObjectNode snapshot) {
+        if (snapshot != null) {
+            UUID latestChange = JsonUtil.toUUID(snapshot.get(Snapshot.LATEST));
+            loadSnapshot(new Snapshot(snapshot));
+            eventLog.subscribe(latestChange, this::applyChange);
+        } else {
+            eventLog.subscribe(null, this::applyChange);
+        }
+
+        ObjectNode nodeEvent = JsonUtil.createNodeJoin(getCurrentNodeId());
+
+        eventLog.submitEvent(UUID.randomUUID(), nodeEvent);
     }
 
     synchronized void handleNodeLeave(ObjectNode changeNode) {
@@ -120,7 +197,7 @@ class Topic {
                             entry.getValue().revisionId.toString());
                     return change;
                 })).collect(Collectors.toList()).forEach(change -> {
-                    distributor.accept(UUID.randomUUID(), change);
+                    eventLog.submitEvent(UUID.randomUUID(), change);
                 });
         namedListData.entrySet().stream()
                 .flatMap(list -> list.getValue().stream().filter(entry -> {
@@ -132,7 +209,7 @@ class Topic {
                             entry.revisionId.toString());
                     return change;
                 })).collect(Collectors.toList()).forEach(change -> {
-                    distributor.accept(UUID.randomUUID(), change);
+                    eventLog.submitEvent(UUID.randomUUID(), change);
                 });
     }
 
@@ -187,6 +264,7 @@ class Topic {
     }
 
     synchronized ChangeResult applyChange(UUID trackingId, ObjectNode change) {
+        changeCount++;
         String type = change.get(JsonUtil.CHANGE_TYPE).asText();
         ChangeDetails details;
         switch (type) {
@@ -224,7 +302,22 @@ class Topic {
             EventUtil.fireEvents(changeListeners,
                     listener -> listener.accept(trackingId, details), true);
         }
+        if (leader && changeCount % 100 == 0) {
+            getBackend().submitSnapshot(id,
+                    Snapshot.fromTopic(this, trackingId).toObjectNode());
+        }
         return result;
+    }
+
+    void loadSnapshot(Snapshot snapshot) {
+        if (!namedListData.isEmpty() || !namedMapData.isEmpty()
+                || !backendNodes.isEmpty()) {
+            throw new IllegalStateException(
+                    "You can only load snapshots for empty topics");
+        }
+        namedListData.putAll(snapshot.getLists());
+        namedMapData.putAll(snapshot.getMaps());
+        backendNodes.addAll(snapshot.getBackendNodes());
     }
 
     private void becomeLeader() {

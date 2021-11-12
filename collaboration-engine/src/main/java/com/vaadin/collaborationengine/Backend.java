@@ -9,6 +9,7 @@
 package com.vaadin.collaborationengine;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -48,20 +49,25 @@ public interface Backend {
          * not allowed to invoke the consumer again until the previous
          * invocation has returned.
          *
+         *
+         * @param newerThan
+         *            if not <code>null</code>, only events after the event with
+         *            the provided UUID will be considered.
          * @param eventConsumer
          *            a consumer that should receive all events, not
          *            <code>null</code>
          * @return a registration to remove the event consumer, not
          *         <code>null</code>
          */
-        Registration subscribe(BiConsumer<UUID, ObjectNode> eventConsumer);
+        Registration subscribe(UUID newerThan,
+                BiConsumer<UUID, ObjectNode> eventConsumer);
     }
 
     /**
      * Opens an event log with the given id. The returned object can be used to
      * capture any common state related to this particular event log. An actual
      * underlying connection is not needed until
-     * {@link EventLog#subscribe(Consumer)} is invoked, but it is still
+     * {@link EventLog#subscribe(UUID, BiConsumer)}} is invoked, but it is still
      * recommended to make this method fail fast in case it would not be
      * possible to open an actual underlying connection later.
      *
@@ -87,4 +93,8 @@ public interface Backend {
      * @return the node id, not <code>null</code>
      */
     UUID getNodeId();
+
+    CompletableFuture<ObjectNode> loadLatestSnapshot(String name);
+
+    void submitSnapshot(String name, ObjectNode snapshot);
 }

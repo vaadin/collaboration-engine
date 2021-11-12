@@ -15,6 +15,9 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.Stream.Builder;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -22,7 +25,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  *
  * @author Vaadin Ltd
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class EntryList {
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     private static class ListEntry {
         JsonNode value;
         UUID prev;
@@ -31,6 +36,7 @@ class EntryList {
         UUID scopeOwnerId;
     }
 
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     static class ListEntrySnapshot {
         final UUID id;
         final JsonNode value;
@@ -46,6 +52,21 @@ class EntryList {
             this.next = entry.next;
             this.revisionId = entry.revisionId;
             this.scopeOwnerId = entry.scopeOwnerId;
+        }
+
+        @JsonCreator
+        ListEntrySnapshot(@JsonProperty("id") UUID id,
+                @JsonProperty("value") JsonNode value,
+                @JsonProperty("prev") UUID prev,
+                @JsonProperty("next") UUID next,
+                @JsonProperty("revisionId") UUID revisionId,
+                @JsonProperty("scopeOwnerId") UUID scopeOwnerId) {
+            this.id = id;
+            this.value = value;
+            this.prev = prev;
+            this.next = next;
+            this.revisionId = revisionId;
+            this.scopeOwnerId = scopeOwnerId;
         }
     }
 

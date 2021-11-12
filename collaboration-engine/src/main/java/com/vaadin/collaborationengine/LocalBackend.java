@@ -9,6 +9,8 @@
 package com.vaadin.collaborationengine;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -31,7 +33,8 @@ public class LocalBackend implements Backend {
         }
 
         @Override
-        public Registration subscribe(BiConsumer<UUID, ObjectNode> consumer) {
+        public Registration subscribe(UUID newerThan,
+                BiConsumer<UUID, ObjectNode> consumer) {
             if (this.consumer != null) {
                 throw new IllegalStateException(
                         "Already subscribed to " + topicId);
@@ -61,11 +64,13 @@ public class LocalBackend implements Backend {
         return new EventLog() {
 
             @Override
-            public Registration subscribe(
+            public Registration subscribe(UUID newerThan,
                     BiConsumer<UUID, ObjectNode> eventConsumer) {
+                assert newerThan == null;
                 ObjectNode event = JsonUtil.createNodeJoin(id);
                 eventConsumer.accept(UUID.randomUUID(), event);
                 return () -> {
+                    // NOOP
                 };
             }
 
@@ -79,5 +84,15 @@ public class LocalBackend implements Backend {
     @Override
     public UUID getNodeId() {
         return id;
+    }
+
+    @Override
+    public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public void submitSnapshot(String name, ObjectNode snapshot) {
+        // NOOP
     }
 }

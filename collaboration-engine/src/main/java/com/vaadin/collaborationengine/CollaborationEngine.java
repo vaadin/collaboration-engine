@@ -350,20 +350,7 @@ public class CollaborationEngine {
         }
 
         TopicAndEventLog topicAndConnection = topics.computeIfAbsent(topicId,
-                id -> {
-                    EventLog eventLog = configuration.getBackend()
-                            .openEventLog(id);
-
-                    Topic topic = new Topic(this, eventLog::submitEvent);
-                    eventLog.subscribe(topic::applyChange);
-
-                    UUID nodeId = configuration.getBackend().getNodeId();
-                    ObjectNode nodeEvent = JsonUtil.createNodeJoin(nodeId);
-
-                    eventLog.submitEvent(UUID.randomUUID(), nodeEvent);
-
-                    return new TopicAndEventLog(topic, eventLog);
-                });
+                this::createTopicAndEventLog);
         TopicConnection connection = new TopicConnection(this, context,
                 topicAndConnection.topic,
                 topicAndConnection.eventLog::submitEvent, localUser,
@@ -371,6 +358,13 @@ public class CollaborationEngine {
                 connectionActivationCallback);
         return new TopicConnectionRegistration(connection, context,
                 getExecutorService());
+    }
+
+    private TopicAndEventLog createTopicAndEventLog(String id) {
+        EventLog eventLog = configuration.getBackend().openEventLog(id);
+
+        Topic topic = new Topic(id, this, eventLog);
+        return new TopicAndEventLog(topic, eventLog);
     }
 
     /**

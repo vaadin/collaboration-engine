@@ -16,7 +16,7 @@ public class TopicTest {
 
     @Before
     public void init() {
-        topic = new Topic(TestUtil.createTestCollaborationEngine(), null);
+        topic = new Topic("id", TestUtil.createTestCollaborationEngine(), null);
     }
 
     @Test
