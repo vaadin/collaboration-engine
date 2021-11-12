@@ -60,24 +60,24 @@ public class MessageListTestCommon extends AbstractCollaborativeViewTest {
                 client1.getMessages().size());
         client1.submitMessage(HELLO_USERS);
 
-        Assert.assertEquals("Expected message list to contain one message", 1,
-                client1.getMessages().size());
+        // Expected message list to contain one message
+        waitUntil(driver -> client1.getMessages().size() == 1);
         assertMessage(HELLO_USERS, client1.getMessages().get(0));
 
         ClientState client2 = new ClientState(addClient());
-        Assert.assertEquals(
-                "Expected a second connected client to see the one message", 1,
-                client2.getMessages().size());
+
+        // Expected a second connected client to see the one message
+        waitUntil(driver -> client2.getMessages().size() == 1);
         assertMessage(HELLO_USERS, client2.getMessages().get(0));
 
         final String hi = "hi";
         client2.submitMessage(hi);
-        Assert.assertEquals("Expected the sender to get the additional message",
-                2, client2.getMessages().size());
-        Assert.assertEquals(
-                "Expected the first client to get the additional message", 2,
-                client1.getMessages().size());
+        // Expected the sender to get the additional message
+        waitUntil(driver -> client2.getMessages().size() == 2);
         assertMessage(hi, client2.getMessages().get(1));
+
+        // Expected the first client to get the additional message
+        waitUntil(driver -> client1.getMessages().size() == 2);
         assertMessage(hi, client1.getMessages().get(1));
     }
 
