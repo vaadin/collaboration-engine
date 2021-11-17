@@ -27,8 +27,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
+import com.vaadin.collaborationengine.FileLicenseStorage.StatisticsInfo;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
-import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.MockService;
@@ -64,7 +64,7 @@ public abstract class AbstractLicenseTest {
     final static int GRACE_QUOTA = 10 * QUOTA;
     final static UUID LICENSE_KEY = UUID.randomUUID();
 
-    ObjectMapper objectMapper = FileHandler.createObjectMapper();
+    ObjectMapper objectMapper = LicenseHandler.createObjectMapper();
 
     Path statsFilePath;
     Path licenseFilePath;
@@ -88,8 +88,8 @@ public abstract class AbstractLicenseTest {
         if (!testDataDir.toFile().exists()) {
             Files.createDirectories(testDataDir);
         }
-        statsFilePath = FileHandler.createStatsFilePath(testDataDir);
-        licenseFilePath = FileHandler.createLicenseFilePath(testDataDir);
+        statsFilePath = FileLicenseStorage.createStatsFilePath(testDataDir);
+        licenseFilePath = FileLicenseStorage.createLicenseFilePath(testDataDir);
 
         // Delete the stats file before each run to make sure we can test with a
         // clean state
@@ -125,10 +125,11 @@ public abstract class AbstractLicenseTest {
                 getStatisticsWithChecksum(expected), fileContent);
     }
 
-    LicenseHandler.StatisticsInfo readStatsFileContent() throws IOException {
+    FileLicenseStorage.StatisticsInfo readStatsFileContent()
+            throws IOException {
         JsonNode statsJson = objectMapper.readTree(statsFilePath.toFile());
         return objectMapper.treeToValue(statsJson,
-                LicenseHandler.StatisticsInfoWrapper.class).content;
+                FileLicenseStorage.StatisticsInfoWrapper.class).content;
     }
 
     void writeToStatsFile(StatisticsInfo stats) {

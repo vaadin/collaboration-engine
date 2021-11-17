@@ -193,7 +193,8 @@ public class CollaborationEngineConfiguration {
 
     Path getDataDirPath() {
         String dataDirectory = vaadinService.getDeploymentConfiguration()
-                .getStringProperty(FileHandler.DATA_DIR_CONFIG_PROPERTY, null);
+                .getStringProperty(FileLicenseStorage.DATA_DIR_CONFIG_PROPERTY,
+                        null);
         if (dataDirectory == null) {
             dataDirectory = configuredDataDir;
         }

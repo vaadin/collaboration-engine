@@ -13,13 +13,11 @@ import javax.servlet.ServletContext;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,7 +176,7 @@ public class CollaborationEngine {
                                 "Collaboration Engine is used in development/trial mode. "
                                         + "Note that in order to make a production build, "
                                         + "you need to obtain a license from Vaadin and configure the '"
-                                        + FileHandler.DATA_DIR_PUBLIC_PROPERTY
+                                        + FileLicenseStorage.DATA_DIR_PUBLIC_PROPERTY
                                         + "' property. You also need to provide a configuration object "
                                         + "by using the static CollaborationEngine.configure() method in "
                                         + "a VaadinServiceInitListener or, if using Spring/CDI, provide "

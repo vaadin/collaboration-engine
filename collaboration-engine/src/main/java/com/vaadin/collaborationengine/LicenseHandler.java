@@ -8,22 +8,29 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.flow.internal.MessageDigestUtil;
 
 /**
  *
@@ -63,70 +70,20 @@ class LicenseHandler {
         }
     }
 
-    static class StatisticsInfo {
-        String licenseKey;
-        Map<YearMonth, Set<String>> statistics;
-        LocalDate gracePeriodStart;
-        Map<LicenseEventType, LocalDate> licenseEvents;
-
-        StatisticsInfo(
-                @JsonProperty(value = "licenseKey", required = true) String licenseKey,
-                @JsonProperty(value = "statistics", required = true) Map<YearMonth, List<String>> userIdsFromFile,
-                @JsonProperty(value = "gracePeriodStart") LocalDate gracePeriodStart,
-                @JsonProperty(value = "licenseEvents", required = true) Map<LicenseEventType, LocalDate> licenseEvents) {
-            this.licenseKey = licenseKey;
-            this.statistics = copyMap(userIdsFromFile);
-            this.gracePeriodStart = gracePeriodStart;
-            this.licenseEvents = new HashMap<>(licenseEvents);
-        }
-
-        private Map<YearMonth, Set<String>> copyMap(
-                Map<YearMonth, ? extends Collection<String>> map) {
-            TreeMap<YearMonth, Set<String>> treeMap = new TreeMap<>();
-            for (Map.Entry<YearMonth, ? extends Collection<String>> month : map
-                    .entrySet()) {
-                treeMap.put(month.getKey(),
-                        new LinkedHashSet<>(month.getValue()));
-            }
-            return treeMap;
-        }
-    }
-
-    static class StatisticsInfoWrapper {
-
-        final StatisticsInfo content;
-
-        final String checksum;
-
-        @JsonCreator
-        StatisticsInfoWrapper(
-                @JsonProperty(value = "content", required = true) StatisticsInfo content,
-                @JsonProperty(value = "checksum", required = true) String checksum) {
-            this.content = content;
-            this.checksum = checksum;
-        }
-    }
-
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
+    static final ObjectMapper MAPPER = createObjectMapper();
 
     private final CollaborationEngine ce;
-    private final FileHandler fileHandler;
-    private final LicenseInfo license;
-    final StatisticsInfo statistics;
+    private final FileLicenseStorage licenseStorage;
+    final LicenseInfo license;
 
     LicenseHandler(CollaborationEngine collaborationEngine) {
         this.ce = collaborationEngine;
         CollaborationEngineConfiguration configuration = collaborationEngine
                 .getConfiguration();
         if (configuration.isLicenseCheckingEnabled()) {
-            fileHandler = new FileHandler(configuration);
-            license = fileHandler.readLicenseFile();
-            statistics = fileHandler.readStatsFile();
-            if (!license.key.equals(statistics.licenseKey)) {
-                statistics.licenseKey = license.key;
-                statistics.gracePeriodStart = null;
-                statistics.licenseEvents.clear();
-            }
+            licenseStorage = new FileLicenseStorage(configuration);
+            license = parseLicense(licenseStorage.getLicense());
             if (license.endDate.isBefore(getCurrentDate())) {
                 CollaborationEngine.LOGGER
                         .warn("Your Collaboration Engine license has expired. "
@@ -138,9 +95,31 @@ class LicenseHandler {
                                 + "https://vaadin.com/collaboration");
             }
         } else {
-            fileHandler = null;
+            licenseStorage = null;
             license = null;
-            statistics = null;
+        }
+    }
+
+    private LicenseInfo parseLicense(Reader licenseReader) {
+        try {
+            JsonNode licenseJson = MAPPER.readTree(licenseReader);
+
+            LicenseInfoWrapper licenseInfoWrapper = MAPPER
+                    .treeToValue(licenseJson, LicenseInfoWrapper.class);
+
+            String calculatedChecksum = calculateChecksum(
+                    licenseJson.get("content"));
+
+            if (licenseInfoWrapper.checksum == null
+                    || !licenseInfoWrapper.checksum
+                            .equals(calculatedChecksum)) {
+                throw createLicenseInvalidException(null);
+            }
+
+            return licenseInfoWrapper.content;
+
+        } catch (IOException e) {
+            throw createLicenseInvalidException(e);
         }
     }
 
@@ -168,9 +147,8 @@ class LicenseHandler {
             fireLicenseEvent(LicenseEventType.LICENSE_EXPIRES_SOON);
         }
 
-        Set<String> users = statistics.statistics.computeIfAbsent(
-                YearMonth.from(currentDate),
-                yearMonth -> new LinkedHashSet<>());
+        YearMonth month = YearMonth.from(currentDate);
+        List<String> users = licenseStorage.getUserEntries(license.key, month);
 
         int effectiveQuota = isGracePeriodOngoing(currentDate)
                 ? license.quota * 10
@@ -186,41 +164,46 @@ class LicenseHandler {
         }
 
         if (users.size() >= effectiveQuota) {
-            if (statistics.gracePeriodStart != null) {
+            if (getGracePeriodStarted() != null) {
                 return false;
             }
-            statistics.gracePeriodStart = currentDate;
             fireLicenseEvent(LicenseEventType.GRACE_PERIOD_STARTED);
         }
 
-        users.add(userId);
-        fileHandler.writeStats(statistics);
+        licenseStorage.addUserEntry(license.key, month, userId);
         return true;
     }
 
+    LocalDate getGracePeriodStarted() {
+        return licenseStorage.getLatestLicenseEvents(license.key)
+                .get(LicenseEventType.GRACE_PERIOD_STARTED.name());
+    }
+
     private boolean isGracePeriodOngoing(LocalDate currentDate) {
-        return statistics.gracePeriodStart != null
+        return getGracePeriodStarted() != null
                 && !isGracePeriodEnded(currentDate);
     }
 
     private boolean isGracePeriodEnded(LocalDate currentDate) {
-        return statistics.gracePeriodStart != null
+        return getGracePeriodStarted() != null
                 && currentDate.isAfter(getLastGracePeriodDate());
     }
 
     private LocalDate getLastGracePeriodDate() {
-        return statistics.gracePeriodStart.plusDays(30);
+        return getGracePeriodStarted().plusDays(30);
     }
 
     private void fireLicenseEvent(LicenseEventType type) {
-        if (statistics.licenseEvents.get(type) != null) {
+        String eventName = type.name();
+        if (licenseStorage.getLatestLicenseEvents(license.key)
+                .get(eventName) != null) {
             // Event already fired, do nothing.
             return;
         }
         String message;
         switch (type) {
         case GRACE_PERIOD_STARTED:
-            LocalDate gracePeriodEnd = getLastGracePeriodDate().plusDays(1);
+            LocalDate gracePeriodEnd = getCurrentDate().plusDays(31);
             message = type.createMessage(gracePeriodEnd.format(DATE_FORMATTER));
             break;
         case LICENSE_EXPIRES_SOON:
@@ -231,8 +214,8 @@ class LicenseHandler {
             message = type.createMessage();
         }
         LicenseEvent event = new LicenseEvent(ce, type, message);
-        statistics.licenseEvents.put(type, getCurrentDate());
-        fileHandler.writeStats(statistics);
+        licenseStorage.setLicenseEvent(license.key, eventName,
+                getCurrentDate());
         ce.getConfiguration().getLicenseEventHandler()
                 .handleLicenseEvent(event);
     }
@@ -245,6 +228,29 @@ class LicenseHandler {
      * For testing internal state of Statistics gathering
      */
     Map<YearMonth, Set<String>> getStatistics() {
-        return statistics.copyMap(statistics.statistics);
+        return licenseStorage.statisticsCache.statistics;
+    }
+
+    private RuntimeException createLicenseInvalidException(Throwable cause) {
+        return new IllegalStateException(
+                "The content of the license file is not valid. "
+                        + "If you have made any changes to the file, please revert those changes. "
+                        + "If that's not possible, contact Vaadin to get a new copy of the license file.",
+                cause);
+    }
+
+    static String calculateChecksum(JsonNode node)
+            throws JsonProcessingException {
+        return Base64.getEncoder().encodeToString(
+                MessageDigestUtil.sha256(MAPPER.writeValueAsString(node)));
+    }
+
+    static ObjectMapper createObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.setVisibility(PropertyAccessor.FIELD,
+                Visibility.NON_PRIVATE);
+        objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+        return objectMapper;
     }
 }
