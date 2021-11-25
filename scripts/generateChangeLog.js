@@ -272,16 +272,14 @@ function logCommitsByType(commits) {
 
 // Output the release notes for the set of commits
 function generateReleaseNotes(commits) {
-  console.log(`## Vaadin ${product} ${currentVersion}`);
-
   const includedCommits = commits.filter(c => c.isIncluded);
   if (includedCommits.length) {
     console.log(`
-### Changes in ${product} from [${from}](https://github.com/vaadin/collaboration-engine-internal/releases/tag/${from})
+### Changes since [${from}](https://github.com/vaadin/collaboration-engine-internal/releases/tag/${from})
     `)
   } else {
     console.log(`
-### There are no Changes in ${product} since [${from}](https://github.com/vaadin/collaboration-engine-internal/releases/tag/${from})
+### No changes since [${from}](https://github.com/vaadin/collaboration-engine-internal/releases/tag/${from})
     `)
   }
   logCommitsByType(includedCommits);
