@@ -64,7 +64,7 @@ public abstract class FieldHighlightUtil extends AbstractCollaborativeViewTest {
         TestBenchElement tagsElement = field.$("vaadin-user-tags").first();
         List<TestBenchElement> tagElements = (List<TestBenchElement>) tagsElement
                 .getCommandExecutor().executeScript(
-                        "arguments[0].render(); return arguments[0].wrapper"
+                        "arguments[0].requestContentUpdate(); return arguments[0].wrapper"
                                 + ".querySelectorAll('vaadin-user-tag')",
                         tagsElement);
         return tagElements.stream()
