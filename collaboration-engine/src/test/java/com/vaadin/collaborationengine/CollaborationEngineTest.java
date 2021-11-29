@@ -1,6 +1,11 @@
 package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -348,5 +353,100 @@ public class CollaborationEngineTest {
 
         Assert.assertFalse(customExecutor.isShutdown());
         customExecutor.shutdown();
+    }
+
+    @Test
+    public void serviceDestroy_ExecutorServiceShutdown_closesConnections() {
+        VaadinService service = new MockService();
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        AtomicBoolean clear = new AtomicBoolean();
+        ce.openTopicConnection(ce.getSystemContext(), "topic",
+                new UserInfo("id"), conn -> () -> clear.set(true));
+        service.destroy();
+        Assert.assertTrue("Destroy should shutdown the thread pool",
+                ce.getExecutorService().isShutdown());
+        Assert.assertTrue("Connection should have been closed on shutdown",
+                clear.get());
+    }
+
+    @Test
+    public void serviceDestroy_ExecutorServiceShutdown_closesConnections_timeout() {
+        VaadinService service = new MockService();
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ce.setAsynchronous(true);
+
+        CompletableFuture<Void> neverCompletedFuture = new CompletableFuture<>();
+        MockConnectionContext context = createEagerContextWithAsyncRegistration(
+                neverCompletedFuture);
+
+        TopicConnectionRegistration registration = ce.openTopicConnection(
+                context, "topic", new UserInfo("id"), conn -> () -> {
+                    // No op
+                });
+        service.destroy();
+        Assert.assertSame(
+                "TopicConnectionRegistration should contain"
+                        + " the same future returned by AsyncRegistration",
+                neverCompletedFuture,
+                registration.getPendingFuture().orElse(null));
+        Assert.assertFalse("Future should not have been completed",
+                neverCompletedFuture.isDone());
+        Assert.assertTrue(
+                "Should shutdown even if the future is never completed",
+                ce.getExecutorService().isShutdown());
+    }
+
+    @Test
+    public void serviceDestroy_ExecutorServiceShutdown_closesConnections_whenFutureCompleted()
+            throws ExecutionException, InterruptedException {
+        VaadinService service = new MockService();
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ce.setAsynchronous(true);
+
+        CompletableFuture<Void> registrationFuture = new CompletableFuture<>();
+        MockConnectionContext context = createEagerContextWithAsyncRegistration(
+                registrationFuture);
+
+        TopicConnectionRegistration registration = ce.openTopicConnection(
+                context, "topic", new UserInfo("id"), conn -> () -> {
+                    // No op
+                });
+        Instant start = Instant.now();
+        CompletableFuture<Void> destroyFuture = CompletableFuture
+                .runAsync(service::destroy);
+        Assert.assertFalse("Registration should not have been completed yet",
+                registrationFuture.isDone());
+        Assert.assertFalse(
+                "Shutdown should wait for registrationFuture to be completed",
+                ce.getExecutorService().isShutdown());
+        Assert.assertFalse(
+                "Shutdown should wait for registrationFuture to be completed",
+                destroyFuture.isDone());
+        // Complete registration future and wait for shutdown
+        registrationFuture.complete(null);
+        destroyFuture.get();
+
+        Assert.assertTrue("Shutdown should have been completed",
+                destroyFuture.isDone());
+        Assert.assertTrue("Should not have to wait for timeout to complete",
+                Instant.now().isBefore(start.plus(1, ChronoUnit.SECONDS)));
+    }
+
+    private MockConnectionContext createEagerContextWithAsyncRegistration(
+            CompletableFuture<Void> registrationFuture) {
+
+        MockConnectionContext context = new MockConnectionContext() {
+            @Override
+            public Registration init(ActivationHandler activationHandler,
+                    Executor executor) {
+                return new AsyncRegistration(registrationFuture,
+                        super.init(activationHandler, executor));
+            }
+        };
+        context.setEager(true);
+        return context;
     }
 }

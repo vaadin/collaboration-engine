@@ -39,6 +39,8 @@ public class SystemConnectionContext implements ConnectionContext {
             implements ActionDispatcher {
         private final Executor executor;
         private final ExecutionQueue inbox = new ExecutionQueue();
+        private final CompletableFuture<Void> shutdownFuture = new CompletableFuture<>();
+        private boolean shuttingDown;
 
         private ActionDispatcherImplementation(Executor executor) {
             this.executor = executor;
@@ -59,6 +61,10 @@ public class SystemConnectionContext implements ConnectionContext {
             executor.execute(() -> {
                 synchronized (this) {
                     inbox.runPendingCommands();
+                    if (shuttingDown) {
+                        shutdownFuture.complete(null);
+                        shuttingDown = false;
+                    }
                 }
             });
         }
@@ -66,6 +72,14 @@ public class SystemConnectionContext implements ConnectionContext {
         @Override
         public <T> CompletableFuture<T> createCompletableFuture() {
             return new CompletableFuture<>();
+        }
+
+        synchronized private void shutdown() {
+            if (inbox.isEmpty()) {
+                shutdownFuture.complete(null);
+            } else {
+                shuttingDown = true;
+            }
         }
     }
 
@@ -132,21 +146,24 @@ public class SystemConnectionContext implements ConnectionContext {
                         "The provided activation handler was already active");
             }
 
-            activationHandler
-                    .accept(new ActionDispatcherImplementation(executor));
+            ActionDispatcherImplementation actionDispatcher = new ActionDispatcherImplementation(
+                    executor);
+            activationHandler.accept(actionDispatcher);
 
-            return () -> {
-                synchronized (activeHandlers) {
-                    if (activeHandlers.remove(activationHandler)) {
-                        activationHandler.accept(null);
+            return new AsyncRegistration(actionDispatcher.shutdownFuture,
+                    () -> {
+                        synchronized (activeHandlers) {
+                            if (activeHandlers.remove(activationHandler)) {
+                                activationHandler.accept(null);
+                                actionDispatcher.shutdown();
 
-                        if (activeHandlers.isEmpty()) {
-                            serviceDestroyRegistration.remove();
-                            serviceDestroyRegistration = null;
+                                if (activeHandlers.isEmpty()) {
+                                    serviceDestroyRegistration.remove();
+                                    serviceDestroyRegistration = null;
+                                }
+                            }
                         }
-                    }
-                }
-            };
+                    });
         }
     }
 

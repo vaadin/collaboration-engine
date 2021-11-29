@@ -12,6 +12,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.shared.Registration;
@@ -25,6 +28,8 @@ import com.vaadin.flow.shared.Registration;
  * @since 3.2
  */
 public class PresenceManager {
+
+    static final Logger LOGGER = LoggerFactory.getLogger(PresenceManager.class);
 
     private static class UserEntry {
         private int count = 0;
@@ -230,15 +235,24 @@ public class PresenceManager {
 
     private void handleRemovedUser(UserInfo removedUser) {
         UserEntry userEntry = userEntries.get(removedUser.getId());
+        logUserOperation("remove", removedUser, userEntry != null);
+        assert userEntry != null;
         if (--userEntry.count == 0) {
             removeRegistration(userEntry);
             userEntries.remove(removedUser.getId());
         }
     }
 
+    private void logUserOperation(String operation, UserInfo userInfo,
+            boolean present) {
+        LOGGER.debug("{}: handle {} user {} ({}): {}present", this, operation,
+                userInfo.getName(), userInfo.getId(), !present ? "not " : "");
+    }
+
     private void handleNewUser(UserInfo addedUser) {
         UserEntry userEntry = userEntries.computeIfAbsent(addedUser.getId(),
                 ignore -> new UserEntry());
+        logUserOperation("add", addedUser, userEntry.count == 0);
         if (userEntry.count++ == 0) {
             if (presenceHandler != null) {
                 assert userEntry.registration == null;
@@ -263,6 +277,7 @@ public class PresenceManager {
         }
 
         userEntries.values().forEach(this::removeRegistration);
+        LOGGER.debug("{}: clear user entries", this);
         userEntries.clear();
     }
 

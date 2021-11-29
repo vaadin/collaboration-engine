@@ -509,12 +509,14 @@ public class TopicConnection {
         return new CollaborationListImplementation(name);
     }
 
-    void deactivateAndClose() {
+    CompletableFuture<Void> deactivateAndClose() {
+        final CompletableFuture<Void> result;
         try {
             deactivate();
         } finally {
-            closeWithoutDeactivating();
+            result = closeWithoutDeactivating();
         }
+        return result;
     }
 
     private void deactivate() {
@@ -533,14 +535,18 @@ public class TopicConnection {
         }
     }
 
-    private void closeWithoutDeactivating() {
+    private CompletableFuture<Void> closeWithoutDeactivating() {
         if (closeRegistration != null) {
             try {
                 closeRegistration.remove();
+                if (closeRegistration instanceof AsyncRegistration) {
+                    return ((AsyncRegistration) closeRegistration).getFuture();
+                }
             } finally {
                 closeRegistration = null;
             }
         }
+        return CompletableFuture.completedFuture(null);
     }
 
     private void cleanupScopedData() {

@@ -10,7 +10,11 @@ package com.vaadin.collaborationengine;
 
 import java.util.EventObject;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
@@ -64,15 +68,19 @@ public class TopicConnectionRegistration implements Registration {
         }
     }
 
-    private TopicConnection topicConnection;
+    private final AtomicReference<TopicConnection> topicConnectionReference;
     private ConnectionContext connectionContext;
     private Executor executor;
+    private CompletableFuture<Void> pendingFuture;
+    private final Consumer<TopicConnectionRegistration> afterDisconnection;
 
     TopicConnectionRegistration(TopicConnection topicConnection,
-            ConnectionContext connectionContext, Executor executor) {
-        this.topicConnection = topicConnection;
+            ConnectionContext connectionContext, Executor executor,
+            Consumer<TopicConnectionRegistration> afterDisconnection) {
+        this.topicConnectionReference = new AtomicReference<>(topicConnection);
         this.connectionContext = connectionContext;
         this.executor = executor;
+        this.afterDisconnection = afterDisconnection;
     }
 
     /**
@@ -80,12 +88,21 @@ public class TopicConnectionRegistration implements Registration {
      */
     @Override
     public void remove() {
+        TopicConnection topicConnection = topicConnectionReference
+                .getAndSet(null);
         if (topicConnection != null) {
-            topicConnection.deactivateAndClose();
-            topicConnection = null;
+            pendingFuture = topicConnection.deactivateAndClose();
+            pendingFuture.thenRun(() -> {
+                this.pendingFuture = null;
+                this.afterDisconnection.accept(this);
+            });
         }
         connectionContext = null;
         executor = null;
+    }
+
+    Optional<CompletableFuture<Void>> getPendingFuture() {
+        return Optional.ofNullable(pendingFuture);
     }
 
     /**
@@ -115,7 +132,7 @@ public class TopicConnectionRegistration implements Registration {
          * action for later. This needs to be updated when we have the
          * standalone CE server.
          */
-        if (topicConnection == null) {
+        if (topicConnectionReference.get() == null) {
             connectionContext
                     .init(new SingleUseActivationHandler(actionDispatcher -> {
                         ConnectionFailedEvent event = new ConnectionFailedEvent(

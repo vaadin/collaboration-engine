@@ -64,6 +64,7 @@ public class ComponentConnectionContext implements ConnectionContext {
     private volatile UI ui;
 
     private final ExecutionQueue inbox = new ExecutionQueue();
+    private final ExecutionQueue shutdownCommands = new ExecutionQueue();
     private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
     private final AtomicReference<State> state = new AtomicReference<>(
             State.INACTIVE);
@@ -198,14 +199,22 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (this.ui != null) {
             activate();
         }
-
-        return () -> {
+        CompletableFuture<Void> deactivationFuture = new CompletableFuture<>();
+        return new AsyncRegistration(deactivationFuture, () -> {
             // This instance won't be used again, release all references
+            if (state.get() == State.INACTIVE) {
+                // If already inactive, complete now
+                deactivationFuture.complete(null);
+            } else {
+                // Otherwise, complete when it becomes inactive
+                shutdownCommands.add(() -> deactivationFuture.complete(null));
+            }
+
             componentListeners.values().forEach(Registration::remove);
             componentListeners.clear();
             attachedComponents.clear();
             deactivateConnection();
-        };
+        });
     }
 
     private void activate() {
@@ -236,6 +245,7 @@ public class ComponentConnectionContext implements ConnectionContext {
     private void inactivateIfDeactivating() {
         if (state.compareAndSet(State.INACTIVATING, State.INACTIVE)) {
             this.ui = null;
+            shutdownCommands.runPendingCommands();
         }
     }
 

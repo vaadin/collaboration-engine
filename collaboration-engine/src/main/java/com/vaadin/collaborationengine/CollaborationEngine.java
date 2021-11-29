@@ -9,13 +9,22 @@
 package com.vaadin.collaborationengine;
 
 import javax.servlet.ServletContext;
-
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -76,6 +85,8 @@ public class CollaborationEngine {
     private Map<String, TopicAndEventLog> topics = new ConcurrentHashMap<>();
     private Map<String, Integer> userColors = new ConcurrentHashMap<>();
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
+    private final Set<TopicConnectionRegistration> registrations = ConcurrentHashMap
+            .newKeySet();
 
     private LicenseHandler licenseHandler;
 
@@ -90,6 +101,8 @@ public class CollaborationEngine {
     private VaadinService vaadinService;
 
     private SystemConnectionContext systemContext;
+
+    private final AtomicBoolean active = new AtomicBoolean(true);
 
     static {
         UsageStatistics.markAsUsed(COLLABORATION_ENGINE_NAME,
@@ -238,8 +251,12 @@ public class CollaborationEngine {
         if (executorService == null) {
             ce.executorService = Executors.newFixedThreadPool(
                     Runtime.getRuntime().availableProcessors());
-            vaadinService.addServiceDestroyListener(
-                    event -> ce.executorService.shutdown());
+            vaadinService.addServiceDestroyListener(event -> {
+                ce.active.set(false);
+                ce.clearConnections();
+                LOGGER.info("Shutting down thread pool");
+                ce.executorService.shutdown();
+            });
         } else {
             ce.executorService = executorService;
         }
@@ -290,6 +307,53 @@ public class CollaborationEngine {
         return executorService;
     }
 
+    private void clearConnections() {
+        LOGGER.info("Deactivating connections before shutdown");
+        List<CompletableFuture<Void>> futures = new ArrayList<>(
+                registrations.size());
+        LOGGER.debug("Closing {} connections", registrations.size());
+        for (TopicConnectionRegistration registration : registrations) {
+            registration.remove();
+            registration.getPendingFuture().ifPresent(futures::add);
+        }
+
+        final int timeoutInSeconds = 1;
+        final Instant end = Instant.now().plus(timeoutInSeconds,
+                ChronoUnit.SECONDS);
+        LOGGER.debug("Waiting for {} asynchronous tasks to complete",
+                futures.size());
+        for (CompletableFuture<Void> future : futures) {
+            if (waitForFuture(future, end, timeoutInSeconds)) {
+                break;
+            }
+        }
+        LOGGER.debug("Finished waiting for asynchronous tasks");
+        registrations.clear();
+    }
+
+    // Waits for the future and returns true if there is a timeout
+    private static boolean waitForFuture(CompletableFuture<Void> future,
+            Instant end, long timeoutInSeconds) {
+        boolean timeout = false;
+        final String timeoutMessage = "Timeout reached when waiting for "
+                + "topic connections to be closed";
+        try {
+            LOGGER.trace("Waiting for future to complete");
+            future.get(timeoutInSeconds, TimeUnit.SECONDS);
+            LOGGER.trace("Future completed successfully");
+            if (Instant.now().isAfter(end)) {
+                LOGGER.warn(timeoutMessage);
+                timeout = true;
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            LOGGER.info("Exception caught when closing topic connections", e);
+        } catch (TimeoutException e) {
+            LOGGER.warn(timeoutMessage, e);
+            timeout = true;
+        }
+        return timeout;
+    }
+
     private void assertConfigured() {
         if (configuration == null) {
             throw new IllegalStateException(
@@ -333,6 +397,12 @@ public class CollaborationEngine {
         assertConfigured();
 
         ensureConfigAndLicenseHandlerInitialization();
+        if (!active.get()) {
+            LOGGER.info("Tried to open a connection to a closed collaboration"
+                    + " engine instance");
+            return createFailedTopicConnectionRegistration(context);
+        }
+
         if (configuration.isLicenseCheckingEnabled()) {
             boolean hasSeat = licenseHandler.registerUser(localUser.getId());
 
@@ -344,8 +414,7 @@ public class CollaborationEngine {
                                 + "license events handled by your LicenseEventHandler for "
                                 + "more details.",
                         localUser.getId());
-                return new TopicConnectionRegistration(null, context,
-                        getExecutorService());
+                return createFailedTopicConnectionRegistration(context);
             }
         }
 
@@ -356,8 +425,26 @@ public class CollaborationEngine {
                 topicAndConnection.eventLog::submitEvent, localUser,
                 isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
-        return new TopicConnectionRegistration(connection, context,
-                getExecutorService());
+
+        TopicConnectionRegistration registration = new TopicConnectionRegistration(
+                connection, context, getExecutorService(),
+                registrations::remove);
+        registrations.add(registration);
+        if (!active.get()) {
+            registration.remove();
+            LOGGER.info("Tried to open a connection to a closed collaboration"
+                    + " engine instance");
+            return createFailedTopicConnectionRegistration(context);
+        }
+        return registration;
+    }
+
+    private TopicConnectionRegistration createFailedTopicConnectionRegistration(
+            ConnectionContext context) {
+        return new TopicConnectionRegistration(null, context,
+                getExecutorService(), r -> {
+                    // No op
+                });
     }
 
     private TopicAndEventLog createTopicAndEventLog(String id) {
