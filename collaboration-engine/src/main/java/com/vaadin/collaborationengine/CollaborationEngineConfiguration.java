@@ -34,6 +34,8 @@ public class CollaborationEngineConfiguration {
 
     private ExecutorService executorService;
 
+    private LicenseStorage licenseStorage;
+
     /**
      * Creates a new Collaboration Engine configuration with the provided
      * handler for license events.
@@ -162,6 +164,27 @@ public class CollaborationEngineConfiguration {
      */
     public Backend getBackend() {
         return backend;
+    }
+
+    /**
+     * Gets the configured license-storage implementation.
+     *
+     * @return the license-storage implementation, or <code>null</code> if not
+     *         configured
+     */
+    public LicenseStorage getLicenseStorage() {
+        return licenseStorage;
+    }
+
+    /**
+     * Sets a configured license-storage implementation.
+     *
+     * @param licenseStorage
+     *            the license-storage implementation, or <code>null</code> to
+     *            unset
+     */
+    public void setLicenseStorage(LicenseStorage licenseStorage) {
+        this.licenseStorage = licenseStorage;
     }
 
     /**

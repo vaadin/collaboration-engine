@@ -36,17 +36,17 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void registerUser_addUsers_usersAdded() {
         LicenseHandler licenseHandler = new LicenseHandler(ce);
-        Assert.assertTrue(licenseHandler.getStatistics().isEmpty());
+        Assert.assertTrue(getStatistics(licenseHandler).isEmpty());
         licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
+        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Assert.assertEquals(1, statistics.get(getCurrentMonth()).size());
         Assert.assertTrue(statistics.get(getCurrentMonth()).contains("steve"));
         licenseHandler.registerUser("bob");
 
-        statistics = licenseHandler.getStatistics();
+        statistics = getStatistics(licenseHandler);
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Assert.assertEquals(2, statistics.get(getCurrentMonth()).size());
@@ -60,7 +60,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
         licenseHandler.registerUser("steve");
-        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
+        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Set<String> usersInMonth = statistics.get(getCurrentMonth());
@@ -77,7 +77,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         setCurrentDate(LocalDate.of(2020, 6, 1));
         licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
+        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
         YearMonth firstMonth = YearMonth.of(2020, 5);
         YearMonth secondMonth = YearMonth.of(2020, 6);
         Assert.assertEquals(2, statistics.keySet().size());
@@ -93,8 +93,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void openTopicConnection_userRegistered() {
         ce.openTopicConnection(MockConnectionContext.createEager(), "foo",
                 new UserInfo("steve"), topicConnection -> null);
-        Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
-                .getStatistics();
+        Map<YearMonth, Set<String>> statistics = getStatistics(
+                ce.getLicenseHandler());
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Set<String> currentMonth = statistics.get(getCurrentMonth());
@@ -109,7 +109,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertEquals(Collections.emptyMap(),
-                licenseHandler.getStatistics());
+                getStatistics(licenseHandler));
     }
 
     @Test
@@ -142,9 +142,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 "{\"licenseKey\":\"123\",\"statistics\":{\"2000-01\":[\"bob\"]},\"licenseEvents\":{}}");
         LicenseHandler licenseHandler = new LicenseHandler(ce);
 
-        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(1, getStatistics(licenseHandler).size());
         Assert.assertEquals(Collections.singleton("bob"),
-                licenseHandler.getStatistics().get(YearMonth.of(2000, 1)));
+                getStatistics(licenseHandler).get(YearMonth.of(2000, 1)));
     }
 
     @Test
@@ -156,9 +156,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         setCurrentDate(LocalDate.of(2020, 1, 1));
         licenseHandler.registerUser("steve");
 
-        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(1, getStatistics(licenseHandler).size());
         Assert.assertEquals(new HashSet<>(Arrays.asList("bob", "steve")),
-                licenseHandler.getStatistics().get(YearMonth.of(2020, 1)));
+                getStatistics(licenseHandler).get(YearMonth.of(2020, 1)));
         assertStatsFileContent("{\"licenseKey\":\"" + LICENSE_KEY
                 + "\",\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},"
                 + "\"licenseEvents\":{}}");
@@ -228,8 +228,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\",\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
                 + "\"2020-03\":[\"steve\"]},\"licenseEvents\":{}}");
 
-        Map<YearMonth, Set<String>> newStats = new LicenseHandler(ce)
-                .getStatistics();
+        Map<YearMonth, Set<String>> newStats = getStatistics(
+                new LicenseHandler(ce));
         Assert.assertEquals(2, newStats.size());
         Assert.assertEquals(new LinkedHashSet<>(Arrays.asList("steve", "bob")),
                 newStats.get(YearMonth.of(2020, 2)));
@@ -412,9 +412,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertNotNull(
                 "Grace period was not automatically started from going over the limit",
                 licenseHandler.getGracePeriodStarted());
-        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(1, getStatistics(licenseHandler).size());
         Assert.assertEquals(4,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -427,9 +427,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue(
                 "Was not able to register a new person with the grace period",
                 wasAccessGranted);
-        Assert.assertEquals(1, licenseHandler.getStatistics().size());
+        Assert.assertEquals(1, getStatistics(licenseHandler).size());
         Assert.assertEquals(5,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -454,7 +454,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                     licenseHandler.registerUser(user));
         }
         Assert.assertEquals(GRACE_QUOTA,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -465,7 +465,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertFalse("User should have been denied access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -476,7 +476,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -488,7 +488,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                licenseHandler.getStatistics().get(getCurrentMonth()).size());
+                getStatistics(licenseHandler).get(getCurrentMonth()).size());
     }
 
     @Test
@@ -765,6 +765,16 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertThat(message, containsString("2020-07-10"));
     }
 
+    @Test
+    public void configureCustomStorage_customStorageIsUsed() {
+        CustomLicenseStorage storage = new CustomLicenseStorage(configuration);
+        configuration.setLicenseStorage(storage);
+        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        licenseHandler.registerUser("foo");
+
+        Assert.assertEquals(1, storage.addedUsers.size());
+    }
+
     private LicenseHandler getLicenseHandlerWithGracePeriod(
             int daysSinceGracePeriodStarted) throws IOException {
         LocalDate dateNow = LocalDate.of(2020, 6, 10);
@@ -787,5 +797,28 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         List<String> users = generateIds(i);
         users.forEach(licenseHandler::registerUser);
         return users;
+    }
+
+    private Map<YearMonth, Set<String>> getStatistics(
+            LicenseHandler licenseHandler) {
+        return ((FileLicenseStorage) licenseHandler.licenseStorage)
+                .getStatistics();
+    }
+
+    static class CustomLicenseStorage extends FileLicenseStorage {
+
+        private final Set<String> addedUsers = new HashSet<>();
+
+        public CustomLicenseStorage(
+                CollaborationEngineConfiguration configuration) {
+            super(configuration);
+        }
+
+        @Override
+        public void addUserEntry(String licenseKey, YearMonth month,
+                String payload) {
+            addedUsers.add(payload);
+            super.addUserEntry(licenseKey, month, payload);
+        }
     }
 }

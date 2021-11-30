@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -145,7 +144,7 @@ class FileLicenseStorage implements LicenseStorage {
         checkLicenseKey(licenseKey);
         return statisticsCache.licenseEvents.entrySet().stream()
                 .collect(Collectors.toMap(entry -> entry.getKey().name(),
-                        Entry::getValue));
+                        Map.Entry::getValue));
     }
 
     @Override
@@ -155,6 +154,13 @@ class FileLicenseStorage implements LicenseStorage {
         statisticsCache.licenseEvents.put(LicenseEventType.valueOf(eventName),
                 latestOccurrence);
         writeStatistics();
+    }
+
+    /*
+     * For testing internal state of Statistics gathering
+     */
+    Map<YearMonth, Set<String>> getStatistics() {
+        return statisticsCache.copyMap(statisticsCache.statistics);
     }
 
     private StatisticsInfo readStatistics() {
@@ -189,7 +195,7 @@ class FileLicenseStorage implements LicenseStorage {
         }
     }
 
-    void writeStatistics() {
+    private void writeStatistics() {
         try {
             String checksum = LicenseHandler.calculateChecksum(
                     LicenseHandler.MAPPER.valueToTree(statisticsCache));

@@ -16,8 +16,6 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -74,7 +72,7 @@ class LicenseHandler {
     static final ObjectMapper MAPPER = createObjectMapper();
 
     private final CollaborationEngine ce;
-    private final FileLicenseStorage licenseStorage;
+    final LicenseStorage licenseStorage;
     final LicenseInfo license;
 
     LicenseHandler(CollaborationEngine collaborationEngine) {
@@ -82,7 +80,10 @@ class LicenseHandler {
         CollaborationEngineConfiguration configuration = collaborationEngine
                 .getConfiguration();
         if (configuration.isLicenseCheckingEnabled()) {
-            licenseStorage = new FileLicenseStorage(configuration);
+            LicenseStorage configuredStorage = configuration
+                    .getLicenseStorage();
+            licenseStorage = configuredStorage != null ? configuredStorage
+                    : new FileLicenseStorage(configuration);
             license = parseLicense(licenseStorage.getLicense());
             if (license.endDate.isBefore(getCurrentDate())) {
                 CollaborationEngine.LOGGER
@@ -222,13 +223,6 @@ class LicenseHandler {
 
     private LocalDate getCurrentDate() {
         return LocalDate.now(ce.getClock());
-    }
-
-    /*
-     * For testing internal state of Statistics gathering
-     */
-    Map<YearMonth, Set<String>> getStatistics() {
-        return licenseStorage.statisticsCache.statistics;
     }
 
     private RuntimeException createLicenseInvalidException(Throwable cause) {
