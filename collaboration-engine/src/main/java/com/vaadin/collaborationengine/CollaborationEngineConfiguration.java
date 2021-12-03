@@ -23,6 +23,20 @@ import com.vaadin.flow.shared.communication.PushMode;
  */
 public class CollaborationEngineConfiguration {
 
+    /**
+     * When querying properties from Vaadin's
+     * {@link com.vaadin.flow.function.DeploymentConfiguration}, they are looked
+     * within the `vaadin.` namespace. When querying, we should therefore not
+     * include the prefix. However, when instructing people on how to set the
+     * parameter, we should include the prefix.
+     */
+    static final String LICENSE_CONFIG_PROPERTY = "ce.license";
+    static final String LICENSE_PUBLIC_PROPERTY = "vaadin."
+            + LICENSE_CONFIG_PROPERTY;
+    static final String DATA_DIR_CONFIG_PROPERTY = "ce.dataDir";
+    static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
+            + DATA_DIR_CONFIG_PROPERTY;
+
     static final boolean DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH = true;
 
     private LicenseEventHandler licenseEventHandler;
@@ -214,10 +228,14 @@ public class CollaborationEngineConfiguration {
         this.executorService = executorService;
     }
 
+    String getLicenseProperty() {
+        return vaadinService.getDeploymentConfiguration()
+                .getStringProperty(LICENSE_CONFIG_PROPERTY, null);
+    }
+
     Path getDataDirPath() {
         String dataDirectory = vaadinService.getDeploymentConfiguration()
-                .getStringProperty(FileLicenseStorage.DATA_DIR_CONFIG_PROPERTY,
-                        null);
+                .getStringProperty(DATA_DIR_CONFIG_PROPERTY, null);
         if (dataDirectory == null) {
             dataDirectory = configuredDataDir;
         }

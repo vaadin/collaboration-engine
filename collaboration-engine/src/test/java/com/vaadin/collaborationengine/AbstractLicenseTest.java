@@ -89,7 +89,7 @@ public abstract class AbstractLicenseTest {
             Files.createDirectories(testDataDir);
         }
         statsFilePath = FileLicenseStorage.createStatsFilePath(testDataDir);
-        licenseFilePath = FileLicenseStorage.createLicenseFilePath(testDataDir);
+        licenseFilePath = LicenseHandler.createLicenseFilePath(testDataDir);
 
         // Delete the stats file before each run to make sure we can test with a
         // clean state
@@ -112,6 +112,8 @@ public abstract class AbstractLicenseTest {
     @After
     public void cleanUp() {
         VaadinService.setCurrent(null);
+        System.clearProperty(
+                CollaborationEngineConfiguration.LICENSE_PUBLIC_PROPERTY);
     }
 
     void assertStatsFileContent(String expected) {

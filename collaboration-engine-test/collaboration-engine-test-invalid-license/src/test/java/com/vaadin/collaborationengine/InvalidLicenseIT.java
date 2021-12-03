@@ -25,7 +25,7 @@ public class InvalidLicenseIT extends AbstractCollaborativeFormTestCommon {
         String pageText = client.$("body").first()
                 .getPropertyString("innerText");
         Assert.assertThat(pageText, CoreMatchers.containsString(
-                "The content of the license file is not valid"));
+                "The content of the license property or file is not valid"));
 
         String msg = "Expected the view to be broken and no components to be rendered.";
         assertFalse(msg, client.$(AvatarGroupElement.class).exists());

@@ -10,9 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -81,18 +79,6 @@ class FileLicenseStorage implements LicenseStorage {
         }
     }
 
-    /**
-     * When querying properties from Vaadin's
-     * {@link com.vaadin.flow.function.DeploymentConfiguration}, they are looked
-     * within the `vaadin.` namespace. When querying, we should therefore not
-     * include the prefix. However, when instructing people on how to set the
-     * parameter, we should include the prefix.
-     */
-    static final String DATA_DIR_CONFIG_PROPERTY = "ce.dataDir";
-    static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
-            + DATA_DIR_CONFIG_PROPERTY;
-
-    private final Path licenseFilePath;
     private final Path statsFilePath;
 
     StatisticsInfo statisticsCache;
@@ -105,20 +91,8 @@ class FileLicenseStorage implements LicenseStorage {
         if (dataDirPath.toFile().exists() && !Files.isWritable(dataDirPath)) {
             throw createDataDirNotWritableException(dataDirPath);
         }
-        licenseFilePath = createLicenseFilePath(dataDirPath);
         statsFilePath = createStatsFilePath(dataDirPath);
         statisticsCache = readStatistics();
-    }
-
-    @Override
-    public Reader getLicense() {
-        try {
-            return Files.newBufferedReader(licenseFilePath);
-        } catch (NoSuchFileException e) {
-            throw createLicenseNotFoundException(e);
-        } catch (IOException e) {
-            throw createFileNotReadableException(licenseFilePath, e);
-        }
     }
 
     @Override
@@ -179,7 +153,7 @@ class FileLicenseStorage implements LicenseStorage {
                 if (statisticsInfoWrapper.checksum == null
                         || !statisticsInfoWrapper.checksum
                                 .equals(calculatedChecksum)) {
-                    throw createStatsInvalidException();
+                    throw createStatsInvalidException(statsFilePath);
                 }
 
                 return statisticsInfoWrapper.content;
@@ -233,7 +207,7 @@ class FileLicenseStorage implements LicenseStorage {
         }
     }
 
-    private RuntimeException createFileNotReadableException(Path filePath,
+    static RuntimeException createFileNotReadableException(Path filePath,
             Throwable cause) {
         return new IllegalStateException(
                 "Collaboration Engine wasn't able to read the file at '"
@@ -242,16 +216,16 @@ class FileLicenseStorage implements LicenseStorage {
                 cause);
     }
 
-    private RuntimeException createDataDirNotConfiguredException() {
+    static RuntimeException createDataDirNotConfiguredException() {
         return new IllegalStateException(
                 "Missing required configuration property '"
-                        + DATA_DIR_PUBLIC_PROPERTY
+                        + CollaborationEngineConfiguration.DATA_DIR_PUBLIC_PROPERTY
                         + "'. Using Collaboration Engine in production requires having a valid license file "
                         + "and configuring the directory where that file is stored e.g. as a system property. "
                         + "Instructions can be found in the Vaadin documentation.");
     }
 
-    private RuntimeException createDataDirNotWritableException(
+    static RuntimeException createDataDirNotWritableException(
             Path dataDirFilePath) {
         return new IllegalStateException("Collaboration Engine doesn't have "
                 + "write permissions for the data directory at '"
@@ -262,30 +236,13 @@ class FileLicenseStorage implements LicenseStorage {
                 + "to the directory.");
     }
 
-    private RuntimeException createLicenseNotFoundException(Throwable cause) {
-        return new IllegalStateException(
-                "Collaboration Engine failed to find the license file at '"
-                        + licenseFilePath
-                        + ". Using Collaboration Engine in production requires a valid license file. "
-                        + "Instructions for obtaining a license can be found in the Vaadin documentation. "
-                        + "If you already have a license, make sure that the '"
-                        + DATA_DIR_PUBLIC_PROPERTY
-                        + "' property is pointing to the correct directory "
-                        + "and that the directory contains the license file.",
-                cause);
-    }
-
-    private RuntimeException createStatsInvalidException() {
+    static RuntimeException createStatsInvalidException(Path statsFilePath) {
         return new IllegalStateException(
                 "Collaboration Engine failed to parse the file '"
                         + statsFilePath
                         + "'. The content of the statistics file is not valid. "
                         + "If you have made any changes to the file, please revert those changes. "
                         + "If that's not possible, contact Vaadin to get support.");
-    }
-
-    static Path createLicenseFilePath(Path dirPath) {
-        return Paths.get(dirPath.toString(), "ce-license.json");
     }
 
     static Path createStatsFilePath(Path dirPath) {

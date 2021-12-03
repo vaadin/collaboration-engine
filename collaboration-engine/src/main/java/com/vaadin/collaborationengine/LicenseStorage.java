@@ -8,25 +8,17 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.io.Reader;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 
 /**
- * The interface to read the license and store the usage statistics.
+ * The interface to store license usage data.
  *
  * @author Vaadin Ltd
  */
 public interface LicenseStorage {
-
-    /**
-     * Gets a reader of license data.
-     *
-     * @return the license reader
-     */
-    Reader getLicense();
 
     /**
      * Gets a list of entries for users seen in the specified month.

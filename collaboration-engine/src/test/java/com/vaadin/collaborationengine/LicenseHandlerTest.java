@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -20,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.collaborationengine.LicenseHandler.LicenseInfoWrapper;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.flow.component.UI;
@@ -27,6 +29,8 @@ import com.vaadin.flow.component.UI;
 import static org.hamcrest.CoreMatchers.containsString;
 
 public class LicenseHandlerTest extends AbstractLicenseTest {
+
+    private static final String INVALID_LICENSE = "license property or file is not valid";
 
     @Before
     public void setup() {
@@ -303,7 +307,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile("{checksum:\"foo\"}");
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("license file is not valid");
+        exception.expectMessage(INVALID_LICENSE);
 
         ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
@@ -320,7 +324,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile(licenseWithoutChecksum);
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("license file is not valid");
+        exception.expectMessage(INVALID_LICENSE);
 
         ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
@@ -338,7 +342,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile(tamperedLicense);
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("license file is not valid");
+        exception.expectMessage(INVALID_LICENSE);
 
         ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
@@ -358,7 +362,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         }
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("license file is not valid");
+        exception.expectMessage(INVALID_LICENSE);
 
         // open a second connection
         ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
@@ -606,7 +610,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile("{checksum:\"foo\"}");
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("license file is not valid");
+        exception.expectMessage(INVALID_LICENSE);
 
         UserInfo user = new UserInfo("steve");
         MockConnectionContext spyContext = MockConnectionContext.createEager();
@@ -773,6 +777,39 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         licenseHandler.registerUser("foo");
 
         Assert.assertEquals(1, storage.addedUsers.size());
+    }
+
+    @Test
+    public void licenseSystemPropertySet_readLicenseFromSystemProperty()
+            throws IOException {
+        byte[] license = licenseGenerator
+                .generateLicense("Foo", 100, LocalDate.of(2020, 3, 4))
+                .getBytes();
+        String encodedLicense = Base64.getEncoder().encodeToString(license);
+
+        // System property cleared in the cleanUp method
+        System.setProperty(
+                CollaborationEngineConfiguration.LICENSE_PUBLIC_PROPERTY,
+                encodedLicense);
+
+        LicenseInfoWrapper wrapper = LicenseHandler.MAPPER.readValue(license,
+                LicenseInfoWrapper.class);
+        LicenseHandler licenseHandler = new LicenseHandler(ce);
+
+        Assert.assertEquals(wrapper.content.key, licenseHandler.license.key);
+    }
+
+    @Test
+    public void licenseSystemPropertyInvalid_throwsProperException() {
+        // System property cleared in the cleanUp method
+        System.setProperty(
+                CollaborationEngineConfiguration.LICENSE_PUBLIC_PROPERTY,
+                "invalid");
+
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(INVALID_LICENSE);
+
+        new LicenseHandler(ce);
     }
 
     private LicenseHandler getLicenseHandlerWithGracePeriod(

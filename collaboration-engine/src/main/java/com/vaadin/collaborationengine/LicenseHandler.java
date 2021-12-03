@@ -8,8 +8,14 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -84,7 +90,18 @@ class LicenseHandler {
                     .getLicenseStorage();
             licenseStorage = configuredStorage != null ? configuredStorage
                     : new FileLicenseStorage(configuration);
-            license = parseLicense(licenseStorage.getLicense());
+            String licenseProperty = configuration.getLicenseProperty();
+            if (licenseProperty != null) {
+                license = parseLicense(getLicenseFromProperty(licenseProperty));
+            } else {
+                Path dataDirPath = configuration.getDataDirPath();
+                if (dataDirPath == null) {
+                    throw FileLicenseStorage
+                            .createDataDirNotConfiguredException();
+                }
+                Path licenseFilePath = createLicenseFilePath(dataDirPath);
+                license = parseLicense(getLicenseFromFile(licenseFilePath));
+            }
             if (license.endDate.isBefore(getCurrentDate())) {
                 CollaborationEngine.LOGGER
                         .warn("Your Collaboration Engine license has expired. "
@@ -98,6 +115,25 @@ class LicenseHandler {
         } else {
             licenseStorage = null;
             license = null;
+        }
+    }
+
+    private Reader getLicenseFromProperty(String licenseProperty) {
+        byte[] license = Base64.getDecoder().decode(licenseProperty);
+        return new InputStreamReader(new ByteArrayInputStream(license));
+    }
+
+    private Reader getLicenseFromFile(Path licenseFilePath) {
+        try {
+            return Files.newBufferedReader(licenseFilePath);
+        } catch (NoSuchFileException e) {
+            throw createLicenseNotFoundException(licenseFilePath, e);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Collaboration Engine wasn't able to read the license file at '"
+                            + licenseFilePath
+                            + "'. Check that the file is readable by the app, and not locked.",
+                    e);
         }
     }
 
@@ -227,9 +263,25 @@ class LicenseHandler {
 
     private RuntimeException createLicenseInvalidException(Throwable cause) {
         return new IllegalStateException(
-                "The content of the license file is not valid. "
+                "The content of the license property or file is not valid. "
                         + "If you have made any changes to the file, please revert those changes. "
                         + "If that's not possible, contact Vaadin to get a new copy of the license file.",
+                cause);
+    }
+
+    private RuntimeException createLicenseNotFoundException(
+            Path licenseFilePath, Throwable cause) {
+        return new IllegalStateException(
+                "Collaboration Engine failed to find the license file at '"
+                        + licenseFilePath
+                        + ". Using Collaboration Engine in production requires a valid license property or file. "
+                        + "Instructions for obtaining a license can be found in the Vaadin documentation. "
+                        + "If you already have a license, make sure that the '"
+                        + CollaborationEngineConfiguration.LICENSE_PUBLIC_PROPERTY
+                        + "' property is set or, if you have a license file, the '"
+                        + CollaborationEngineConfiguration.DATA_DIR_PUBLIC_PROPERTY
+                        + "' property is pointing to the correct directory "
+                        + "and that the directory contains the license file.",
                 cause);
     }
 
@@ -246,5 +298,9 @@ class LicenseHandler {
                 Visibility.NON_PRIVATE);
         objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
         return objectMapper;
+    }
+
+    static Path createLicenseFilePath(Path dirPath) {
+        return Paths.get(dirPath.toString(), "ce-license.json");
     }
 }
