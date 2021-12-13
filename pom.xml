@@ -43,7 +43,7 @@
         <spring-boot.version>2.5.5</spring-boot.version>
 
         <!-- Keep in sync with flow-server: -->
-        <jackson.version>2.11.2</jackson.version>
+        <jackson.version>2.13.0</jackson.version>
 
         <flow.cdi.version>13.0-SNAPSHOT</flow.cdi.version>
 
