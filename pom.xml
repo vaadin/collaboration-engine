@@ -38,7 +38,7 @@
         <flow.version>10.0-SNAPSHOT</flow.version>
         <testbench.version>7.0.3</testbench.version>
         <vaadin.component.version>23.0-SNAPSHOT</vaadin.component.version>
-        <vaadin.spring.version>19.0-SNAPSHOT</vaadin.spring.version>
+        <vaadin.spring.version>20.0-SNAPSHOT</vaadin.spring.version>
         <vaadin.lumo.version>${vaadin.component.version}</vaadin.lumo.version>
         <spring-boot.version>2.5.5</spring-boot.version>
 
