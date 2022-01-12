@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Vaadin Ltd
  */
-class ListInsertResult<T> {
+public class ListInsertResult<T> {
     private final ListKey key;
     private final CompletableFuture<T> completableFuture;
 
@@ -30,7 +30,7 @@ class ListInsertResult<T> {
     /**
      * Gets the key of the inserted item.
      *
-     * @return the inserted item key
+     * @return the inserted item key, not <code>null</code>
      */
     public ListKey getKey() {
         return key;
@@ -39,7 +39,7 @@ class ListInsertResult<T> {
     /**
      * The result of the asynchronous insert operation.
      *
-     * @return the result of the insert operation
+     * @return the result of the insert operation, not <code>null</code>
      */
     public CompletableFuture<T> getCompletableFuture() {
         return completableFuture;

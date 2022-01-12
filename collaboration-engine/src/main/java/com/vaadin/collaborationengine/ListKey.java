@@ -16,7 +16,7 @@ import java.util.UUID;
  *
  * @author Vaadin Ltd
  */
-class ListKey {
+public class ListKey {
 
     private final UUID key;
 
@@ -27,7 +27,7 @@ class ListKey {
     /**
      * Gets the unique value of this key.
      *
-     * @return the unique value of this key
+     * @return the unique value of this key, not <code>null</code>
      */
     public UUID getKey() {
         return key;
