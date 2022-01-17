@@ -18,7 +18,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,6 +160,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
         }
 
         @Override
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         public Binding<BEAN, TARGET> bind(ValueProvider<BEAN, TARGET> getter,
                 Setter<BEAN, TARGET> setter) {
             // Capture current propertyName
@@ -174,7 +174,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
             Binding<BEAN, TARGET> binding = super.bind(getter, setter);
 
-            HasValue<?, ?> field = binding.getField();
+            HasValue field = binding.getField();
 
             CollaborationBinder<BEAN> binder = getBinder();
             ComponentConnectionContext connectionContext = binder.connectionContext;
