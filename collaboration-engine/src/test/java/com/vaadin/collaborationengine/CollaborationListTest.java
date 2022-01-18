@@ -529,6 +529,18 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void expirationTimeout_unpopulatedList_listClearWithoutExplosions() {
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        // All is fine if openTopicConnection runs successfully
+    }
+
+    @Test
     public void insertAndSubscribe_thenDispatch_subscriberInvokedOnce() {
         dispatcher.hold();
         list.insertLast("foo");

@@ -227,7 +227,8 @@ class Topic {
         if (lastDisconnected != null) {
             Instant now = clock.instant();
             mapExpirationTimeouts.forEach((name, timeout) -> {
-                if (now.isAfter(lastDisconnected.plus(timeout))) {
+                if (now.isAfter(lastDisconnected.plus(timeout))
+                        && namedMapData.containsKey(name)) {
                     namedMapData.get(name).clear();
                 }
             });

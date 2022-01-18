@@ -449,6 +449,18 @@ public class CollaborationMapTest {
     }
 
     @Test
+    public void expirationTimeout_unpopulatedMap_mapClearWithoutExplosions() {
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+        registration.remove();
+        ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
+
+        ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+        // All is fine if openTopicConnection runs successfully
+    }
+
+    @Test
     public void putAndSubscribe_thenDispatch_subscriberInvokedOnce() {
         dispatcher.hold();
         map.put("foo", "foo");
