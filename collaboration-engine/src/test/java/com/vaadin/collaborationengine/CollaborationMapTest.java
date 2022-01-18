@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext.MockActionDispatcher;
 import com.vaadin.flow.shared.Registration;
 
 public class CollaborationMapTest {
@@ -61,11 +62,12 @@ public class CollaborationMapTest {
     private CollaborationMap map;
     private MapSubscriberSpy spy;
     private TopicConnectionRegistration registration;
-    private ActionDispatcher dispatcher;
+    private MockActionDispatcher dispatcher;
 
     @Before
     public void init() {
         context = MockConnectionContext.createEager();
+        dispatcher = (MockActionDispatcher) context.getActionDispatcher();
         ce = TestUtil.createTestCollaborationEngine();
         registration = ce.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), topicConnection -> {
@@ -444,5 +446,16 @@ public class CollaborationMapTest {
         context.activate();
         String foo = map.get("foo", String.class);
         Assert.assertEquals("bar", foo);
+    }
+
+    @Test
+    public void putAndSubscribe_thenDispatch_subscriberInvokedOnce() {
+        dispatcher.hold();
+        map.put("foo", "foo");
+        MapSubscriberSpy spy = new MapSubscriberSpy();
+        spy.addExpectedEvent("foo", null, "foo");
+        map.subscribe(spy);
+        dispatcher.release();
+        spy.assertNoExpectedEvents();
     }
 }

@@ -1,5 +1,7 @@
 package com.vaadin.collaborationengine.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -104,6 +106,20 @@ public class MockConnectionContext implements ConnectionContext {
 
     public class MockActionDispatcher implements ActionDispatcher {
 
+        private final List<Command> actions = new ArrayList<>();
+
+        private boolean hold;
+
+        public void hold() {
+            hold = true;
+        }
+
+        public void release() {
+            hold = false;
+            actions.forEach(this::execute);
+            actions.clear();
+        }
+
         @Override
         public <T> CompletableFuture<T> createCompletableFuture() {
             return new CompletableFuture<>();
@@ -111,9 +127,16 @@ public class MockConnectionContext implements ConnectionContext {
 
         @Override
         public void dispatchAction(Command action) {
+            if (hold) {
+                actions.add(action);
+            } else {
+                execute(action);
+            }
+        }
+
+        private void execute(Command action) {
             actionDispatchCount.incrementAndGet();
             executor.execute(action::execute);
         }
-
     }
 }

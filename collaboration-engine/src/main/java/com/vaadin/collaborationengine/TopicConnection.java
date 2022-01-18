@@ -86,7 +86,8 @@ public class TopicConnection {
                 actionDispatcher.dispatchAction(
                         () -> contextFuture.complete(isApplied));
             });
-            distributor.accept(id, change);
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
             return contextFuture;
         }
 
@@ -116,7 +117,8 @@ public class TopicConnection {
                 actionDispatcher
                         .dispatchAction(() -> contextFuture.complete(null));
             });
-            distributor.accept(id, change);
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
             return contextFuture;
         }
 
@@ -290,7 +292,8 @@ public class TopicConnection {
                 actionDispatcher
                         .dispatchAction(() -> contextFuture.complete(null));
             });
-            distributor.accept(id, change);
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
             return new ListInsertResult<>(new ListKey(id), contextFuture);
         }
 
@@ -321,7 +324,8 @@ public class TopicConnection {
                 actionDispatcher.dispatchAction(() -> contextFuture
                         .complete(result != ChangeResult.REJECTED));
             });
-            distributor.accept(id, change);
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
 
             return contextFuture;
         }

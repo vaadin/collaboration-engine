@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockConnectionContext.MockActionDispatcher;
 
 public class CollaborationListTest {
 
@@ -47,7 +49,12 @@ public class CollaborationListTest {
         @Override
         public void onListChange(ListChangeEvent event) {
             String item = event.getValue(String.class);
-            String expected = expectedItems.removeFirst();
+            String expected = null;
+            try {
+                expected = expectedItems.removeFirst();
+            } catch (NoSuchElementException e) {
+                Assert.fail("No expected items");
+            }
             Assert.assertTrue(item.equals(expected));
         }
 
@@ -75,16 +82,17 @@ public class CollaborationListTest {
     private ListAppendSpy appendSpy;
     private EventCollector eventCollector;
     private TopicConnectionRegistration registration;
+    private MockActionDispatcher dispatcher;
 
     @Before
     public void init() {
         context = MockConnectionContext.createEager();
+        dispatcher = (MockActionDispatcher) context.getActionDispatcher();
         ce = TestUtil.createTestCollaborationEngine();
         registration = ce.openTopicConnection(context, "topic",
                 SystemUserInfo.getInstance(), topicConnection -> {
                     connection = topicConnection;
                     list = connection.getNamedList("foo");
-                    list = list;
                     return null;
                 });
         appendSpy = new ListAppendSpy();
@@ -166,9 +174,13 @@ public class CollaborationListTest {
         });
         context.resetActionDispatchCount();
         list.insertLast("foo");
-        // One for the event, one for addToInbox and one for completing the
-        // future
-        Assert.assertEquals(3, context.getDispathActionCount());
+        /*-
+         * 1 - activation
+         * 2 - actual insert
+         * 3 - completing the future
+         * 4 - event dispatching
+        -*/
+        Assert.assertEquals(4, context.getDispathActionCount());
     }
 
     @Test
@@ -195,10 +207,17 @@ public class CollaborationListTest {
         ctx2.resetActionDispatchCount();
         list1.get().insertLast("foo");
 
-        // One dispatch for the event, ond for addToInbox and one for completing
-        // the future
-        Assert.assertEquals(3, ctx1.getDispathActionCount());
-        // One dispatch for the event and one for addToInbox
+        /*-
+         * 1 - activation
+         * 2 - actual insert
+         * 3 - completing the future
+         * 4 - event dispatching
+        -*/
+        Assert.assertEquals(4, ctx1.getDispathActionCount());
+        /*-
+         * 1 - activation
+         * 2 - event dispatching
+        -*/
         Assert.assertEquals(2, ctx2.getDispathActionCount());
     }
 
@@ -507,6 +526,17 @@ public class CollaborationListTest {
         context.deactivate();
         context.activate();
         Assert.assertEquals("foo", list.getItem(key, String.class));
+    }
+
+    @Test
+    public void insertAndSubscribe_thenDispatch_subscriberInvokedOnce() {
+        dispatcher.hold();
+        list.insertLast("foo");
+        ListAppendSpy spy = new ListAppendSpy();
+        spy.addExpectedEvent("foo");
+        list.subscribe(spy);
+        dispatcher.release();
+        spy.assertNoExpectedEvents();
     }
 
     private static List<ListKey> insertLast(CollaborationList list,
