@@ -47,7 +47,12 @@ public class ListChangeEvent extends EventObject {
         return change.getType();
     }
 
-    ListKey getKey() {
+    /**
+     * Gets the key of the list item affected by the change.
+     *
+     * @return the key of the changed item, not <code>null</code>
+     */
+    public ListKey getKey() {
         return new ListKey(change.getKey());
     }
 
@@ -123,9 +128,10 @@ public class ListChangeEvent extends EventObject {
      * Gets the key of the item which is after the current item after the
      * change.
      *
-     * @return the key of the item which is after the current item
+     * @return the key of the item which is after the current item, or
+     *         <code>null</code> if there is none
      */
-    ListKey getAfter() {
+    public ListKey getAfter() {
         return ListKey.of(change.getAfter());
     }
 
@@ -133,9 +139,10 @@ public class ListChangeEvent extends EventObject {
      * Gets the key of the item which was after the current item before the
      * change.
      *
-     * @return the key of the item which was after the current item
+     * @return the key of the item which was after the current item, or
+     *         <code>null</code> if there was none
      */
-    ListKey getOldAfter() {
+    public ListKey getOldAfter() {
         return ListKey.of(change.getOldAfter());
     }
 
@@ -143,9 +150,10 @@ public class ListChangeEvent extends EventObject {
      * Gets the key of the item which is before the current item after the
      * change.
      *
-     * @return the key of the item which is before the current item
+     * @return the key of the item which is before the current item, or
+     *         <code>null</code> if there is none
      */
-    ListKey getBefore() {
+    public ListKey getBefore() {
         return ListKey.of(change.getBefore());
     }
 
@@ -153,9 +161,10 @@ public class ListChangeEvent extends EventObject {
      * Gets the key of the item which was before the current item before the
      * change.
      *
-     * @return the key of the item which was before the current item
+     * @return the key of the item which was before the current item, or
+     *         <code>null</code> if there was none
      */
-    ListKey getOldBefore() {
+    public ListKey getOldBefore() {
         return ListKey.of(change.getOldBefore());
     }
 
