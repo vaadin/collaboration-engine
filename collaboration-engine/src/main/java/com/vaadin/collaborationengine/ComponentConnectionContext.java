@@ -152,8 +152,11 @@ public class ComponentConnectionContext implements ConnectionContext {
 
                 checkForPush(ui);
 
+                String beaconPath = CollaborationEngine
+                        .getInstance(ui.getSession().getService())
+                        .getConfiguration().getBeaconPathProperty();
                 BeaconHandler beaconHandler = BeaconHandler
-                        .ensureInstalled(this.ui);
+                        .ensureInstalled(this.ui, beaconPath);
                 beaconListener = beaconHandler
                         .addListener(this::deactivateConnection);
 

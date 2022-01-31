@@ -308,6 +308,29 @@ public class CollaborationEngineTest {
     }
 
     @Test
+    public void beaconPathPropertyIsSetCorrectly() {
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                event -> {
+                });
+        configuration.setVaadinService(service);
+        configuration.setBeaconPath("foo");
+        String beaconPath = configuration.getBeaconPathProperty();
+        Assert.assertEquals("foo", beaconPath);
+    }
+
+    @Test
+    public void beaconPathPropertyTakesPrecedenceOverConfiguration() {
+        System.setProperty("vaadin.ce.beaconPath", "foo");
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
+                event -> {
+                });
+        configuration.setVaadinService(service);
+        configuration.setBeaconPath("bar");
+        String beaconPath = configuration.getBeaconPathProperty();
+        Assert.assertEquals("foo", beaconPath);
+    }
+
+    @Test
     public void serviceExecutorConfigured_isUsedToDispatchActions() {
         VaadinService service = new MockService();
         AtomicBoolean executorUsed = new AtomicBoolean();

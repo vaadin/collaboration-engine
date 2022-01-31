@@ -36,12 +36,15 @@ public class CollaborationEngineConfiguration {
     static final String DATA_DIR_CONFIG_PROPERTY = "ce.dataDir";
     static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
             + DATA_DIR_CONFIG_PROPERTY;
+    static final String BEACON_PATH_CONFIG_PROPERTY = "ce.beaconPath";
+    static final String DEFAULT_BEACON_PATH = "/";
 
     static final boolean DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH = true;
 
     private LicenseEventHandler licenseEventHandler;
     private VaadinService vaadinService;
     private String configuredDataDir;
+    private String configuredBeaconPath = DEFAULT_BEACON_PATH;
     private boolean automaticallyActivatePush = DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH;
 
     private Backend backend = new LocalBackend();
@@ -111,6 +114,31 @@ public class CollaborationEngineConfiguration {
      */
     public void setDataDir(String dataDir) {
         configuredDataDir = dataDir;
+    }
+
+    /**
+     * Gets the configured beacon path.
+     *
+     * @return the beacon path
+     */
+    public String getBeaconPath() {
+        return configuredBeaconPath;
+    }
+
+    /**
+     * Sets the path that is used for the beacon handler. This is used to detect
+     * when the user has closed a tab.
+     * <p>
+     * The beacon path can also be configured by setting the
+     * {@code vaadin.ce.beaconPath} system property either in the command line
+     * or with {@link System#setProperty(String, String)}. If a system property
+     * is set, it will take precedence over this setting.
+     *
+     * @param beaconPath
+     *            path used by the beacon handler
+     */
+    public void setBeaconPath(String beaconPath) {
+        configuredBeaconPath = beaconPath;
     }
 
     /**
@@ -240,5 +268,14 @@ public class CollaborationEngineConfiguration {
             dataDirectory = configuredDataDir;
         }
         return dataDirectory != null ? Paths.get(dataDirectory) : null;
+    }
+
+    String getBeaconPathProperty() {
+        String beaconPath = vaadinService.getDeploymentConfiguration()
+                .getStringProperty(BEACON_PATH_CONFIG_PROPERTY, null);
+        if (beaconPath == null) {
+            beaconPath = configuredBeaconPath;
+        }
+        return beaconPath;
     }
 }

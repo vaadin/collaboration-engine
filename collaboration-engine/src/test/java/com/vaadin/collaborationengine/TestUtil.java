@@ -45,9 +45,11 @@ public class TestUtil {
 
         private boolean licenseCheckingEnabled;
         private Path dataDirPath;
+        private String beaconPath;
 
         private boolean licenseCheckingEnabledMocked;
         private boolean dataDirPathMocked;
+        private boolean beaconPathMocked;
 
         public MockConfiguration(LicenseEventHandler licenseEventHandler) {
             super(licenseEventHandler);
@@ -71,6 +73,15 @@ public class TestUtil {
             }
         }
 
+        @Override
+        String getBeaconPathProperty() {
+            if (beaconPathMocked) {
+                return beaconPath;
+            } else {
+                return super.getBeaconPathProperty();
+            }
+        }
+
         public void setLicenseCheckingEnabled(boolean licenseCheckingEnabled) {
             this.licenseCheckingEnabled = licenseCheckingEnabled;
             this.licenseCheckingEnabledMocked = true;
@@ -79,6 +90,11 @@ public class TestUtil {
         public void setDataDirPath(Path dataDirPath) {
             this.dataDirPath = dataDirPath;
             this.dataDirPathMocked = true;
+        }
+
+        public void setBeaconPathProperty(String beaconPath) {
+            this.beaconPath = beaconPath;
+            this.beaconPathMocked = true;
         }
     }
 

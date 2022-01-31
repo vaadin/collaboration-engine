@@ -8,6 +8,10 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
@@ -18,10 +22,6 @@ import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.ApplicationConstants;
 import com.vaadin.flow.shared.Registration;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
 /**
  * A {@link SynchronizedRequestHandler} which notifies its listeners when the
  * browser tab is closed.
@@ -30,18 +30,19 @@ import java.util.UUID;
  * @since 1.0
  */
 class BeaconHandler extends SynchronizedRequestHandler {
-    private static final String BEACON_PATH = "/";
     private static final String ID_PARAMETER = "id";
     private static final String REQUEST_TYPE = "beacon";
 
     private final String id = UUID.randomUUID().toString();
     private final List<Command> listeners;
+    private final String beaconPath;
 
-    public BeaconHandler() {
+    public BeaconHandler(String beaconPath) {
         listeners = new ArrayList<>();
+        this.beaconPath = beaconPath;
     }
 
-    static BeaconHandler ensureInstalled(UI ui) {
+    static BeaconHandler ensureInstalled(UI ui, String beaconPath) {
         BeaconHandler beaconHandler = ComponentUtil.getData(ui,
                 BeaconHandler.class);
         if (beaconHandler != null) {
@@ -49,10 +50,10 @@ class BeaconHandler extends SynchronizedRequestHandler {
             return beaconHandler;
         }
 
-        BeaconHandler newBeaconHandler = new BeaconHandler();
+        BeaconHandler newBeaconHandler = new BeaconHandler(beaconPath);
 
         ui.getElement().executeJs(getUnloadScript(),
-                createBeaconUrl(newBeaconHandler));
+                newBeaconHandler.createBeaconUrl());
 
         VaadinSession session = ui.getSession();
         session.addRequestHandler(newBeaconHandler);
@@ -63,12 +64,11 @@ class BeaconHandler extends SynchronizedRequestHandler {
         return newBeaconHandler;
     }
 
-    private static String createBeaconUrl(BeaconHandler beaconHandler) {
+    String createBeaconUrl() {
         String requestTypeParameter = formatParameter(
                 ApplicationConstants.REQUEST_TYPE_PARAMETER, REQUEST_TYPE);
-        String beaconIdParameter = formatParameter(ID_PARAMETER,
-                beaconHandler.id);
-        return "." + BEACON_PATH + "?" + requestTypeParameter + "&"
+        String beaconIdParameter = formatParameter(ID_PARAMETER, id);
+        return "." + beaconPath + "?" + requestTypeParameter + "&"
                 + beaconIdParameter;
 
     }
@@ -93,7 +93,7 @@ class BeaconHandler extends SynchronizedRequestHandler {
 
     @Override
     protected boolean canHandleRequest(VaadinRequest request) {
-        if (!BEACON_PATH.equals(request.getPathInfo())) {
+        if (!beaconPath.equals(request.getPathInfo())) {
             return false;
         }
         String requestType = request
