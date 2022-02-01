@@ -9,6 +9,7 @@
 package com.vaadin.collaborationengine;
 
 import javax.servlet.ServletContext;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -248,19 +249,22 @@ public class CollaborationEngine {
         ce.systemContext = new SystemConnectionContext(ce);
 
         ExecutorService executorService = ce.configuration.getExecutorService();
-        if (executorService == null) {
+        final boolean useManagedExecutorService = executorService == null;
+        if (useManagedExecutorService) {
             ce.executorService = Executors.newFixedThreadPool(
                     Runtime.getRuntime().availableProcessors());
-            vaadinService.addServiceDestroyListener(event -> {
-                ce.active.set(false);
-                ce.clearConnections();
-                LOGGER.info("Shutting down thread pool");
-                ce.executorService.shutdown();
-            });
         } else {
             ce.executorService = executorService;
         }
 
+        vaadinService.addServiceDestroyListener(event -> {
+            ce.active.set(false);
+            ce.clearConnections();
+            if (useManagedExecutorService) {
+                LOGGER.info("Shutting down thread pool");
+                ce.executorService.shutdown();
+            }
+        });
         if (storeInService) {
             // Avoid storing from inside computeIfAbsent
             vaadinService.getContext().setAttribute(CollaborationEngine.class,

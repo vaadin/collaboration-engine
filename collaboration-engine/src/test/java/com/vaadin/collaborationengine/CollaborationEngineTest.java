@@ -394,6 +394,22 @@ public class CollaborationEngineTest {
     }
 
     @Test
+    public void serviceDestroy_customExecutorService_closesConnections() {
+        ExecutorService customExectutor = Executors.newSingleThreadExecutor();
+        VaadinService service = new MockService();
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service, customExectutor);
+        AtomicBoolean clear = new AtomicBoolean();
+        ce.openTopicConnection(ce.getSystemContext(), "topic",
+                new UserInfo("id"), conn -> () -> clear.set(true));
+        service.destroy();
+        Assert.assertFalse("Destroy should not shutdown the custom thread pool",
+                ce.getExecutorService().isShutdown());
+        Assert.assertTrue("Connection should have been closed on shutdown",
+                clear.get());
+    }
+
+    @Test
     public void serviceDestroy_ExecutorServiceShutdown_closesConnections_timeout() {
         VaadinService service = new MockService();
         TestCollaborationEngine ce = TestUtil
@@ -433,8 +449,8 @@ public class CollaborationEngineTest {
         MockConnectionContext context = createEagerContextWithAsyncRegistration(
                 registrationFuture);
 
-        TopicConnectionRegistration registration = ce.openTopicConnection(
-                context, "topic", new UserInfo("id"), conn -> () -> {
+        ce.openTopicConnection(context, "topic", new UserInfo("id"),
+                conn -> () -> {
                     // No op
                 });
         Instant start = Instant.now();
