@@ -372,7 +372,7 @@ public class CollaborationListTest {
     }
 
     @Test
-    public void threeItems_removeFirst_twoRemaining() {
+    public void threeItems_setFirstToNull_twoRemaining() {
         List<ListKey> keys = insertLast(list, "one", "two", "three");
 
         list.set(keys.get(0), null);
@@ -381,7 +381,7 @@ public class CollaborationListTest {
     }
 
     @Test
-    public void threeItems_removeMiddle_twoRemaining() {
+    public void threeItems_setMiddleToNull_twoRemaining() {
         List<ListKey> keys = insertLast(list, "one", "two", "three");
 
         list.set(keys.get(1), null);
@@ -390,7 +390,7 @@ public class CollaborationListTest {
     }
 
     @Test
-    public void threeItems_removeLast_twoRemaining() {
+    public void threeItems_setLastToNull_twoRemaining() {
         List<ListKey> keys = insertLast(list, "one", "two", "three");
 
         list.set(keys.get(2), null);
@@ -399,10 +399,46 @@ public class CollaborationListTest {
     }
 
     @Test
-    public void oneItem_removeIt_listEmpty() {
+    public void oneItem_setItToNull_listEmpty() {
         ListKey key = list.insertLast("one").getKey();
 
         list.set(key, null);
+
+        assertValues(list);
+    }
+
+    @Test
+    public void threeItems_removeFirst_twoRemaining() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.remove(keys.get(0));
+
+        assertValues(list, "two", "three");
+    }
+
+    @Test
+    public void threeItems_removeMiddle_twoRemaining() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.remove(keys.get(1));
+
+        assertValues(list, "one", "three");
+    }
+
+    @Test
+    public void threeItems_removeLast_twoRemaining() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.remove(keys.get(2));
+
+        assertValues(list, "one", "two");
+    }
+
+    @Test
+    public void oneItem_removeIt_listEmpty() {
+        ListKey key = list.insertLast("one").getKey();
+
+        list.remove(key);
 
         assertValues(list);
     }

@@ -89,6 +89,42 @@ public interface CollaborationMap extends HasExpirationTimeout {
     }
 
     /**
+     * Removes the value with the given key. Subscribers are notified if there
+     * exists a non-null value.
+     *
+     * @param key
+     *            the string key for which to make an association, not
+     *            <code>null</code>
+     * @return a completable future that is resolved when the data update is
+     *         completed.
+     */
+    default CompletableFuture<Void> remove(String key) {
+        return put(key, null);
+    }
+
+    /**
+     * Removes the value with the given key only if and only if the current
+     * value is as expected. Subscribers are notified if the current value is
+     * non-null.
+     *
+     * @param key
+     *            the string key for which to make an association, not
+     *            <code>null</code>
+     * @param expectedValue
+     *            the value to compare with the current value to determine
+     *            whether to remove the value, or <code>null</code> to expect
+     *            that no value is present.
+     * @return a boolean completable future that is resolved when the removal is
+     *         completed. The resolved value is <code>true</code> if the
+     *         expected value was present so that the operation could proceed;
+     *         <code>false</code> if the expected value was not present
+     */
+    default CompletableFuture<Boolean> remove(String key,
+            Object expectedValue) {
+        return replace(key, expectedValue, null);
+    }
+
+    /**
      * Associates the given value with the given key and scope. This method can
      * also be used to remove an association by passing <code>null</code> as the
      * value. Subscribers are notified if the new value isn't

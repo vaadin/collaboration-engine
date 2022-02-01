@@ -213,13 +213,37 @@ public class CollaborationMapTest {
     }
 
     @Test
-    public void mapWithExistingValue_removeValue_eventNewValueIsNull() {
+    public void mapWithExistingValue_setValueToNull_eventNewValueIsNull() {
         map.put("one", "first");
         spy.addExpectedEvent("one", null, "first");
         map.subscribe(spy);
 
         spy.addExpectedEvent("one", "first", null);
         map.put("one", null);
+
+        spy.assertNoExpectedEvents();
+    }
+
+    @Test
+    public void mapWithExistingValue_removeValue_eventNewValueIsNull() {
+        map.put("one", "first");
+        spy.addExpectedEvent("one", null, "first");
+        map.subscribe(spy);
+
+        spy.addExpectedEvent("one", "first", null);
+        map.remove("one");
+
+        spy.assertNoExpectedEvents();
+    }
+
+    @Test
+    public void mapWithExistingValue_removeExpectedValue_eventNewValueIsNull() {
+        map.put("one", "first");
+        spy.addExpectedEvent("one", null, "first");
+        map.subscribe(spy);
+
+        spy.addExpectedEvent("one", "first", null);
+        map.remove("one", "first");
 
         spy.assertNoExpectedEvents();
     }

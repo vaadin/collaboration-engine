@@ -167,6 +167,22 @@ public interface CollaborationList extends HasExpirationTimeout {
     CompletableFuture<Boolean> set(ListKey key, Object value, EntryScope scope);
 
     /**
+     * Removes the value for the item identified by the given key.
+     * <p>
+     * It returns the result of the operation as a {@link CompletableFuture}
+     * which resolves to <code>true</code> if the operation succeeds,
+     * <code>false</code> otherwise.
+     *
+     * @param key
+     *            the item key, not <code>null</code>
+     * @return a completable future that is resolved when the operation has
+     *         completed, not <code>null</code>
+     */
+    default CompletableFuture<Boolean> remove(ListKey key) {
+        return set(key, null);
+    }
+
+    /**
      * Appends the given item to the list.
      * <p>
      * The given item must be JSON-serializable so it can be sent over the
