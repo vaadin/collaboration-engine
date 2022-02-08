@@ -23,6 +23,7 @@ import com.vaadin.collaborationengine.CollaborationMessagePersister.FetchQuery;
 import com.vaadin.collaborationengine.CollaborationMessagePersister.PersistRequest;
 import com.vaadin.collaborationengine.MessageHandler.MessageContext;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -32,6 +33,13 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 public class MessageManager extends AbstractCollaborationManager {
+
+    static {
+        UsageStatistics.markAsUsed(
+                CollaborationEngine.COLLABORATION_ENGINE_NAME
+                        + "/MessageManager",
+                CollaborationEngine.COLLABORATION_ENGINE_VERSION);
+    }
 
     private static final Object FETCH_LOCK = new Object();
 

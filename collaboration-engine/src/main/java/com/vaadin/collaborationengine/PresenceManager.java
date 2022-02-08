@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -28,6 +29,13 @@ import com.vaadin.flow.shared.Registration;
  * @since 3.2
  */
 public class PresenceManager {
+
+    static {
+        UsageStatistics.markAsUsed(
+                CollaborationEngine.COLLABORATION_ENGINE_NAME
+                        + "/PresenceManager",
+                CollaborationEngine.COLLABORATION_ENGINE_VERSION);
+    }
 
     static final Logger LOGGER = LoggerFactory.getLogger(PresenceManager.class);
 
