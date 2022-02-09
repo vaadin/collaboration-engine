@@ -35,7 +35,7 @@
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
-        <flow.version>10.0-SNAPSHOT</flow.version>
+        <flow.version>23.0-SNAPSHOT</flow.version>
         <testbench.version>7.0.3</testbench.version>
         <vaadin.component.version>23.0-SNAPSHOT</vaadin.component.version>
         <vaadin.spring.version>20.0-SNAPSHOT</vaadin.spring.version>
