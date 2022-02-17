@@ -193,7 +193,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
             binder.bindingRegistrations.put(binding,
                     () -> registrations.forEach(Registration::remove));
 
-            binder.setFieldValueFromMap(propertyName, field);
             binder.fieldToPropertyName.put(field, propertyName);
 
             return binding;
@@ -397,10 +396,10 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     private void onMapChange(MapChangeEvent event) {
         getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
             String propertyName = event.getKey();
-            JsonNode value = CollaborationBinderUtil.getFieldValue(topic,
-                    propertyName);
+            JsonNode value = event.getValue(JsonNode.class);
 
-            setFieldValueFromFieldState(field, propertyName, value);
+            setFieldValueFromFieldState(field, propertyName,
+                    value == null ? NullNode.getInstance() : value);
         });
     }
 
@@ -429,16 +428,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
     private void onConnectionDeactivate() {
         topic = null;
-    }
-
-    @SuppressWarnings("rawtypes")
-    private void setFieldValueFromMap(String propertyName, HasValue field) {
-        if (topic == null) {
-            // the connection isn't activated.
-            return;
-        }
-        setFieldValueFromFieldState(field, propertyName,
-                CollaborationBinderUtil.getFieldValue(topic, propertyName));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -713,8 +702,6 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
         initializeBindingsWithoutFieldState(initialBeanSupplier);
 
-        fieldToPropertyName.forEach(
-                (field, propName) -> setFieldValueFromMap(propName, field));
         return this::onConnectionDeactivate;
     }
 
@@ -732,13 +719,15 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
         BEAN initialBean = initialBeanSupplier.get();
 
-        if (initialBean == null) {
-            return;
-        }
-
         propertiesWithoutFieldState.stream().map(this::getBinding)
                 .filter(Optional::isPresent).map(Optional::get)
-                .forEach(binding -> binding.read(initialBean));
+                .forEach(binding -> {
+                    if (initialBean == null) {
+                        binding.getField().clear();
+                    } else {
+                        binding.read(initialBean);
+                    }
+                });
     }
 
     /**

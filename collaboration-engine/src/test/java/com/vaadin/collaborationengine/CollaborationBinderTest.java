@@ -345,6 +345,18 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
     }
 
     @Test
+    public void setTopic_initializedTopic_fieldValuesSet() {
+        setSharedValue("value", MockJson.FOO);
+
+        client.binder.setTopic("topic", () -> null);
+
+        client.bind();
+        client.attach();
+
+        Assert.assertEquals("foo", field.getValue());
+    }
+
+    @Test
     public void changeTopic_ignoreOldTopic() {
         client.bind();
         client.attach();
