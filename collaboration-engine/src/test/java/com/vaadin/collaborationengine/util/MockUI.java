@@ -32,16 +32,21 @@ public class MockUI extends UI {
             public DeploymentConfiguration getConfiguration() {
                 return this.getService().getDeploymentConfiguration();
             }
+
+            @Override
+            public Future<Void> access(Command command) {
+                accessTasks.add(command);
+                if (executeAccessTasks) {
+                    command.execute();
+                }
+                return null;
+            }
         });
     }
 
     @Override
-    public Future<Void> access(Command command) {
-        accessTasks.add(command);
-        if (executeAccessTasks) {
-            command.execute();
-        }
-        return null;
+    public int getUIId() {
+        return 42;
     }
 
     public List<Command> getAccessTasks() {

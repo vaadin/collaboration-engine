@@ -26,6 +26,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.Version;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.shared.communication.PushMode;
@@ -290,10 +291,22 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (localUI == null || backgroundRunner == null) {
             return;
         }
-        backgroundRunner.execute(() -> localUI.access(() -> {
-            inbox.runPendingCommands();
-            inactivateIfDeactivating();
+        VaadinSession session = localUI.getSession();
+        backgroundRunner.execute(() -> session.access(() -> {
+            UI currentUI = UI.getCurrent();
+            if (currentUI == null) {
+                UI.setCurrent(localUI);
+            }
+            try {
+                inbox.runPendingCommands();
+                inactivateIfDeactivating();
+            } finally {
+                if (currentUI == null) {
+                    UI.setCurrent(null);
+                }
+            }
         }));
+
     }
 
     private static void checkForPush(UI ui) {

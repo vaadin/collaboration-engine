@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,6 +26,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.ServiceException;
 import com.vaadin.flow.server.VaadinService;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.shared.communication.PushMode;
 
@@ -486,9 +489,6 @@ public class ComponentConnectionContextTest {
 
         ui.add(component);
 
-        // Allow destroy event to be handled through session.access
-        ui.getSession().unlock();
-
         service.fireSessionDestroy(ui.getSession());
 
         ui = null;
@@ -498,7 +498,7 @@ public class ComponentConnectionContextTest {
     }
 
     @Test
-    public void noPushActive_actiavteThenAttach_pushActivated() {
+    public void noPushActive_activateThenAttach_pushActivated() {
         Assert.assertFalse("Sanity check",
                 ui.getPushConfiguration().getPushMode().isEnabled());
         new ComponentConnectionContext(component).init(activationHandler,
@@ -668,6 +668,36 @@ public class ComponentConnectionContextTest {
         Assert.assertEquals(Arrays.asList("active"), log);
     }
 
+    @Test
+    public void openTopicConnectiton_getCurrentUI_isTheLocalUI() {
+        TestCollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(ui.getSession().getService());
+
+        ce.openTopicConnection(ui, "topic", SystemUserInfo.getInstance(),
+                connection -> {
+                    UI current = UI.getCurrent();
+                    Assert.assertEquals(ui, current);
+                    return null;
+                });
+    }
+
+    @Test
+    public void sessionDestroyed_asyncTasksRunWithoutException() {
+        MockExecutorService executor = new MockExecutorService();
+        TestCollaborationEngine ce = TestUtil.createTestCollaborationEngine(
+                ui.getSession().getService(), executor);
+        VaadinSession session = ui.getSession();
+        VaadinService service = session.getService();
+
+        ce.setAsynchronous(true);
+        ce.openTopicConnection(ui, "topic", SystemUserInfo.getInstance(),
+                connection -> null);
+
+        session.addUI(ui);
+        service.fireSessionDestroy(session);
+        executor.flushPendingTasks();
+    }
+
     private List<String> createEagerMapEventCollector(
             TestCollaborationEngine ce, String topicId, String mapName) {
         List<String> log = new ArrayList<>();
@@ -698,6 +728,50 @@ public class ComponentConnectionContextTest {
         return mockUI.getSession().getRequestHandlers().stream()
                 .filter(BeaconHandler.class::isInstance)
                 .map(BeaconHandler.class::cast).findFirst().get();
+    }
+
+    private static class MockExecutorService extends AbstractExecutorService {
+
+        private final List<Runnable> tasks = new ArrayList<>();
+
+        private boolean shutdown = false;
+
+        @Override
+        public void shutdown() {
+            shutdown = true;
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            shutdown();
+            return Collections.unmodifiableList(tasks);
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return shutdown;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return isShutdown() && tasks.isEmpty();
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit)
+                throws InterruptedException {
+            return false;
+        }
+
+        @Override
+        public void execute(Runnable command) {
+            tasks.add(command);
+        }
+
+        private void flushPendingTasks() {
+            tasks.forEach(Runnable::run);
+            tasks.clear();
+        }
     }
 
 }
