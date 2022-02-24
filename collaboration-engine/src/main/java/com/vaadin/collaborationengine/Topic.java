@@ -272,8 +272,23 @@ class Topic {
         case JsonUtil.CHANGE_TYPE_PUT:
             details = applyMapChange(trackingId, change);
             break;
+        case JsonUtil.CHANGE_TYPE_PREPEND:
+            details = applyListPrepend(trackingId, change);
+            break;
         case JsonUtil.CHANGE_TYPE_APPEND:
             details = applyListAppend(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_INSERT_BEFORE:
+            details = applyListInsertBefore(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_INSERT_AFTER:
+            details = applyListInsertAfter(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_MOVE_BEFORE:
+            details = applyListMoveBefore(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_MOVE_AFTER:
+            details = applyListMoveAfter(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_LIST_SET:
             details = applyListSet(trackingId, change);
@@ -363,6 +378,18 @@ class Topic {
                 JsonUtil.toUUID(expectedId));
     }
 
+    ChangeDetails applyListPrepend(UUID id, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        UUID scopeOwnerId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+        ListEntrySnapshot insertedEntry = getOrCreateList(listName)
+                .insertFirst(id, item, id, scopeOwnerId);
+
+        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
+                null, null, null, insertedEntry.next, null);
+    }
+
     ChangeDetails applyListAppend(UUID id, ObjectNode change) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
@@ -373,6 +400,90 @@ class Topic {
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
                 null, insertedEntry.prev, null, null, null);
+    }
+
+    ChangeDetails applyListInsertBefore(UUID id, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        UUID scopeOwnerId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+        EntryList list = getOrCreateList(listName);
+
+        ListEntrySnapshot entry = list.getEntry(key);
+        if (entry == null) {
+            return null;
+        }
+
+        ListEntrySnapshot insertedEntry = list.insertBefore(key, id, item, id,
+                scopeOwnerId);
+
+        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
+                null, insertedEntry.prev, null, insertedEntry.next, null);
+    }
+
+    ChangeDetails applyListInsertAfter(UUID id, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        UUID scopeOwnerId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+        EntryList list = getOrCreateList(listName);
+
+        ListEntrySnapshot entry = list.getEntry(key);
+        if (entry == null) {
+            return null;
+        }
+
+        ListEntrySnapshot insertedEntry = list.insertAfter(key, id, item, id,
+                scopeOwnerId);
+
+        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
+                null, insertedEntry.prev, null, insertedEntry.next, null);
+    }
+
+    ChangeDetails applyListMoveBefore(UUID trackingId, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        UUID keyToFind = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        UUID keyToMove = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_OTHER_KEY));
+        EntryList list = getOrCreateList(listName);
+
+        ListEntrySnapshot entryToFind = list.getEntry(keyToFind);
+        if (entryToFind == null) {
+            return null;
+        }
+        ListEntrySnapshot entryToMove = list.getEntry(keyToMove);
+        if (entryToMove == null) {
+            return null;
+        }
+
+        list.moveBefore(keyToFind, keyToMove, trackingId);
+
+        return new ListChange(listName, ListChangeType.MOVE, keyToMove,
+                entryToMove.value, entryToMove.value, entryToMove.prev,
+                entryToFind.prev, entryToMove.next, keyToFind, null);
+    }
+
+    ChangeDetails applyListMoveAfter(UUID trackingId, ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        UUID keyToFind = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        UUID keyToMove = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_OTHER_KEY));
+        EntryList list = getOrCreateList(listName);
+
+        ListEntrySnapshot entryToFind = list.getEntry(keyToFind);
+        if (entryToFind == null) {
+            return null;
+        }
+        ListEntrySnapshot entryToMove = list.getEntry(keyToMove);
+        if (entryToMove == null) {
+            return null;
+        }
+
+        list.moveAfter(keyToFind, keyToMove, trackingId);
+
+        return new ListChange(listName, ListChangeType.MOVE, keyToMove,
+                entryToMove.value, entryToMove.value, entryToMove.prev,
+                keyToFind, entryToMove.next, entryToFind.next, null);
     }
 
     private ChangeDetails applyListSet(UUID trackingId, ObjectNode change) {

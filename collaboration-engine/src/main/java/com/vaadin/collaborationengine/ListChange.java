@@ -23,26 +23,26 @@ class ListChange implements ChangeDetails {
     private final JsonNode oldValue;
     private final JsonNode value;
 
-    private final UUID oldAfter;
-    private final UUID after;
+    private final UUID oldPrev;
+    private final UUID prev;
 
-    private final UUID oldBefore;
-    private final UUID before;
+    private final UUID oldNext;
+    private final UUID next;
 
     private final UUID expectedId;
 
     ListChange(String listName, ListChangeType type, UUID key,
-            JsonNode oldValue, JsonNode value, UUID oldAfter, UUID after,
-            UUID oldBefore, UUID before, UUID expectedId) {
+            JsonNode oldValue, JsonNode value, UUID oldPrev, UUID prev,
+            UUID oldNext, UUID next, UUID expectedId) {
         this.listName = listName;
         this.type = type;
         this.key = key;
         this.oldValue = oldValue;
         this.value = value;
-        this.oldBefore = oldBefore;
-        this.before = before;
-        this.oldAfter = oldAfter;
-        this.after = after;
+        this.oldPrev = oldPrev;
+        this.prev = prev;
+        this.oldNext = oldNext;
+        this.next = next;
         this.expectedId = expectedId;
     }
 
@@ -66,20 +66,20 @@ class ListChange implements ChangeDetails {
         return value;
     }
 
-    UUID getOldAfter() {
-        return oldAfter;
+    UUID getOldNext() {
+        return oldNext;
     }
 
-    UUID getAfter() {
-        return after;
+    UUID getNext() {
+        return next;
     }
 
-    UUID getOldBefore() {
-        return oldBefore;
+    UUID getOldPrev() {
+        return oldPrev;
     }
 
-    UUID getBefore() {
-        return before;
+    UUID getPrev() {
+        return prev;
     }
 
     UUID getExpectedId() {

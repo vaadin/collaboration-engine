@@ -80,19 +80,68 @@ class EntryList {
         tail = null;
     }
 
-    ListEntrySnapshot insertLast(UUID key, JsonNode value, UUID revisionId,
+    ListEntrySnapshot insertFirst(UUID key, JsonNode value, UUID revisionId,
             UUID scopeOwnerId) {
-        ListEntry item = new ListEntry();
-        item.value = Objects.requireNonNull(value);
-        item.revisionId = revisionId;
-        item.scopeOwnerId = scopeOwnerId;
-        item.prev = tail;
+        ListEntry item = createAndAddItem(key, value, revisionId, scopeOwnerId);
 
-        entries.put(Objects.requireNonNull(key), item);
-        setNext(tail, key);
-        tail = key;
+        link(key, null, head);
 
         return new ListEntrySnapshot(key, item);
+    }
+
+    ListEntrySnapshot insertLast(UUID key, JsonNode value, UUID revisionId,
+            UUID scopeOwnerId) {
+        ListEntry item = createAndAddItem(key, value, revisionId, scopeOwnerId);
+
+        link(key, tail, null);
+
+        return new ListEntrySnapshot(key, item);
+    }
+
+    ListEntrySnapshot insertBefore(UUID keyToFind, UUID keyToInsert,
+            JsonNode value, UUID revisionId, UUID scopeOwnerId) {
+        ListEntry item = createAndAddItem(keyToInsert, value, revisionId,
+                scopeOwnerId);
+
+        ListEntry entryToFind = entries.get(keyToFind);
+        link(keyToInsert, entryToFind.prev, keyToFind);
+
+        return new ListEntrySnapshot(keyToInsert, item);
+    }
+
+    ListEntrySnapshot insertAfter(UUID keyToFind, UUID keyToInsert,
+            JsonNode value, UUID revisionId, UUID scopeOwnerId) {
+        ListEntry item = createAndAddItem(keyToInsert, value, revisionId,
+                scopeOwnerId);
+
+        ListEntry entryToFind = entries.get(keyToFind);
+        link(keyToInsert, keyToFind, entryToFind.next);
+
+        return new ListEntrySnapshot(keyToInsert, item);
+    }
+
+    void moveBefore(UUID keyToFind, UUID keyToMove, UUID revisionId) {
+        ListEntry entryToMove = entries.get(keyToMove);
+        if (entryToMove != null) {
+            entryToMove.revisionId = revisionId;
+        }
+
+        unlink(entryToMove);
+
+        ListEntry entryToFind = entries.get(keyToFind);
+        link(keyToMove, entryToFind.prev, keyToFind);
+    }
+
+    void moveAfter(UUID keyToFind, UUID keyToMove, UUID revisionId) {
+        ListEntry entryToMove = entries.get(keyToMove);
+        if (entryToMove != null) {
+            entryToMove.revisionId = revisionId;
+        }
+
+        unlink(entryToMove);
+
+        ListEntry entryToFind = entries.get(keyToFind);
+        link(keyToMove, keyToFind, entryToFind.next);
     }
 
     Stream<ListEntrySnapshot> stream() {
@@ -129,9 +178,23 @@ class EntryList {
 
     void remove(UUID key) {
         ListEntry item = entries.remove(key);
+        unlink(item);
+    }
+
+    private void unlink(ListEntry item) {
         if (item != null) {
             setPrev(item.next, item.prev);
             setNext(item.prev, item.next);
+        }
+    }
+
+    private void link(UUID key, UUID keyBefore, UUID keyAfter) {
+        ListEntry item = entries.get(key);
+        if (item != null) {
+            item.prev = keyBefore;
+            item.next = keyAfter;
+            setPrev(item.next, key);
+            setNext(item.prev, key);
         }
     }
 
@@ -149,6 +212,17 @@ class EntryList {
         } else {
             entries.get(target).prev = value;
         }
+    }
+
+    private ListEntry createAndAddItem(UUID key, JsonNode value,
+            UUID revisionId, UUID scopeOwnerId) {
+        ListEntry item = new ListEntry();
+        item.value = value;
+        item.revisionId = revisionId;
+        item.scopeOwnerId = scopeOwnerId;
+        entries.put(Objects.requireNonNull(key), item);
+
+        return item;
     }
 
     void setValue(UUID key, JsonNode newValue, UUID revisionId,

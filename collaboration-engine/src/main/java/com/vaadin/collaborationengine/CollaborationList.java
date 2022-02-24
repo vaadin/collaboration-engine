@@ -103,6 +103,29 @@ public interface CollaborationList extends HasExpirationTimeout {
     Stream<ListKey> getKeys();
 
     /**
+     * Inserts the given item as the first item of the list.
+     *
+     * @param item
+     *            the item, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    default ListInsertResult<Void> insertFirst(Object item) {
+        return insertFirst(item, EntryScope.TOPIC);
+    }
+
+    /**
+     * Inserts the given item as the first item of the list, with the given
+     * scope.
+     *
+     * @param item
+     *            the item, not <code>null</code>
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    ListInsertResult<Void> insertFirst(Object item, EntryScope scope);
+
+    /**
      * Inserts the given item as the last item of the list.
      *
      * @param item
@@ -126,6 +149,86 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @since 4.1
      */
     ListInsertResult<Void> insertLast(Object item, EntryScope scope);
+
+    /**
+     * Inserts the given item just before the given key location.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param item
+     *            the item, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    default ListInsertResult<Boolean> insertBefore(ListKey key, Object item) {
+        return insertBefore(key, item, EntryScope.TOPIC);
+    }
+
+    /**
+     * Inserts the given item just before the given key location, with the given
+     * scope.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param item
+     *            the item, not <code>null</code>
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    ListInsertResult<Boolean> insertBefore(ListKey key, Object item,
+            EntryScope scope);
+
+    /**
+     * Inserts the given item just after the given key location.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param item
+     *            the item, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    default ListInsertResult<Boolean> insertAfter(ListKey key, Object item) {
+        return insertAfter(key, item, EntryScope.TOPIC);
+    }
+
+    /**
+     * Inserts the given item just after the given key location, with the given
+     * scope.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param item
+     *            the item, not <code>null</code>
+     * @param scope
+     *            the scope of the entry, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
+     */
+    ListInsertResult<Boolean> insertAfter(ListKey key, Object item,
+            EntryScope scope);
+
+    /**
+     * Moves the second given key just before the first given key location.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param keyToMove
+     *            the key to move, not <code>null</code>
+     * @return a completable future that is resolved when the operation has
+     *         completed, not <code>null</code>
+     */
+    CompletableFuture<Boolean> moveBefore(ListKey key, ListKey keyToMove);
+
+    /**
+     * Moves the second given key just after the first given key location.
+     * 
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param keyToMove
+     *            the key to move, not <code>null</code>
+     * @return a completable future that is resolved when the operation has
+     *         completed, not <code>null</code>
+     */
+    CompletableFuture<Boolean> moveAfter(ListKey key, ListKey keyToMove);
 
     /**
      * Sets a new value for the item identified by the given key.

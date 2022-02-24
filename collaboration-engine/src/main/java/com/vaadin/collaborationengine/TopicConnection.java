@@ -74,21 +74,11 @@ public class TopicConnection {
             ensureActiveConnection();
             Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
-            CompletableFuture<Boolean> contextFuture = actionDispatcher
-                    .createCompletableFuture();
-
             ObjectNode change = JsonUtil.createPutChange(name, key,
                     expectedValue, newValue, null);
-
             UUID id = UUID.randomUUID();
-            topic.setChangeResultTracker(id, result -> {
-                boolean isApplied = result != Topic.ChangeResult.REJECTED;
-                actionDispatcher.dispatchAction(
-                        () -> contextFuture.complete(isApplied));
-            });
-            actionDispatcher
-                    .dispatchAction(() -> distributor.accept(id, change));
-            return contextFuture;
+
+            return dispatchChangeWithBooleanResult(id, key, false, change);
         }
 
         @Override
@@ -97,14 +87,20 @@ public class TopicConnection {
             ensureActiveConnection();
             Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
-            CompletableFuture<Void> contextFuture = actionDispatcher
-                    .createCompletableFuture();
-
             boolean connectionScope = scope == EntryScope.CONNECTION;
             ObjectNode change = JsonUtil.createPutChange(name, key, null, value,
                     connectionScope ? topic.getCurrentNodeId() : null);
-
             UUID id = UUID.randomUUID();
+
+            return dispatchChangeWithVoidResult(id, key, connectionScope,
+                    change);
+        }
+
+        private CompletableFuture<Void> dispatchChangeWithVoidResult(UUID id,
+                String key, boolean connectionScope, ObjectNode change) {
+            CompletableFuture<Void> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
             topic.setChangeResultTracker(id, result -> {
                 if (connectionScope && result == ChangeResult.ACCEPTED) {
                     connectionScopedMapKeys
@@ -119,6 +115,31 @@ public class TopicConnection {
             });
             actionDispatcher
                     .dispatchAction(() -> distributor.accept(id, change));
+
+            return contextFuture;
+        }
+
+        private CompletableFuture<Boolean> dispatchChangeWithBooleanResult(
+                UUID id, String key, boolean connectionScope,
+                ObjectNode change) {
+            CompletableFuture<Boolean> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            topic.setChangeResultTracker(id, result -> {
+                if (connectionScope && result == ChangeResult.ACCEPTED) {
+                    connectionScopedMapKeys
+                            .computeIfAbsent(name, k -> new HashMap<>())
+                            .put(key, id);
+                    if (!cleanupPending) {
+                        cleanupScopedData();
+                    }
+                }
+                actionDispatcher.dispatchAction(() -> contextFuture
+                        .complete(result != ChangeResult.REJECTED));
+            });
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
+
             return contextFuture;
         }
 
@@ -267,34 +288,99 @@ public class TopicConnection {
         }
 
         @Override
+        public ListInsertResult<Void> insertFirst(Object item,
+                EntryScope scope) {
+            ensureActiveConnection();
+            Objects.requireNonNull(item, "The item cannot be null");
+
+            boolean connectionScope = scope == EntryScope.CONNECTION;
+            ObjectNode change = JsonUtil.createAppendChange(true, name, item,
+                    connectionScope ? topic.getCurrentNodeId() : null);
+            UUID id = UUID.randomUUID();
+
+            return new ListInsertResult<>(new ListKey(id),
+                    dispatchChangeWithVoidResult(id, id, connectionScope,
+                            change));
+        }
+
+        @Override
         public ListInsertResult<Void> insertLast(Object item,
                 EntryScope scope) {
             ensureActiveConnection();
             Objects.requireNonNull(item, "The item cannot be null");
 
-            CompletableFuture<Void> contextFuture = actionDispatcher
-                    .createCompletableFuture();
+            boolean connectionScope = scope == EntryScope.CONNECTION;
+            ObjectNode change = JsonUtil.createAppendChange(false, name, item,
+                    connectionScope ? topic.getCurrentNodeId() : null);
+            UUID id = UUID.randomUUID();
+
+            return new ListInsertResult<>(new ListKey(id),
+                    dispatchChangeWithVoidResult(id, id, connectionScope,
+                            change));
+        }
+
+        @Override
+        public ListInsertResult<Boolean> insertBefore(ListKey key, Object item,
+                EntryScope scope) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+            Objects.requireNonNull(item, "The item cannot be null");
 
             boolean connectionScope = scope == EntryScope.CONNECTION;
-            ObjectNode change = JsonUtil.createAppendChange(name, item,
+            ObjectNode change = JsonUtil.createInsertChange(true, name,
+                    key.getKey().toString(), item,
                     connectionScope ? topic.getCurrentNodeId() : null);
-
             UUID id = UUID.randomUUID();
-            topic.setChangeResultTracker(id, result -> {
-                if (connectionScope && result == ChangeResult.ACCEPTED) {
-                    connectionScopedListItems
-                            .computeIfAbsent(name, k -> new HashMap<>())
-                            .put(id, id);
-                }
-                if (!cleanupPending) {
-                    cleanupScopedData();
-                }
-                actionDispatcher
-                        .dispatchAction(() -> contextFuture.complete(null));
-            });
-            actionDispatcher
-                    .dispatchAction(() -> distributor.accept(id, change));
-            return new ListInsertResult<>(new ListKey(id), contextFuture);
+
+            return new ListInsertResult<>(new ListKey(id),
+                    dispatchChangeWithBooleanResult(id, id, connectionScope,
+                            change));
+        }
+
+        @Override
+        public ListInsertResult<Boolean> insertAfter(ListKey key, Object item,
+                EntryScope scope) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+            Objects.requireNonNull(item, "The item cannot be null");
+
+            boolean connectionScope = scope == EntryScope.CONNECTION;
+            ObjectNode change = JsonUtil.createInsertChange(false, name,
+                    key.getKey().toString(), item,
+                    connectionScope ? topic.getCurrentNodeId() : null);
+            UUID id = UUID.randomUUID();
+
+            return new ListInsertResult<>(new ListKey(id),
+                    dispatchChangeWithBooleanResult(id, id, connectionScope,
+                            change));
+        }
+
+        @Override
+        public CompletableFuture<Boolean> moveBefore(ListKey key,
+                ListKey keyToMove) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+            Objects.requireNonNull(keyToMove);
+
+            ObjectNode change = JsonUtil.createMoveChange(true, name,
+                    key.getKey().toString(), keyToMove.getKey().toString());
+            UUID id = UUID.randomUUID();
+
+            return dispatchChangeWithBooleanResult(id, id, false, change);
+        }
+
+        @Override
+        public CompletableFuture<Boolean> moveAfter(ListKey key,
+                ListKey keyToMove) {
+            ensureActiveConnection();
+            Objects.requireNonNull(key);
+            Objects.requireNonNull(keyToMove);
+
+            ObjectNode change = JsonUtil.createMoveChange(false, name,
+                    key.getKey().toString(), keyToMove.getKey().toString());
+            UUID id = UUID.randomUUID();
+
+            return dispatchChangeWithBooleanResult(id, id, false, change);
         }
 
         @Override
@@ -303,23 +389,52 @@ public class TopicConnection {
             ensureActiveConnection();
             Objects.requireNonNull(key);
 
-            CompletableFuture<Boolean> contextFuture = actionDispatcher
-                    .createCompletableFuture();
-
             boolean connectionScope = scope == EntryScope.CONNECTION;
             ObjectNode change = JsonUtil.createListSetChange(name,
                     key.getKey().toString(), value,
                     connectionScope ? topic.getCurrentNodeId() : null);
-
             UUID id = UUID.randomUUID();
+
+            return dispatchChangeWithBooleanResult(id, key.getKey(),
+                    connectionScope, change);
+        }
+
+        private CompletableFuture<Void> dispatchChangeWithVoidResult(UUID id,
+                UUID key, boolean connectionScope, ObjectNode change) {
+            CompletableFuture<Void> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
             topic.setChangeResultTracker(id, result -> {
                 if (connectionScope && result == ChangeResult.ACCEPTED) {
                     connectionScopedListItems
                             .computeIfAbsent(name, k -> new HashMap<>())
-                            .put(key.getKey(), id);
+                            .put(key, id);
+                    if (!cleanupPending) {
+                        cleanupScopedData();
+                    }
                 }
-                if (!cleanupPending) {
-                    cleanupScopedData();
+                actionDispatcher
+                        .dispatchAction(() -> contextFuture.complete(null));
+            });
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
+
+            return contextFuture;
+        }
+
+        private CompletableFuture<Boolean> dispatchChangeWithBooleanResult(
+                UUID id, UUID key, boolean connectionScope, ObjectNode change) {
+            CompletableFuture<Boolean> contextFuture = actionDispatcher
+                    .createCompletableFuture();
+
+            topic.setChangeResultTracker(id, result -> {
+                if (connectionScope && result == ChangeResult.ACCEPTED) {
+                    connectionScopedListItems
+                            .computeIfAbsent(name, k -> new HashMap<>())
+                            .put(key, id);
+                    if (!cleanupPending) {
+                        cleanupScopedData();
+                    }
                 }
                 actionDispatcher.dispatchAction(() -> contextFuture
                         .complete(result != ChangeResult.REJECTED));

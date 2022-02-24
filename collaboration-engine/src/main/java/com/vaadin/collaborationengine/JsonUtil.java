@@ -37,6 +37,8 @@ public class JsonUtil {
 
     static final String CHANGE_KEY = "key";
 
+    static final String CHANGE_OTHER_KEY = "other-key";
+
     static final String CHANGE_VALUE = "value";
 
     static final String CHANGE_OLD_VALUE = "old-value";
@@ -47,7 +49,17 @@ public class JsonUtil {
 
     static final String CHANGE_TYPE_PUT = "m-put";
 
+    static final String CHANGE_TYPE_PREPEND = "l-prepend";
+
     static final String CHANGE_TYPE_APPEND = "l-append";
+
+    static final String CHANGE_TYPE_INSERT_BEFORE = "l-insert-before";
+
+    static final String CHANGE_TYPE_INSERT_AFTER = "l-insert-after";
+
+    static final String CHANGE_TYPE_MOVE_BEFORE = "l-move-before";
+
+    static final String CHANGE_TYPE_MOVE_AFTER = "l-move-after";
 
     static final String CHANGE_TYPE_LIST_SET = "l-set";
 
@@ -156,15 +168,41 @@ public class JsonUtil {
         return change;
     }
 
-    static ObjectNode createAppendChange(String name, Object item,
-            UUID scopeOwnerId) {
+    static ObjectNode createAppendChange(boolean first, String name,
+            Object item, UUID scopeOwnerId) {
         ObjectNode change = mapper.createObjectNode();
-        change.put(CHANGE_TYPE, CHANGE_TYPE_APPEND);
+        change.put(CHANGE_TYPE,
+                first ? CHANGE_TYPE_PREPEND : CHANGE_TYPE_APPEND);
         change.put(CHANGE_NAME, name);
         change.set(CHANGE_ITEM, toJsonNode(item));
         if (scopeOwnerId != null) {
             change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
         }
+        return change;
+    }
+
+    static ObjectNode createInsertChange(boolean before, String name, String id,
+            Object item, UUID scopeOwnerId) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE,
+                before ? CHANGE_TYPE_INSERT_BEFORE : CHANGE_TYPE_INSERT_AFTER);
+        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_KEY, id);
+        change.set(CHANGE_ITEM, toJsonNode(item));
+        if (scopeOwnerId != null) {
+            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
+        }
+        return change;
+    }
+
+    static ObjectNode createMoveChange(boolean before, String name, String id,
+            String idToMove) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE,
+                before ? CHANGE_TYPE_MOVE_BEFORE : CHANGE_TYPE_MOVE_AFTER);
+        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_KEY, id);
+        change.put(CHANGE_OTHER_KEY, idToMove);
         return change;
     }
 

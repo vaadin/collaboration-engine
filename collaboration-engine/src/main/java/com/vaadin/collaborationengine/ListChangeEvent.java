@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class ListChangeEvent extends EventObject {
 
-    private ListChange change;
+    private final ListChange change;
 
     /**
      * Creates a new event.
@@ -131,8 +131,8 @@ public class ListChangeEvent extends EventObject {
      * @return the key of the item which is after the current item, or
      *         <code>null</code> if there is none
      */
-    public ListKey getAfter() {
-        return ListKey.of(change.getAfter());
+    public ListKey getNext() {
+        return ListKey.of(change.getNext());
     }
 
     /**
@@ -142,8 +142,8 @@ public class ListChangeEvent extends EventObject {
      * @return the key of the item which was after the current item, or
      *         <code>null</code> if there was none
      */
-    public ListKey getOldAfter() {
-        return ListKey.of(change.getOldAfter());
+    public ListKey getOldNext() {
+        return ListKey.of(change.getOldNext());
     }
 
     /**
@@ -153,8 +153,8 @@ public class ListChangeEvent extends EventObject {
      * @return the key of the item which is before the current item, or
      *         <code>null</code> if there is none
      */
-    public ListKey getBefore() {
-        return ListKey.of(change.getBefore());
+    public ListKey getPrev() {
+        return ListKey.of(change.getPrev());
     }
 
     /**
@@ -164,8 +164,8 @@ public class ListChangeEvent extends EventObject {
      * @return the key of the item which was before the current item, or
      *         <code>null</code> if there was none
      */
-    public ListKey getOldBefore() {
-        return ListKey.of(change.getOldBefore());
+    public ListKey getOldPrev() {
+        return ListKey.of(change.getOldPrev());
     }
 
     /**

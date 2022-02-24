@@ -39,7 +39,7 @@ import com.vaadin.collaborationengine.util.MockConnectionContext.MockActionDispa
 
 public class CollaborationListTest {
 
-    private static final TypeReference<String> STRING_REF = new TypeReference<String>() {
+    private static final TypeReference<String> STRING_REF = new TypeReference<>() {
     };
 
     private static class ListAppendSpy implements ListSubscriber {
@@ -55,7 +55,7 @@ public class CollaborationListTest {
             } catch (NoSuchElementException e) {
                 Assert.fail("No expected items");
             }
-            Assert.assertTrue(item.equals(expected));
+            Assert.assertEquals(expected, item);
         }
 
         private void addExpectedEvent(String item) {
@@ -465,6 +465,100 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void emptyList_insertFirst_oneItem() {
+        ListKey key = list.insertFirst("new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "new");
+    }
+
+    @Test
+    public void oneItem_insertFirst_twoItems() {
+        insertLast(list, "one");
+
+        ListKey key = list.insertFirst("new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "new", "one");
+    }
+
+    @Test
+    public void twoItems_insertBeforeFirst_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+
+        ListKey key = list.insertBefore(keys.get(0), "new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "new", "one", "two");
+    }
+
+    @Test
+    public void twoItems_insertBeforeLast_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+
+        ListKey key = list.insertBefore(keys.get(1), "new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "one", "new", "two");
+    }
+
+    @Test
+    public void twoItems_insertAfterFirst_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+
+        ListKey key = list.insertAfter(keys.get(0), "new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "one", "new", "two");
+    }
+
+    @Test
+    public void twoItems_insertAfterLast_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+
+        ListKey key = list.insertAfter(keys.get(1), "new").getKey();
+
+        Assert.assertEquals("new", list.getItem(key, String.class));
+        assertValues(list, "one", "two", "new");
+    }
+
+    @Test
+    public void threeItems_moveLastBeforeFirst_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.moveBefore(keys.get(0), keys.get(2));
+
+        assertValues(list, "three", "one", "two");
+    }
+
+    @Test
+    public void threeItems_moveLastBeforeSecond_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.moveBefore(keys.get(1), keys.get(2));
+
+        assertValues(list, "one", "three", "two");
+    }
+
+    @Test
+    public void threeItems_moveFirstAfterSecond_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.moveAfter(keys.get(1), keys.get(0));
+
+        assertValues(list, "two", "one", "three");
+    }
+
+    @Test
+    public void threeItems_moveFirstAfterLast_threeItems() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+
+        list.moveAfter(keys.get(2), keys.get(0));
+
+        assertValues(list, "two", "three", "one");
+    }
+
+    @Test
     public void listWithRemovedItem_setValue_negativeResult()
             throws InterruptedException, ExecutionException {
         ListKey key = list.insertLast("one").getKey();
@@ -537,7 +631,60 @@ public class CollaborationListTest {
     }
 
     @Test
-    public void insertLastWithConnectionScope_connectiondDeactivated_entryRemoved() {
+    public void populatedListWithSubscriber_insertBeforeLastItem_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        ListKey key = list.insertBefore(keys.get(1), "new").getKey();
+
+        Assert.assertEquals(1, eventCollector.size());
+        assertEvent(ListChangeType.INSERT, key, null, "new", null, keys.get(0),
+                null, keys.get(1), eventCollector.get(0));
+    }
+
+    @Test
+    public void populatedListWithSubscriber_insertAfterFirstItem_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        ListKey key = list.insertAfter(keys.get(0), "new").getKey();
+
+        Assert.assertEquals(1, eventCollector.size());
+        assertEvent(ListChangeType.INSERT, key, null, "new", null, keys.get(0),
+                null, keys.get(1), eventCollector.get(0));
+    }
+
+    @Test
+    public void populatedListWithSubscriber_moveFirstBeforeLast_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        list.moveBefore(keys.get(2), keys.get(0));
+
+        Assert.assertEquals(1, eventCollector.size());
+        assertEvent(ListChangeType.MOVE, keys.get(0), "one", "one", null,
+                keys.get(1), keys.get(1), keys.get(2), eventCollector.get(0));
+    }
+
+    @Test
+    public void populatedListWithSubscriber_moveLastAfterFirst_eventDetailsComplete() {
+        List<ListKey> keys = insertLast(list, "one", "two", "three");
+        list.subscribe(eventCollector);
+        eventCollector.clear();
+
+        list.moveAfter(keys.get(0), keys.get(2));
+
+        Assert.assertEquals(1, eventCollector.size());
+        assertEvent(ListChangeType.MOVE, keys.get(2), "three", "three",
+                keys.get(1), keys.get(0), null, keys.get(1),
+                eventCollector.get(0));
+    }
+
+    @Test
+    public void insertLastWithConnectionScope_connectionDeactivated_entryRemoved() {
         ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
         context.deactivate();
         context.activate();
@@ -594,18 +741,18 @@ public class CollaborationListTest {
     }
 
     private static void assertEvent(ListChangeType type, ListKey key,
-            String oldValue, String value, ListKey oldAfter, ListKey after,
-            ListKey oldBefore, ListKey before, ListChangeEvent event) {
+            String oldValue, String value, ListKey oldPrev, ListKey prev,
+            ListKey oldNext, ListKey next, ListChangeEvent event) {
         Assert.assertEquals(type, event.getType());
         Assert.assertEquals(key, event.getKey());
         Assert.assertEquals(oldValue, event.getOldValue(String.class));
         Assert.assertEquals(oldValue, event.getOldValue(STRING_REF));
         Assert.assertEquals(value, event.getValue(String.class));
         Assert.assertEquals(value, event.getValue(STRING_REF));
-        Assert.assertEquals(oldAfter, event.getOldAfter());
-        Assert.assertEquals(after, event.getAfter());
-        Assert.assertEquals(oldBefore, event.getOldBefore());
-        Assert.assertEquals(before, event.getBefore());
+        Assert.assertEquals(oldNext, event.getOldNext());
+        Assert.assertEquals(next, event.getNext());
+        Assert.assertEquals(oldPrev, event.getOldPrev());
+        Assert.assertEquals(prev, event.getPrev());
     }
 
     private static void assertValues(CollaborationList list, String... values) {
