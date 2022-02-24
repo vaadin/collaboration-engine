@@ -1,7 +1,7 @@
 Bundle-SymbolicName: ${project.groupId}.collaborationengine
 Bundle-Name: Vaadin Collaboration Engine
 Bundle-Version: ${osgi.bundle.version}
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.vaadin.collaborationengine*
 Import-Package: com.vaadin.flow.component.avatar;version="[1.0,24)",\
   com.vaadin.flow.component.messages;version="[1.0,24)",\
