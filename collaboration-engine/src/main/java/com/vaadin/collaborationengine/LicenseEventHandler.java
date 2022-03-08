@@ -9,9 +9,8 @@
 package com.vaadin.collaborationengine;
 
 /**
- * Event handler that gets notified on license events. A listener can be set
- * using
- * {@link CollaborationEngine#setLicenseEventHandler(LicenseEventHandler)}.
+ * Event handler that gets notified on license events. The handler can be set
+ * when creating an instance of {@link CollaborationEngineConfiguration}.
  *
  * @author Vaadin Ltd
  * @since 3.0

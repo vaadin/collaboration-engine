@@ -11,9 +11,11 @@ import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -27,8 +29,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
-import com.vaadin.collaborationengine.FileLicenseStorage.StatisticsInfo;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfoWrapper;
 import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.MockService;
@@ -127,11 +130,18 @@ public abstract class AbstractLicenseTest {
                 getStatisticsWithChecksum(expected), fileContent);
     }
 
-    FileLicenseStorage.StatisticsInfo readStatsFileContent()
-            throws IOException {
+    StatisticsInfo readStatsFileContent() throws IOException {
         JsonNode statsJson = objectMapper.readTree(statsFilePath.toFile());
         return objectMapper.treeToValue(statsJson,
-                FileLicenseStorage.StatisticsInfoWrapper.class).content;
+                StatisticsInfoWrapper.class).content;
+    }
+
+    Map<YearMonth, Set<String>> getStatistics() {
+        try {
+            return readStatsFileContent().statistics;
+        } catch (IOException e) {
+            return Collections.emptyMap();
+        }
     }
 
     void writeToStatsFile(StatisticsInfo stats) {

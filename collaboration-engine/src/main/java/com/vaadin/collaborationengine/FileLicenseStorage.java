@@ -15,69 +15,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfoWrapper;
 
 class FileLicenseStorage implements LicenseStorage {
-
-    @JsonIgnoreProperties("gracePeriodStart")
-    static class StatisticsInfo {
-        String licenseKey;
-        Map<YearMonth, Set<String>> statistics;
-        Map<LicenseEventType, LocalDate> licenseEvents;
-
-        StatisticsInfo(
-                @JsonProperty(value = "licenseKey", required = true) String licenseKey,
-                @JsonProperty(value = "statistics", required = true) Map<YearMonth, List<String>> userIdsFromFile,
-                @JsonProperty(value = "licenseEvents", required = true) Map<LicenseEventType, LocalDate> licenseEvents) {
-            this.licenseKey = licenseKey;
-            this.statistics = copyMap(userIdsFromFile);
-            this.licenseEvents = new HashMap<>(licenseEvents);
-        }
-
-        private Map<YearMonth, Set<String>> copyMap(
-                Map<YearMonth, ? extends Collection<String>> map) {
-            TreeMap<YearMonth, Set<String>> treeMap = new TreeMap<>();
-            for (Map.Entry<YearMonth, ? extends Collection<String>> month : map
-                    .entrySet()) {
-                treeMap.put(month.getKey(),
-                        new LinkedHashSet<>(month.getValue()));
-            }
-            return treeMap;
-        }
-    }
-
-    static class StatisticsInfoWrapper {
-
-        final StatisticsInfo content;
-
-        final String checksum;
-
-        @JsonCreator
-        StatisticsInfoWrapper(
-                @JsonProperty(value = "content", required = true) StatisticsInfo content,
-                @JsonProperty(value = "checksum", required = true) String checksum) {
-            this.content = content;
-            this.checksum = checksum;
-        }
-    }
 
     private final Path statsFilePath;
 
@@ -98,43 +47,29 @@ class FileLicenseStorage implements LicenseStorage {
     @Override
     public List<String> getUserEntries(String licenseKey, YearMonth month) {
         checkLicenseKey(licenseKey);
-        Set<String> entries = statisticsCache.statistics.getOrDefault(month,
-                Collections.emptySet());
-        return new ArrayList<>(entries);
+        return statisticsCache.getUserEntries(month);
     }
 
     @Override
     public void addUserEntry(String licenseKey, YearMonth month,
             String payload) {
         checkLicenseKey(licenseKey);
-        statisticsCache.statistics
-                .computeIfAbsent(month, key -> new LinkedHashSet<>())
-                .add(payload);
+        statisticsCache.addUserEntry(month, payload);
         writeStatistics();
     }
 
     @Override
     public Map<String, LocalDate> getLatestLicenseEvents(String licenseKey) {
         checkLicenseKey(licenseKey);
-        return statisticsCache.licenseEvents.entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().name(),
-                        Map.Entry::getValue));
+        return statisticsCache.getLatestLicenseEvents();
     }
 
     @Override
     public void setLicenseEvent(String licenseKey, String eventName,
             LocalDate latestOccurrence) {
         checkLicenseKey(licenseKey);
-        statisticsCache.licenseEvents.put(LicenseEventType.valueOf(eventName),
-                latestOccurrence);
+        statisticsCache.setLicenseEvent(eventName, latestOccurrence);
         writeStatistics();
-    }
-
-    /*
-     * For testing internal state of Statistics gathering
-     */
-    Map<YearMonth, Set<String>> getStatistics() {
-        return statisticsCache.copyMap(statisticsCache.statistics);
     }
 
     private StatisticsInfo readStatistics() {

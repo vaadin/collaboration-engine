@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.FileLicenseStorage.StatisticsInfo;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 
 public class StatsFilePerformanceTest extends AbstractLicenseTest {

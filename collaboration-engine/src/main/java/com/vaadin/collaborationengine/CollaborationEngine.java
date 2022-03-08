@@ -591,7 +591,7 @@ public class CollaborationEngine {
         this.clock = clock;
     }
 
-    private synchronized void ensureConfigAndLicenseHandlerInitialization() {
+    synchronized void ensureConfigAndLicenseHandlerInitialization() {
         if (licenseHandler == null) {
             // Will throw if config is invalid
             licenseHandler = new LicenseHandler(this);

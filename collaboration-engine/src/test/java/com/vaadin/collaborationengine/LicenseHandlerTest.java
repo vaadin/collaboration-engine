@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,8 +23,12 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.collaborationengine.LicenseHandler.LicenseInfoWrapper;
+import com.vaadin.collaborationengine.LicenseHandler.StatisticsInfo;
+import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.TestBackendFactory;
 import com.vaadin.flow.component.UI;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -32,25 +37,28 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     private static final String INVALID_LICENSE = "license property or file is not valid";
 
+    private TestBackendFactory backendFactory;
+
     @Before
     public void setup() {
+        backendFactory = new TestBackendFactory();
         setCurrentDate(LocalDate.of(2020, 5, 1));
     }
 
     @Test
     public void registerUser_addUsers_usersAdded() {
         LicenseHandler licenseHandler = new LicenseHandler(ce);
-        Assert.assertTrue(getStatistics(licenseHandler).isEmpty());
+        Assert.assertTrue(licenseHandler.getStatistics().isEmpty());
         licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
+        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Assert.assertEquals(1, statistics.get(getCurrentMonth()).size());
         Assert.assertTrue(statistics.get(getCurrentMonth()).contains("steve"));
         licenseHandler.registerUser("bob");
 
-        statistics = getStatistics(licenseHandler);
+        statistics = licenseHandler.getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Assert.assertEquals(2, statistics.get(getCurrentMonth()).size());
@@ -64,7 +72,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
         licenseHandler.registerUser("steve");
-        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
+        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Set<String> usersInMonth = statistics.get(getCurrentMonth());
@@ -81,7 +89,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         setCurrentDate(LocalDate.of(2020, 6, 1));
         licenseHandler.registerUser("steve");
 
-        Map<YearMonth, Set<String>> statistics = getStatistics(licenseHandler);
+        Map<YearMonth, Set<String>> statistics = licenseHandler.getStatistics();
         YearMonth firstMonth = YearMonth.of(2020, 5);
         YearMonth secondMonth = YearMonth.of(2020, 6);
         Assert.assertEquals(2, statistics.keySet().size());
@@ -97,8 +105,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void openTopicConnection_userRegistered() {
         ce.openTopicConnection(MockConnectionContext.createEager(), "foo",
                 new UserInfo("steve"), topicConnection -> null);
-        Map<YearMonth, Set<String>> statistics = getStatistics(
-                ce.getLicenseHandler());
+        Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
+                .getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Set<String> currentMonth = statistics.get(getCurrentMonth());
@@ -113,7 +121,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertEquals(Collections.emptyMap(),
-                getStatistics(licenseHandler));
+                licenseHandler.getStatistics());
     }
 
     @Test
@@ -144,11 +152,12 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
             throws IOException {
         writeToStatsFile(
                 "{\"licenseKey\":\"123\",\"statistics\":{\"2000-01\":[\"bob\"]},\"licenseEvents\":{}}");
+        setCurrentDate(LocalDate.of(2000, 1, 1));
         LicenseHandler licenseHandler = new LicenseHandler(ce);
 
-        Assert.assertEquals(1, getStatistics(licenseHandler).size());
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(Collections.singleton("bob"),
-                getStatistics(licenseHandler).get(YearMonth.of(2000, 1)));
+                licenseHandler.getStatistics().get(YearMonth.of(2000, 1)));
     }
 
     @Test
@@ -156,13 +165,13 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
             throws IOException {
         writeToStatsFile("{\"licenseKey\":\"" + LICENSE_KEY
                 + "\",\"statistics\":{\"2020-01\":[\"bob\"]},\"licenseEvents\":{}}");
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
         setCurrentDate(LocalDate.of(2020, 1, 1));
+        LicenseHandler licenseHandler = new LicenseHandler(ce);
         licenseHandler.registerUser("steve");
 
-        Assert.assertEquals(1, getStatistics(licenseHandler).size());
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(new HashSet<>(Arrays.asList("bob", "steve")),
-                getStatistics(licenseHandler).get(YearMonth.of(2020, 1)));
+                licenseHandler.getStatistics().get(YearMonth.of(2020, 1)));
         assertStatsFileContent("{\"licenseKey\":\"" + LICENSE_KEY
                 + "\",\"statistics\":{\"2020-01\":[\"bob\",\"steve\"]},"
                 + "\"licenseEvents\":{}}");
@@ -202,7 +211,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         // Do an action to trigger rewrite of the stats file
         licenseHandler.registerUser("steve");
 
-        FileLicenseStorage.StatisticsInfo statisticsInfo = readStatsFileContent();
+        StatisticsInfo statisticsInfo = readStatsFileContent();
         Assert.assertEquals(LocalDate.of(2020, 1, 10),
                 statisticsInfo.licenseEvents
                         .get(LicenseEventType.LICENSE_EXPIRES_SOON));
@@ -232,11 +241,11 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\",\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
                 + "\"2020-03\":[\"steve\"]},\"licenseEvents\":{}}");
 
-        Map<YearMonth, Set<String>> newStats = getStatistics(
-                new LicenseHandler(ce));
-        Assert.assertEquals(2, newStats.size());
-        Assert.assertEquals(new LinkedHashSet<>(Arrays.asList("steve", "bob")),
-                newStats.get(YearMonth.of(2020, 2)));
+        Map<YearMonth, Set<String>> newStats = new LicenseHandler(ce)
+                .getStatistics();
+
+        // Only current month is loaded to cache
+        Assert.assertEquals(1, newStats.size());
         Assert.assertEquals(Collections.singleton("steve"),
                 newStats.get(YearMonth.of(2020, 3)));
     }
@@ -416,9 +425,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertNotNull(
                 "Grace period was not automatically started from going over the limit",
                 licenseHandler.getGracePeriodStarted());
-        Assert.assertEquals(1, getStatistics(licenseHandler).size());
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(4,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -431,9 +440,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue(
                 "Was not able to register a new person with the grace period",
                 wasAccessGranted);
-        Assert.assertEquals(1, getStatistics(licenseHandler).size());
+        Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(5,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -458,7 +467,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                     licenseHandler.registerUser(user));
         }
         Assert.assertEquals(GRACE_QUOTA,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -469,7 +478,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertFalse("User should have been denied access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -480,7 +489,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -492,7 +501,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         Assert.assertTrue("User should have been given access",
                 wasAccessGranted);
         Assert.assertEquals(GRACE_QUOTA,
-                getStatistics(licenseHandler).get(getCurrentMonth()).size());
+                licenseHandler.getStatistics().get(getCurrentMonth()).size());
     }
 
     @Test
@@ -771,12 +780,12 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void configureCustomStorage_customStorageIsUsed() {
-        CustomLicenseStorage storage = new CustomLicenseStorage(configuration);
+        CustomLicenseStorage storage = new CustomLicenseStorage();
         configuration.setLicenseStorage(storage);
         LicenseHandler licenseHandler = new LicenseHandler(ce);
         licenseHandler.registerUser("foo");
 
-        Assert.assertEquals(1, storage.addedUsers.size());
+        Assert.assertEquals(1, storage.licenses.size());
     }
 
     @Test
@@ -812,6 +821,89 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         new LicenseHandler(ce);
     }
 
+    @Test
+    public void twoBackendNodes_firstIsLeader() {
+        CustomLicenseStorage storage = new CustomLicenseStorage();
+        CollaborationEngine node1 = createNode(storage);
+        CollaborationEngine node2 = createNode(storage);
+
+        Assert.assertTrue(node1.getLicenseHandler().isLeader());
+        Assert.assertFalse(node2.getLicenseHandler().isLeader());
+    }
+
+    @Test
+    public void twoBackendNodes_firstLeave_secondBecomesLeader() {
+        CustomLicenseStorage storage = new CustomLicenseStorage();
+        CollaborationEngine node1 = createNode(storage);
+        CollaborationEngine node2 = createNode(storage);
+
+        leave(node1);
+
+        Assert.assertTrue(node2.getLicenseHandler().isLeader());
+    }
+
+    @Test
+    public void twoBackendNodes_firstAddsUserEntry_secondIsUpdated() {
+        CustomLicenseStorage storage = new CustomLicenseStorage();
+        CollaborationEngine node1 = createNode(storage);
+        CollaborationEngine node2 = createNode(storage);
+
+        node1.getLicenseHandler().registerUser("user-1");
+
+        Assert.assertTrue(node2.getLicenseHandler().getStatistics()
+                .get(YearMonth.now()).contains("user-1"));
+    }
+
+    @Test
+    public void twoBackendNodes_secondAddsUserEntry_entryIsSavedToStorage() {
+        CustomLicenseStorage storage = new CustomLicenseStorage();
+        CollaborationEngine node1 = createNode(storage);
+        CollaborationEngine node2 = createNode(storage);
+
+        node2.getLicenseHandler().registerUser("user-1");
+
+        Assert.assertTrue(
+                storage.getUserEntries(LICENSE_KEY.toString(), YearMonth.now())
+                        .contains("user-1"));
+    }
+
+    @Test
+    public void existingStorageData_newBackendNodeJoins_receivesCurrentData() {
+        CustomLicenseStorage storage = new CustomLicenseStorage();
+        YearMonth month = YearMonth.now();
+        storage.addUserEntry(LICENSE_KEY.toString(), month, "user-1");
+
+        CollaborationEngine node1 = createNode(storage);
+        CollaborationEngine node2 = createNode(storage);
+
+        Assert.assertTrue(node2.getLicenseHandler().getStatistics().get(month)
+                .contains("user-1"));
+    }
+
+    private CollaborationEngine createNode(LicenseStorage storage) {
+        SpyLicenseEventHandler spyEventHandler = new SpyLicenseEventHandler();
+        MockConfiguration conf = new MockConfiguration(spyEventHandler);
+        conf.setDataDirPath(testDataDir);
+        conf.setLicenseCheckingEnabled(true);
+        conf.setBackend(backendFactory.createBackend());
+        conf.setLicenseStorage(storage);
+
+        CollaborationEngine ce = CollaborationEngine.configure(
+                new MockService(), conf, new TestUtil.TestCollaborationEngine(),
+                true);
+        backendFactory.join(conf.getBackend());
+        ce.ensureConfigAndLicenseHandlerInitialization();
+        return ce;
+    }
+
+    private void join(CollaborationEngine node) {
+        backendFactory.join(node.getConfiguration().getBackend());
+    }
+
+    private void leave(CollaborationEngine node) {
+        backendFactory.leave(node.getConfiguration().getBackend());
+    }
+
     private LicenseHandler getLicenseHandlerWithGracePeriod(
             int daysSinceGracePeriodStarted) throws IOException {
         LocalDate dateNow = LocalDate.of(2020, 6, 10);
@@ -825,8 +917,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\":[\"userId-1\",\"userId-2\",\"userId-3\",\"userId-4\",\"userId-5\",\"userId-6\",\"userId-7\",\"userId-8\",\"userId-9\",\"userId-10\"]},"
                 + "\"licenseEvents\":{\"gracePeriodStarted\":\"" + graceStart
                 + "\"}}");
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
         setCurrentDate(dateNow);
+        LicenseHandler licenseHandler = new LicenseHandler(ce);
         return licenseHandler;
     }
 
@@ -836,26 +928,44 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         return users;
     }
 
-    private Map<YearMonth, Set<String>> getStatistics(
-            LicenseHandler licenseHandler) {
-        return ((FileLicenseStorage) licenseHandler.licenseStorage)
-                .getStatistics();
-    }
+    static class CustomLicenseStorage implements LicenseStorage {
 
-    static class CustomLicenseStorage extends FileLicenseStorage {
+        private class LicenseData {
+            private final Map<YearMonth, Set<String>> userEntries = new HashMap<>();
+            private final Map<String, LocalDate> licenseEvents = new HashMap<>();
+        }
 
-        private final Set<String> addedUsers = new HashSet<>();
+        private final Map<String, LicenseData> licenses = new HashMap<>();
 
-        public CustomLicenseStorage(
-                CollaborationEngineConfiguration configuration) {
-            super(configuration);
+        @Override
+        public List<String> getUserEntries(String licenseKey, YearMonth month) {
+            return List.copyOf(getLicense(licenseKey).userEntries
+                    .getOrDefault(month, Collections.emptySet()));
         }
 
         @Override
         public void addUserEntry(String licenseKey, YearMonth month,
                 String payload) {
-            addedUsers.add(payload);
-            super.addUserEntry(licenseKey, month, payload);
+            getLicense(licenseKey).userEntries
+                    .computeIfAbsent(month, k -> new LinkedHashSet<>())
+                    .add(payload);
+        }
+
+        @Override
+        public Map<String, LocalDate> getLatestLicenseEvents(
+                String licenseKey) {
+            return Map.copyOf(getLicense(licenseKey).licenseEvents);
+        }
+
+        @Override
+        public void setLicenseEvent(String licenseKey, String eventName,
+                LocalDate latestOccurrence) {
+            getLicense(licenseKey).licenseEvents.put(eventName,
+                    latestOccurrence);
+        }
+
+        private LicenseData getLicense(String licenseKey) {
+            return licenses.computeIfAbsent(licenseKey, k -> new LicenseData());
         }
     }
 }

@@ -10,6 +10,8 @@ package com.vaadin.collaborationengine;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -62,6 +64,20 @@ public class JsonUtil {
     static final String CHANGE_TYPE_MOVE_AFTER = "l-move-after";
 
     static final String CHANGE_TYPE_LIST_SET = "l-set";
+
+    static final String CHANGE_TYPE_LICENSE_USER = "license-user";
+
+    static final String CHANGE_TYPE_LICENSE_EVENT = "license-event";
+
+    static final String CHANGE_LICENSE_KEY = "license-key";
+
+    static final String CHANGE_YEAR_MONTH = "year-month";
+
+    static final String CHANGE_USER_ID = "user-id";
+
+    static final String CHANGE_EVENT_NAME = "event-name";
+
+    static final String CHANGE_EVENT_OCCURRENCE = "event-occurrence";
 
     static final String CHANGE_ITEM = "item";
 
@@ -217,6 +233,26 @@ public class JsonUtil {
             change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
         }
         return change;
+    }
+
+    static ObjectNode createUserEntry(String key, YearMonth month,
+            String userId) {
+        ObjectNode entry = mapper.createObjectNode();
+        entry.put(CHANGE_TYPE, CHANGE_TYPE_LICENSE_USER);
+        entry.put(CHANGE_LICENSE_KEY, key);
+        entry.put(CHANGE_YEAR_MONTH, month.toString());
+        entry.put(CHANGE_USER_ID, userId);
+        return entry;
+    }
+
+    static ObjectNode createLicenseEvent(String key, String name,
+            LocalDate latestOccurrence) {
+        ObjectNode event = mapper.createObjectNode();
+        event.put(CHANGE_TYPE, CHANGE_TYPE_LICENSE_EVENT);
+        event.put(CHANGE_LICENSE_KEY, key);
+        event.put(CHANGE_EVENT_NAME, name);
+        event.put(CHANGE_EVENT_OCCURRENCE, latestOccurrence.toString());
+        return event;
     }
 
     /**

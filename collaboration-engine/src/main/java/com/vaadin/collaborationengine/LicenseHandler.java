@@ -20,8 +20,18 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -31,8 +41,10 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import com.vaadin.collaborationengine.Backend.EventLog;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.flow.internal.MessageDigestUtil;
 
@@ -74,17 +86,110 @@ class LicenseHandler {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class StatisticsInfo {
+        String licenseKey;
+        Map<YearMonth, Set<String>> statistics;
+        Map<LicenseEventType, LocalDate> licenseEvents;
+
+        StatisticsInfo(
+                @JsonProperty(value = "licenseKey", required = true) String licenseKey,
+                @JsonProperty(value = "statistics", required = true) Map<YearMonth, List<String>> userIdsFromFile,
+                @JsonProperty(value = "licenseEvents", required = true) Map<LicenseEventType, LocalDate> licenseEvents) {
+            this.licenseKey = licenseKey;
+            this.statistics = copyMap(userIdsFromFile);
+            this.licenseEvents = new HashMap<>(licenseEvents);
+        }
+
+        Map<YearMonth, Set<String>> copyMap(
+                Map<YearMonth, ? extends Collection<String>> map) {
+            TreeMap<YearMonth, Set<String>> treeMap = new TreeMap<>();
+            for (Map.Entry<YearMonth, ? extends Collection<String>> month : map
+                    .entrySet()) {
+                treeMap.put(month.getKey(),
+                        new LinkedHashSet<>(month.getValue()));
+            }
+            return treeMap;
+        }
+
+        List<String> getUserEntries(YearMonth month) {
+            Set<String> entries = statistics.getOrDefault(month,
+                    Collections.emptySet());
+            return new ArrayList<>(entries);
+        }
+
+        void addUserEntry(YearMonth month, String payload) {
+            statistics.computeIfAbsent(month, key -> new LinkedHashSet<>())
+                    .add(payload);
+        }
+
+        Map<String, LocalDate> getLatestLicenseEvents() {
+            return licenseEvents.entrySet().stream().collect(Collectors.toMap(
+                    entry -> entry.getKey().name(), Map.Entry::getValue));
+        }
+
+        void setLicenseEvent(String eventName, LocalDate latestOccurrence) {
+            licenseEvents.put(LicenseEventType.valueOf(eventName),
+                    latestOccurrence);
+        }
+    }
+
+    static class StatisticsInfoWrapper {
+
+        final StatisticsInfo content;
+
+        final String checksum;
+
+        @JsonCreator
+        StatisticsInfoWrapper(
+                @JsonProperty(value = "content", required = true) StatisticsInfo content,
+                @JsonProperty(value = "checksum", required = true) String checksum) {
+            this.content = content;
+            this.checksum = checksum;
+        }
+    }
+
+    static class Snapshot {
+
+        private final UUID latestChange;
+
+        private final StatisticsInfo statistics;
+
+        @JsonCreator
+        public Snapshot(
+                @JsonProperty(value = "latestChange", required = true) UUID latestChange,
+                @JsonProperty(value = "statistics", required = true) StatisticsInfo statistics) {
+            this.latestChange = latestChange;
+            this.statistics = statistics;
+        }
+
+        public UUID getLatestChange() {
+            return latestChange;
+        }
+
+        public StatisticsInfo getStatistics() {
+            return statistics;
+        }
+    }
+
+    private static final String EVENT_LOG_NAME = LicenseHandler.class.getName();
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
     static final ObjectMapper MAPPER = createObjectMapper();
 
     private final CollaborationEngine ce;
+    private final CollaborationEngineConfiguration configuration;
+    private final Backend backend;
     final LicenseStorage licenseStorage;
     final LicenseInfo license;
+    final EventLog licenseEventLog;
+    private StatisticsInfo statisticsCache;
+    private final List<UUID> backendNodes = new ArrayList<>();
+    private boolean leader;
 
     LicenseHandler(CollaborationEngine collaborationEngine) {
         this.ce = collaborationEngine;
-        CollaborationEngineConfiguration configuration = collaborationEngine
-                .getConfiguration();
+        this.configuration = collaborationEngine.getConfiguration();
+        this.backend = configuration.getBackend();
         if (configuration.isLicenseCheckingEnabled()) {
             LicenseStorage configuredStorage = configuration
                     .getLicenseStorage();
@@ -112,10 +217,129 @@ class LicenseHandler {
                                 + "your application. "
                                 + "https://vaadin.com/collaboration");
             }
+            licenseEventLog = backend.openEventLog(EVENT_LOG_NAME);
+            backend.getMembershipEventLog().subscribe(null,
+                    (eventId, event) -> {
+                        String type = event.get(JsonUtil.CHANGE_TYPE).asText();
+                        if (JsonUtil.CHANGE_NODE_JOIN.equals(type)) {
+                            handleNodeJoin(event);
+                        } else if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
+                            handleNodeLeave(event);
+                        }
+                    });
+            backend.loadLatestSnapshot(EVENT_LOG_NAME)
+                    .thenAccept(this::initializeFromSnapshot);
         } else {
+            licenseEventLog = null;
             licenseStorage = null;
             license = null;
         }
+    }
+
+    boolean isLeader() {
+        return leader;
+    }
+
+    private void becomeLeader() {
+        leader = true;
+    }
+
+    private void handleNodeJoin(ObjectNode event) {
+        UUID nodeId = UUID
+                .fromString(event.get(JsonUtil.CHANGE_NODE_ID).asText());
+        if (backendNodes.isEmpty() && backend.getNodeId().equals(nodeId)) {
+            becomeLeader();
+        }
+        backendNodes.add(nodeId);
+    }
+
+    private void handleNodeLeave(ObjectNode event) {
+        UUID nodeId = UUID
+                .fromString(event.get(JsonUtil.CHANGE_NODE_ID).asText());
+        backendNodes.remove(nodeId);
+        if (!backendNodes.isEmpty()
+                && backendNodes.get(0).equals(backend.getNodeId())) {
+            becomeLeader();
+        }
+    }
+
+    private void initializeFromSnapshot(ObjectNode snapshot) {
+        if (snapshot != null) {
+            UUID latestChange = loadSnapshot(snapshot).getLatestChange();
+            licenseEventLog.subscribe(latestChange, this::handleChangeEvent);
+        } else {
+            loadFromStorage();
+            licenseEventLog.subscribe(null, this::handleChangeEvent);
+        }
+    }
+
+    private Snapshot loadSnapshot(ObjectNode node) {
+        try {
+            Snapshot snapshot = MAPPER.treeToValue(node, Snapshot.class);
+            statisticsCache = snapshot.getStatistics();
+            return snapshot;
+        } catch (JsonProcessingException | IllegalArgumentException e) {
+            throw new IllegalStateException(
+                    "Collaboration Engine failed to load license usage data.",
+                    e);
+        }
+    }
+
+    private void loadFromStorage() {
+        statisticsCache = new StatisticsInfo(license.key,
+                Collections.emptyMap(), Collections.emptyMap());
+
+        YearMonth month = YearMonth.from(getCurrentDate());
+        licenseStorage.getUserEntries(license.key, month)
+                .forEach(userId -> statisticsCache.addUserEntry(month, userId));
+        licenseStorage.getLatestLicenseEvents(license.key)
+                .forEach(statisticsCache::setLicenseEvent);
+
+        Snapshot snapshot = new Snapshot(UUID.randomUUID(), statisticsCache);
+        backend.submitSnapshot(EVENT_LOG_NAME, MAPPER.valueToTree(snapshot));
+    }
+
+    private void handleChangeEvent(UUID eventId, ObjectNode event) {
+        String changeType = event.get(JsonUtil.CHANGE_TYPE).asText();
+        String licenseKey = event.get(JsonUtil.CHANGE_LICENSE_KEY).asText();
+        if (JsonUtil.CHANGE_TYPE_LICENSE_USER.equals(changeType)) {
+            YearMonth month = YearMonth
+                    .parse(event.get(JsonUtil.CHANGE_YEAR_MONTH).asText());
+            String userId = event.get(JsonUtil.CHANGE_USER_ID).asText();
+            statisticsCache.addUserEntry(month, userId);
+            if (leader) {
+                licenseStorage.addUserEntry(licenseKey, month, userId);
+            }
+        } else if (JsonUtil.CHANGE_TYPE_LICENSE_EVENT.equals(changeType)) {
+            String eventName = event.get(JsonUtil.CHANGE_EVENT_NAME).asText();
+            LocalDate latestOccurrence = LocalDate.parse(
+                    event.get(JsonUtil.CHANGE_EVENT_OCCURRENCE).asText());
+            statisticsCache.setLicenseEvent(eventName, latestOccurrence);
+            if (leader) {
+                notifyLicenseEventHandler(eventName);
+                licenseStorage.setLicenseEvent(licenseKey, eventName,
+                        latestOccurrence);
+            }
+        }
+    }
+
+    private void notifyLicenseEventHandler(String eventName) {
+        LicenseEventType type = LicenseEventType.valueOf(eventName);
+        String message;
+        switch (type) {
+        case GRACE_PERIOD_STARTED:
+            LocalDate gracePeriodEnd = getCurrentDate().plusDays(31);
+            message = type.createMessage(gracePeriodEnd.format(DATE_FORMATTER));
+            break;
+        case LICENSE_EXPIRES_SOON:
+            message = type
+                    .createMessage(license.endDate.format(DATE_FORMATTER));
+            break;
+        default:
+            message = type.createMessage();
+        }
+        configuration.getLicenseEventHandler()
+                .handleLicenseEvent(new LicenseEvent(ce, type, message));
     }
 
     private Reader getLicenseFromProperty(String licenseProperty) {
@@ -185,7 +409,7 @@ class LicenseHandler {
         }
 
         YearMonth month = YearMonth.from(currentDate);
-        List<String> users = licenseStorage.getUserEntries(license.key, month);
+        List<String> users = statisticsCache.getUserEntries(month);
 
         int effectiveQuota = isGracePeriodOngoing(currentDate)
                 ? license.quota * 10
@@ -207,12 +431,13 @@ class LicenseHandler {
             fireLicenseEvent(LicenseEventType.GRACE_PERIOD_STARTED);
         }
 
-        licenseStorage.addUserEntry(license.key, month, userId);
+        ObjectNode entry = JsonUtil.createUserEntry(license.key, month, userId);
+        licenseEventLog.submitEvent(UUID.randomUUID(), entry);
         return true;
     }
 
     LocalDate getGracePeriodStarted() {
-        return licenseStorage.getLatestLicenseEvents(license.key)
+        return statisticsCache.getLatestLicenseEvents()
                 .get(LicenseEventType.GRACE_PERIOD_STARTED.name());
     }
 
@@ -232,29 +457,13 @@ class LicenseHandler {
 
     private void fireLicenseEvent(LicenseEventType type) {
         String eventName = type.name();
-        if (licenseStorage.getLatestLicenseEvents(license.key)
-                .get(eventName) != null) {
+        if (statisticsCache.getLatestLicenseEvents().get(eventName) != null) {
             // Event already fired, do nothing.
             return;
         }
-        String message;
-        switch (type) {
-        case GRACE_PERIOD_STARTED:
-            LocalDate gracePeriodEnd = getCurrentDate().plusDays(31);
-            message = type.createMessage(gracePeriodEnd.format(DATE_FORMATTER));
-            break;
-        case LICENSE_EXPIRES_SOON:
-            message = type
-                    .createMessage(license.endDate.format(DATE_FORMATTER));
-            break;
-        default:
-            message = type.createMessage();
-        }
-        LicenseEvent event = new LicenseEvent(ce, type, message);
-        licenseStorage.setLicenseEvent(license.key, eventName,
+        ObjectNode event = JsonUtil.createLicenseEvent(license.key, eventName,
                 getCurrentDate());
-        ce.getConfiguration().getLicenseEventHandler()
-                .handleLicenseEvent(event);
+        licenseEventLog.submitEvent(UUID.randomUUID(), event);
     }
 
     private LocalDate getCurrentDate() {
@@ -283,6 +492,13 @@ class LicenseHandler {
                         + "' property is pointing to the correct directory "
                         + "and that the directory contains the license file.",
                 cause);
+    }
+
+    /*
+     * For testing internal state of Statistics gathering
+     */
+    Map<YearMonth, Set<String>> getStatistics() {
+        return statisticsCache.copyMap(statisticsCache.statistics);
     }
 
     static String calculateChecksum(JsonNode node)

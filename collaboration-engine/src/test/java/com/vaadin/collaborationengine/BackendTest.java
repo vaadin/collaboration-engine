@@ -8,122 +8,24 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vaadin.collaborationengine.Backend.EventLog;
 import com.vaadin.collaborationengine.util.MockService;
-import com.vaadin.flow.shared.Registration;
+import com.vaadin.collaborationengine.util.TestBackendFactory;
 
 public class BackendTest {
 
-    private static class IdAndEvent {
-        private final UUID id;
-        private final ObjectNode event;
-
-        private IdAndEvent(UUID id, ObjectNode event) {
-            this.id = id;
-            this.event = event;
-        }
-    }
-
-    private List<IdAndEvent> events;
-
-    private List<IdAndEvent> membershipEvents;
-
-    private EventLog membershipLog;
-
-    private Map<String, EventLog> eventLogs;
-
-    private class TestEventLog implements EventLog {
-
-        private final List<IdAndEvent> events;
-
-        private final List<BiConsumer<UUID, ObjectNode>> consumers = new ArrayList<>();
-
-        private TestEventLog(List<IdAndEvent> events) {
-            this.events = events;
-        }
-
-        @Override
-        public void submitEvent(UUID trackingId, ObjectNode eventPayload) {
-            events.add(new IdAndEvent(trackingId, eventPayload));
-            consumers.forEach(
-                    consumer -> consumer.accept(trackingId, eventPayload));
-        }
-
-        @Override
-        public Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, ObjectNode> consumer) {
-            Predicate<IdAndEvent> filter = e -> true;
-            if (newerThan != null) {
-                filter = new Predicate<IdAndEvent>() {
-                    boolean found;
-
-                    @Override
-                    public boolean test(IdAndEvent idAndEvent) {
-                        boolean result = found;
-                        found = found || newerThan.equals(idAndEvent.id);
-                        return result;
-                    }
-                };
-            }
-            events.stream().filter(filter)
-                    .forEach(e -> consumer.accept(e.id, e.event));
-            consumers.add(consumer);
-            return () -> consumers.remove(consumer);
-        }
-    }
-
-    private class TestBackend implements Backend {
-
-        private final UUID id = UUID.randomUUID();
-
-        @Override
-        public EventLog openEventLog(String logId) {
-            return eventLogs.computeIfAbsent(logId,
-                    id -> new TestEventLog(events));
-        }
-
-        @Override
-        public EventLog getMembershipEventLog() {
-            return membershipLog;
-        }
-
-        @Override
-        public UUID getNodeId() {
-            return id;
-        }
-
-        @Override
-        public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        @Override
-        public void submitSnapshot(String name, ObjectNode snapshot) {
-        }
-    }
+    private TestBackendFactory backendFactory;
 
     @Before
     public void setup() {
-        eventLogs = new HashMap<>();
-        events = new ArrayList<>();
-        membershipEvents = new ArrayList<>();
-        membershipLog = new TestEventLog(membershipEvents);
+        backendFactory = new TestBackendFactory();
     }
 
     @After
@@ -133,10 +35,11 @@ public class BackendTest {
     @Test
     public void nodeJoins_eventLogReceivesEvent() {
         CollaborationEngine node = createNode();
-        UUID nodeId = node.getConfiguration().getBackend().getNodeId();
+        Backend backend = node.getConfiguration().getBackend();
+        UUID nodeId = backend.getNodeId();
         AtomicBoolean joined = new AtomicBoolean();
 
-        membershipLog.subscribe(null, (eventId, event) -> {
+        backend.getMembershipEventLog().subscribe(null, (eventId, event) -> {
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             joined.set(JsonUtil.CHANGE_NODE_JOIN.equals(type)
@@ -150,10 +53,11 @@ public class BackendTest {
     @Test
     public void nodeLeaves_eventLogReceivesEvent() {
         CollaborationEngine node = createNode();
-        UUID nodeId = node.getConfiguration().getBackend().getNodeId();
+        Backend backend = node.getConfiguration().getBackend();
+        UUID nodeId = backend.getNodeId();
         AtomicBoolean left = new AtomicBoolean();
 
-        membershipLog.subscribe(null, (eventId, event) -> {
+        backend.getMembershipEventLog().subscribe(null, (eventId, event) -> {
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             left.set(JsonUtil.CHANGE_NODE_LEAVE.equals(type)
@@ -298,19 +202,15 @@ public class BackendTest {
         CollaborationEngineConfiguration conf = new CollaborationEngineConfiguration(
                 e -> {
                 });
-        conf.setBackend(new TestBackend());
+        conf.setBackend(backendFactory.createBackend());
         return TestUtil.createTestCollaborationEngine(new MockService(), conf);
     }
 
     private void join(CollaborationEngine node) {
-        UUID nodeId = node.getConfiguration().getBackend().getNodeId();
-        ObjectNode event = JsonUtil.createNodeJoin(nodeId);
-        membershipLog.submitEvent(UUID.randomUUID(), event);
+        backendFactory.join(node.getConfiguration().getBackend());
     }
 
     private void leave(CollaborationEngine node) {
-        UUID nodeId = node.getConfiguration().getBackend().getNodeId();
-        ObjectNode event = JsonUtil.createNodeLeave(nodeId);
-        membershipLog.submitEvent(UUID.randomUUID(), event);
+        backendFactory.leave(node.getConfiguration().getBackend());
     }
 }

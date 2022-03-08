@@ -11,7 +11,6 @@ package com.vaadin.collaborationengine;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -78,7 +77,7 @@ public interface Backend {
     EventLog openEventLog(String logId);
 
     /**
-     * Get the event log of this backend node membership events. The returned
+     * Gets the event log of this backend node membership events. The returned
      * object can be used to subscribe to events dispatched when a node joins or
      * leaves the backend.
      *
@@ -94,7 +93,26 @@ public interface Backend {
      */
     UUID getNodeId();
 
+    /**
+     * Loads the latest snapshot of data identified by the given name. To submit
+     * a snapshot see {@link #submitSnapshot(String, ObjectNode)}.
+     *
+     * @param name
+     *            the name identifying the data, not <code>null</code>
+     * @return a completable future resolved with the snapshot, not
+     *         <code>null</code>
+     */
     CompletableFuture<ObjectNode> loadLatestSnapshot(String name);
 
+    /**
+     * Submits a snapshots of data identifies by the given name. The latest
+     * submitted snapshot for that name can be loaded with
+     * {@link #loadLatestSnapshot(String)}.
+     *
+     * @param name
+     *            the name identifying the date, not <code>null</code>
+     * @param snapshot
+     *            the snapshot, not <code>null</code>
+     */
     void submitSnapshot(String name, ObjectNode snapshot);
 }
