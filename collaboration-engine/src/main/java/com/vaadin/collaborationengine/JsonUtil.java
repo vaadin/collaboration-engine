@@ -51,6 +51,8 @@ public class JsonUtil {
 
     static final String CHANGE_TYPE_PUT = "m-put";
 
+    static final String CHANGE_TYPE_REPLACE = "m-replace";
+
     static final String CHANGE_TYPE_PREPEND = "l-prepend";
 
     static final String CHANGE_TYPE_APPEND = "l-append";
@@ -178,6 +180,19 @@ public class JsonUtil {
         if (scopeOwnerId != null) {
             change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
         }
+        if (expectedValue != null) {
+            change.set(CHANGE_EXPECTED_VALUE, toJsonNode(expectedValue));
+        }
+        return change;
+    }
+
+    static ObjectNode createReplaceChange(String name, String key,
+            Object expectedValue, Object value) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_REPLACE);
+        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_KEY, key);
+        change.set(CHANGE_VALUE, toJsonNode(value));
         if (expectedValue != null) {
             change.set(CHANGE_EXPECTED_VALUE, toJsonNode(expectedValue));
         }

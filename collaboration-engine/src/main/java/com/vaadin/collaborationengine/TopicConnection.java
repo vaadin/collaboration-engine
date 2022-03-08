@@ -74,8 +74,8 @@ public class TopicConnection {
             ensureActiveConnection();
             Objects.requireNonNull(key, MessageUtil.Required.KEY);
 
-            ObjectNode change = JsonUtil.createPutChange(name, key,
-                    expectedValue, newValue, null);
+            ObjectNode change = JsonUtil.createReplaceChange(name, key,
+                    expectedValue, newValue);
             UUID id = UUID.randomUUID();
 
             return dispatchChangeWithBooleanResult(id, key, false, change);
@@ -366,7 +366,8 @@ public class TopicConnection {
                     key.getKey().toString(), keyToMove.getKey().toString());
             UUID id = UUID.randomUUID();
 
-            return dispatchChangeWithBooleanResult(id, id, false, change);
+            return dispatchChangeWithBooleanResult(id, keyToMove.getKey(),
+                    false, change);
         }
 
         @Override
@@ -380,7 +381,8 @@ public class TopicConnection {
                     key.getKey().toString(), keyToMove.getKey().toString());
             UUID id = UUID.randomUUID();
 
-            return dispatchChangeWithBooleanResult(id, id, false, change);
+            return dispatchChangeWithBooleanResult(id, keyToMove.getKey(),
+                    false, change);
         }
 
         @Override
@@ -525,7 +527,7 @@ public class TopicConnection {
     private void handleChange(UUID id, ChangeDetails change) {
         try {
             if (change instanceof MapChange) {
-                handlePutChange(id, (MapChange) change);
+                handleMapChange(id, (MapChange) change);
             } else if (change instanceof ListChange) {
                 handleListChange(id, (ListChange) change);
             } else {
@@ -539,17 +541,23 @@ public class TopicConnection {
         }
     }
 
-    private void handlePutChange(UUID id, MapChange mapChange) {
+    private void handleMapChange(UUID id, MapChange mapChange) {
         String mapName = mapChange.getMapName();
         String key = mapChange.getKey();
 
-        // If there is a connection scoped entry for the same key with a
-        // different id, cleanup the existing entry
         Map<String, UUID> keys = connectionScopedMapKeys.get(mapName);
-        if (keys != null && !Objects.equals(id, keys.get(key))) {
-            UUID uuid = keys.get(key);
-            if (!Objects.equals(mapChange.getExpectedId(), uuid)) {
-                keys.remove(key);
+        if (keys != null) {
+            if (keys.containsKey(key)
+                    && mapChange.getType() == MapChangeType.REPLACE) {
+                keys.put(key, mapChange.getRevisionId());
+            }
+            // If there is a connection scoped entry for the same key with a
+            // different id, cleanup the existing entry
+            if (!Objects.equals(id, keys.get(key))) {
+                UUID uuid = keys.get(key);
+                if (!Objects.equals(mapChange.getExpectedId(), uuid)) {
+                    keys.remove(key);
+                }
             }
         }
         if (mapChange.hasChanges()) {
@@ -562,13 +570,19 @@ public class TopicConnection {
         String listName = listChange.getListName();
         UUID key = listChange.getKey();
 
-        // If there is a connection scoped entry for the same key with a
-        // different id, cleanup the existing entry
         Map<UUID, UUID> keys = connectionScopedListItems.get(listName);
-        if (keys != null && !Objects.equals(id, keys.get(key))) {
-            UUID uuid = keys.get(key);
-            if (!Objects.equals(listChange.getExpectedId(), uuid)) {
-                keys.remove(key);
+        if (keys != null) {
+            if (keys.containsKey(key)
+                    && listChange.getType() == ListChangeType.MOVE) {
+                keys.put(key, listChange.getRevisionId());
+            }
+            // If there is a connection scoped entry for the same key with a
+            // different id, cleanup the existing entry
+            if (!Objects.equals(id, keys.get(key))) {
+                UUID uuid = keys.get(key);
+                if (!Objects.equals(listChange.getExpectedId(), uuid)) {
+                    keys.remove(key);
+                }
             }
         }
         EventUtil.fireEvents(subscribersPerList.get(listChange.getListName()),

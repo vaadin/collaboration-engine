@@ -684,6 +684,34 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void insertFirstWithConnectionScope_connectionDeactivated_entryRemoved() {
+        ListKey key = list.insertFirst("foo", EntryScope.CONNECTION).getKey();
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(0, list.getKeys().count());
+    }
+
+    @Test
+    public void insertFirstWithTopicScope_setWithConnectionScope_connectionDeactivated_entryRemoved() {
+        ListKey key = list.insertFirst("foo").getKey();
+        list.set(key, "foo", EntryScope.CONNECTION);
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(0, list.getKeys().count());
+    }
+
+    @Test
+    public void insertFirstWithConnectionScope_setWithTopicScope_connectionDeactivated_entryNotRemoved() {
+        ListKey key = list.insertFirst("foo", EntryScope.CONNECTION).getKey();
+        list.set(key, "foo");
+        context.deactivate();
+        context.activate();
+        Assert.assertEquals("foo", list.getItem(key, String.class));
+    }
+
+    @Test
     public void insertLastWithConnectionScope_connectionDeactivated_entryRemoved() {
         ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
         context.deactivate();
@@ -709,6 +737,52 @@ public class CollaborationListTest {
         context.deactivate();
         context.activate();
         Assert.assertEquals("foo", list.getItem(key, String.class));
+    }
+
+    @Test
+    public void insertBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        ListKey key = list
+                .insertBefore(keys.get(0), "new", EntryScope.CONNECTION)
+                .getKey();
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(2, list.getKeys().count());
+    }
+
+    @Test
+    public void insertAfterWithConnectionScope_connectionDeactivate_entryRemoved() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        ListKey key = list
+                .insertAfter(keys.get(0), "new", EntryScope.CONNECTION)
+                .getKey();
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(2, list.getKeys().count());
+    }
+
+    @Test
+    public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();
+        list.moveBefore(keys.get(0), key);
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(2, list.getKeys().count());
+    }
+
+    @Test
+    public void moveAfterWithConnectionScope_connectionDeactivate_entryRemoved() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();
+        list.moveAfter(keys.get(0), key);
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(key, String.class));
+        Assert.assertEquals(2, list.getKeys().count());
     }
 
     @Test

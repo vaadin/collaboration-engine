@@ -252,8 +252,10 @@ class Topic {
         if (mapData == null) {
             return Stream.empty();
         }
-        return mapData.entrySet().stream().map(entry -> new MapChange(mapName,
-                entry.getKey(), null, entry.getValue().data, null));
+        return mapData.entrySet().stream()
+                .map(entry -> new MapChange(mapName, MapChangeType.PUT,
+                        entry.getKey(), null, entry.getValue().data, null,
+                        entry.getValue().revisionId));
     }
 
     JsonNode getMapValue(String mapName, String key) {
@@ -270,7 +272,10 @@ class Topic {
         ChangeDetails details;
         switch (type) {
         case JsonUtil.CHANGE_TYPE_PUT:
-            details = applyMapChange(trackingId, change);
+            details = applyMapPut(trackingId, change);
+            break;
+        case JsonUtil.CHANGE_TYPE_REPLACE:
+            details = applyMapReplace(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_PREPEND:
             details = applyListPrepend(trackingId, change);
@@ -346,7 +351,7 @@ class Topic {
         return leader;
     }
 
-    ChangeDetails applyMapChange(UUID changeId, ObjectNode change) {
+    ChangeDetails applyMapPut(UUID changeId, ObjectNode change) {
         String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
         String key = change.get(JsonUtil.CHANGE_KEY).asText();
         JsonNode expectedValue = change.get(JsonUtil.CHANGE_EXPECTED_VALUE);
@@ -374,8 +379,33 @@ class Topic {
             map.put(key, new Entry(changeId, newValue.deepCopy(),
                     JsonUtil.toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER))));
         }
-        return new MapChange(mapName, key, oldValue, newValue,
-                JsonUtil.toUUID(expectedId));
+        return new MapChange(mapName, MapChangeType.PUT, key, oldValue,
+                newValue, JsonUtil.toUUID(expectedId), changeId);
+    }
+
+    ChangeDetails applyMapReplace(UUID changeId, ObjectNode change) {
+        String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
+        String key = change.get(JsonUtil.CHANGE_KEY).asText();
+        JsonNode expectedValue = change.get(JsonUtil.CHANGE_EXPECTED_VALUE);
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+
+        Map<String, Entry> map = namedMapData.computeIfAbsent(mapName,
+                name -> new HashMap<>());
+        JsonNode oldValue = map.containsKey(key) ? map.get(key).data
+                : NullNode.getInstance();
+
+        if (expectedValue != null && !Objects.equals(oldValue, expectedValue)) {
+            return null;
+        }
+
+        if (newValue instanceof NullNode) {
+            map.remove(key);
+        } else {
+            map.put(key, new Entry(changeId, newValue.deepCopy(),
+                    JsonUtil.toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER))));
+        }
+        return new MapChange(mapName, MapChangeType.REPLACE, key, oldValue,
+                newValue, null, changeId);
     }
 
     ChangeDetails applyListPrepend(UUID id, ObjectNode change) {
@@ -387,7 +417,7 @@ class Topic {
                 .insertFirst(id, item, id, scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, null, null, insertedEntry.next, null);
+                null, null, null, insertedEntry.next, null, id);
     }
 
     ChangeDetails applyListAppend(UUID id, ObjectNode change) {
@@ -399,7 +429,7 @@ class Topic {
                 .insertLast(id, item, id, scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, null, null);
+                null, insertedEntry.prev, null, null, null, id);
     }
 
     ChangeDetails applyListInsertBefore(UUID id, ObjectNode change) {
@@ -419,7 +449,7 @@ class Topic {
                 scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, insertedEntry.next, null);
+                null, insertedEntry.prev, null, insertedEntry.next, null, id);
     }
 
     ChangeDetails applyListInsertAfter(UUID id, ObjectNode change) {
@@ -439,7 +469,7 @@ class Topic {
                 scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, insertedEntry.next, null);
+                null, insertedEntry.prev, null, insertedEntry.next, null, id);
     }
 
     ChangeDetails applyListMoveBefore(UUID trackingId, ObjectNode change) {
@@ -461,7 +491,8 @@ class Topic {
 
         return new ListChange(listName, ListChangeType.MOVE, keyToMove,
                 entryToMove.value, entryToMove.value, entryToMove.prev,
-                entryToFind.prev, entryToMove.next, keyToFind, null);
+                entryToFind.prev, entryToMove.next, keyToFind, null,
+                trackingId);
     }
 
     ChangeDetails applyListMoveAfter(UUID trackingId, ObjectNode change) {
@@ -483,7 +514,8 @@ class Topic {
 
         return new ListChange(listName, ListChangeType.MOVE, keyToMove,
                 entryToMove.value, entryToMove.value, entryToMove.prev,
-                keyToFind, entryToMove.next, entryToFind.next, null);
+                keyToFind, entryToMove.next, entryToFind.next, null,
+                trackingId);
     }
 
     private ChangeDetails applyListSet(UUID trackingId, ObjectNode change) {
@@ -506,7 +538,7 @@ class Topic {
             list.remove(key);
             return new ListChange(listName, ListChangeType.SET, key,
                     entry.value, null, entry.prev, null, entry.next, null,
-                    expectedId);
+                    expectedId, null);
         } else {
             JsonNode oldValue = entry.value;
             UUID scopeOwnerId = JsonUtil
@@ -514,14 +546,14 @@ class Topic {
             list.setValue(key, newValue, trackingId, scopeOwnerId);
             return new ListChange(listName, ListChangeType.SET, key, oldValue,
                     newValue, entry.prev, entry.prev, entry.next, entry.next,
-                    expectedId);
+                    expectedId, trackingId);
         }
     }
 
     Stream<ListChange> getListChanges(String listName) {
-        return getListItems(listName).map(
-                item -> new ListChange(listName, ListChangeType.INSERT, item.id,
-                        null, item.value, null, item.prev, null, null, null));
+        return getListItems(listName).map(item -> new ListChange(listName,
+                ListChangeType.INSERT, item.id, null, item.value, null,
+                item.prev, null, null, null, item.revisionId));
     }
 
     Stream<ListEntrySnapshot> getListItems(String listName) {

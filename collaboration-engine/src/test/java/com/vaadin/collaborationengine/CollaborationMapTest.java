@@ -473,6 +473,16 @@ public class CollaborationMapTest {
     }
 
     @Test
+    public void putWithConnectionScope_replace_connectionDeactivated_entryRemoved() {
+        map.put("foo", "foo", EntryScope.CONNECTION);
+        map.replace("foo", "foo", "bar");
+        context.deactivate();
+        context.activate();
+        String foo = map.get("foo", String.class);
+        Assert.assertNull(foo);
+    }
+
+    @Test
     public void expirationTimeout_unpopulatedMap_mapClearWithoutExplosions() {
         Duration timeout = Duration.ofMinutes(15);
         map.setExpirationTimeout(timeout);
