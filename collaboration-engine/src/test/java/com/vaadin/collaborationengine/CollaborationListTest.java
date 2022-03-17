@@ -329,9 +329,9 @@ public class CollaborationListTest {
         Duration timeout = Duration.ofMinutes(15);
         list.setExpirationTimeout(timeout);
         list.insertLast("foo");
-        registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         list.setExpirationTimeout(null);
+        registration.remove();
         AtomicReference<CollaborationList> newList = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
                 connection -> {

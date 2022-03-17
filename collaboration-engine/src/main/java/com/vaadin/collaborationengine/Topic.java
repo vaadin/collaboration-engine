@@ -72,16 +72,21 @@ class Topic {
     }
 
     static class Snapshot {
-        private static final TypeReference<Map<String, EntryList>> LISTS_TYPE = new TypeReference<Map<String, EntryList>>() {
+        private static final TypeReference<Map<String, EntryList>> LISTS_TYPE = new TypeReference<>() {
         };
-        private static final TypeReference<Map<String, Map<String, Entry>>> MAPS_TYPE = new TypeReference<Map<String, Map<String, Entry>>>() {
+        private static final TypeReference<Map<String, Map<String, Entry>>> MAPS_TYPE = new TypeReference<>() {
         };
-        private static final TypeReference<List<UUID>> BACKEND_NODES_TYPE = new TypeReference<List<UUID>>() {
+        private static final TypeReference<Map<String, Duration>> TIMEOUTS_TYPE = new TypeReference<>() {
+        };
+        private static final TypeReference<List<UUID>> NODES_TYPE = new TypeReference<>() {
         };
 
         private static final String LATEST = "latest";
         private static final String LISTS = "lists";
         private static final String MAPS = "maps";
+        private static final String LIST_TIMEOUTS = "list-timeouts";
+        private static final String MAP_TIMEOUTS = "map-timeouts";
+        private static final String ACTIVE_NODES = "active-nodes";
         private static final String BACKEND_NODES = "backend-nodes";
         private final ObjectNode objectNode;
 
@@ -95,6 +100,12 @@ class Topic {
             objectNode.put(LATEST, latestChangeId.toString());
             objectNode.set(LISTS, JsonUtil.toJsonNode(topic.namedListData));
             objectNode.set(MAPS, JsonUtil.toJsonNode(topic.namedMapData));
+            objectNode.set(LIST_TIMEOUTS,
+                    JsonUtil.toJsonNode(topic.listExpirationTimeouts));
+            objectNode.set(MAP_TIMEOUTS,
+                    JsonUtil.toJsonNode(topic.mapExpirationTimeouts));
+            objectNode.set(ACTIVE_NODES,
+                    JsonUtil.toJsonNode(topic.activeNodes));
             objectNode.set(BACKEND_NODES,
                     JsonUtil.toJsonNode(topic.backendNodes));
             return new Snapshot(objectNode);
@@ -112,9 +123,24 @@ class Topic {
             return JsonUtil.toInstance(objectNode.get(MAPS), MAPS_TYPE);
         }
 
+        Map<String, Duration> getListTimeouts() {
+            return JsonUtil.toInstance(objectNode.get(LIST_TIMEOUTS),
+                    TIMEOUTS_TYPE);
+        }
+
+        Map<String, Duration> getMapTimeouts() {
+            return JsonUtil.toInstance(objectNode.get(MAP_TIMEOUTS),
+                    TIMEOUTS_TYPE);
+        }
+
+        List<UUID> getActiveNodes() {
+            return JsonUtil.toInstance(objectNode.get(ACTIVE_NODES),
+                    NODES_TYPE);
+        }
+
         List<UUID> getBackendNodes() {
             return JsonUtil.toInstance(objectNode.get(BACKEND_NODES),
-                    BACKEND_NODES_TYPE);
+                    NODES_TYPE);
         }
 
     }
@@ -125,6 +151,7 @@ class Topic {
     private final Map<String, EntryList> namedListData = new HashMap<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
     final Map<String, Duration> listExpirationTimeouts = new HashMap<>();
+    private final List<UUID> activeNodes = new ArrayList<>();
     private Instant lastDisconnected;
     private final List<SerializableBiConsumer<UUID, ChangeDetails>> changeListeners = new ArrayList<>();
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
@@ -187,63 +214,83 @@ class Topic {
     }
 
     private void cleanupStaleEntries(Predicate<UUID> isStale) {
-        namedMapData.entrySet().stream().flatMap(
-                map -> map.getValue().entrySet().stream().filter(entry -> {
-                    return isStale.test(entry.getValue().scopeOwnerId);
-                }).map(entry -> {
-                    ObjectNode change = JsonUtil.createPutChange(map.getKey(),
-                            entry.getKey(), null, null, null);
-                    change.put(JsonUtil.CHANGE_EXPECTED_ID,
-                            entry.getValue().revisionId.toString());
-                    return change;
-                })).collect(Collectors.toList()).forEach(change -> {
-                    eventLog.submitEvent(UUID.randomUUID(), change);
-                });
+        namedMapData.entrySet().stream()
+                .flatMap(map -> map.getValue().entrySet().stream().filter(
+                        entry -> isStale.test(entry.getValue().scopeOwnerId))
+                        .map(entry -> {
+                            ObjectNode change = JsonUtil.createPutChange(
+                                    map.getKey(), entry.getKey(), null, null,
+                                    null);
+                            change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                                    entry.getValue().revisionId.toString());
+                            return change;
+                        }))
+                .collect(Collectors.toList()).forEach(change -> eventLog
+                        .submitEvent(UUID.randomUUID(), change));
         namedListData.entrySet().stream()
-                .flatMap(list -> list.getValue().stream().filter(entry -> {
-                    return isStale.test(entry.scopeOwnerId);
-                }).map(entry -> {
-                    ObjectNode change = JsonUtil.createListSetChange(
-                            list.getKey(), entry.id.toString(), null, null);
-                    change.put(JsonUtil.CHANGE_EXPECTED_ID,
-                            entry.revisionId.toString());
-                    return change;
-                })).collect(Collectors.toList()).forEach(change -> {
-                    eventLog.submitEvent(UUID.randomUUID(), change);
-                });
+                .flatMap(list -> list.getValue().stream()
+                        .filter(entry -> isStale.test(entry.scopeOwnerId))
+                        .map(entry -> {
+                            ObjectNode change = JsonUtil.createListSetChange(
+                                    list.getKey(), entry.id.toString(), null,
+                                    null);
+                            change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                                    entry.revisionId.toString());
+                            return change;
+                        }))
+                .collect(Collectors.toList()).forEach(change -> eventLog
+                        .submitEvent(UUID.randomUUID(), change));
     }
 
     Registration subscribeToChange(
             SerializableBiConsumer<UUID, ChangeDetails> changeListener) {
         clearExpiredData();
         changeListeners.add(changeListener);
-        return Registration.combine(
-                () -> changeListeners.remove(changeListener),
-                this::updateLastDisconnected);
+        return () -> changeListeners.remove(changeListener);
     }
 
     private void clearExpiredData() {
         Clock clock = collaborationEngine.getClock();
-        if (lastDisconnected != null) {
+        if (isLeader() && lastDisconnected != null) {
             Instant now = clock.instant();
-            mapExpirationTimeouts.forEach((name, timeout) -> {
-                if (now.isAfter(lastDisconnected.plus(timeout))
-                        && namedMapData.containsKey(name)) {
-                    namedMapData.get(name).clear();
-                }
-            });
-            listExpirationTimeouts.forEach((name, timeout) -> {
-                if (now.isAfter(lastDisconnected.plus(timeout))) {
-                    getList(name).ifPresent(EntryList::clear);
-                }
-            });
-        }
-        lastDisconnected = null;
-    }
-
-    private void updateLastDisconnected() {
-        if (changeListeners.isEmpty()) {
-            lastDisconnected = collaborationEngine.getClock().instant();
+            mapExpirationTimeouts.entrySet().stream()
+                    .filter(entry -> now
+                            .isAfter(lastDisconnected.plus(entry.getValue()))
+                            && namedMapData.containsKey(entry.getKey()))
+                    .map(Map.Entry::getKey).collect(Collectors.toList())
+                    .forEach(name -> {
+                        namedMapData.get(name).entrySet().stream()
+                                .map(entry -> {
+                                    ObjectNode change = JsonUtil
+                                            .createPutChange(name,
+                                                    entry.getKey(), null, null,
+                                                    null);
+                                    change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                                            entry.getValue().revisionId
+                                                    .toString());
+                                    return change;
+                                }).collect(Collectors.toList())
+                                .forEach(change -> eventLog.submitEvent(
+                                        UUID.randomUUID(), change));
+                        mapExpirationTimeouts.remove(name);
+                    });
+            listExpirationTimeouts.entrySet().stream()
+                    .filter(entry -> now
+                            .isAfter(lastDisconnected.plus(entry.getValue()))
+                            && namedListData.containsKey(entry.getKey()))
+                    .map(Map.Entry::getKey).collect(Collectors.toList())
+                    .forEach(name -> {
+                        namedListData.get(name).stream().map(entry -> {
+                            ObjectNode change = JsonUtil.createListSetChange(
+                                    name, entry.id.toString(), null, null);
+                            change.put(JsonUtil.CHANGE_EXPECTED_ID,
+                                    entry.revisionId.toString());
+                            return change;
+                        }).collect(Collectors.toList())
+                                .forEach(change -> eventLog.submitEvent(
+                                        UUID.randomUUID(), change));
+                        listExpirationTimeouts.remove(name);
+                    });
         }
     }
 
@@ -298,7 +345,29 @@ class Topic {
         case JsonUtil.CHANGE_TYPE_LIST_SET:
             details = applyListSet(trackingId, change);
             break;
-        case JsonUtil.CHANGE_NODE_JOIN:
+        case JsonUtil.CHANGE_TYPE_MAP_TIMEOUT:
+            applyMapTimeout(change);
+            return ChangeResult.ACCEPTED;
+        case JsonUtil.CHANGE_TYPE_LIST_TIMEOUT:
+            applyListTimeout(change);
+            return ChangeResult.ACCEPTED;
+        case JsonUtil.CHANGE_NODE_ACTIVATE: {
+            UUID nodeId = UUID
+                    .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
+            activeNodes.add(nodeId);
+            lastDisconnected = null;
+            return ChangeResult.ACCEPTED;
+        }
+        case JsonUtil.CHANGE_NODE_DEACTIVATE: {
+            UUID nodeId = UUID
+                    .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
+            activeNodes.remove(nodeId);
+            if (activeNodes.isEmpty()) {
+                lastDisconnected = collaborationEngine.getClock().instant();
+            }
+            return ChangeResult.ACCEPTED;
+        }
+        case JsonUtil.CHANGE_NODE_JOIN: {
             UUID nodeId = UUID
                     .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
             if (backendNodes.isEmpty() && collaborationEngine.getConfiguration()
@@ -307,6 +376,7 @@ class Topic {
             }
             backendNodes.add(nodeId);
             return ChangeResult.ACCEPTED;
+        }
         default:
             throw new UnsupportedOperationException(
                     "Type '" + type + "' is not a supported change type");
@@ -338,6 +408,9 @@ class Topic {
         }
         namedListData.putAll(snapshot.getLists());
         namedMapData.putAll(snapshot.getMaps());
+        listExpirationTimeouts.putAll(snapshot.getListTimeouts());
+        mapExpirationTimeouts.putAll(snapshot.getMapTimeouts());
+        activeNodes.addAll(snapshot.getActiveNodes());
         backendNodes.addAll(snapshot.getBackendNodes());
     }
 
@@ -547,6 +620,30 @@ class Topic {
             return new ListChange(listName, ListChangeType.SET, key, oldValue,
                     newValue, entry.prev, entry.prev, entry.next, entry.next,
                     expectedId, trackingId);
+        }
+    }
+
+    void applyMapTimeout(ObjectNode change) {
+        String mapName = change.get(JsonUtil.CHANGE_NAME).asText();
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+
+        if (newValue instanceof NullNode) {
+            mapExpirationTimeouts.remove(mapName);
+        } else {
+            Duration timeout = JsonUtil.toInstance(newValue, Duration.class);
+            mapExpirationTimeouts.put(mapName, timeout);
+        }
+    }
+
+    void applyListTimeout(ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        JsonNode newValue = change.get(JsonUtil.CHANGE_VALUE);
+
+        if (newValue instanceof NullNode) {
+            listExpirationTimeouts.remove(listName);
+        } else {
+            Duration timeout = JsonUtil.toInstance(newValue, Duration.class);
+            listExpirationTimeouts.put(listName, timeout);
         }
     }
 

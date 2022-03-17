@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -79,6 +80,45 @@ public class SnapshotTest {
         Assert.assertEquals("b", iterator.next().value.asText());
         Assert.assertEquals("c", iterator.next().value.asText());
         Assert.assertEquals("b", iterator.next().value.asText());
+    }
+
+    @Test
+    public void getMapTimeouts_expectedValues() {
+        CollaborationMap map = connection.getNamedMap("foo");
+        Duration timeout = Duration.ofMinutes(15);
+        map.setExpirationTimeout(timeout);
+
+        Topic.Snapshot snapshot = Topic.Snapshot
+                .fromTopic(connection.getTopic(), UUID.randomUUID());
+        Assert.assertEquals(1, snapshot.getMapTimeouts().size());
+        Duration mapTimeout = snapshot.getMapTimeouts().get("foo");
+        Assert.assertEquals(timeout, mapTimeout);
+    }
+
+    @Test
+    public void getListTimeouts_expectedValues() {
+        CollaborationList list = connection.getNamedList("foo");
+        Duration timeout = Duration.ofMinutes(15);
+        list.setExpirationTimeout(timeout);
+
+        Topic.Snapshot snapshot = Topic.Snapshot
+                .fromTopic(connection.getTopic(), UUID.randomUUID());
+        Assert.assertEquals(1, snapshot.getListTimeouts().size());
+        Duration listTimeout = snapshot.getListTimeouts().get("foo");
+        Assert.assertEquals(timeout, listTimeout);
+    }
+
+    @Test
+    public void getActiveNodes_expectedValues() {
+        Topic topic = connection.getTopic();
+        topic.subscribeToChange((id, event) -> {
+        });
+
+        Topic.Snapshot snapshot = Topic.Snapshot.fromTopic(topic,
+                UUID.randomUUID());
+        Assert.assertEquals(1, snapshot.getActiveNodes().size());
+        UUID id = snapshot.getActiveNodes().get(0);
+        Assert.assertEquals(ce.getConfiguration().getBackend().getNodeId(), id);
     }
 
     @Test

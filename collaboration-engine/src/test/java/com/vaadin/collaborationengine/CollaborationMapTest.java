@@ -343,9 +343,9 @@ public class CollaborationMapTest {
         Duration timeout = Duration.ofMinutes(15);
         map.setExpirationTimeout(timeout);
         map.put("foo", "foo");
-        registration.remove();
         ce.setClock(Clock.offset(ce.getClock(), timeout.plusMinutes(1)));
         map.setExpirationTimeout(null);
+        registration.remove();
         AtomicReference<CollaborationMap> newMap = new AtomicReference<>();
         ce.openTopicConnection(context, "topic", SystemUserInfo.getInstance(),
                 connection -> {

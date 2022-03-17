@@ -185,11 +185,14 @@ public class TopicConnection {
 
         @Override
         public void setExpirationTimeout(Duration expirationTimeout) {
-            if (expirationTimeout == null) {
-                topic.mapExpirationTimeouts.remove(name);
-            } else {
-                topic.mapExpirationTimeouts.put(name, expirationTimeout);
-            }
+            ensureActiveConnection();
+
+            ObjectNode change = JsonUtil.createMapTimeoutChange(name,
+                    expirationTimeout);
+
+            UUID id = UUID.randomUUID();
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
         }
 
         private Registration subscribeToMap(String mapName,
@@ -460,11 +463,14 @@ public class TopicConnection {
 
         @Override
         public void setExpirationTimeout(Duration expirationTimeout) {
-            if (expirationTimeout == null) {
-                topic.listExpirationTimeouts.remove(name);
-            } else {
-                topic.listExpirationTimeouts.put(name, expirationTimeout);
-            }
+            ensureActiveConnection();
+
+            ObjectNode change = JsonUtil.createListTimeoutChange(name,
+                    expirationTimeout);
+
+            UUID id = UUID.randomUUID();
+            actionDispatcher
+                    .dispatchAction(() -> distributor.accept(id, change));
         }
 
         private Registration subscribeToList(String listName,
@@ -754,6 +760,9 @@ public class TopicConnection {
                         changeRegistration.remove();
                     }
                 });
+
+                distributor.accept(UUID.randomUUID(),
+                        JsonUtil.createNodeActivate(topic.getCurrentNodeId()));
             });
         } else {
             if (!activated) {
@@ -784,6 +793,8 @@ public class TopicConnection {
                 }
 
                 try {
+                    distributor.accept(UUID.randomUUID(), JsonUtil
+                            .createNodeDeactivate(topic.getCurrentNodeId()));
                     this.actionDispatcher = null;
                     this.deactivate();
                 } finally {

@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -67,6 +68,10 @@ public class JsonUtil {
 
     static final String CHANGE_TYPE_LIST_SET = "l-set";
 
+    static final String CHANGE_TYPE_MAP_TIMEOUT = "m-timeout";
+
+    static final String CHANGE_TYPE_LIST_TIMEOUT = "l-timeout";
+
     static final String CHANGE_TYPE_LICENSE_USER = "license-user";
 
     static final String CHANGE_TYPE_LICENSE_EVENT = "license-event";
@@ -85,15 +90,19 @@ public class JsonUtil {
 
     public static final String CHANGE_NODE_ID = "node-id";
 
+    public static final String CHANGE_NODE_ACTIVATE = "node-activate";
+
+    public static final String CHANGE_NODE_DEACTIVATE = "node-deactivate";
+
     public static final String CHANGE_NODE_JOIN = "node-join";
 
     public static final String CHANGE_NODE_LEAVE = "node-leave";
 
     public static final String CHANGE_SCOPE_OWNER = "scope-owner";
 
-    public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<List<UserInfo>>() {
+    public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<>() {
     };
-    public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<List<CollaborationBinder.FocusedEditor>>() {
+    public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<>() {
     };
 
     private static final ObjectMapper mapper;
@@ -248,6 +257,36 @@ public class JsonUtil {
             change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
         }
         return change;
+    }
+
+    static ObjectNode createMapTimeoutChange(String name, Duration timeout) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_MAP_TIMEOUT);
+        change.put(CHANGE_NAME, name);
+        change.set(CHANGE_VALUE, toJsonNode(timeout));
+        return change;
+    }
+
+    static ObjectNode createListTimeoutChange(String name, Duration timeout) {
+        ObjectNode change = mapper.createObjectNode();
+        change.put(CHANGE_TYPE, CHANGE_TYPE_LIST_TIMEOUT);
+        change.put(CHANGE_NAME, name);
+        change.set(CHANGE_VALUE, toJsonNode(timeout));
+        return change;
+    }
+
+    static ObjectNode createNodeActivate(UUID id) {
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_ACTIVATE);
+        payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
+        return payload;
+    }
+
+    static ObjectNode createNodeDeactivate(UUID id) {
+        ObjectNode payload = mapper.createObjectNode();
+        payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_DEACTIVATE);
+        payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
+        return payload;
     }
 
     static ObjectNode createUserEntry(String key, YearMonth month,
