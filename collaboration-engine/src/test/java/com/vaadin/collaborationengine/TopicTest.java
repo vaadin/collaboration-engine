@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -113,8 +114,8 @@ public class TopicTest {
 
     @Test
     public void applyChange_listContainsAppendedItem() {
-        ObjectNode change = JsonUtil.createAppendChange(false, "foo",
-                MockJson.FOO, null);
+        ObjectNode change = JsonUtil.createInsertChange(false, "foo", null,
+                MockJson.FOO, null, Collections.emptyMap());
         topic.applyChange(UUID.randomUUID(), change);
         Assert.assertEquals("foo",
                 topic.getListItems("foo").findFirst().get().value.textValue());
@@ -136,8 +137,9 @@ public class TopicTest {
         topic.subscribeToChange((id, event) -> count.getAndIncrement());
 
         try {
-            topic.applyChange(UUID.randomUUID(), JsonUtil
-                    .createAppendChange(false, "foo", MockJson.BAZ, null));
+            topic.applyChange(UUID.randomUUID(),
+                    JsonUtil.createInsertChange(false, "foo", null,
+                            MockJson.BAZ, null, Collections.emptyMap()));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
         }
@@ -147,8 +149,8 @@ public class TopicTest {
                 1, count.get());
 
         // No try-catch needed - failing subscriber should have been removed
-        topic.applyChange(UUID.randomUUID(),
-                JsonUtil.createAppendChange(false, "foo", MockJson.QUX, null));
+        topic.applyChange(UUID.randomUUID(), JsonUtil.createInsertChange(false,
+                "foo", null, MockJson.QUX, null, Collections.emptyMap()));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());

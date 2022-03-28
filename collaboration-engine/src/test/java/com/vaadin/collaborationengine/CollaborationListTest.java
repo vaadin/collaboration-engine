@@ -764,6 +764,79 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void insertWithPrevCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifFirst(fooKey);
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithPrevCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        list.insertFirst("notFoo");
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifFirst(fooKey);
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test
+    public void insertBetween_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListKey bazKey = list.insertLast("baz").getKey();
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertBetween(fooKey, bazKey, "bar");
+        boolean succeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeded);
+        assertValues(list, "foo", "bar", "baz");
+    }
+
+    @Test
+    public void insertBetween_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListKey bazKey = list.insertLast("baz").getKey();
+        list.insertAfter(fooKey, "qux");
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertBetween(fooKey, bazKey, "bar");
+        boolean succeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeded);
+        assertValues(list, "foo", "qux", "baz");
+    }
+
+    @Test
+    public void insertWithNextCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifLast(fooKey);
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithNextCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        list.insertLast("notFoo");
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifLast(fooKey);
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test
     public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
         ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();

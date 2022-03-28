@@ -324,17 +324,8 @@ class Topic {
         case JsonUtil.CHANGE_TYPE_REPLACE:
             details = applyMapReplace(trackingId, change);
             break;
-        case JsonUtil.CHANGE_TYPE_PREPEND:
-            details = applyListPrepend(trackingId, change);
-            break;
-        case JsonUtil.CHANGE_TYPE_APPEND:
-            details = applyListAppend(trackingId, change);
-            break;
-        case JsonUtil.CHANGE_TYPE_INSERT_BEFORE:
-            details = applyListInsertBefore(trackingId, change);
-            break;
-        case JsonUtil.CHANGE_TYPE_INSERT_AFTER:
-            details = applyListInsertAfter(trackingId, change);
+        case JsonUtil.CHANGE_TYPE_INSERT:
+            details = applyListInsert(trackingId, change);
             break;
         case JsonUtil.CHANGE_TYPE_MOVE_BEFORE:
             details = applyListMoveBefore(trackingId, change);
@@ -481,65 +472,51 @@ class Topic {
                 newValue, null, changeId);
     }
 
-    ChangeDetails applyListPrepend(UUID id, ObjectNode change) {
-        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-        UUID scopeOwnerId = JsonUtil
-                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
-        ListEntrySnapshot insertedEntry = getOrCreateList(listName)
-                .insertFirst(id, item, id, scopeOwnerId);
-
-        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, null, null, insertedEntry.next, null, id);
-    }
-
-    ChangeDetails applyListAppend(UUID id, ObjectNode change) {
-        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-        UUID scopeOwnerId = JsonUtil
-                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
-        ListEntrySnapshot insertedEntry = getOrCreateList(listName)
-                .insertLast(id, item, id, scopeOwnerId);
-
-        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, null, null, id);
-    }
-
-    ChangeDetails applyListInsertBefore(UUID id, ObjectNode change) {
+    ChangeDetails applyListInsert(UUID id, ObjectNode change) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
         JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
         UUID scopeOwnerId = JsonUtil
                 .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+        boolean before = change.get(JsonUtil.CHANGE_BEFORE).asBoolean();
         EntryList list = getOrCreateList(listName);
 
-        ListEntrySnapshot entry = list.getEntry(key);
-        if (entry == null) {
-            return null;
+        for (JsonNode condition : change
+                .withArray(JsonUtil.CHANGE_CONDITIONS)) {
+            UUID leftKey = JsonUtil.toUUID(condition.get(JsonUtil.CHANGE_KEY));
+            UUID rightKey = JsonUtil
+                    .toUUID(condition.get(JsonUtil.CHANGE_OTHER_KEY));
+            // If the left key of the condition is null, right key must be the
+            // first i.e. have a null prev otherwise we reject the operation
+            if (leftKey == null
+                    && getListEntry(listName, rightKey).prev != null) {
+                return null;
+            } else if (leftKey != null && !Objects
+                    .equals(getListEntry(listName, leftKey).next, rightKey)) {
+                return null;
+            }
         }
 
-        ListEntrySnapshot insertedEntry = list.insertBefore(key, id, item, id,
-                scopeOwnerId);
-
-        return new ListChange(listName, ListChangeType.INSERT, id, null, item,
-                null, insertedEntry.prev, null, insertedEntry.next, null, id);
-    }
-
-    ChangeDetails applyListInsertAfter(UUID id, ObjectNode change) {
-        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
-        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
-        UUID scopeOwnerId = JsonUtil
-                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
-        EntryList list = getOrCreateList(listName);
-
-        ListEntrySnapshot entry = list.getEntry(key);
-        if (entry == null) {
-            return null;
+        ListEntrySnapshot insertedEntry;
+        if (key == null) {
+            if (before) { // insert before null -> insert last
+                insertedEntry = list.insertLast(id, item, id, scopeOwnerId);
+            } else { // insert after null -> insert first
+                insertedEntry = list.insertFirst(id, item, id, scopeOwnerId);
+            }
+        } else {
+            ListEntrySnapshot entry = list.getEntry(key);
+            if (entry == null) {
+                return null;
+            }
+            if (before) {
+                insertedEntry = list.insertBefore(key, id, item, id,
+                        scopeOwnerId);
+            } else {
+                insertedEntry = list.insertAfter(key, id, item, id,
+                        scopeOwnerId);
+            }
         }
-
-        ListEntrySnapshot insertedEntry = list.insertAfter(key, id, item, id,
-                scopeOwnerId);
 
         return new ListChange(listName, ListChangeType.INSERT, id, null, item,
                 null, insertedEntry.prev, null, insertedEntry.next, null, id);
@@ -656,6 +633,10 @@ class Topic {
     Stream<ListEntrySnapshot> getListItems(String listName) {
         return getList(listName).map(EntryList::stream)
                 .orElseGet(Stream::empty);
+    }
+
+    ListEntrySnapshot getListEntry(String listName, UUID key) {
+        return getList(listName).map(list -> list.getEntry(key)).orElse(null);
     }
 
     JsonNode getListValue(String listName, UUID key) {

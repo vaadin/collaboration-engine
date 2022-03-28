@@ -44,4 +44,10 @@ public class ListInsertResult<T> {
     public CompletableFuture<T> getCompletableFuture() {
         return completableFuture;
     }
+
+    /* Map to a void parameterized type for existing list operations */
+    ListInsertResult<Void> mapToVoid() {
+        return new ListInsertResult<>(key,
+                completableFuture.thenApply(t -> null));
+    }
 }

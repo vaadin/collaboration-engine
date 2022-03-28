@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
@@ -50,17 +51,15 @@ public class JsonUtil {
 
     static final String CHANGE_EXPECTED_VALUE = "expected-value";
 
+    static final String CHANGE_BEFORE = "before";
+
+    static final String CHANGE_CONDITIONS = "conditions";
+
     static final String CHANGE_TYPE_PUT = "m-put";
 
     static final String CHANGE_TYPE_REPLACE = "m-replace";
 
-    static final String CHANGE_TYPE_PREPEND = "l-prepend";
-
-    static final String CHANGE_TYPE_APPEND = "l-append";
-
-    static final String CHANGE_TYPE_INSERT_BEFORE = "l-insert-before";
-
-    static final String CHANGE_TYPE_INSERT_AFTER = "l-insert-after";
+    static final String CHANGE_TYPE_INSERT = "l-insert";
 
     static final String CHANGE_TYPE_MOVE_BEFORE = "l-move-before";
 
@@ -208,27 +207,23 @@ public class JsonUtil {
         return change;
     }
 
-    static ObjectNode createAppendChange(boolean first, String name,
-            Object item, UUID scopeOwnerId) {
+    static ObjectNode createInsertChange(boolean before, String listName,
+            String referenceKey, Object item, UUID scopeOwnerId,
+            Map<ListKey, ListKey> conditions) {
         ObjectNode change = mapper.createObjectNode();
-        change.put(CHANGE_TYPE,
-                first ? CHANGE_TYPE_PREPEND : CHANGE_TYPE_APPEND);
-        change.put(CHANGE_NAME, name);
+        change.put(CHANGE_TYPE, CHANGE_TYPE_INSERT);
+        change.put(CHANGE_BEFORE, before);
+        change.put(CHANGE_NAME, listName);
+        change.put(CHANGE_KEY, referenceKey);
         change.set(CHANGE_ITEM, toJsonNode(item));
-        if (scopeOwnerId != null) {
-            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
-        }
-        return change;
-    }
-
-    static ObjectNode createInsertChange(boolean before, String name, String id,
-            Object item, UUID scopeOwnerId) {
-        ObjectNode change = mapper.createObjectNode();
-        change.put(CHANGE_TYPE,
-                before ? CHANGE_TYPE_INSERT_BEFORE : CHANGE_TYPE_INSERT_AFTER);
-        change.put(CHANGE_NAME, name);
-        change.put(CHANGE_KEY, id);
-        change.set(CHANGE_ITEM, toJsonNode(item));
+        conditions.forEach((refKey, otherKey) -> {
+            ObjectNode condition = mapper.createObjectNode();
+            condition.put(CHANGE_KEY,
+                    refKey != null ? refKey.getKey().toString() : null);
+            condition.put(CHANGE_OTHER_KEY,
+                    otherKey != null ? otherKey.getKey().toString() : null);
+            change.withArray(CHANGE_CONDITIONS).add(condition);
+        });
         if (scopeOwnerId != null) {
             change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
         }
