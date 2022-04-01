@@ -10,7 +10,6 @@ package com.vaadin.collaborationengine;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +27,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  * @since 3.2
  */
-public class PresenceManager {
+public class PresenceManager extends AbstractCollaborationManager {
 
     static {
         UsageStatistics.markAsUsed(
@@ -48,10 +47,6 @@ public class PresenceManager {
 
     private final Map<String, UserEntry> userEntries = new LinkedHashMap<>();
 
-    private final UserInfo localUser;
-
-    private final String topicId;
-
     private ListKey ownPresenceKey;
 
     private CollaborationList list;
@@ -59,8 +54,6 @@ public class PresenceManager {
     private PresenceHandler presenceHandler;
 
     private boolean markAsPresent = false;
-
-    private TopicConnectionRegistration topicRegistration;
 
     private Registration subscribeRegistration;
 
@@ -102,31 +95,8 @@ public class PresenceManager {
      */
     public PresenceManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
-        this.localUser = Objects.requireNonNull(localUser);
-        this.topicId = Objects.requireNonNull(topicId);
-        this.topicRegistration = collaborationEngine.openTopicConnection(
-                context, topicId, localUser, this::onConnectionActivate);
-    }
-
-    /**
-     * Gets the topic id.
-     *
-     * @return the topic id
-     */
-    public String getTopicId() {
-        return topicId;
-    }
-
-    /**
-     * Disconnects from the topic.
-     */
-    public void close() {
-        if (topicRegistration != null) {
-            // This will also trigger onConnectionDeactivate which will remove
-            // all handler registrations
-            topicRegistration.remove();
-            topicRegistration = null;
-        }
+        super(localUser, topicId, collaborationEngine);
+        openTopicConnection(context, this::onConnectionActivate);
     }
 
     /**
@@ -153,7 +123,7 @@ public class PresenceManager {
 
     private void addLocalUserToTopic() {
         assert ownPresenceKey == null;
-        ownPresenceKey = list.insertLast(localUser, EntryScope.CONNECTION)
+        ownPresenceKey = list.insertLast(getLocalUser(), EntryScope.CONNECTION)
                 .getKey();
     }
 
