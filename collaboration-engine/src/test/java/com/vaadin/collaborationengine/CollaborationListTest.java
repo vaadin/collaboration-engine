@@ -837,6 +837,58 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void insertWithEmptyCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("foo").ifEmpty();
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithEmptyCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        list.insertLast("foo");
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifEmpty();
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test
+    public void insertWithNotEmptyCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        list.insertLast("foo");
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("bar").ifNotEmpty();
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithNotEmptyCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListInsertOperation conditionalOperation = ListInsertOperation
+                .insertLast("foo").ifNotEmpty();
+        boolean succeeded = list.insert(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void insertLast_ifEmpty_ifNotEmpty_exceptionIsThrown() {
+        ListInsertOperation.insertLast("foo").ifEmpty().ifNotEmpty();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void insertLast_ifNotEmpty_ifEmpty_exceptionIsThrown() {
+        ListInsertOperation.insertLast("foo").ifNotEmpty().ifEmpty();
+    }
+
+    @Test
     public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
         ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();

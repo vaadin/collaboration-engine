@@ -481,6 +481,15 @@ class Topic {
         boolean before = change.get(JsonUtil.CHANGE_BEFORE).asBoolean();
         EntryList list = getOrCreateList(listName);
 
+        if (change.has(JsonUtil.CHANGE_EMPTY)) {
+            boolean empty = change.get(JsonUtil.CHANGE_EMPTY).asBoolean();
+            if (empty && list.size() > 0) {
+                return null;
+            } else if (!empty && list.size() == 0) {
+                return null;
+            }
+        }
+
         for (JsonNode condition : change
                 .withArray(JsonUtil.CHANGE_CONDITIONS)) {
             UUID leftKey = JsonUtil.toUUID(condition.get(JsonUtil.CHANGE_KEY));

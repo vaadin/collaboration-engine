@@ -74,6 +74,10 @@ class EntryList {
     private UUID head;
     private UUID tail;
 
+    int size() {
+        return entries.size();
+    }
+
     void clear() {
         entries.clear();
         head = null;

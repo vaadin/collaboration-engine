@@ -111,6 +111,8 @@ public class ListInsertOperation {
 
     private EntryScope scope = EntryScope.TOPIC;
 
+    private Boolean empty;
+
     private ListInsertOperation(Object value, boolean before,
             ListKey referenceKey) {
         this.value = value;
@@ -205,6 +207,34 @@ public class ListInsertOperation {
         return ifPrev(key, null);
     }
 
+    /**
+     * Adds a condition that requires the list to be empty.
+     *
+     * @return this operation, not <code>null</code>
+     */
+    public ListInsertOperation ifEmpty() {
+        if (Boolean.FALSE.equals(empty)) {
+            throw new IllegalStateException(
+                    "This operation already requires the list not to be empty.");
+        }
+        empty = true;
+        return this;
+    }
+
+    /**
+     * Adds a condition that requires the list not to be empty.
+     *
+     * @return this operation, not <code>null</code>
+     */
+    public ListInsertOperation ifNotEmpty() {
+        if (Boolean.TRUE.equals(empty)) {
+            throw new IllegalStateException(
+                    "This operation already requires the list to be empty.");
+        }
+        empty = false;
+        return this;
+    }
+
     Object getValue() {
         return value;
     }
@@ -224,4 +254,9 @@ public class ListInsertOperation {
     Map<ListKey, ListKey> getConditions() {
         return Collections.unmodifiableMap(conditions);
     }
+
+    Boolean getEmpty() {
+        return empty;
+    }
+
 }

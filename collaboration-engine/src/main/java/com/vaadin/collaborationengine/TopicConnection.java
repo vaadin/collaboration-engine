@@ -304,7 +304,7 @@ public class TopicConnection {
                             : null,
                     operation.getValue(),
                     connectionScope ? topic.getCurrentNodeId() : null,
-                    operation.getConditions());
+                    operation.getConditions(), operation.getEmpty());
 
             UUID id = UUID.randomUUID();
             return new ListInsertResult<>(new ListKey(id),
