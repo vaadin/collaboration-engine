@@ -59,6 +59,8 @@ public class MessageManager extends AbstractCollaborationManager {
 
     private CollaborationMessage lastSeenMessage;
 
+    private ListKey lastMessageKey;
+
     private boolean catchupMode = false;
 
     private final Map<CompletableFuture<Void>, CollaborationMessage> pendingMessageFutures = new LinkedHashMap<>();
@@ -235,7 +237,13 @@ public class MessageManager extends AbstractCollaborationManager {
     private void onListChange(ListChangeEvent event) {
         CollaborationMessage message = event
                 .getValue(CollaborationMessage.class);
+        lastMessageKey = event.getKey();
         if (message != null) {
+            CompletableFuture<Void> future = persistedMessageFutures
+                    .remove(message);
+            if (future != null) {
+                future.complete(null);
+            }
             applyHandler(message);
         }
     }
@@ -271,25 +279,28 @@ public class MessageManager extends AbstractCollaborationManager {
                 }
                 if (!messages.isEmpty()) {
                     query.throwIfPropsNotUsed();
-                    messages.forEach(this::handlePersistedMessage);
+                    insertPersistedMessages(messages);
                 }
             }
         }
     }
 
-    private void handlePersistedMessage(CollaborationMessage message) {
-        CompletableFuture<Void> future = persistedMessageFutures
-                .remove(message);
-        list.insertLast(message).getCompletableFuture()
-                .whenComplete((result, throwable) -> {
-                    if (future != null) {
-                        if (throwable != null) {
-                            future.completeExceptionally(throwable);
-                        } else {
-                            future.complete(result);
-                        }
-                    }
-                });
+    private void insertPersistedMessages(List<CollaborationMessage> messages) {
+        ListKey ifLast = lastMessageKey;
+        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        for (CollaborationMessage message : messages) {
+            ListInsertOperation op = ListInsertOperation.insertLast(message);
+            if (ifLast != null) {
+                op.ifLast(ifLast);
+            } else {
+                op.ifEmpty();
+            }
+            ListInsertResult<Boolean> insert = list.insert(op);
+            futures.add(insert.getCompletableFuture());
+            ifLast = insert.getKey();
+        }
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .thenAccept(result -> fetchPersistedList());
     }
 
     private List<CollaborationMessage> getRecentMessages() {

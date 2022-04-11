@@ -27,15 +27,33 @@ public class MessageManagerTest {
 
     private CollaborationEngine ce;
 
+    private Map<String, List<CollaborationMessage>> backend;
+
+    private CollaborationMessagePersister persister;
+
     @Before
     public void init() {
         service = new MockService();
         VaadinService.setCurrent(service);
         ce = TestUtil.createTestCollaborationEngine(service);
+        backend = new HashMap<>();
+        persister = CollaborationMessagePersister.fromCallbacks(
+                query -> backend
+                        .computeIfAbsent(
+                                query.getTopicId(), t -> new ArrayList<>())
+                        .stream()
+                        .filter(message -> message.getTime()
+                                .compareTo(query.getSince()) >= 0),
+                event -> backend
+                        .computeIfAbsent(event.getTopicId(),
+                                t -> new ArrayList<>())
+                        .add(event.getMessage()));
     }
 
     @After
     public void cleanUp() {
+        backend = null;
+        persister = null;
         UI.setCurrent(null);
         VaadinService.setCurrent(null);
     }
@@ -129,31 +147,46 @@ public class MessageManagerTest {
     public void withPersister_submitMessage_messageFutureCompletes() {
         MockConnectionContext connectionContext = MockConnectionContext
                 .createEager();
-        Map<String, List<CollaborationMessage>> backend = new HashMap<>();
-        CollaborationMessagePersister persister = CollaborationMessagePersister
-                .fromCallbacks(
-                        query -> backend
-                                .computeIfAbsent(query
-                                        .getTopicId(), t -> new ArrayList<>())
-                                .stream()
-                                .filter(message -> message.getTime()
-                                        .compareTo(query.getSince()) >= 0),
-                        event -> backend
-                                .computeIfAbsent(event.getTopicId(),
-                                        t -> new ArrayList<>())
-                                .add(event.getMessage()));
         MessageManager manager = new MessageManager(connectionContext,
                 new UserInfo("foo"), TOPIC_ID, persister, ce);
-
         connectionContext.deactivate();
 
         CompletableFuture<Void> future = manager.submit("text");
-
         Assert.assertFalse(future.isDone());
 
         connectionContext.activate();
-
         Assert.assertTrue(future.isDone());
+    }
+
+    @Test
+    public void withPersister_insertConditionFails_futureNotCompleted() {
+        UserInfo userInfo = new UserInfo("foo");
+
+        MessageManager manager = new MessageManager(
+                MockConnectionContext.createEager(), userInfo, TOPIC_ID,
+                persister, ce);
+
+        ce.openTopicConnection(MockConnectionContext.createEager(), TOPIC_ID,
+                userInfo, conn -> {
+                    CollaborationList list = conn
+                            .getNamedList(MessageManager.LIST_NAME);
+                    list.subscribe(change -> {
+                        CollaborationMessage message = change
+                                .getValue(CollaborationMessage.class);
+                        if (message.getText().equals("foo")) {
+                            list.insertLast(new CollaborationMessage(userInfo,
+                                    "boom", ce.getClock().instant()));
+                        }
+                    });
+                    return null;
+                });
+
+        backend.computeIfAbsent(TOPIC_ID, t -> new ArrayList<>())
+                .add(new CollaborationMessage(userInfo, "foo",
+                        ce.getClock().instant()));
+
+        CompletableFuture<Void> future = manager.submit("text");
+        Assert.assertFalse(future.isDone());
     }
 
     private MessageManager createActiveManager() {
