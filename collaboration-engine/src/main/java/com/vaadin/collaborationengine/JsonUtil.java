@@ -101,11 +101,6 @@ public class JsonUtil {
 
     public static final String CHANGE_SCOPE_OWNER = "scope-owner";
 
-    public static final TypeReference<List<UserInfo>> LIST_USER_TYPE_REF = new TypeReference<>() {
-    };
-    public static final TypeReference<List<CollaborationBinder.FocusedEditor>> EDITORS_TYPE_REF = new TypeReference<>() {
-    };
-
     private static final ObjectMapper mapper;
 
     static {

@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
+import com.vaadin.collaborationengine.FormManager.FocusedEditor;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.dom.Element;
@@ -93,6 +93,24 @@ class FieldHighlighter {
         setEditors(field, Collections.emptyList(), null);
     }
 
+    void addEditor(HasValue<?, ?> field, UserInfo user, int fieldIndex) {
+        if (field instanceof HasElement) {
+            ((HasElement) field).getElement().executeJs(
+                    "customElements.get('vaadin-field-highlighter')"
+                            + ".addUser(this, $0)",
+                    serialize(user, fieldIndex));
+        }
+    }
+
+    void removeEditor(HasValue<?, ?> field, UserInfo user, int fieldIndex) {
+        if (field instanceof HasElement) {
+            ((HasElement) field).getElement().executeJs(
+                    "customElements.get('vaadin-field-highlighter')"
+                            + ".removeUser(this, $0)",
+                    serialize(user, fieldIndex));
+        }
+    }
+
     private JsonArray serialize(Stream<FocusedEditor> editors) {
         return editors.map(this::serialize).collect(JsonUtils.asArray());
     }
@@ -105,6 +123,15 @@ class FieldHighlighter {
         editorJson.put("colorIndex",
                 colorIndexProvider.apply(focusedEditor.user));
         editorJson.put("fieldIndex", focusedEditor.fieldIndex);
+        return editorJson;
+    }
+
+    private JsonObject serialize(UserInfo user, int fieldIndex) {
+        JsonObject editorJson = Json.createObject();
+        editorJson.put("id", user.getId());
+        editorJson.put("name", Objects.toString(user.getName(), ""));
+        editorJson.put("colorIndex", colorIndexProvider.apply(user));
+        editorJson.put("fieldIndex", fieldIndex);
         return editorJson;
     }
 }

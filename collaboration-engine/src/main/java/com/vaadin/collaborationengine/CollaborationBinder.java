@@ -27,13 +27,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
+import com.vaadin.collaborationengine.HighlightHandler.HighlightContext;
+import com.vaadin.collaborationengine.PropertyChangeHandler.PropertyChangeEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.HasValue;
@@ -47,8 +47,6 @@ import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
-
-import static com.vaadin.collaborationengine.CollaborationBinderUtil.getMap;
 
 /**
  * Extension of {@link Binder} for creating collaborative forms with
@@ -122,30 +120,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
     }
 
-    /**
-     * Maps the focused user to the index of the focused element inside the
-     * field. The index is needed for components such as radio button group,
-     * where the highlight should be displayed on an individual radio button
-     * inside the group.
-     */
-    static final class FocusedEditor {
-        public final UserInfo user;
-        public final int fieldIndex;
-        public final String propertyName;
-
-        @JsonCreator
-        public FocusedEditor(@JsonProperty("user") UserInfo user,
-                @JsonProperty("fieldIndex") int fieldIndex,
-                @JsonProperty("propertyName") String propertyName) {
-            this.user = user;
-            this.fieldIndex = fieldIndex;
-            this.propertyName = propertyName;
-        }
-    }
-
     protected static class CollaborationBindingBuilderImpl<BEAN, FIELDVALUE, TARGET>
             extends BindingBuilderImpl<BEAN, FIELDVALUE, TARGET> {
-
         private String propertyName = null;
         private boolean typeIsConverted = false;
         private JsonHandler<?> explicitJsonHandler;
@@ -247,9 +223,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     private final CollaborationEngine ce;
     private final FieldHighlighter fieldHighlighter;
 
-    private TopicConnection topic;
     private ComponentConnectionContext connectionContext;
-    private TopicConnectionRegistration topicRegistration;
+    private FormManager formManager;
     private Duration expirationTimeout;
 
     private final Map<Binding<?, ?>, Registration> bindingRegistrations = new HashMap<>();
@@ -393,41 +368,29 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
                         + "'. Configure the property using an overload of forField or forMemberField that allows explicitly defining the field type.");
     }
 
-    private void onMapChange(MapChangeEvent event) {
-        getBinding(event.getKey()).map(Binding::getField).ifPresent(field -> {
-            String propertyName = event.getKey();
-            JsonNode value = event.getValue(JsonNode.class);
-
-            setFieldValueFromFieldState(field, propertyName,
-                    value == null ? NullNode.getInstance() : value);
-        });
-    }
-
-    private void onListChange(ListChangeEvent event) {
-        FocusedEditor newValue = event.getValue(FocusedEditor.class);
-        FocusedEditor oldValue = event.getOldValue(FocusedEditor.class);
-        if (newValue != null && oldValue == null) {
-            updateFieldHighlighterEditors(event.getSource(), newValue);
-        } else if (newValue == null && oldValue != null) {
-            updateFieldHighlighterEditors(event.getSource(), oldValue);
-        }
-    }
-
-    private void updateFieldHighlighterEditors(CollaborationList list,
-            FocusedEditor newValue) {
-        getBinding(newValue.propertyName).map(Binding::getField)
+    private void handlePropertyChange(PropertyChangeEvent event) {
+        getBinding(event.getPropertyName()).map(Binding::getField)
                 .ifPresent(field -> {
-                    List<FocusedEditor> editors = list
-                            .getItems(FocusedEditor.class).stream()
-                            .filter(f -> f.propertyName
-                                    .equals(newValue.propertyName))
-                            .collect(Collectors.toList());
-                    fieldHighlighter.setEditors(field, editors, localUser);
+                    String propertyName = event.getPropertyName();
+                    JsonNode value = JsonUtil.toJsonNode(event.getValue());
+
+                    setFieldValueFromFieldState(field, propertyName,
+                            value == null ? NullNode.getInstance() : value);
                 });
     }
 
-    private void onConnectionDeactivate() {
-        topic = null;
+    private Registration handleHighlight(HighlightContext context) {
+        if (!context.getUser().equals(localUser)) {
+            getBinding(context.getPropertyName()).map(Binding::getField)
+                    .ifPresent(field -> fieldHighlighter.addEditor(field,
+                            context.getUser(), context.getFieldIndex()));
+
+            return () -> getBinding(context.getPropertyName())
+                    .map(Binding::getField)
+                    .ifPresent(field -> fieldHighlighter.removeEditor(field,
+                            context.getUser(), context.getFieldIndex()));
+        }
+        return null;
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -443,7 +406,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void setMapValueFromField(String propertyName, HasValue field) {
-        if (topic != null) {
+        if (formManager != null) {
             Object value;
             if (field.isEmpty()) {
                 value = null;
@@ -452,21 +415,19 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
 
                 value = handler.serialize(field.getValue());
             }
-            CollaborationBinderUtil.setFieldValue(topic, propertyName, value);
+            formManager.setValue(propertyName, value);
         }
     }
 
     void addEditor(String propertyName, int fieldIndex) {
-        if (topic != null) {
-            CollaborationBinderUtil.addEditor(topic, propertyName, localUser,
-                    fieldIndex);
+        if (formManager != null) {
+            formManager.highlight(propertyName, true, fieldIndex);
         }
     }
 
     void removeEditor(String propertyName) {
-        if (topic != null) {
-            CollaborationBinderUtil.removeEditor(topic, propertyName,
-                    localUser);
+        if (formManager != null) {
+            formManager.highlight(propertyName, false);
         }
     }
 
@@ -659,11 +620,12 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      */
     public void setTopic(String topicId,
             SerializableSupplier<BEAN> initialBeanSupplier) {
-        if (topicRegistration != null) {
-            topicRegistration.remove();
+        if (formManager != null) {
+            formManager.close();
+            formManager = null;
+
             fieldToPropertyName.keySet()
                     .forEach(fieldHighlighter::removeEditors);
-            topicRegistration = null;
             connectionContext = null;
         }
 
@@ -676,41 +638,28 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
             fieldToPropertyName.keySet().forEach(
                     field -> connectionContext.addComponent((Component) field));
 
-            topicRegistration = ce.openTopicConnection(connectionContext,
-                    topicId, localUser,
-                    topic -> bindToTopic(topic, initialBeanSupplier));
-
-            topicRegistration.onConnectionFailed(
+            formManager = new FormManager(connectionContext, localUser, topicId,
+                    ce);
+            formManager.setActivationHandler(() -> {
+                initializeBindingsWithoutFieldState(initialBeanSupplier);
+                return null;
+            });
+            formManager.onConnectionFailed(
                     e -> super.readBean(initialBeanSupplier.get()));
+
+            formManager.setPropertyChangeHandler(this::handlePropertyChange);
+            formManager.setHighlightHandler(this::handleHighlight);
+            if (expirationTimeout != null) {
+                formManager.setExpirationTimeout(expirationTimeout);
+            }
         }
-
-    }
-
-    private Registration bindToTopic(TopicConnection topic,
-            SerializableSupplier<BEAN> initialBeanSupplier) {
-        this.topic = topic;
-
-        CollaborationMap map = getMap(topic);
-        map.subscribe(this::onMapChange);
-
-        CollaborationList list = CollaborationBinderUtil.getList(topic);
-        list.subscribe(this::onListChange);
-
-        if (expirationTimeout != null) {
-            map.setExpirationTimeout(expirationTimeout);
-        }
-
-        initializeBindingsWithoutFieldState(initialBeanSupplier);
-
-        return this::onConnectionDeactivate;
     }
 
     private void initializeBindingsWithoutFieldState(
             SerializableSupplier<BEAN> initialBeanSupplier) {
-        CollaborationMap map = getMap(topic);
         List<String> propertiesWithoutFieldState = fieldToPropertyName.values()
-                .stream().filter(propertyName -> map.get(propertyName,
-                        JsonNode.class) == null)
+                .stream().filter(propertyName -> formManager
+                        .getValue(propertyName, JsonNode.class) == null)
                 .collect(Collectors.toList());
 
         if (propertiesWithoutFieldState.isEmpty()) {
@@ -1068,8 +1017,8 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     public void setExpirationTimeout(Duration expirationTimeout) {
         this.expirationTimeout = expirationTimeout;
 
-        if (topic != null) {
-            getMap(topic).setExpirationTimeout(expirationTimeout);
+        if (formManager != null) {
+            formManager.setExpirationTimeout(expirationTimeout);
         }
     }
 }

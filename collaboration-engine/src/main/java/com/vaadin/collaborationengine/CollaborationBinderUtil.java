@@ -13,7 +13,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 
-import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
+import com.vaadin.collaborationengine.FormManager.FocusedEditor;
 
 /**
  * Utility methods for {@link CollaborationBinder}.
@@ -23,7 +23,7 @@ import com.vaadin.collaborationengine.CollaborationBinder.FocusedEditor;
  */
 public class CollaborationBinderUtil {
 
-    static final String COLLABORATION_BINDER_MAP_NAME = CollaborationBinder.class
+    static final String COLLABORATION_BINDER_MAP_NAME = FormManager.class
             .getName();
 
     private CollaborationBinderUtil() {

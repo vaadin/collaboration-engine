@@ -103,7 +103,7 @@ public class AbstractCollaborationBinderTest {
 
     protected List<UserInfo> getEditors(String key) {
         return CollaborationBinderUtil.getList(topicConnection)
-                .getItems(CollaborationBinder.FocusedEditor.class).stream()
+                .getItems(FormManager.FocusedEditor.class).stream()
                 .filter(f -> f.propertyName.equals(key))
                 .map(focusedEditor -> focusedEditor.user).distinct()
                 .collect(Collectors.toList());

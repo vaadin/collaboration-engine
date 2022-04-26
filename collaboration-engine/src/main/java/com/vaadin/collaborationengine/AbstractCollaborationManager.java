@@ -11,6 +11,7 @@ package com.vaadin.collaborationengine;
 import java.io.Serializable;
 import java.util.Objects;
 
+import com.vaadin.collaborationengine.TopicConnectionRegistration.ConnectionFailedAction;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.shared.Registration;
 
@@ -39,7 +40,7 @@ public abstract class AbstractCollaborationManager {
          * @return a callback which will be executed when the manager is
          *         deactivated, or {@code null} if not needed
          */
-        public Registration onActivation();
+        Registration onActivation();
     }
 
     private final CollaborationEngine collaborationEngine;
@@ -48,11 +49,13 @@ public abstract class AbstractCollaborationManager {
 
     private final String topicId;
 
-    private Registration topicRegistration;
+    private TopicConnectionRegistration topicRegistration;
 
     private ActivationHandler activationHandler;
 
     private Registration deactivationHandler;
+
+    private ConnectionFailedAction connectionFailedAction;
 
     private boolean active;
 
@@ -91,20 +94,23 @@ public abstract class AbstractCollaborationManager {
         topicRegistration = collaborationEngine.openTopicConnection(context,
                 topicId, localUser, connection -> {
                     active = true;
+                    Registration callbackRegistration = connectionActivationCallback
+                            .apply(connection);
                     if (activationHandler != null) {
                         deactivationHandler = activationHandler.onActivation();
                     }
-                    Registration callbackRegistration = connectionActivationCallback
-                            .apply(connection);
                     return callbackRegistration != null
                             ? Registration.combine(callbackRegistration,
                                     this::onTopicRegistrationRemove)
                             : this::onTopicRegistrationRemove;
                 });
+        if (connectionFailedAction != null) {
+            topicRegistration.onConnectionFailed(connectionFailedAction);
+        }
     }
 
     /**
-     * Sets an handler that will be executed when the manager is activated, i.e.
+     * Sets a handler that will be executed when the manager is activated, i.e.
      * the connection to the topic is established.
      *
      * @param handler
@@ -118,6 +124,27 @@ public abstract class AbstractCollaborationManager {
         activationHandler = handler;
         if (active && activationHandler != null) {
             deactivationHandler = activationHandler.onActivation();
+        }
+    }
+
+    /**
+     * Adds an action to be executed if the topic connection fails. The
+     * connection can fail in production mode if your Collaboration Engine
+     * license has expired, or if the number of unique monthly end users has
+     * exceeded the quota in your license.
+     * <p>
+     * If the connection has already failed when calling this method, the action
+     * runs immediately.
+     *
+     * @param connectionFailedAction
+     *            the action to handle topic connection failure, or {@code null}
+     *            to remove an existing action
+     */
+    public void onConnectionFailed(
+            ConnectionFailedAction connectionFailedAction) {
+        this.connectionFailedAction = connectionFailedAction;
+        if (connectionFailedAction != null && topicRegistration != null) {
+            topicRegistration.onConnectionFailed(connectionFailedAction);
         }
     }
 
