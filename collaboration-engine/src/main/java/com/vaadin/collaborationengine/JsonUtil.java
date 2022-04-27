@@ -331,4 +331,45 @@ public class JsonUtil {
         payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
         return payload;
     }
+
+    /**
+     * Serializes a value to JSON string.
+     *
+     * @param value
+     *            the value
+     * @return the JSON string, or <code>null</code> if value is
+     *         <code>null</code>
+     */
+    public static String toString(Object value) {
+        if (value == null) {
+            return null;
+        } else {
+            try {
+                return mapper.writeValueAsString(value);
+            } catch (JsonProcessingException e) {
+                throw new JsonConversionException(
+                        "Failed to serialize the object to string.", e);
+            }
+        }
+    }
+
+    /**
+     * Deserializes a JSON string to {@link ObjectNode}.
+     *
+     * @param value
+     *            the JSON string
+     * @return the node, or <code>null</code> if value is <code>null</code>
+     */
+    public static ObjectNode fromString(String value) {
+        if (value == null) {
+            return null;
+        } else {
+            try {
+                return (ObjectNode) mapper.readTree(value);
+            } catch (JsonProcessingException e) {
+                throw new JsonConversionException(
+                        "Failed to read the object from string.", e);
+            }
+        }
+    }
 }

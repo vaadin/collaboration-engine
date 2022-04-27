@@ -11,6 +11,7 @@ package com.vaadin.collaborationengine;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -39,7 +40,8 @@ public class BackendTest {
         UUID nodeId = backend.getNodeId();
         AtomicBoolean joined = new AtomicBoolean();
 
-        backend.getMembershipEventLog().subscribe(null, (eventId, event) -> {
+        backend.getMembershipEventLog().subscribe(null, (eventId, payload) -> {
+            ObjectNode event = JsonUtil.fromString(payload);
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             joined.set(JsonUtil.CHANGE_NODE_JOIN.equals(type)
@@ -57,7 +59,8 @@ public class BackendTest {
         UUID nodeId = backend.getNodeId();
         AtomicBoolean left = new AtomicBoolean();
 
-        backend.getMembershipEventLog().subscribe(null, (eventId, event) -> {
+        backend.getMembershipEventLog().subscribe(null, (eventId, payload) -> {
+            ObjectNode event = JsonUtil.fromString(payload);
             String type = event.get(JsonUtil.CHANGE_TYPE).asText();
             String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
             left.set(JsonUtil.CHANGE_NODE_LEAVE.equals(type)

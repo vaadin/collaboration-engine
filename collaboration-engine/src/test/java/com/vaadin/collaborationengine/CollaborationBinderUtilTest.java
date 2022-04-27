@@ -142,8 +142,8 @@ public class CollaborationBinderUtilTest
                     JsonUtil.toInstance(fieldValue, typeRef));
         };
 
-        List<BigDecimal> bigDecimalList = Arrays.asList(new BigDecimal(2.5),
-                new BigDecimal(3.4));
+        List<BigDecimal> bigDecimalList = Arrays.asList(new BigDecimal("2.5"),
+                new BigDecimal("3.4"));
         List<LocalDate> localDateList = Arrays.asList(LocalDate.of(2020, 2, 3),
                 LocalDate.of(2021, 12, 31));
         List<LocalTime> localTimeList = Arrays.asList(LocalTime.of(1, 2, 3, 4),

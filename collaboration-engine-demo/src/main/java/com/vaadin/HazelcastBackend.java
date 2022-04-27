@@ -30,9 +30,9 @@ import com.vaadin.flow.shared.Registration;
 public class HazelcastBackend implements Backend {
     private static final class IdAndEvent implements Serializable {
         private final UUID trackingId;
-        private final ObjectNode event;
+        private final String event;
 
-        private IdAndEvent(UUID trackingId, ObjectNode event) {
+        private IdAndEvent(UUID trackingId, String event) {
             this.trackingId = trackingId;
             this.event = event;
         }
@@ -41,7 +41,7 @@ public class HazelcastBackend implements Backend {
     private static class HazelcastEventLog implements EventLog {
         private final IList<IdAndEvent> list;
 
-        private BiConsumer<UUID, ObjectNode> eventConsumer;
+        private BiConsumer<UUID, String> eventConsumer;
         private int nextEventIndex = 0;
 
         private UUID newerThan;
@@ -66,7 +66,7 @@ public class HazelcastBackend implements Backend {
 
         @Override
         public synchronized Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, ObjectNode> eventConsumer) {
+                BiConsumer<UUID, String> eventConsumer) {
             if (this.eventConsumer != null) {
                 throw new IllegalStateException();
             }
@@ -100,7 +100,7 @@ public class HazelcastBackend implements Backend {
         }
 
         @Override
-        public void submitEvent(UUID trackingId, ObjectNode event) {
+        public void submitEvent(UUID trackingId, String event) {
             list.add(new IdAndEvent(trackingId, event));
         }
     }
@@ -109,7 +109,7 @@ public class HazelcastBackend implements Backend {
 
     private final IList<IdAndEvent> membershipEvents;
 
-    private final IMap<String, ObjectNode> snapshots;
+    private final IMap<String, String> snapshots;
 
     public HazelcastBackend(HazelcastInstance hz) {
         this.hz = Objects.requireNonNull(hz);
@@ -123,14 +123,16 @@ public class HazelcastBackend implements Backend {
             public void memberRemoved(MembershipEvent membershipEvent) {
                 UUID id = membershipEvent.getMember().getUuid();
                 ObjectNode event = JsonUtil.createNodeLeave(id);
-                membershipEvents.add(new IdAndEvent(UUID.randomUUID(), event));
+                membershipEvents.add(new IdAndEvent(UUID.randomUUID(),
+                        JsonUtil.toString(event)));
             }
 
             @Override
             public void memberAdded(MembershipEvent membershipEvent) {
                 UUID id = membershipEvent.getMember().getUuid();
                 ObjectNode event = JsonUtil.createNodeJoin(id);
-                membershipEvents.add(new IdAndEvent(UUID.randomUUID(), event));
+                membershipEvents.add(new IdAndEvent(UUID.randomUUID(),
+                        JsonUtil.toString(event)));
             }
         });
     }
@@ -146,12 +148,12 @@ public class HazelcastBackend implements Backend {
     }
 
     @Override
-    public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
+    public CompletableFuture<String> loadLatestSnapshot(String name) {
         return CompletableFuture.completedFuture(snapshots.get(name));
     }
 
     @Override
-    public void submitSnapshot(String name, ObjectNode snapshot) {
+    public void submitSnapshot(String name, String snapshot) {
         snapshots.put(name, snapshot);
     }
 

@@ -12,8 +12,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -22,6 +20,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 public interface Backend {
+
     /**
      * A strictly ordered log of submitted events.
      */
@@ -34,10 +33,9 @@ public interface Backend {
          * @param trackingId
          *            the tracking id of this event, not <code>null</code>
          * @param eventPayload
-         *            the JSON object representing the event, not
-         *            <code>null</code>
+         *            the payload representing the event, not <code>null</code>
          */
-        void submitEvent(UUID trackingId, ObjectNode eventPayload);
+        void submitEvent(UUID trackingId, String eventPayload);
 
         /**
          * Adds a subscriber to receive all past and future events for this
@@ -59,7 +57,7 @@ public interface Backend {
          *         <code>null</code>
          */
         Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, ObjectNode> eventConsumer);
+                BiConsumer<UUID, String> eventConsumer);
     }
 
     /**
@@ -95,14 +93,14 @@ public interface Backend {
 
     /**
      * Loads the latest snapshot of data identified by the given name. To submit
-     * a snapshot see {@link #submitSnapshot(String, ObjectNode)}.
+     * a snapshot see {@link #submitSnapshot(String, String)}.
      *
      * @param name
      *            the name identifying the data, not <code>null</code>
      * @return a completable future resolved with the snapshot, not
      *         <code>null</code>
      */
-    CompletableFuture<ObjectNode> loadLatestSnapshot(String name);
+    CompletableFuture<String> loadLatestSnapshot(String name);
 
     /**
      * Submits a snapshots of data identifies by the given name. The latest
@@ -114,5 +112,5 @@ public interface Backend {
      * @param snapshot
      *            the snapshot, not <code>null</code>
      */
-    void submitSnapshot(String name, ObjectNode snapshot);
+    void submitSnapshot(String name, String snapshot);
 }

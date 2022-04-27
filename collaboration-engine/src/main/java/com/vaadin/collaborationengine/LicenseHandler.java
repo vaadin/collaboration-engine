@@ -219,7 +219,8 @@ class LicenseHandler {
             }
             licenseEventLog = backend.openEventLog(EVENT_LOG_NAME);
             backend.getMembershipEventLog().subscribe(null,
-                    (eventId, event) -> {
+                    (eventId, payload) -> {
+                        ObjectNode event = JsonUtil.fromString(payload);
                         String type = event.get(JsonUtil.CHANGE_TYPE).asText();
                         if (JsonUtil.CHANGE_NODE_JOIN.equals(type)) {
                             handleNodeJoin(event);
@@ -228,6 +229,7 @@ class LicenseHandler {
                         }
                     });
             backend.loadLatestSnapshot(EVENT_LOG_NAME)
+                    .thenApply(JsonUtil::fromString)
                     .thenAccept(this::initializeFromSnapshot);
         } else {
             licenseEventLog = null;
@@ -296,10 +298,16 @@ class LicenseHandler {
                 .forEach(statisticsCache::setLicenseEvent);
 
         Snapshot snapshot = new Snapshot(UUID.randomUUID(), statisticsCache);
-        backend.submitSnapshot(EVENT_LOG_NAME, MAPPER.valueToTree(snapshot));
+        try {
+            String payload = MAPPER.writeValueAsString(snapshot);
+            backend.submitSnapshot(EVENT_LOG_NAME, payload);
+        } catch (JsonProcessingException e) {
+            throw new JsonConversionException("Cannot serialize snapshot", e);
+        }
     }
 
-    private void handleChangeEvent(UUID eventId, ObjectNode event) {
+    private void handleChangeEvent(UUID eventId, String payload) {
+        ObjectNode event = JsonUtil.fromString(payload);
         String changeType = event.get(JsonUtil.CHANGE_TYPE).asText();
         String licenseKey = event.get(JsonUtil.CHANGE_LICENSE_KEY).asText();
         if (JsonUtil.CHANGE_TYPE_LICENSE_USER.equals(changeType)) {
@@ -432,7 +440,8 @@ class LicenseHandler {
         }
 
         ObjectNode entry = JsonUtil.createUserEntry(license.key, month, userId);
-        licenseEventLog.submitEvent(UUID.randomUUID(), entry);
+        licenseEventLog.submitEvent(UUID.randomUUID(),
+                JsonUtil.toString(entry));
         return true;
     }
 
@@ -463,7 +472,8 @@ class LicenseHandler {
         }
         ObjectNode event = JsonUtil.createLicenseEvent(license.key, eventName,
                 getCurrentDate());
-        licenseEventLog.submitEvent(UUID.randomUUID(), event);
+        licenseEventLog.submitEvent(UUID.randomUUID(),
+                JsonUtil.toString(event));
     }
 
     private LocalDate getCurrentDate() {

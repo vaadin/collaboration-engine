@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -26,8 +27,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -424,9 +427,11 @@ public class CollaborationEngine {
 
         TopicAndEventLog topicAndConnection = topics.computeIfAbsent(topicId,
                 this::createTopicAndEventLog);
+        BiConsumer<UUID, ObjectNode> distributor = (id,
+                node) -> topicAndConnection.eventLog.submitEvent(id,
+                        JsonUtil.toString(node));
         TopicConnection connection = new TopicConnection(this, context,
-                topicAndConnection.topic,
-                topicAndConnection.eventLog::submitEvent, localUser,
+                topicAndConnection.topic, distributor, localUser,
                 isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
 

@@ -26,7 +26,7 @@ public class TestBackendFactory {
 
     private EventLog membershipEventLog = new TestEventLog(membershipEvents);
 
-    private Map<String, ObjectNode> snapshots = new HashMap<>();
+    private Map<String, String> snapshots = new HashMap<>();
 
     public TestBackend createBackend() {
         return new TestBackend();
@@ -34,19 +34,21 @@ public class TestBackendFactory {
 
     public void join(Backend node) {
         ObjectNode event = JsonUtil.createNodeJoin(node.getNodeId());
-        membershipEventLog.submitEvent(UUID.randomUUID(), event);
+        membershipEventLog.submitEvent(UUID.randomUUID(),
+                JsonUtil.toString(event));
     };
 
     public void leave(Backend node) {
         ObjectNode event = JsonUtil.createNodeLeave(node.getNodeId());
-        membershipEventLog.submitEvent(UUID.randomUUID(), event);
+        membershipEventLog.submitEvent(UUID.randomUUID(),
+                JsonUtil.toString(event));
     }
 
     private static class IdAndEvent {
         private final UUID id;
-        private final ObjectNode event;
+        private final String event;
 
-        private IdAndEvent(UUID id, ObjectNode event) {
+        private IdAndEvent(UUID id, String event) {
             this.id = id;
             this.event = event;
         }
@@ -56,14 +58,14 @@ public class TestBackendFactory {
 
         private final List<IdAndEvent> events;
 
-        private final List<BiConsumer<UUID, ObjectNode>> consumers = new ArrayList<>();
+        private final List<BiConsumer<UUID, String>> consumers = new ArrayList<>();
 
         private TestEventLog(List<IdAndEvent> events) {
             this.events = events;
         }
 
         @Override
-        public void submitEvent(UUID trackingId, ObjectNode eventPayload) {
+        public void submitEvent(UUID trackingId, String eventPayload) {
             events.add(new IdAndEvent(trackingId, eventPayload));
             consumers.forEach(
                     consumer -> consumer.accept(trackingId, eventPayload));
@@ -71,7 +73,7 @@ public class TestBackendFactory {
 
         @Override
         public Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, ObjectNode> consumer) {
+                BiConsumer<UUID, String> consumer) {
             Predicate<IdAndEvent> filter = e -> true;
             if (newerThan != null) {
                 filter = new Predicate<IdAndEvent>() {
@@ -113,12 +115,12 @@ public class TestBackendFactory {
         }
 
         @Override
-        public CompletableFuture<ObjectNode> loadLatestSnapshot(String name) {
+        public CompletableFuture<String> loadLatestSnapshot(String name) {
             return CompletableFuture.completedFuture(snapshots.get(name));
         }
 
         @Override
-        public void submitSnapshot(String name, ObjectNode snapshot) {
+        public void submitSnapshot(String name, String snapshot) {
             snapshots.put(name, snapshot);
         }
     }

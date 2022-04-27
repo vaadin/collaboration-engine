@@ -166,14 +166,15 @@ class Topic {
         this.collaborationEngine = collaborationEngine;
         this.eventLog = eventLog;
         final Backend backend = getBackend();
-        backend.getMembershipEventLog().subscribe(null,
-                (changeId, changeNode) -> {
-                    String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
-                    if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
-                        handleNodeLeave(changeNode);
-                    }
-                });
-        backend.loadLatestSnapshot(id).thenAccept(this::initializeFromSnapshot);
+        backend.getMembershipEventLog().subscribe(null, (changeId, payload) -> {
+            ObjectNode changeNode = JsonUtil.fromString(payload);
+            String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
+            if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
+                handleNodeLeave(changeNode);
+            }
+        });
+        backend.loadLatestSnapshot(id).thenApply(JsonUtil::fromString)
+                .thenAccept(this::initializeFromSnapshot);
     }
 
     UUID getCurrentNodeId() {
@@ -195,7 +196,7 @@ class Topic {
 
         ObjectNode nodeEvent = JsonUtil.createNodeJoin(getCurrentNodeId());
 
-        eventLog.submitEvent(UUID.randomUUID(), nodeEvent);
+        eventLog.submitEvent(UUID.randomUUID(), JsonUtil.toString(nodeEvent));
     }
 
     synchronized void handleNodeLeave(ObjectNode changeNode) {
@@ -225,8 +226,9 @@ class Topic {
                                     entry.getValue().revisionId.toString());
                             return change;
                         }))
-                .collect(Collectors.toList()).forEach(change -> eventLog
-                        .submitEvent(UUID.randomUUID(), change));
+                .collect(Collectors.toList())
+                .forEach(change -> eventLog.submitEvent(UUID.randomUUID(),
+                        JsonUtil.toString(change)));
         namedListData.entrySet().stream()
                 .flatMap(list -> list.getValue().stream()
                         .filter(entry -> isStale.test(entry.scopeOwnerId))
@@ -238,8 +240,9 @@ class Topic {
                                     entry.revisionId.toString());
                             return change;
                         }))
-                .collect(Collectors.toList()).forEach(change -> eventLog
-                        .submitEvent(UUID.randomUUID(), change));
+                .collect(Collectors.toList())
+                .forEach(change -> eventLog.submitEvent(UUID.randomUUID(),
+                        JsonUtil.toString(change)));
     }
 
     Registration subscribeToChange(
@@ -271,7 +274,8 @@ class Topic {
                                     return change;
                                 }).collect(Collectors.toList())
                                 .forEach(change -> eventLog.submitEvent(
-                                        UUID.randomUUID(), change));
+                                        UUID.randomUUID(),
+                                        JsonUtil.toString(change)));
                         mapExpirationTimeouts.remove(name);
                     });
             listExpirationTimeouts.entrySet().stream()
@@ -288,7 +292,8 @@ class Topic {
                             return change;
                         }).collect(Collectors.toList())
                                 .forEach(change -> eventLog.submitEvent(
-                                        UUID.randomUUID(), change));
+                                        UUID.randomUUID(),
+                                        JsonUtil.toString(change)));
                         listExpirationTimeouts.remove(name);
                     });
         }
@@ -313,7 +318,8 @@ class Topic {
         return map.get(key).data.deepCopy();
     }
 
-    synchronized ChangeResult applyChange(UUID trackingId, ObjectNode change) {
+    synchronized ChangeResult applyChange(UUID trackingId, String payload) {
+        ObjectNode change = JsonUtil.fromString(payload);
         changeCount++;
         String type = change.get(JsonUtil.CHANGE_TYPE).asText();
         ChangeDetails details;
@@ -385,8 +391,9 @@ class Topic {
                     listener -> listener.accept(trackingId, details), true);
         }
         if (leader && changeCount % 100 == 0) {
-            getBackend().submitSnapshot(id,
-                    Snapshot.fromTopic(this, trackingId).toObjectNode());
+            ObjectNode snapshot = Snapshot.fromTopic(this, trackingId)
+                    .toObjectNode();
+            getBackend().submitSnapshot(id, JsonUtil.toString(snapshot));
         }
         return result;
     }
