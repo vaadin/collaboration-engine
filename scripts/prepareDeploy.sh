@@ -91,7 +91,7 @@ cdi=`getLatest vaadin-cdi $cdi`
 
 ### Compute cdi version
 component=`getPlatformVersion accordion`
-component=`getLatest vaadin-flow-components-shared $component`
+component=`getLatest vaadin-flow-components-shared-parent $component`
 
 ## Modify poms with the versions to release
 echo "Setting version=$version to collaboration-engine-internal"
