@@ -11,12 +11,12 @@ package com.vaadin.collaborationengine;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestBackendFactory;
 
@@ -40,13 +40,9 @@ public class BackendTest {
         UUID nodeId = backend.getNodeId();
         AtomicBoolean joined = new AtomicBoolean();
 
-        backend.getMembershipEventLog().subscribe(null, (eventId, payload) -> {
-            ObjectNode event = JsonUtil.fromString(payload);
-            String type = event.get(JsonUtil.CHANGE_TYPE).asText();
-            String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
-            joined.set(JsonUtil.CHANGE_NODE_JOIN.equals(type)
-                    && nodeId.toString().equals(id));
-        });
+        backend.addMembershipListener(event -> joined
+                .set(event.getType().equals(MembershipEventType.JOIN)
+                        && event.getNodeId().equals(nodeId)));
         join(node);
 
         Assert.assertTrue("Join event not received", joined.get());
@@ -59,13 +55,9 @@ public class BackendTest {
         UUID nodeId = backend.getNodeId();
         AtomicBoolean left = new AtomicBoolean();
 
-        backend.getMembershipEventLog().subscribe(null, (eventId, payload) -> {
-            ObjectNode event = JsonUtil.fromString(payload);
-            String type = event.get(JsonUtil.CHANGE_TYPE).asText();
-            String id = event.get(JsonUtil.CHANGE_NODE_ID).asText();
-            left.set(JsonUtil.CHANGE_NODE_LEAVE.equals(type)
-                    && nodeId.toString().equals(id));
-        });
+        backend.addMembershipListener(event -> left
+                .set(event.getType().equals(MembershipEventType.LEAVE)
+                        && event.getNodeId().equals(nodeId)));
         leave(node);
 
         Assert.assertTrue("Leave event not received", left.get());

@@ -12,8 +12,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -22,7 +21,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public class LocalBackend implements Backend {
+public class LocalBackend extends Backend {
     private static class LocalEventLog implements EventLog {
         private final String topicId;
         private BiConsumer<UUID, String> consumer;
@@ -59,25 +58,12 @@ public class LocalBackend implements Backend {
     }
 
     @Override
-    public EventLog getMembershipEventLog() {
-        return new EventLog() {
-
-            @Override
-            public Registration subscribe(UUID newerThan,
-                    BiConsumer<UUID, String> eventConsumer) {
-                assert newerThan == null;
-                ObjectNode event = JsonUtil.createNodeJoin(id);
-                String payload = JsonUtil.toString(event);
-                eventConsumer.accept(UUID.randomUUID(), payload);
-                return () -> {
-                    // NOOP
-                };
-            }
-
-            @Override
-            public void submitEvent(UUID trackingId, String eventPayload) {
-                throw new UnsupportedOperationException();
-            }
+    public Registration addMembershipListener(
+            MembershipListener membershipListener) {
+        membershipListener.handleMembershipEvent(new MembershipEvent(
+                MembershipEventType.JOIN, id, getCollaborationEngine()));
+        return () -> {
+            // NOOP
         };
     }
 

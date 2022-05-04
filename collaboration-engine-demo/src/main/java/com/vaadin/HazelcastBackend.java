@@ -14,9 +14,9 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.hazelcast.cluster.InitialMembershipEvent;
+import com.hazelcast.cluster.InitialMembershipListener;
 import com.hazelcast.cluster.MembershipEvent;
-import com.hazelcast.cluster.MembershipListener;
 import com.hazelcast.collection.IList;
 import com.hazelcast.collection.ItemEvent;
 import com.hazelcast.collection.ItemListener;
@@ -24,10 +24,11 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 
 import com.vaadin.collaborationengine.Backend;
-import com.vaadin.collaborationengine.JsonUtil;
+import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
+import com.vaadin.collaborationengine.MembershipListener;
 import com.vaadin.flow.shared.Registration;
 
-public class HazelcastBackend implements Backend {
+public class HazelcastBackend extends Backend {
     private static final class IdAndEvent implements Serializable {
         private final UUID trackingId;
         private final String event;
@@ -107,34 +108,48 @@ public class HazelcastBackend implements Backend {
 
     private final HazelcastInstance hz;
 
-    private final IList<IdAndEvent> membershipEvents;
-
     private final IMap<String, String> snapshots;
 
     public HazelcastBackend(HazelcastInstance hz) {
         this.hz = Objects.requireNonNull(hz);
-        membershipEvents = this.hz
-                .getList(HazelcastBackend.class.getName() + ".membership");
         this.snapshots = hz
                 .getMap(HazelcastBackend.class.getName() + ".snapshots");
-        this.hz.getCluster().addMembershipListener(new MembershipListener() {
+    }
 
-            @Override
-            public void memberRemoved(MembershipEvent membershipEvent) {
-                UUID id = membershipEvent.getMember().getUuid();
-                ObjectNode event = JsonUtil.createNodeLeave(id);
-                membershipEvents.add(new IdAndEvent(UUID.randomUUID(),
-                        JsonUtil.toString(event)));
-            }
+    @Override
+    public Registration addMembershipListener(
+            MembershipListener membershipListener) {
+        UUID registrationId = hz.getCluster()
+                .addMembershipListener(new InitialMembershipListener() {
 
-            @Override
-            public void memberAdded(MembershipEvent membershipEvent) {
-                UUID id = membershipEvent.getMember().getUuid();
-                ObjectNode event = JsonUtil.createNodeJoin(id);
-                membershipEvents.add(new IdAndEvent(UUID.randomUUID(),
-                        JsonUtil.toString(event)));
-            }
-        });
+                    @Override
+                    public void init(InitialMembershipEvent event) {
+                        event.getMembers()
+                                .forEach(member -> submitEvent(
+                                        MembershipEventType.JOIN,
+                                        member.getUuid()));
+                    }
+
+                    @Override
+                    public void memberAdded(MembershipEvent membershipEvent) {
+                        submitEvent(MembershipEventType.JOIN,
+                                membershipEvent.getMember().getUuid());
+                    }
+
+                    @Override
+                    public void memberRemoved(MembershipEvent membershipEvent) {
+                        submitEvent(MembershipEventType.LEAVE,
+                                membershipEvent.getMember().getUuid());
+                    }
+
+                    private void submitEvent(MembershipEventType type,
+                            UUID id) {
+                        membershipListener.handleMembershipEvent(
+                                new com.vaadin.collaborationengine.MembershipEvent(
+                                        type, id, getCollaborationEngine()));
+                    }
+                });
+        return () -> hz.getCluster().removeMembershipListener(registrationId);
     }
 
     @Override
@@ -155,10 +170,5 @@ public class HazelcastBackend implements Backend {
     @Override
     public void submitSnapshot(String name, String snapshot) {
         snapshots.put(name, snapshot);
-    }
-
-    @Override
-    public EventLog getMembershipEventLog() {
-        return new HazelcastEventLog(membershipEvents);
     }
 }

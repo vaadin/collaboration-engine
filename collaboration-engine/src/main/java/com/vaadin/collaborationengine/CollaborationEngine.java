@@ -251,6 +251,8 @@ public class CollaborationEngine {
         ce.vaadinService = vaadinService;
         ce.systemContext = new SystemConnectionContext(ce);
 
+        configuration.getBackend().setCollaborationEngine(ce);
+
         ExecutorService executorService = ce.configuration.getExecutorService();
         final boolean useManagedExecutorService = executorService == null;
         if (useManagedExecutorService) {

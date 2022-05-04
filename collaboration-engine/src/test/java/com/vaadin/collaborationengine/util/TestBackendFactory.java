@@ -2,18 +2,20 @@ package com.vaadin.collaborationengine.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import com.vaadin.collaborationengine.Backend;
 import com.vaadin.collaborationengine.Backend.EventLog;
-import com.vaadin.collaborationengine.JsonUtil;
+import com.vaadin.collaborationengine.MembershipEvent;
+import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
+import com.vaadin.collaborationengine.MembershipListener;
 import com.vaadin.flow.shared.Registration;
 
 public class TestBackendFactory {
@@ -22,9 +24,9 @@ public class TestBackendFactory {
 
     private Map<String, EventLog> eventLogs = new HashMap<>();
 
-    private List<IdAndEvent> membershipEvents = new ArrayList<>();
+    private Set<Backend> nodes = new LinkedHashSet<>();
 
-    private EventLog membershipEventLog = new TestEventLog(membershipEvents);
+    private List<MembershipListener> membershipListeners = new ArrayList<>();
 
     private Map<String, String> snapshots = new HashMap<>();
 
@@ -33,15 +35,17 @@ public class TestBackendFactory {
     }
 
     public void join(Backend node) {
-        ObjectNode event = JsonUtil.createNodeJoin(node.getNodeId());
-        membershipEventLog.submitEvent(UUID.randomUUID(),
-                JsonUtil.toString(event));
+        nodes.add(node);
+        membershipListeners.forEach(listener -> listener.handleMembershipEvent(
+                new MembershipEvent(MembershipEventType.JOIN, node.getNodeId(),
+                        node.getCollaborationEngine())));
     };
 
     public void leave(Backend node) {
-        ObjectNode event = JsonUtil.createNodeLeave(node.getNodeId());
-        membershipEventLog.submitEvent(UUID.randomUUID(),
-                JsonUtil.toString(event));
+        nodes.remove(node);
+        membershipListeners.forEach(listener -> listener.handleMembershipEvent(
+                new MembershipEvent(MembershipEventType.LEAVE, node.getNodeId(),
+                        node.getCollaborationEngine())));
     }
 
     private static class IdAndEvent {
@@ -94,7 +98,7 @@ public class TestBackendFactory {
         }
     }
 
-    public class TestBackend implements Backend {
+    public class TestBackend extends Backend {
 
         private final UUID id = UUID.randomUUID();
 
@@ -105,8 +109,13 @@ public class TestBackendFactory {
         }
 
         @Override
-        public EventLog getMembershipEventLog() {
-            return membershipEventLog;
+        public Registration addMembershipListener(
+                MembershipListener membershipListener) {
+            nodes.forEach(node -> membershipListener.handleMembershipEvent(
+                    new MembershipEvent(MembershipEventType.JOIN,
+                            node.getNodeId(), getCollaborationEngine())));
+            membershipListeners.add(membershipListener);
+            return () -> membershipListeners.remove(membershipListener);
         }
 
         @Override

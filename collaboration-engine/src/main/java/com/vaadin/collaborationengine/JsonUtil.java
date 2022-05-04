@@ -13,7 +13,6 @@ import java.lang.reflect.Type;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,7 +32,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public class JsonUtil {
+class JsonUtil {
 
     static final String CHANGE_TYPE = "type";
 
@@ -311,7 +310,7 @@ public class JsonUtil {
      *            the node id, not <code>null</code>
      * @return the payload
      */
-    public static ObjectNode createNodeJoin(UUID id) {
+    static ObjectNode createNodeJoin(UUID id) {
         ObjectNode payload = mapper.createObjectNode();
         payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_JOIN);
         payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
@@ -325,7 +324,7 @@ public class JsonUtil {
      *            the node id, not <code>null</code>
      * @return the payload
      */
-    public static ObjectNode createNodeLeave(UUID id) {
+    static ObjectNode createNodeLeave(UUID id) {
         ObjectNode payload = mapper.createObjectNode();
         payload.put(JsonUtil.CHANGE_TYPE, JsonUtil.CHANGE_NODE_LEAVE);
         payload.put(JsonUtil.CHANGE_NODE_ID, id.toString());
@@ -340,7 +339,7 @@ public class JsonUtil {
      * @return the JSON string, or <code>null</code> if value is
      *         <code>null</code>
      */
-    public static String toString(Object value) {
+    static String toString(Object value) {
         if (value == null) {
             return null;
         } else {
@@ -360,7 +359,7 @@ public class JsonUtil {
      *            the JSON string
      * @return the node, or <code>null</code> if value is <code>null</code>
      */
-    public static ObjectNode fromString(String value) {
+    static ObjectNode fromString(String value) {
         if (value == null) {
             return null;
         } else {

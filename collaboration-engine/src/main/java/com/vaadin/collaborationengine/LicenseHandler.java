@@ -218,16 +218,17 @@ class LicenseHandler {
                                 + "https://vaadin.com/collaboration");
             }
             licenseEventLog = backend.openEventLog(EVENT_LOG_NAME);
-            backend.getMembershipEventLog().subscribe(null,
-                    (eventId, payload) -> {
-                        ObjectNode event = JsonUtil.fromString(payload);
-                        String type = event.get(JsonUtil.CHANGE_TYPE).asText();
-                        if (JsonUtil.CHANGE_NODE_JOIN.equals(type)) {
-                            handleNodeJoin(event);
-                        } else if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
-                            handleNodeLeave(event);
-                        }
-                    });
+            backend.addMembershipListener(event -> {
+                UUID nodeId = event.getNodeId();
+                switch (event.getType()) {
+                case JOIN:
+                    handleNodeJoin(nodeId);
+                    break;
+                case LEAVE:
+                    handleNodeLeave(nodeId);
+                    break;
+                }
+            });
             backend.loadLatestSnapshot(EVENT_LOG_NAME)
                     .thenApply(JsonUtil::fromString)
                     .thenAccept(this::initializeFromSnapshot);
@@ -246,18 +247,14 @@ class LicenseHandler {
         leader = true;
     }
 
-    private void handleNodeJoin(ObjectNode event) {
-        UUID nodeId = UUID
-                .fromString(event.get(JsonUtil.CHANGE_NODE_ID).asText());
+    private void handleNodeJoin(UUID nodeId) {
         if (backendNodes.isEmpty() && backend.getNodeId().equals(nodeId)) {
             becomeLeader();
         }
         backendNodes.add(nodeId);
     }
 
-    private void handleNodeLeave(ObjectNode event) {
-        UUID nodeId = UUID
-                .fromString(event.get(JsonUtil.CHANGE_NODE_ID).asText());
+    private void handleNodeLeave(UUID nodeId) {
         backendNodes.remove(nodeId);
         if (!backendNodes.isEmpty()
                 && backendNodes.get(0).equals(backend.getNodeId())) {

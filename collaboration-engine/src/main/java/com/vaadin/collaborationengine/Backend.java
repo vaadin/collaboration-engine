@@ -8,6 +8,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -19,12 +20,12 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public interface Backend {
+public abstract class Backend {
 
     /**
      * A strictly ordered log of submitted events.
      */
-    interface EventLog {
+    public interface EventLog {
         /**
          * Submits an event through the backend to all subscribers. The tracking
          * id needs to be delivered to active subscribers but it is not
@@ -60,6 +61,30 @@ public interface Backend {
                 BiConsumer<UUID, String> eventConsumer);
     }
 
+    private CollaborationEngine collaborationEngine;
+
+    /**
+     * Gets the {@link CollaborationEngine} used by this backend.
+     *
+     * @return the {@link CollaborationEngine} instance, or <code>null</code> if
+     *         not set
+     */
+    public final CollaborationEngine getCollaborationEngine() {
+        return collaborationEngine;
+    }
+
+    /**
+     * Sets the {@link CollaborationEngine} instance for this backend.
+     *
+     * @param collaborationEngine
+     *            the {@link CollaborationEngine} instance, not
+     *            <code>null</code>
+     */
+    public final void setCollaborationEngine(
+            CollaborationEngine collaborationEngine) {
+        this.collaborationEngine = Objects.requireNonNull(collaborationEngine);
+    }
+
     /**
      * Opens an event log with the given id. The returned object can be used to
      * capture any common state related to this particular event log. An actual
@@ -72,24 +97,26 @@ public interface Backend {
      *            the id of the event log to open, not <code>null</code>
      * @return an object representing the event log, not <code>null</code>
      */
-    EventLog openEventLog(String logId);
+    public abstract EventLog openEventLog(String logId);
 
     /**
-     * Gets the event log of this backend node membership events. The returned
-     * object can be used to subscribe to events dispatched when a node joins or
-     * leaves the backend.
+     * Adds a listener of membership events. The listener will be notified of
+     * events dispatched when a node joins or leaves the backend.
      *
-     * @return the object representing the membership event log, not
+     * @param membershipListener
+     *            the listener, not <code>null</code>
+     * @return a registration that can be used to remove the listener, not
      *         <code>null</code>
      */
-    EventLog getMembershipEventLog();
+    public abstract Registration addMembershipListener(
+            MembershipListener membershipListener);
 
     /**
      * Gets the unique identifier of this backend node.
      *
      * @return the node id, not <code>null</code>
      */
-    UUID getNodeId();
+    public abstract UUID getNodeId();
 
     /**
      * Loads the latest snapshot of data identified by the given name. To submit
@@ -100,7 +127,7 @@ public interface Backend {
      * @return a completable future resolved with the snapshot, not
      *         <code>null</code>
      */
-    CompletableFuture<String> loadLatestSnapshot(String name);
+    public abstract CompletableFuture<String> loadLatestSnapshot(String name);
 
     /**
      * Submits a snapshots of data identifies by the given name. The latest
@@ -112,5 +139,5 @@ public interface Backend {
      * @param snapshot
      *            the snapshot, not <code>null</code>
      */
-    void submitSnapshot(String name, String snapshot);
+    public abstract void submitSnapshot(String name, String snapshot);
 }

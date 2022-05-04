@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.vaadin.collaborationengine.EntryList.ListEntrySnapshot;
+import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.shared.Registration;
@@ -166,11 +167,9 @@ class Topic {
         this.collaborationEngine = collaborationEngine;
         this.eventLog = eventLog;
         final Backend backend = getBackend();
-        backend.getMembershipEventLog().subscribe(null, (changeId, payload) -> {
-            ObjectNode changeNode = JsonUtil.fromString(payload);
-            String type = changeNode.get(JsonUtil.CHANGE_TYPE).asText();
-            if (JsonUtil.CHANGE_NODE_LEAVE.equals(type)) {
-                handleNodeLeave(changeNode);
+        backend.addMembershipListener(event -> {
+            if (event.getType().equals(MembershipEventType.LEAVE)) {
+                handleNodeLeave(event.getNodeId());
             }
         });
         backend.loadLatestSnapshot(id).thenApply(JsonUtil::fromString)
@@ -199,9 +198,7 @@ class Topic {
         eventLog.submitEvent(UUID.randomUUID(), JsonUtil.toString(nodeEvent));
     }
 
-    synchronized void handleNodeLeave(ObjectNode changeNode) {
-        UUID nodeId = UUID
-                .fromString(changeNode.get(JsonUtil.CHANGE_NODE_ID).asText());
+    synchronized void handleNodeLeave(UUID nodeId) {
         Backend backend = this.collaborationEngine.getConfiguration()
                 .getBackend();
         backendNodes.remove(nodeId);
