@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.vaadin.collaborationengine.HighlightHandler.HighlightContext;
 import com.vaadin.collaborationengine.PropertyChangeHandler.PropertyChangeEvent;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -113,6 +114,26 @@ public class FormManager extends AbstractCollaborationManager
             String topicId, CollaborationEngine collaborationEngine) {
         super(localUser, topicId, collaborationEngine);
         openTopicConnection(context, this::onConnectionActivate);
+    }
+
+    /**
+     * Creates a new manager for the provided component.
+     * <p>
+     * The provided user information is used to set the highlight for the local
+     * user with {@link #highlight(String,boolean)} or
+     * {@link #highlight(String,boolean,int)} (the default is {@code false}).
+     *
+     * @param component
+     *            the component which holds UI access, not {@code null}
+     * @param localUser
+     *            the information of the local user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, not {@code null}
+     */
+    public FormManager(Component component, UserInfo localUser,
+            String topicId) {
+        this(new ComponentConnectionContext(component), localUser, topicId,
+                CollaborationEngine.getInstance());
     }
 
     /**
