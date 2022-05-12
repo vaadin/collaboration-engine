@@ -17,6 +17,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
+import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestBackendFactory;
 
@@ -194,9 +195,8 @@ public class BackendTest {
     }
 
     private CollaborationEngine createNode() {
-        CollaborationEngineConfiguration conf = new CollaborationEngineConfiguration(
-                e -> {
-                });
+        CollaborationEngineConfiguration conf = new MockConfiguration(e -> {
+        });
         conf.setBackend(backendFactory.createBackend());
         return TestUtil.createTestCollaborationEngine(new MockService(), conf);
     }

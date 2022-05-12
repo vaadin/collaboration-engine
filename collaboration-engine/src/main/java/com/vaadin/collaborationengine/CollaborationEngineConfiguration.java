@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.experimental.FeatureFlags;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.shared.communication.PushMode;
@@ -177,6 +178,16 @@ public class CollaborationEngineConfiguration {
 
     void setVaadinService(VaadinService vaadinService) {
         this.vaadinService = vaadinService;
+        requireBackendFeatureEnabled();
+    }
+
+    void requireBackendFeatureEnabled() {
+        if (vaadinService != null
+                && !backend.getClass().equals(LocalBackend.class)
+                && !FeatureFlags.get(vaadinService.getContext())
+                        .isEnabled(FeatureFlags.COLLABORATION_ENGINE_BACKEND)) {
+            throw new BackendFeatureNotEnabledException();
+        }
     }
 
     boolean isLicenseCheckingEnabled() {
@@ -187,15 +198,20 @@ public class CollaborationEngineConfiguration {
      * Sets the backend implementation to use. A backend can be used to
      * distribute changes between multiple nodes in a cluster. By default, a
      * local in-memory backend is used.
+     * <p>
+     * This is currently an experimental feature and needs to be explicitly
+     * enabled using the Vaadin dev-mode Gizmo, in the experimental features
+     * tab, or by adding a
+     * <code>src/main/resources/vaadin-featureflags.properties</code> file with
+     * the following content:
+     * <code>com.vaadin.experimental.collaborationEngineBackend=true</code>
      *
      * @param backend
      *            the backend to use, not <code>null</code>
-     * @deprecated setting a backend is an experimental feature and as such
-     *             discouraged to be used in production environments
      */
-    @Deprecated
     public void setBackend(Backend backend) {
         this.backend = Objects.requireNonNull(backend);
+        requireBackendFeatureEnabled();
     }
 
     /**

@@ -47,12 +47,20 @@ public class TestUtil {
         private Path dataDirPath;
         private String beaconPath;
 
+        private boolean backendFeatureCheckingEnabled;
         private boolean licenseCheckingEnabledMocked;
         private boolean dataDirPathMocked;
         private boolean beaconPathMocked;
 
         public MockConfiguration(LicenseEventHandler licenseEventHandler) {
             super(licenseEventHandler);
+        }
+
+        @Override
+        void requireBackendFeatureEnabled() {
+            if (backendFeatureCheckingEnabled) {
+                super.requireBackendFeatureEnabled();
+            }
         }
 
         @Override
@@ -80,6 +88,11 @@ public class TestUtil {
             } else {
                 return super.getBeaconPathProperty();
             }
+        }
+
+        public void setBackendFeatureCheckingEnabled(
+                boolean backendFeatureCheckingEnabled) {
+            this.backendFeatureCheckingEnabled = backendFeatureCheckingEnabled;
         }
 
         public void setLicenseCheckingEnabled(boolean licenseCheckingEnabled) {
