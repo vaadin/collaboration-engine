@@ -14,12 +14,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A list operation providing the value to be inserted, its position, the scope
- * and conditions that should be met for the operation to succeed.
+ * A list operation providing the list item value, its position, the scope and
+ * conditions that should be met for the operation to succeed.
  *
  * @author Vaadin Ltd
  */
-public class ListInsertOperation {
+public class ListOperation {
 
     /**
      * Creates a list operation to insert the given value as the first item of
@@ -29,9 +29,9 @@ public class ListInsertOperation {
      *            the value, not <code>null</code>
      * @return the list operation, not <code>null</code>
      */
-    public static ListInsertOperation insertFirst(Object value) {
+    public static ListOperation insertFirst(Object value) {
         Objects.requireNonNull(value);
-        return new ListInsertOperation(value, false, null);
+        return new ListOperation(value, false, null);
     }
 
     /**
@@ -42,9 +42,9 @@ public class ListInsertOperation {
      *            the value, not <code>null</code>
      * @return the list operation, not <code>null</code>
      */
-    public static ListInsertOperation insertLast(Object value) {
+    public static ListOperation insertLast(Object value) {
         Objects.requireNonNull(value);
-        return new ListInsertOperation(value, true, null);
+        return new ListOperation(value, true, null);
     }
 
     /**
@@ -57,11 +57,10 @@ public class ListInsertOperation {
      *            the value, not <code>null</code>
      * @return the list operation, not <code>null</code>
      */
-    public static ListInsertOperation insertBefore(ListKey before,
-            Object value) {
+    public static ListOperation insertBefore(ListKey before, Object value) {
         Objects.requireNonNull(before);
         Objects.requireNonNull(value);
-        return new ListInsertOperation(value, true, before);
+        return new ListOperation(value, true, before);
     }
 
     /**
@@ -74,10 +73,10 @@ public class ListInsertOperation {
      *            the value, not <code>null</code>
      * @return the list operation, not <code>null</code>
      */
-    public static ListInsertOperation insertAfter(ListKey after, Object value) {
+    public static ListOperation insertAfter(ListKey after, Object value) {
         Objects.requireNonNull(after);
         Objects.requireNonNull(value);
-        return new ListInsertOperation(value, false, after);
+        return new ListOperation(value, false, after);
     }
 
     /**
@@ -93,7 +92,7 @@ public class ListInsertOperation {
      *            the value, not <code>null</code>
      * @return the list operation, not <code>null</code>
      */
-    public static ListInsertOperation insertBetween(ListKey prev, ListKey next,
+    public static ListOperation insertBetween(ListKey prev, ListKey next,
             Object value) {
         Objects.requireNonNull(prev);
         Objects.requireNonNull(next);
@@ -113,16 +112,15 @@ public class ListInsertOperation {
 
     private Boolean empty;
 
-    private ListInsertOperation(Object value, boolean before,
-            ListKey referenceKey) {
+    private ListOperation(Object value, boolean before, ListKey referenceKey) {
         this.value = value;
         this.before = before;
         this.referenceKey = referenceKey;
     }
 
     /**
-     * Sets the scope of the value inserted by this operation. If not set, the
-     * default scope will be {@link EntryScope#TOPIC}. Values inserted with
+     * Sets the scope of the item affected by this operation. If not set, the
+     * default scope will be {@link EntryScope#TOPIC}. Values with
      * {@link EntryScope#CONNECTION} scope will be automatically removed once
      * the connection to the topic which created them is deactivated.
      *
@@ -130,7 +128,7 @@ public class ListInsertOperation {
      *            the scope, not <code>null</code>
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation withScope(EntryScope scope) {
+    public ListOperation withScope(EntryScope scope) {
         this.scope = Objects.requireNonNull(scope);
         return this;
     }
@@ -148,7 +146,7 @@ public class ListInsertOperation {
      *            of the list
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifNext(ListKey key, ListKey nextKey) {
+    public ListOperation ifNext(ListKey key, ListKey nextKey) {
         Objects.requireNonNull(key);
         if (conditions.containsKey(key)) {
             throw new IllegalStateException(
@@ -166,7 +164,7 @@ public class ListInsertOperation {
      *            the key, not <code>null</code>
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifLast(ListKey key) {
+    public ListOperation ifLast(ListKey key) {
         Objects.requireNonNull(key);
         return ifNext(key, null);
     }
@@ -184,7 +182,7 @@ public class ListInsertOperation {
      *            of the list
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifPrev(ListKey key, ListKey prevKey) {
+    public ListOperation ifPrev(ListKey key, ListKey prevKey) {
         Objects.requireNonNull(key);
         if (conditions.containsValue(key)) {
             throw new IllegalStateException(
@@ -202,7 +200,7 @@ public class ListInsertOperation {
      *            the key, not <code>null</code>
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifFirst(ListKey key) {
+    public ListOperation ifFirst(ListKey key) {
         Objects.requireNonNull(key);
         return ifPrev(key, null);
     }
@@ -212,7 +210,7 @@ public class ListInsertOperation {
      *
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifEmpty() {
+    public ListOperation ifEmpty() {
         if (Boolean.FALSE.equals(empty)) {
             throw new IllegalStateException(
                     "This operation already requires the list not to be empty.");
@@ -226,7 +224,7 @@ public class ListInsertOperation {
      *
      * @return this operation, not <code>null</code>
      */
-    public ListInsertOperation ifNotEmpty() {
+    public ListOperation ifNotEmpty() {
         if (Boolean.TRUE.equals(empty)) {
             throw new IllegalStateException(
                     "This operation already requires the list to be empty.");

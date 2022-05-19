@@ -767,9 +767,9 @@ public class CollaborationListTest {
     public void insertWithPrevCondition_conditionMet_operationApplied()
             throws InterruptedException, ExecutionException {
         ListKey fooKey = list.insertLast("foo").getKey();
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifFirst(fooKey);
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifFirst(fooKey);
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertTrue(succeeded);
     }
@@ -779,9 +779,9 @@ public class CollaborationListTest {
             throws InterruptedException, ExecutionException {
         ListKey fooKey = list.insertLast("foo").getKey();
         list.insertFirst("notFoo");
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifFirst(fooKey);
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifFirst(fooKey);
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertFalse(succeeded);
     }
@@ -791,9 +791,9 @@ public class CollaborationListTest {
             throws InterruptedException, ExecutionException {
         ListKey fooKey = list.insertLast("foo").getKey();
         ListKey bazKey = list.insertLast("baz").getKey();
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertBetween(fooKey, bazKey, "bar");
-        boolean succeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertBetween(fooKey,
+                bazKey, "bar");
+        boolean succeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertTrue(succeded);
         assertValues(list, "foo", "bar", "baz");
@@ -805,9 +805,9 @@ public class CollaborationListTest {
         ListKey fooKey = list.insertLast("foo").getKey();
         ListKey bazKey = list.insertLast("baz").getKey();
         list.insertAfter(fooKey, "qux");
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertBetween(fooKey, bazKey, "bar");
-        boolean succeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertBetween(fooKey,
+                bazKey, "bar");
+        boolean succeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertFalse(succeded);
         assertValues(list, "foo", "qux", "baz");
@@ -817,9 +817,9 @@ public class CollaborationListTest {
     public void insertWithNextCondition_conditionMet_operationApplied()
             throws InterruptedException, ExecutionException {
         ListKey fooKey = list.insertLast("foo").getKey();
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifLast(fooKey);
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifLast(fooKey);
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertTrue(succeeded);
     }
@@ -829,9 +829,9 @@ public class CollaborationListTest {
             throws InterruptedException, ExecutionException {
         ListKey fooKey = list.insertLast("foo").getKey();
         list.insertLast("notFoo");
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifLast(fooKey);
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifLast(fooKey);
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertFalse(succeeded);
     }
@@ -839,9 +839,9 @@ public class CollaborationListTest {
     @Test
     public void insertWithEmptyCondition_conditionMet_operationApplied()
             throws InterruptedException, ExecutionException {
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("foo").ifEmpty();
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("foo")
+                .ifEmpty();
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertTrue(succeeded);
     }
@@ -850,9 +850,9 @@ public class CollaborationListTest {
     public void insertWithEmptyCondition_conditionNotMet_operationRejected()
             throws InterruptedException, ExecutionException {
         list.insertLast("foo");
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifEmpty();
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifEmpty();
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertFalse(succeeded);
     }
@@ -861,9 +861,9 @@ public class CollaborationListTest {
     public void insertWithNotEmptyCondition_conditionMet_operationApplied()
             throws InterruptedException, ExecutionException {
         list.insertLast("foo");
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("bar").ifNotEmpty();
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifNotEmpty();
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertTrue(succeeded);
     }
@@ -871,21 +871,21 @@ public class CollaborationListTest {
     @Test
     public void insertWithNotEmptyCondition_conditionNotMet_operationRejected()
             throws InterruptedException, ExecutionException {
-        ListInsertOperation conditionalOperation = ListInsertOperation
-                .insertLast("foo").ifNotEmpty();
-        boolean succeeded = list.insert(conditionalOperation)
+        ListOperation conditionalOperation = ListOperation.insertLast("foo")
+                .ifNotEmpty();
+        boolean succeeded = list.apply(conditionalOperation)
                 .getCompletableFuture().get();
         Assert.assertFalse(succeeded);
     }
 
     @Test(expected = IllegalStateException.class)
     public void insertLast_ifEmpty_ifNotEmpty_exceptionIsThrown() {
-        ListInsertOperation.insertLast("foo").ifEmpty().ifNotEmpty();
+        ListOperation.insertLast("foo").ifEmpty().ifNotEmpty();
     }
 
     @Test(expected = IllegalStateException.class)
     public void insertLast_ifNotEmpty_ifEmpty_exceptionIsThrown() {
-        ListInsertOperation.insertLast("foo").ifNotEmpty().ifEmpty();
+        ListOperation.insertLast("foo").ifNotEmpty().ifEmpty();
     }
 
     @Test
@@ -936,7 +936,7 @@ public class CollaborationListTest {
     private static List<ListKey> insertLast(CollaborationList list,
             String... values) {
         return Stream.of(values).map(list::insertLast)
-                .map(ListInsertResult::getKey).collect(Collectors.toList());
+                .map(ListOperationResult::getKey).collect(Collectors.toList());
     }
 
     private static void assertEvent(ListChangeType type, ListKey key,

@@ -289,13 +289,13 @@ public class MessageManager extends AbstractCollaborationManager {
         ListKey ifLast = lastMessageKey;
         List<CompletableFuture<Boolean>> futures = new ArrayList<>();
         for (CollaborationMessage message : messages) {
-            ListInsertOperation op = ListInsertOperation.insertLast(message);
+            ListOperation op = ListOperation.insertLast(message);
             if (ifLast != null) {
                 op.ifLast(ifLast);
             } else {
                 op.ifEmpty();
             }
-            ListInsertResult<Boolean> insert = list.insert(op);
+            ListOperationResult<Boolean> insert = list.apply(op);
             futures.add(insert.getCompletableFuture());
             ifLast = insert.getKey();
         }

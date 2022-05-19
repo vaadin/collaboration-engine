@@ -103,16 +103,15 @@ public interface CollaborationList extends HasExpirationTimeout {
     Stream<ListKey> getKeys();
 
     /**
-     * Performs the given operation to insert a value in the list. The operation
-     * contains the value, its position and other requirements. If any of the
-     * conditions are not met, the operation may fail (see
-     * {@link ListInsertResult}.
+     * Performs the given list operation. The operation contains the value, its
+     * position and other requirements. If any of the conditions are not met,
+     * the operation may fail (see {@link ListOperationResult}).
      *
      * @param operation
-     *            the insert operation, not <code>null</code>
+     *            the list operation, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    ListInsertResult<Boolean> insert(ListInsertOperation operation);
+    ListOperationResult<Boolean> apply(ListOperation operation);
 
     /**
      * Inserts the given item as the first item of the list.
@@ -121,7 +120,7 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the item, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Void> insertFirst(Object item) {
+    default ListOperationResult<Void> insertFirst(Object item) {
         return insertFirst(item, EntryScope.TOPIC);
     }
 
@@ -135,10 +134,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Void> insertFirst(Object item, EntryScope scope) {
-        ListInsertOperation operation = ListInsertOperation.insertFirst(item)
+    default ListOperationResult<Void> insertFirst(Object item,
+            EntryScope scope) {
+        ListOperation operation = ListOperation.insertFirst(item)
                 .withScope(scope);
-        return insert(operation).mapToVoid();
+        return apply(operation).mapToVoid();
     }
 
     /**
@@ -149,7 +149,7 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return the result of the operation, not <code>null</code>
      * @since 4.1
      */
-    default ListInsertResult<Void> insertLast(Object item) {
+    default ListOperationResult<Void> insertLast(Object item) {
         return insertLast(item, EntryScope.TOPIC);
     }
 
@@ -164,10 +164,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return the result of the operation, not <code>null</code>
      * @since 4.1
      */
-    default ListInsertResult<Void> insertLast(Object item, EntryScope scope) {
-        ListInsertOperation operation = ListInsertOperation.insertLast(item)
+    default ListOperationResult<Void> insertLast(Object item,
+            EntryScope scope) {
+        ListOperation operation = ListOperation.insertLast(item)
                 .withScope(scope);
-        return insert(operation).mapToVoid();
+        return apply(operation).mapToVoid();
     }
 
     /**
@@ -179,7 +180,8 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the item, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Boolean> insertBefore(ListKey key, Object item) {
+    default ListOperationResult<Boolean> insertBefore(ListKey key,
+            Object item) {
         return insertBefore(key, item, EntryScope.TOPIC);
     }
 
@@ -195,11 +197,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Boolean> insertBefore(ListKey key, Object item,
+    default ListOperationResult<Boolean> insertBefore(ListKey key, Object item,
             EntryScope scope) {
-        ListInsertOperation operation = ListInsertOperation
-                .insertBefore(key, item).withScope(scope);
-        return insert(operation);
+        ListOperation operation = ListOperation.insertBefore(key, item)
+                .withScope(scope);
+        return apply(operation);
     }
 
     /**
@@ -211,7 +213,7 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the item, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Boolean> insertAfter(ListKey key, Object item) {
+    default ListOperationResult<Boolean> insertAfter(ListKey key, Object item) {
         return insertAfter(key, item, EntryScope.TOPIC);
     }
 
@@ -227,11 +229,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      */
-    default ListInsertResult<Boolean> insertAfter(ListKey key, Object item,
+    default ListOperationResult<Boolean> insertAfter(ListKey key, Object item,
             EntryScope scope) {
-        ListInsertOperation operation = ListInsertOperation
-                .insertAfter(key, item).withScope(scope);
-        return insert(operation);
+        ListOperation operation = ListOperation.insertAfter(key, item)
+                .withScope(scope);
+        return apply(operation);
     }
 
     /**

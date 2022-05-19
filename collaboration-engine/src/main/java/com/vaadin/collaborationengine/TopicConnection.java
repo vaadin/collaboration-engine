@@ -291,7 +291,7 @@ public class TopicConnection {
         }
 
         @Override
-        public ListInsertResult<Boolean> insert(ListInsertOperation operation) {
+        public ListOperationResult<Boolean> apply(ListOperation operation) {
             ensureActiveConnection();
             Objects.requireNonNull(operation, "Operation cannot be null");
 
@@ -307,7 +307,7 @@ public class TopicConnection {
                     operation.getConditions(), operation.getEmpty());
 
             UUID id = UUID.randomUUID();
-            return new ListInsertResult<>(new ListKey(id),
+            return new ListOperationResult<>(new ListKey(id),
                     dispatchChangeWithBooleanResult(id, id, connectionScope,
                             change));
         }

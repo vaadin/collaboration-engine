@@ -11,43 +11,43 @@ package com.vaadin.collaborationengine;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The result of an insertion in a {@link CollaborationList}.
+ * The result of a list operation in a {@link CollaborationList}.
  * <p>
- * It provides access to the key of the inserted item and to the
- * {@link CompletableFuture} of the insert operation.
+ * It provides access to the key of the affected item and to the
+ * {@link CompletableFuture} of the operation.
  *
  * @author Vaadin Ltd
  */
-public class ListInsertResult<T> {
+public class ListOperationResult<T> {
     private final ListKey key;
     private final CompletableFuture<T> completableFuture;
 
-    ListInsertResult(ListKey key, CompletableFuture<T> completableFuture) {
+    ListOperationResult(ListKey key, CompletableFuture<T> completableFuture) {
         this.key = key;
         this.completableFuture = completableFuture;
     }
 
     /**
-     * Gets the key of the inserted item.
+     * Gets the key of the item.
      *
-     * @return the inserted item key, not <code>null</code>
+     * @return the item key, not <code>null</code>
      */
     public ListKey getKey() {
         return key;
     }
 
     /**
-     * The result of the asynchronous insert operation.
+     * The result of the asynchronous operation.
      *
-     * @return the result of the insert operation, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
      */
     public CompletableFuture<T> getCompletableFuture() {
         return completableFuture;
     }
 
     /* Map to a void parameterized type for existing list operations */
-    ListInsertResult<Void> mapToVoid() {
-        return new ListInsertResult<>(key,
+    ListOperationResult<Void> mapToVoid() {
+        return new ListOperationResult<>(key,
                 completableFuture.thenApply(t -> null));
     }
 }
