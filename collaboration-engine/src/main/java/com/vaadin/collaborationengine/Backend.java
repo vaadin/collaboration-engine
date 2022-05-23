@@ -8,6 +8,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +22,39 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 public abstract class Backend {
+    /**
+     * This exception is thrown by the {@link EventLog::subscribe()} method if
+     * the provided {@code UUID} does not exist in the log.
+     */
+    public static class EventIdNotFoundException extends Exception {
+        public EventIdNotFoundException(String message) {
+            super(message);
+        }
+    }
+
+    /**
+     * The {@code Snapshot} class is used to submit and retrieve a snapshot
+     * payload using the {@link Backend::replaceSnapshot()} and
+     * {@link Backend::loadLatestSnapshot()} methods. A UUID is provided to
+     * uniquely identify potentially identical payloads.
+     */
+    public static class Snapshot implements Serializable {
+        private final UUID id;
+        private final String payload;
+
+        public Snapshot(UUID id, String payload) {
+            this.id = id;
+            this.payload = payload;
+        }
+
+        public UUID getId() {
+            return id;
+        }
+
+        public String getPayload() {
+            return payload;
+        }
+    }
 
     /**
      * A strictly ordered log of submitted events.
@@ -46,7 +80,14 @@ public abstract class Backend {
          * (in order) only after all previous events have been delivered. It is
          * not allowed to invoke the consumer again until the previous
          * invocation has returned.
-         *
+         * <p>
+         * If the provided {@code newerThan} ID is not null and is not found in
+         * the event log (perhaps due to truncation), a
+         * {@code EventIdNotFoundException} should be thrown. When the exception
+         * is caught by the code calling this method, it may want to re-attempt
+         * the subscription with another ID. A Collaboration Engine topic, for
+         * example, will try to load the latest snapshot and subscribe from the
+         * ID associated with it.
          *
          * @param newerThan
          *            if not <code>null</code>, only events after the event with
@@ -56,9 +97,21 @@ public abstract class Backend {
          *            <code>null</code>
          * @return a registration to remove the event consumer, not
          *         <code>null</code>
+         * @throws EventIdNotFoundException
+         *             when the provided UUID does not exist in the event log.
          */
         Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, String> eventConsumer);
+                BiConsumer<UUID, String> eventConsumer)
+                throws EventIdNotFoundException;
+
+        /**
+         * Removes all events in the log before the given id. If a {@code null}
+         * id is passed, then all events are removed.
+         *
+         * @param olderThan
+         *            the oldest UUID to retain
+         */
+        void truncate(UUID olderThan);
     }
 
     private CollaborationEngine collaborationEngine;
@@ -120,24 +173,32 @@ public abstract class Backend {
 
     /**
      * Loads the latest snapshot of data identified by the given name. To submit
-     * a snapshot see {@link #submitSnapshot(String, String)}.
+     * a snapshot see {@link #replaceSnapshot(String, UUID, UUID, String)}.
      *
      * @param name
      *            the name identifying the data, not <code>null</code>
-     * @return a completable future resolved with the snapshot, not
+     * @return a completable future resolved with the UUID and snapshot, not
      *         <code>null</code>
      */
-    public abstract CompletableFuture<String> loadLatestSnapshot(String name);
+    public abstract CompletableFuture<Snapshot> loadLatestSnapshot(String name);
 
     /**
-     * Submits a snapshots of data identifies by the given name. The latest
-     * submitted snapshot for that name can be loaded with
+     * Submits a snapshot payload of data identified by the given name. The
+     * latest submitted snapshot for that name can be loaded with
      * {@link #loadLatestSnapshot(String)}.
      *
      * @param name
      *            the name identifying the date, not <code>null</code>
-     * @param snapshot
-     *            the snapshot, not <code>null</code>
+     * @param expectedId
+     *            the unique ID of the expected current snapshot
+     * @param newId
+     *            the unique ID that the new snapshot will be stored with, not
+     *            {@code null}
+     * @param payload
+     *            the snapshot payload, not <code>null</code>
+     * @return a completable future that will be resolved when the operation
+     *         completes, not {@code null}
      */
-    public abstract void submitSnapshot(String name, String snapshot);
+    public abstract CompletableFuture<Void> replaceSnapshot(String name,
+            UUID expectedId, UUID newId, String payload);
 }

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
@@ -182,6 +183,7 @@ class LicenseHandler {
     final LicenseStorage licenseStorage;
     final LicenseInfo license;
     final EventLog licenseEventLog;
+    private UUID lastSnapshotId;
     private StatisticsInfo statisticsCache;
     private final List<UUID> backendNodes = new ArrayList<>();
     private boolean leader;
@@ -229,9 +231,8 @@ class LicenseHandler {
                     break;
                 }
             });
-            backend.loadLatestSnapshot(EVENT_LOG_NAME)
-                    .thenApply(JsonUtil::fromString)
-                    .thenAccept(this::initializeFromSnapshot);
+            BackendUtil.initializeFromSnapshot(ce, this::initializeFromSnapshot)
+                    .thenAccept(uuid -> lastSnapshotId = uuid);
         } else {
             licenseEventLog = null;
             licenseStorage = null;
@@ -262,14 +263,31 @@ class LicenseHandler {
         }
     }
 
-    private void initializeFromSnapshot(ObjectNode snapshot) {
-        if (snapshot != null) {
-            UUID latestChange = loadSnapshot(snapshot).getLatestChange();
-            licenseEventLog.subscribe(latestChange, this::handleChangeEvent);
-        } else {
-            loadFromStorage();
-            licenseEventLog.subscribe(null, this::handleChangeEvent);
+    private CompletableFuture<UUID> initializeFromSnapshot() {
+        return backend.loadLatestSnapshot(EVENT_LOG_NAME)
+                .thenCompose(this::loadAndSubscribe);
+    }
+
+    private CompletableFuture<UUID> loadAndSubscribe(
+            Backend.Snapshot snapshot) {
+        CompletableFuture<UUID> future = new CompletableFuture<>();
+        try {
+            UUID latestChange = null;
+            if (snapshot != null) {
+                latestChange = loadSnapshot(
+                        JsonUtil.fromString(snapshot.getPayload()))
+                                .getLatestChange();
+                licenseEventLog.subscribe(latestChange,
+                        this::handleChangeEvent);
+            } else {
+                loadFromStorage();
+                licenseEventLog.subscribe(null, this::handleChangeEvent);
+            }
+            future.complete(latestChange);
+        } catch (Backend.EventIdNotFoundException e) {
+            future.completeExceptionally(e);
         }
+        return future;
     }
 
     private Snapshot loadSnapshot(ObjectNode node) {
@@ -293,14 +311,6 @@ class LicenseHandler {
                 .forEach(userId -> statisticsCache.addUserEntry(month, userId));
         licenseStorage.getLatestLicenseEvents(license.key)
                 .forEach(statisticsCache::setLicenseEvent);
-
-        Snapshot snapshot = new Snapshot(UUID.randomUUID(), statisticsCache);
-        try {
-            String payload = MAPPER.writeValueAsString(snapshot);
-            backend.submitSnapshot(EVENT_LOG_NAME, payload);
-        } catch (JsonProcessingException e) {
-            throw new JsonConversionException("Cannot serialize snapshot", e);
-        }
     }
 
     private void handleChangeEvent(UUID eventId, String payload) {
@@ -324,6 +334,18 @@ class LicenseHandler {
                 notifyLicenseEventHandler(eventName);
                 licenseStorage.setLicenseEvent(licenseKey, eventName,
                         latestOccurrence);
+            }
+        }
+        if (lastSnapshotId == null) {
+            Snapshot snapshot = new Snapshot(eventId, statisticsCache);
+            try {
+                backend.replaceSnapshot(EVENT_LOG_NAME, null, UUID.randomUUID(),
+                        MAPPER.writeValueAsString(snapshot));
+                backend.loadLatestSnapshot(EVENT_LOG_NAME)
+                        .thenAccept(s -> lastSnapshotId = s.getId());
+            } catch (JsonProcessingException e) {
+                throw new JsonConversionException("Cannot serialize snapshot",
+                        e);
             }
         }
     }

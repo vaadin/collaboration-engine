@@ -10,9 +10,11 @@ package com.vaadin;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 
 import com.hazelcast.cluster.InitialMembershipEvent;
 import com.hazelcast.cluster.InitialMembershipListener;
@@ -65,13 +67,29 @@ public class HazelcastBackend extends Backend {
             }
         }
 
+        private synchronized void handleRemoveItem() {
+            if (nextEventIndex > 0) {
+                nextEventIndex--;
+            }
+        }
+
         @Override
         public synchronized Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, String> eventConsumer) {
+                BiConsumer<UUID, String> eventConsumer)
+                throws EventIdNotFoundException {
             if (this.eventConsumer != null) {
                 throw new IllegalStateException();
             }
 
+            if (newerThan != null) {
+                Optional<IdAndEvent> newerThanIdAndEvent = list.stream()
+                        .filter(item -> newerThan.equals(item.trackingId))
+                        .findFirst();
+                if (newerThanIdAndEvent.isEmpty()) {
+                    throw new EventIdNotFoundException(
+                            "newerThan doesn't " + "exist in the log.");
+                }
+            }
             this.newerThan = newerThan;
             this.eventConsumer = eventConsumer;
             nextEventIndex = 0;
@@ -85,7 +103,7 @@ public class HazelcastBackend extends Backend {
 
                         @Override
                         public void itemRemoved(ItemEvent<IdAndEvent> item) {
-                            throw new UnsupportedOperationException();
+                            handleRemoveItem();
                         }
                     }, false);
 
@@ -104,11 +122,36 @@ public class HazelcastBackend extends Backend {
         public void submitEvent(UUID trackingId, String event) {
             list.add(new IdAndEvent(trackingId, event));
         }
+
+        @Override
+        public synchronized void truncate(UUID olderThan) {
+            Predicate<IdAndEvent> filter = e -> true;
+            if (olderThan != null) {
+                Optional<IdAndEvent> olderThanIdAndEvent = list.stream()
+                        .filter(item -> olderThan.equals(item.trackingId))
+                        .findFirst();
+                if (olderThanIdAndEvent.isEmpty()) {
+                    // NOOP
+                    return;
+                }
+                filter = new Predicate<>() {
+                    boolean found;
+
+                    @Override
+                    public boolean test(IdAndEvent idAndEvent) {
+                        found = found
+                                || olderThan.equals(idAndEvent.trackingId);
+                        return !found;
+                    }
+                };
+            }
+            list.removeIf(filter);
+        }
     }
 
     private final HazelcastInstance hz;
 
-    private final IMap<String, String> snapshots;
+    private final IMap<String, Snapshot> snapshots;
 
     public HazelcastBackend(HazelcastInstance hz) {
         this.hz = Objects.requireNonNull(hz);
@@ -163,12 +206,23 @@ public class HazelcastBackend extends Backend {
     }
 
     @Override
-    public CompletableFuture<String> loadLatestSnapshot(String name) {
+    public CompletableFuture<Snapshot> loadLatestSnapshot(String name) {
+        Objects.requireNonNull(name, "Name cannot be null");
         return CompletableFuture.completedFuture(snapshots.get(name));
     }
 
     @Override
-    public void submitSnapshot(String name, String snapshot) {
-        snapshots.put(name, snapshot);
+    public CompletableFuture<Void> replaceSnapshot(String name, UUID expectedId,
+            UUID newId, String payload) {
+        Objects.requireNonNull(name, "Name cannot be null");
+        Objects.requireNonNull(newId, "New ID cannot be null");
+
+        Snapshot currentSnapshot = snapshots.computeIfAbsent(name,
+                k -> new Snapshot(null, null));
+        if (Objects.equals(expectedId, currentSnapshot.getId())) {
+            Snapshot idAndPayload = new Snapshot(newId, payload);
+            snapshots.put(name, idAndPayload);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 }

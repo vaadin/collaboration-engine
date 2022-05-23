@@ -8,7 +8,10 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -22,6 +25,7 @@ import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestBackendFactory;
 
 public class BackendTest {
+    private static final String LOG_ID = BackendTest.class.getName();
 
     private TestBackendFactory backendFactory;
 
@@ -194,6 +198,138 @@ public class BackendTest {
         Assert.assertTrue("Stale entry not removed", staleEntryRemoved.get());
     }
 
+    @Test
+    public void truncate_subscribeSuccessful() {
+        CollaborationEngine node1 = createNode();
+        CollaborationEngine node2 = createNode();
+
+        join(node1);
+
+        node1.openTopicConnection(node1.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        join(node2);
+
+        node2.openTopicConnection(node2.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        List<UUID> events1 = new ArrayList<>();
+
+        Backend.EventLog log1 = getEventLog(node1);
+        try {
+            log1.subscribe(null, (id, value) -> events1.add(id));
+        } catch (Backend.EventIdNotFoundException e) {
+            Assert.fail();
+        }
+
+        log1.truncate(events1.get(1));
+
+        List<UUID> events2 = new ArrayList<>();
+
+        Backend.EventLog log2 = getEventLog(node2);
+        try {
+            log2.subscribe(null, (id, node) -> events2.add(id));
+        } catch (Backend.EventIdNotFoundException e) {
+            Assert.fail();
+        }
+
+        Assert.assertEquals(3, events2.size());
+    }
+
+    @Test
+    public void truncateWithMissingId_nothingHappens() {
+        CollaborationEngine node1 = createNode();
+        CollaborationEngine node2 = createNode();
+
+        join(node1);
+
+        node1.openTopicConnection(node1.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        join(node2);
+
+        node2.openTopicConnection(node2.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        List<UUID> events1 = new ArrayList<>();
+
+        Backend.EventLog log1 = getEventLog(node1);
+        try {
+            log1.subscribe(null, (id, node) -> events1.add(id));
+        } catch (Backend.EventIdNotFoundException e) {
+            Assert.fail();
+        }
+
+        log1.truncate(events1.get(1));
+        log1.truncate(events1.get(0));
+
+        List<UUID> events2 = new ArrayList<>();
+
+        Backend.EventLog log2 = getEventLog(node2);
+        try {
+            log2.subscribe(null, (id, node) -> events2.add(id));
+        } catch (Backend.EventIdNotFoundException e) {
+            Assert.fail();
+        }
+
+        Assert.assertEquals(3, events2.size());
+    }
+
+    @Test
+    public void truncate_subscribeWithMissingId_subscribeFails() {
+        CollaborationEngine node1 = createNode();
+        CollaborationEngine node2 = createNode();
+
+        join(node1);
+
+        node1.openTopicConnection(node1.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        join(node2);
+
+        node2.openTopicConnection(node2.getSystemContext(), "topic",
+                new UserInfo("foo"), conn -> null);
+
+        List<UUID> events1 = new ArrayList<>();
+
+        Backend.EventLog log1 = getEventLog(node1);
+        try {
+            log1.subscribe(null, (id, node) -> events1.add(id));
+        } catch (Backend.EventIdNotFoundException e) {
+            Assert.fail();
+        }
+
+        log1.truncate(events1.get(1));
+
+        List<UUID> events2 = new ArrayList<>();
+
+        Backend.EventLog log2 = getEventLog(node2);
+        Assert.assertThrows(Backend.EventIdNotFoundException.class, () -> log2
+                .subscribe(events1.get(0), (id, node) -> events2.add(id)));
+    }
+
+    @Test
+    public void initializeFromSnapshot_retryOnce_initializationSucceeds() {
+        CollaborationEngine node = createNode();
+        join(node);
+
+        UUID id = BackendUtil
+                .initializeFromSnapshot(node, new MockInitializer(1)).join();
+
+        Assert.assertNotNull(id);
+    }
+
+    @Test
+    public void initializeFromSnapshot_retryFiftyTimes_initializationFails() {
+        CollaborationEngine node = createNode();
+        join(node);
+
+        UUID id = BackendUtil
+                .initializeFromSnapshot(node, new MockInitializer(50)).join();
+
+        Assert.assertNull(id);
+    }
+
     private CollaborationEngine createNode() {
         CollaborationEngineConfiguration conf = new MockConfiguration(e -> {
         });
@@ -207,5 +343,28 @@ public class BackendTest {
 
     private void leave(CollaborationEngine node) {
         backendFactory.leave(node.getConfiguration().getBackend());
+    }
+
+    private Backend.EventLog getEventLog(CollaborationEngine node) {
+        return node.getConfiguration().getBackend().openEventLog(LOG_ID);
+    }
+
+    static class MockInitializer implements BackendUtil.Initializer {
+        int attempts;
+        int attemptCount = 0;
+
+        public MockInitializer(int attempts) {
+            this.attempts = attempts;
+        }
+
+        public CompletableFuture<UUID> initialize() {
+            if (attemptCount < attempts) {
+                attemptCount++;
+                return CompletableFuture.failedFuture(
+                        new Backend.EventIdNotFoundException("Failed"));
+            } else {
+                return CompletableFuture.completedFuture(UUID.randomUUID());
+            }
+        }
     }
 }

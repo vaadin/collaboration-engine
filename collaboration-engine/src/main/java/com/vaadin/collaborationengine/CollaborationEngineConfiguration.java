@@ -42,6 +42,8 @@ public class CollaborationEngineConfiguration {
 
     static final boolean DEFAULT_AUTOMATICALLY_ACTIVATE_PUSH = true;
 
+    static final int DEFAULT_EVENT_LOG_SUBSCRIBE_RETRY_ATTEMPTS = 40;
+
     private LicenseEventHandler licenseEventHandler;
     private VaadinService vaadinService;
     private String configuredDataDir;
@@ -293,5 +295,9 @@ public class CollaborationEngineConfiguration {
             beaconPath = configuredBeaconPath;
         }
         return beaconPath;
+    }
+
+    int getEventLogSubscribeRetryAttempts() {
+        return DEFAULT_EVENT_LOG_SUBSCRIBE_RETRY_ATTEMPTS;
     }
 }

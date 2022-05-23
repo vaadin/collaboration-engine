@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +30,7 @@ public class TestBackendFactory {
 
     private List<MembershipListener> membershipListeners = new ArrayList<>();
 
-    private Map<String, String> snapshots = new HashMap<>();
+    private Map<String, Backend.Snapshot> snapshots = new HashMap<>();
 
     public TestBackend createBackend() {
         return new TestBackend();
@@ -77,10 +79,17 @@ public class TestBackendFactory {
 
         @Override
         public Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, String> consumer) {
+                BiConsumer<UUID, String> consumer)
+                throws Backend.EventIdNotFoundException {
             Predicate<IdAndEvent> filter = e -> true;
             if (newerThan != null) {
-                filter = new Predicate<IdAndEvent>() {
+                Optional<IdAndEvent> newerThanIdAndEvent = events.stream()
+                        .filter(item -> newerThan.equals(item.id)).findFirst();
+                if (newerThanIdAndEvent.isEmpty()) {
+                    throw new Backend.EventIdNotFoundException(
+                            "newerThan doesn't " + "exist in the log.");
+                }
+                filter = new Predicate<>() {
                     boolean found;
 
                     @Override
@@ -95,6 +104,29 @@ public class TestBackendFactory {
                     .forEach(e -> consumer.accept(e.id, e.event));
             consumers.add(consumer);
             return () -> consumers.remove(consumer);
+        }
+
+        @Override
+        public void truncate(UUID olderThan) {
+            Predicate<IdAndEvent> filter = e -> true;
+            if (olderThan != null) {
+                Optional<IdAndEvent> olderThanIdAndEvent = events.stream()
+                        .filter(item -> olderThan.equals(item.id)).findFirst();
+                if (olderThanIdAndEvent.isEmpty()) {
+                    // NOOP
+                    return;
+                }
+                filter = new Predicate<>() {
+                    boolean found;
+
+                    @Override
+                    public boolean test(IdAndEvent idAndEvent) {
+                        found = found || olderThan.equals(idAndEvent.id);
+                        return !found;
+                    }
+                };
+            }
+            events.removeIf(filter);
         }
     }
 
@@ -124,13 +156,24 @@ public class TestBackendFactory {
         }
 
         @Override
-        public CompletableFuture<String> loadLatestSnapshot(String name) {
+        public CompletableFuture<Snapshot> loadLatestSnapshot(String name) {
+            Objects.requireNonNull(name, "Name cannot be null");
             return CompletableFuture.completedFuture(snapshots.get(name));
         }
 
         @Override
-        public void submitSnapshot(String name, String snapshot) {
-            snapshots.put(name, snapshot);
+        public CompletableFuture<Void> replaceSnapshot(String name,
+                UUID expectedId, UUID newId, String payload) {
+            Objects.requireNonNull(name, "Name cannot be null");
+            Objects.requireNonNull(newId, "New ID cannot be null");
+
+            Snapshot currentSnapshot = snapshots.computeIfAbsent(name,
+                    k -> new Snapshot(null, null));
+            if (Objects.equals(expectedId, currentSnapshot.getId())) {
+                Snapshot idAndPayload = new Snapshot(newId, payload);
+                snapshots.put(name, idAndPayload);
+            }
+            return CompletableFuture.completedFuture(null);
         }
     }
 }

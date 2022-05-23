@@ -32,7 +32,8 @@ public class LocalBackend extends Backend {
 
         @Override
         public Registration subscribe(UUID newerThan,
-                BiConsumer<UUID, String> consumer) {
+                BiConsumer<UUID, String> consumer)
+                throws Backend.EventIdNotFoundException {
             if (this.consumer != null) {
                 throw new IllegalStateException(
                         "Already subscribed to " + topicId);
@@ -47,6 +48,11 @@ public class LocalBackend extends Backend {
                 throw new IllegalStateException("Not subscribed to " + topicId);
             }
             consumer.accept(trackingId, event);
+        }
+
+        @Override
+        public void truncate(UUID olderThan) {
+            // NOOP
         }
     }
 
@@ -73,12 +79,13 @@ public class LocalBackend extends Backend {
     }
 
     @Override
-    public CompletableFuture<String> loadLatestSnapshot(String name) {
+    public CompletableFuture<Snapshot> loadLatestSnapshot(String name) {
         return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public void submitSnapshot(String name, String snapshot) {
-        // NOOP
+    public CompletableFuture<Void> replaceSnapshot(String name, UUID expectedId,
+            UUID newId, String payload) {
+        return CompletableFuture.completedFuture(null);
     }
 }

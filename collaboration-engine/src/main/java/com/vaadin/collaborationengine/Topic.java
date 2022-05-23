@@ -20,7 +20,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -158,6 +160,7 @@ class Topic {
     private final Map<UUID, SerializableConsumer<ChangeResult>> changeResultTrackers = new ConcurrentHashMap<>();
     private final List<UUID> backendNodes = new ArrayList<>();
     private final Backend.EventLog eventLog;
+    private UUID lastSnapshotId;
     private boolean leader;
     private int changeCount;
 
@@ -172,8 +175,12 @@ class Topic {
                 handleNodeLeave(event.getNodeId());
             }
         });
-        backend.loadLatestSnapshot(id).thenApply(JsonUtil::fromString)
-                .thenAccept(this::initializeFromSnapshot);
+        if (eventLog != null) {
+            BackendUtil
+                    .initializeFromSnapshot(collaborationEngine,
+                            this::initializeFromSnapshot)
+                    .thenAccept(uuid -> lastSnapshotId = uuid);
+        }
     }
 
     UUID getCurrentNodeId() {
@@ -184,18 +191,35 @@ class Topic {
         return collaborationEngine.getConfiguration().getBackend();
     }
 
-    private void initializeFromSnapshot(ObjectNode snapshot) {
-        if (snapshot != null) {
-            UUID latestChange = JsonUtil.toUUID(snapshot.get(Snapshot.LATEST));
-            loadSnapshot(new Snapshot(snapshot));
-            eventLog.subscribe(latestChange, this::applyChange);
-        } else {
-            eventLog.subscribe(null, this::applyChange);
+    private CompletableFuture<UUID> initializeFromSnapshot() {
+        return getBackend().loadLatestSnapshot(id)
+                .thenCompose(this::loadAndSubscribe);
+    }
+
+    private CompletableFuture<UUID> loadAndSubscribe(
+            Backend.Snapshot snapshot) {
+        CompletableFuture<UUID> future = new CompletableFuture<>();
+        try {
+            UUID latestChange = null;
+            if (snapshot != null) {
+                ObjectNode payload = JsonUtil.fromString(snapshot.getPayload());
+                latestChange = JsonUtil.toUUID(payload.get(Snapshot.LATEST));
+                loadSnapshot(new Snapshot(payload));
+                eventLog.subscribe(latestChange, this::applyChange);
+            } else {
+                eventLog.subscribe(null, this::applyChange);
+            }
+
+            ObjectNode nodeEvent = JsonUtil.createNodeJoin(getCurrentNodeId());
+
+            eventLog.submitEvent(UUID.randomUUID(),
+                    JsonUtil.toString(nodeEvent));
+
+            future.complete(latestChange);
+        } catch (Backend.EventIdNotFoundException e) {
+            future.completeExceptionally(e);
         }
-
-        ObjectNode nodeEvent = JsonUtil.createNodeJoin(getCurrentNodeId());
-
-        eventLog.submitEvent(UUID.randomUUID(), JsonUtil.toString(nodeEvent));
+        return future;
     }
 
     synchronized void handleNodeLeave(UUID nodeId) {
@@ -387,10 +411,23 @@ class Topic {
             EventUtil.fireEvents(changeListeners,
                     listener -> listener.accept(trackingId, details), true);
         }
+        if (lastSnapshotId == null) {
+            UUID newId = UUID.randomUUID();
+            String snapshot = JsonUtil.toString(
+                    Topic.Snapshot.fromTopic(this, trackingId).toObjectNode());
+            getBackend().replaceSnapshot(id, null, newId, snapshot);
+            getBackend().loadLatestSnapshot(id)
+                    .thenAccept(s -> lastSnapshotId = s.getId());
+        }
         if (leader && changeCount % 100 == 0) {
-            ObjectNode snapshot = Snapshot.fromTopic(this, trackingId)
+            UUID newId = UUID.randomUUID();
+            ObjectNode snapshot = Topic.Snapshot.fromTopic(this, trackingId)
                     .toObjectNode();
-            getBackend().submitSnapshot(id, JsonUtil.toString(snapshot));
+            getBackend()
+                    .replaceSnapshot(id, lastSnapshotId, newId,
+                            JsonUtil.toString(snapshot))
+                    .thenAccept(s -> eventLog.truncate(lastSnapshotId));
+            lastSnapshotId = newId;
         }
         return result;
     }
