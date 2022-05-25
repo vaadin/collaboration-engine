@@ -123,8 +123,10 @@ public class CollaborationBinderUtil {
 
         CollaborationList list = topicConnection
                 .getNamedList(COLLABORATION_BINDER_MAP_NAME);
-        list.insertLast(new FocusedEditor(user, fieldIndex, propertyName),
-                EntryScope.CONNECTION);
+        ListOperation operation = ListOperation
+                .insertLast(new FocusedEditor(user, fieldIndex, propertyName))
+                .withScope(EntryScope.CONNECTION);
+        list.apply(operation);
     }
 
     /**

@@ -235,9 +235,10 @@ public class FormManager extends AbstractCollaborationManager
 
         if (list != null) {
             if (highlight) {
-                list.insertLast(
-                        new FocusedEditor(user, fieldIndex, propertyName),
-                        EntryScope.CONNECTION);
+                ListOperation operation = ListOperation.insertLast(
+                        new FocusedEditor(user, fieldIndex, propertyName))
+                        .withScope(EntryScope.CONNECTION);
+                list.apply(operation);
             } else {
                 list.getKeys().forEach(key -> {
                     FocusedEditor editor = list.getItem(key,

@@ -123,8 +123,9 @@ public class PresenceManager extends AbstractCollaborationManager {
 
     private void addLocalUserToTopic() {
         assert ownPresenceKey == null;
-        ownPresenceKey = list.insertLast(getLocalUser(), EntryScope.CONNECTION)
-                .getKey();
+        ListOperation operation = ListOperation.insertLast(getLocalUser())
+                .withScope(EntryScope.CONNECTION);
+        ownPresenceKey = list.apply(operation).getKey();
     }
 
     private void removeLocalUserFromTopic() {

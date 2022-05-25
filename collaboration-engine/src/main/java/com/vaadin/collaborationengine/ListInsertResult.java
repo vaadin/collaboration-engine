@@ -6,6 +6,7 @@
  *
  * For the full License, see http://vaadin.com/license/cvrl-1
  */
+
 package com.vaadin.collaborationengine;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,40 +17,23 @@ import java.util.concurrent.CompletableFuture;
  * It provides access to the key of the affected item and to the
  * {@link CompletableFuture} of the operation.
  *
+ * @deprecated Replaced with {@link ListOperationResult}.
+ *
  * @author Vaadin Ltd
  */
-public class ListOperationResult<T> implements ListInsertResult<T> {
-    private final ListKey key;
-    private final CompletableFuture<T> completableFuture;
-
-    ListOperationResult(ListKey key, CompletableFuture<T> completableFuture) {
-        this.key = key;
-        this.completableFuture = completableFuture;
-    }
-
+@Deprecated(since = "5.1", forRemoval = true)
+public interface ListInsertResult<T> {
     /**
      * Gets the key of the item.
      *
      * @return the item key, not <code>null</code>
      */
-    @Override
-    public ListKey getKey() {
-        return key;
-    }
+    ListKey getKey();
 
     /**
      * The result of the asynchronous operation.
      *
      * @return the result of the operation, not <code>null</code>
      */
-    @Override
-    public CompletableFuture<T> getCompletableFuture() {
-        return completableFuture;
-    }
-
-    /* Map to a void parameterized type for existing list operations */
-    ListOperationResult<Void> mapToVoid() {
-        return new ListOperationResult<>(key,
-                completableFuture.thenApply(t -> null));
-    }
+    CompletableFuture<T> getCompletableFuture();
 }

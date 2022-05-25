@@ -685,7 +685,9 @@ public class CollaborationListTest {
 
     @Test
     public void insertFirstWithConnectionScope_connectionDeactivated_entryRemoved() {
-        ListKey key = list.insertFirst("foo", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertFirst("foo")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -704,7 +706,9 @@ public class CollaborationListTest {
 
     @Test
     public void insertFirstWithConnectionScope_setWithTopicScope_connectionDeactivated_entryNotRemoved() {
-        ListKey key = list.insertFirst("foo", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertFirst("foo")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         list.set(key, "foo");
         context.deactivate();
         context.activate();
@@ -713,7 +717,9 @@ public class CollaborationListTest {
 
     @Test
     public void insertLastWithConnectionScope_connectionDeactivated_entryRemoved() {
-        ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertLast("foo")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -732,7 +738,9 @@ public class CollaborationListTest {
 
     @Test
     public void insertLastWithConnectionScope_setWithTopicScope_connectionDeactivated_entryNotRemoved() {
-        ListKey key = list.insertLast("foo", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertLast("foo")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         list.set(key, "foo");
         context.deactivate();
         context.activate();
@@ -742,9 +750,9 @@ public class CollaborationListTest {
     @Test
     public void insertBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
-        ListKey key = list
-                .insertBefore(keys.get(0), "new", EntryScope.CONNECTION)
-                .getKey();
+        ListOperation operation = ListOperation.insertBefore(keys.get(0), "new")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -754,9 +762,9 @@ public class CollaborationListTest {
     @Test
     public void insertAfterWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
-        ListKey key = list
-                .insertAfter(keys.get(0), "new", EntryScope.CONNECTION)
-                .getKey();
+        ListOperation operation = ListOperation.insertAfter(keys.get(0), "new")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -891,7 +899,9 @@ public class CollaborationListTest {
     @Test
     public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
-        ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertLast("three")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         list.moveBefore(keys.get(0), key);
         context.deactivate();
         context.activate();
@@ -902,7 +912,9 @@ public class CollaborationListTest {
     @Test
     public void moveAfterWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
-        ListKey key = list.insertLast("three", EntryScope.CONNECTION).getKey();
+        ListOperation operation = ListOperation.insertLast("three")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
         list.moveAfter(keys.get(0), key);
         context.deactivate();
         context.activate();

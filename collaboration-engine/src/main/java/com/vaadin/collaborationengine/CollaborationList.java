@@ -121,7 +121,8 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return the result of the operation, not <code>null</code>
      */
     default ListOperationResult<Void> insertFirst(Object item) {
-        return insertFirst(item, EntryScope.TOPIC);
+        ListOperation operation = ListOperation.insertFirst(item);
+        return apply(operation).mapToVoid();
     }
 
     /**
@@ -133,7 +134,10 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @param scope
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.insertFirst(Object).withScope(EntryScope)}.
      */
+    @Deprecated(since = "5.1", forRemoval = true)
     default ListOperationResult<Void> insertFirst(Object item,
             EntryScope scope) {
         ListOperation operation = ListOperation.insertFirst(item)
@@ -150,7 +154,8 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @since 4.1
      */
     default ListOperationResult<Void> insertLast(Object item) {
-        return insertLast(item, EntryScope.TOPIC);
+        ListOperation operation = ListOperation.insertLast(item);
+        return apply(operation).mapToVoid();
     }
 
     /**
@@ -163,7 +168,10 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
      * @since 4.1
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.insertLast(Object).withScope(EntryScope)}.
      */
+    @Deprecated(since = "5.1", forRemoval = true)
     default ListOperationResult<Void> insertLast(Object item,
             EntryScope scope) {
         ListOperation operation = ListOperation.insertLast(item)
@@ -182,7 +190,8 @@ public interface CollaborationList extends HasExpirationTimeout {
      */
     default ListOperationResult<Boolean> insertBefore(ListKey key,
             Object item) {
-        return insertBefore(key, item, EntryScope.TOPIC);
+        ListOperation operation = ListOperation.insertBefore(key, item);
+        return apply(operation);
     }
 
     /**
@@ -196,7 +205,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @param scope
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.insertBefore(ListKey, Object).withScope
+     * (EntryScope)} .
      */
+    @Deprecated(since = "5.1", forRemoval = true)
     default ListOperationResult<Boolean> insertBefore(ListKey key, Object item,
             EntryScope scope) {
         ListOperation operation = ListOperation.insertBefore(key, item)
@@ -214,7 +227,8 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return the result of the operation, not <code>null</code>
      */
     default ListOperationResult<Boolean> insertAfter(ListKey key, Object item) {
-        return insertAfter(key, item, EntryScope.TOPIC);
+        ListOperation operation = ListOperation.insertAfter(key, item);
+        return apply(operation);
     }
 
     /**
@@ -228,7 +242,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @param scope
      *            the scope of the entry, not <code>null</code>
      * @return the result of the operation, not <code>null</code>
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.insertAfter(ListKey, Object).withScope
+     * (EntryScope)} .
      */
+    @Deprecated(since = "5.1", forRemoval = true)
     default ListOperationResult<Boolean> insertAfter(ListKey key, Object item,
             EntryScope scope) {
         ListOperation operation = ListOperation.insertAfter(key, item)
@@ -327,9 +345,10 @@ public interface CollaborationList extends HasExpirationTimeout {
      *         appended to the list
      * @throws JsonConversionException
      *             if the given item isn't serializable as JSON string
-     * @deprecated Use {@link #insertLast(Object)}
+     * @deprecated Use {@link #apply(ListOperation)} with {@code
+     * ListOperation.insertLast(Object)}
      */
-    @Deprecated
+    @Deprecated(since = "4.0", forRemoval = true)
     default CompletableFuture<Void> append(Object item) {
         return append(item, EntryScope.TOPIC);
     }
@@ -354,9 +373,10 @@ public interface CollaborationList extends HasExpirationTimeout {
      *         appended to the list
      * @throws JsonConversionException
      *             if the given item isn't serializable as JSON string
-     * @deprecated Use {@link #insertLast(Object, EntryScope)}
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.insertLast(Object).withScope(EntryScope)}
      */
-    @Deprecated
+    @Deprecated(since = "4.0", forRemoval = true)
     default CompletableFuture<Void> append(Object item, EntryScope scope) {
         return insertLast(item, scope).getCompletableFuture();
     }

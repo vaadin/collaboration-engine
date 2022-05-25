@@ -64,10 +64,10 @@ public class SnapshotTest {
     @Test
     public void getLists_expectedValues() {
         CollaborationList list = connection.getNamedList("foo");
-        list.append("a");
-        list.append("b");
-        list.append("c");
-        list.append("b");
+        list.insertLast("a");
+        list.insertLast("b");
+        list.insertLast("c");
+        list.insertLast("b");
 
         Topic.Snapshot snapshot = Topic.Snapshot
                 .fromTopic(connection.getTopic(), UUID.randomUUID());
