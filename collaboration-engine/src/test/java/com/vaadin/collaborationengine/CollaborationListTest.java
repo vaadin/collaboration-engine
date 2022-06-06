@@ -697,7 +697,9 @@ public class CollaborationListTest {
     @Test
     public void insertFirstWithTopicScope_setWithConnectionScope_connectionDeactivated_entryRemoved() {
         ListKey key = list.insertFirst("foo").getKey();
-        list.set(key, "foo", EntryScope.CONNECTION);
+        ListOperation operation = ListOperation.set(key, "foo")
+                .withScope(EntryScope.CONNECTION);
+        list.apply(operation);
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -729,7 +731,9 @@ public class CollaborationListTest {
     @Test
     public void insertLastWithTopicScope_setWithConnectionScope_connectionDeactivated_entryRemoved() {
         ListKey key = list.insertLast("foo").getKey();
-        list.set(key, "foo", EntryScope.CONNECTION);
+        ListOperation operation = ListOperation.set(key, "foo")
+                .withScope(EntryScope.CONNECTION);
+        list.apply(operation);
         context.deactivate();
         context.activate();
         Assert.assertNull(list.getItem(key, String.class));
@@ -894,6 +898,53 @@ public class CollaborationListTest {
     @Test(expected = IllegalStateException.class)
     public void insertLast_ifNotEmpty_ifEmpty_exceptionIsThrown() {
         ListOperation.insertLast("foo").ifNotEmpty().ifEmpty();
+    }
+
+    @Test
+    public void setValue_noCondition_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation operation = ListOperation.set(fooKey, "bar");
+
+        boolean succeeded = list.apply(operation).getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+        String value = list.getItem(fooKey, String.class);
+        Assert.assertEquals("bar", value);
+    }
+
+    @Test
+    public void setValueWithConnectionScope_connectionDeactivate_entryRemoved()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation operation = ListOperation.set(fooKey, "bar")
+                .withScope(EntryScope.CONNECTION);
+
+        boolean succeeded = list.apply(operation).getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+
+        context.deactivate();
+        context.activate();
+        Assert.assertNull(list.getItem(fooKey, String.class));
+    }
+
+    @Test
+    public void setValueWithNotEmptyCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation operation = ListOperation.set(fooKey, "bar").ifNotEmpty();
+
+        boolean succeeded = list.apply(operation).getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void setValueWithEmptyCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation operation = ListOperation.set(fooKey, "bar").ifEmpty();
+
+        boolean succeeded = list.apply(operation).getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
     }
 
     @Test

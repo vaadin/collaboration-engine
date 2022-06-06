@@ -245,7 +245,9 @@ public class FormManager extends AbstractCollaborationManager
                             FocusedEditor.class);
                     if (editor.propertyName.equals(propertyName)
                             && editor.user.equals(user)) {
-                        list.set(key, null, EntryScope.CONNECTION);
+                        ListOperation operation = ListOperation.set(key, null)
+                                .withScope(EntryScope.CONNECTION);
+                        list.apply(operation);
                     }
                 });
             }

@@ -20,6 +20,9 @@ import java.util.Objects;
  * @author Vaadin Ltd
  */
 public class ListOperation {
+    public enum OperationType {
+        INSERT_BEFORE, INSERT_AFTER, SET
+    }
 
     /**
      * Creates a list operation to insert the given value as the first item of
@@ -31,7 +34,7 @@ public class ListOperation {
      */
     public static ListOperation insertFirst(Object value) {
         Objects.requireNonNull(value);
-        return new ListOperation(value, false, null);
+        return new ListOperation(value, OperationType.INSERT_AFTER, null);
     }
 
     /**
@@ -44,7 +47,7 @@ public class ListOperation {
      */
     public static ListOperation insertLast(Object value) {
         Objects.requireNonNull(value);
-        return new ListOperation(value, true, null);
+        return new ListOperation(value, OperationType.INSERT_BEFORE, null);
     }
 
     /**
@@ -60,7 +63,7 @@ public class ListOperation {
     public static ListOperation insertBefore(ListKey before, Object value) {
         Objects.requireNonNull(before);
         Objects.requireNonNull(value);
-        return new ListOperation(value, true, before);
+        return new ListOperation(value, OperationType.INSERT_BEFORE, before);
     }
 
     /**
@@ -76,7 +79,7 @@ public class ListOperation {
     public static ListOperation insertAfter(ListKey after, Object value) {
         Objects.requireNonNull(after);
         Objects.requireNonNull(value);
-        return new ListOperation(value, false, after);
+        return new ListOperation(value, OperationType.INSERT_AFTER, after);
     }
 
     /**
@@ -100,9 +103,36 @@ public class ListOperation {
         return insertAfter(prev, value).ifNext(prev, next);
     }
 
+    /**
+     * Creates a list operation to set the given value at the position specified
+     * by the given key. By default, the value will be set as topic scope.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @param value
+     *            the value
+     * @return the list operation, not <code>null</code>
+     */
+    public static ListOperation set(ListKey key, Object value) {
+        Objects.requireNonNull(key);
+        return new ListOperation(value, OperationType.SET, key);
+    }
+
+    /**
+     * Creates a list operation to delete the value at the position specified by
+     * the given key.
+     *
+     * @param key
+     *            the position key, not <code>null</code>
+     * @return the list operation, not <code>null</code>
+     */
+    public static ListOperation delete(ListKey key) {
+        return set(key, null);
+    }
+
     private final Object value;
 
-    private final boolean before;
+    private final OperationType type;
 
     private final ListKey referenceKey;
 
@@ -112,9 +142,10 @@ public class ListOperation {
 
     private Boolean empty;
 
-    private ListOperation(Object value, boolean before, ListKey referenceKey) {
+    private ListOperation(Object value, OperationType type,
+            ListKey referenceKey) {
         this.value = value;
-        this.before = before;
+        this.type = type;
         this.referenceKey = referenceKey;
     }
 
@@ -237,8 +268,8 @@ public class ListOperation {
         return value;
     }
 
-    boolean isBefore() {
-        return before;
+    OperationType getType() {
+        return type;
     }
 
     ListKey getReferenceKey() {

@@ -45,13 +45,9 @@ class JsonUtil {
 
     static final String CHANGE_VALUE = "value";
 
-    static final String CHANGE_OLD_VALUE = "old-value";
-
     static final String CHANGE_EXPECTED_ID = "expected-id";
 
     static final String CHANGE_EXPECTED_VALUE = "expected-value";
-
-    static final String CHANGE_BEFORE = "before";
 
     static final String CHANGE_CONDITIONS = "conditions";
 
@@ -61,7 +57,9 @@ class JsonUtil {
 
     static final String CHANGE_TYPE_REPLACE = "m-replace";
 
-    static final String CHANGE_TYPE_INSERT = "l-insert";
+    static final String CHANGE_TYPE_INSERT_BEFORE = "l-insert-before";
+
+    static final String CHANGE_TYPE_INSERT_AFTER = "l-insert-after";
 
     static final String CHANGE_TYPE_MOVE_BEFORE = "l-move-before";
 
@@ -86,8 +84,6 @@ class JsonUtil {
     static final String CHANGE_EVENT_NAME = "event-name";
 
     static final String CHANGE_EVENT_OCCURRENCE = "event-occurrence";
-
-    static final String CHANGE_ITEM = "item";
 
     public static final String CHANGE_NODE_ID = "node-id";
 
@@ -205,15 +201,21 @@ class JsonUtil {
         return change;
     }
 
-    static ObjectNode createInsertChange(boolean before, String listName,
-            String referenceKey, Object item, UUID scopeOwnerId,
-            Map<ListKey, ListKey> conditions, Boolean empty) {
+    static ObjectNode createListChange(ListOperation.OperationType type,
+            String listName, String referenceKey, Object item,
+            UUID scopeOwnerId, Map<ListKey, ListKey> conditions,
+            Boolean empty) {
         ObjectNode change = mapper.createObjectNode();
-        change.put(CHANGE_TYPE, CHANGE_TYPE_INSERT);
-        change.put(CHANGE_BEFORE, before);
+        if (type == ListOperation.OperationType.INSERT_BEFORE) {
+            change.put(CHANGE_TYPE, CHANGE_TYPE_INSERT_BEFORE);
+        } else if (type == ListOperation.OperationType.INSERT_AFTER) {
+            change.put(CHANGE_TYPE, CHANGE_TYPE_INSERT_AFTER);
+        } else if (type == ListOperation.OperationType.SET) {
+            change.put(CHANGE_TYPE, CHANGE_TYPE_LIST_SET);
+        }
         change.put(CHANGE_NAME, listName);
         change.put(CHANGE_KEY, referenceKey);
-        change.set(CHANGE_ITEM, toJsonNode(item));
+        change.set(CHANGE_VALUE, toJsonNode(item));
         conditions.forEach((refKey, otherKey) -> {
             ObjectNode condition = mapper.createObjectNode();
             condition.put(CHANGE_KEY,
@@ -239,19 +241,6 @@ class JsonUtil {
         change.put(CHANGE_NAME, name);
         change.put(CHANGE_KEY, id);
         change.put(CHANGE_OTHER_KEY, idToMove);
-        return change;
-    }
-
-    static ObjectNode createListSetChange(String name, String id, Object value,
-            UUID scopeOwnerId) {
-        ObjectNode change = mapper.createObjectNode();
-        change.put(CHANGE_TYPE, CHANGE_TYPE_LIST_SET);
-        change.put(CHANGE_NAME, name);
-        change.put(CHANGE_KEY, id);
-        change.set(CHANGE_VALUE, toJsonNode(value));
-        if (scopeOwnerId != null) {
-            change.put(CHANGE_SCOPE_OWNER, scopeOwnerId.toString());
-        }
         return change;
     }
 

@@ -280,30 +280,22 @@ public interface CollaborationList extends HasExpirationTimeout {
 
     /**
      * Sets a new value for the item identified by the given key.
-     * <p>
-     * It return the result of the operation as a {@link CompletableFuture}
-     * which resolves to <code>true<code> if the operation succeeds,
-     * <code>false</code> otherwise.
      *
      * @param key
      *            the item key, not <code>null</code>
      * @param value
      *            the new value of the item
-     * @return a completable future that is resolved when the operation has
-     *         completed, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
      * @since 4.1
      */
     default CompletableFuture<Boolean> set(ListKey key, Object value) {
-        return set(key, value, EntryScope.TOPIC);
+        ListOperation operation = ListOperation.set(key, value);
+        return apply(operation).getCompletableFuture();
     }
 
     /**
      * Sets a new value for the item identified by the given key, with the given
      * scope.
-     * <p>
-     * It return the result of the operation as a {@link CompletableFuture}
-     * which resolves to <code>true<code> if the operation succeeds,
-     * <code>false</code> otherwise.
      *
      * @param key
      *            the item key, not <code>null</code>
@@ -311,26 +303,29 @@ public interface CollaborationList extends HasExpirationTimeout {
      *            the new value of the item
      * @param scope
      *            the scope of the entry, not <code>null</code>
-     * @return a completable future that is resolved when the operation has
-     *         completed, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
      * @since 4.1
+     * @deprecated Use {@link #apply(ListOperation)} with
+     *             {@code ListOperation.set(ListKey, Object).withScope(EntryScope)}.
      */
-    CompletableFuture<Boolean> set(ListKey key, Object value, EntryScope scope);
+    @Deprecated(since = "5.2", forRemoval = true)
+    default CompletableFuture<Boolean> set(ListKey key, Object value,
+            EntryScope scope) {
+        ListOperation operation = ListOperation.set(key, value)
+                .withScope(scope);
+        return apply(operation).getCompletableFuture();
+    }
 
     /**
      * Removes the value for the item identified by the given key.
-     * <p>
-     * It returns the result of the operation as a {@link CompletableFuture}
-     * which resolves to <code>true</code> if the operation succeeds,
-     * <code>false</code> otherwise.
      *
      * @param key
      *            the item key, not <code>null</code>
-     * @return a completable future that is resolved when the operation has
-     *         completed, not <code>null</code>
+     * @return the result of the operation, not <code>null</code>
      */
     default CompletableFuture<Boolean> remove(ListKey key) {
-        return set(key, null);
+        ListOperation operation = ListOperation.delete(key);
+        return apply(operation).getCompletableFuture();
     }
 
     /**

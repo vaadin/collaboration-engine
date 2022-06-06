@@ -10,6 +10,7 @@ package com.vaadin.collaborationengine;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -298,8 +299,8 @@ public class TopicConnection {
             boolean connectionScope = operation
                     .getScope() == EntryScope.CONNECTION;
             ListKey referenceKey = operation.getReferenceKey();
-            ObjectNode change = JsonUtil.createInsertChange(
-                    operation.isBefore(), name,
+            ObjectNode change = JsonUtil.createListChange(operation.getType(),
+                    name,
                     referenceKey != null ? referenceKey.getKey().toString()
                             : null,
                     operation.getValue(),
@@ -308,8 +309,11 @@ public class TopicConnection {
 
             UUID id = UUID.randomUUID();
             return new ListOperationResult<>(new ListKey(id),
-                    dispatchChangeWithBooleanResult(id, id, connectionScope,
-                            change));
+                    dispatchChangeWithBooleanResult(id, operation
+                            .getType() == ListOperation.OperationType.SET
+                                    ? referenceKey.getKey()
+                                    : id,
+                            connectionScope, change));
         }
 
         @Override
@@ -340,22 +344,6 @@ public class TopicConnection {
 
             return dispatchChangeWithBooleanResult(id, keyToMove.getKey(),
                     false, change);
-        }
-
-        @Override
-        public CompletableFuture<Boolean> set(ListKey key, Object value,
-                EntryScope scope) {
-            ensureActiveConnection();
-            Objects.requireNonNull(key);
-
-            boolean connectionScope = scope == EntryScope.CONNECTION;
-            ObjectNode change = JsonUtil.createListSetChange(name,
-                    key.getKey().toString(), value,
-                    connectionScope ? topic.getCurrentNodeId() : null);
-            UUID id = UUID.randomUUID();
-
-            return dispatchChangeWithBooleanResult(id, key.getKey(),
-                    connectionScope, change);
         }
 
         private CompletableFuture<Boolean> dispatchChangeWithBooleanResult(
@@ -631,8 +619,10 @@ public class TopicConnection {
             connectionScopedMapKeys.clear();
             connectionScopedListItems.forEach(
                     (listName, listItems) -> listItems.forEach((key, id) -> {
-                        ObjectNode change = JsonUtil.createListSetChange(
-                                listName, key.toString(), null, null);
+                        ObjectNode change = JsonUtil.createListChange(
+                                ListOperation.OperationType.SET, listName,
+                                key.toString(), null, null,
+                                Collections.emptyMap(), null);
                         change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
                         distributor.accept(UUID.randomUUID(), change);
                     }));

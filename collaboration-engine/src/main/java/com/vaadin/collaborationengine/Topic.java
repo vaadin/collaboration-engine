@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +23,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -254,9 +254,10 @@ class Topic {
                 .flatMap(list -> list.getValue().stream()
                         .filter(entry -> isStale.test(entry.scopeOwnerId))
                         .map(entry -> {
-                            ObjectNode change = JsonUtil.createListSetChange(
+                            ObjectNode change = JsonUtil.createListChange(
+                                    ListOperation.OperationType.SET,
                                     list.getKey(), entry.id.toString(), null,
-                                    null);
+                                    null, Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
                             return change;
@@ -306,8 +307,10 @@ class Topic {
                     .map(Map.Entry::getKey).collect(Collectors.toList())
                     .forEach(name -> {
                         namedListData.get(name).stream().map(entry -> {
-                            ObjectNode change = JsonUtil.createListSetChange(
-                                    name, entry.id.toString(), null, null);
+                            ObjectNode change = JsonUtil.createListChange(
+                                    ListOperation.OperationType.SET, name,
+                                    entry.id.toString(), null, null,
+                                    Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
                             return change;
@@ -351,8 +354,11 @@ class Topic {
         case JsonUtil.CHANGE_TYPE_REPLACE:
             details = applyMapReplace(trackingId, change);
             break;
-        case JsonUtil.CHANGE_TYPE_INSERT:
-            details = applyListInsert(trackingId, change);
+        case JsonUtil.CHANGE_TYPE_INSERT_BEFORE:
+            details = applyListInsert(trackingId, change, true);
+            break;
+        case JsonUtil.CHANGE_TYPE_INSERT_AFTER:
+            details = applyListInsert(trackingId, change, false);
             break;
         case JsonUtil.CHANGE_TYPE_MOVE_BEFORE:
             details = applyListMoveBefore(trackingId, change);
@@ -513,38 +519,16 @@ class Topic {
                 newValue, null, changeId);
     }
 
-    ChangeDetails applyListInsert(UUID id, ObjectNode change) {
+    ChangeDetails applyListInsert(UUID id, ObjectNode change, boolean before) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
         UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
-        JsonNode item = change.get(JsonUtil.CHANGE_ITEM);
+        JsonNode item = change.get(JsonUtil.CHANGE_VALUE);
         UUID scopeOwnerId = JsonUtil
                 .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
-        boolean before = change.get(JsonUtil.CHANGE_BEFORE).asBoolean();
         EntryList list = getOrCreateList(listName);
 
-        if (change.has(JsonUtil.CHANGE_EMPTY)) {
-            boolean empty = change.get(JsonUtil.CHANGE_EMPTY).asBoolean();
-            if (empty && list.size() > 0) {
-                return null;
-            } else if (!empty && list.size() == 0) {
-                return null;
-            }
-        }
-
-        for (JsonNode condition : change
-                .withArray(JsonUtil.CHANGE_CONDITIONS)) {
-            UUID leftKey = JsonUtil.toUUID(condition.get(JsonUtil.CHANGE_KEY));
-            UUID rightKey = JsonUtil
-                    .toUUID(condition.get(JsonUtil.CHANGE_OTHER_KEY));
-            // If the left key of the condition is null, right key must be the
-            // first i.e. have a null prev otherwise we reject the operation
-            if (leftKey == null
-                    && getListEntry(listName, rightKey).prev != null) {
-                return null;
-            } else if (leftKey != null && !Objects
-                    .equals(getListEntry(listName, leftKey).next, rightKey)) {
-                return null;
-            }
+        if (!conditionsMet(change)) {
+            return null;
         }
 
         ListEntrySnapshot insertedEntry;
@@ -626,6 +610,10 @@ class Topic {
                 .toUUID(change.get(JsonUtil.CHANGE_EXPECTED_ID));
         EntryList list = getOrCreateList(listName);
 
+        if (!conditionsMet(change)) {
+            return null;
+        }
+
         ListEntrySnapshot entry = list.getEntry(key);
         if (entry == null) {
             return null;
@@ -648,6 +636,36 @@ class Topic {
                     newValue, entry.prev, entry.prev, entry.next, entry.next,
                     expectedId, trackingId);
         }
+    }
+
+    private boolean conditionsMet(ObjectNode change) {
+        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
+        EntryList list = getOrCreateList(listName);
+        if (change.has(JsonUtil.CHANGE_EMPTY)) {
+            boolean empty = change.get(JsonUtil.CHANGE_EMPTY).asBoolean();
+            if (empty && list.size() > 0) {
+                return false;
+            } else if (!empty && list.size() == 0) {
+                return false;
+            }
+        }
+
+        for (JsonNode condition : change
+                .withArray(JsonUtil.CHANGE_CONDITIONS)) {
+            UUID leftKey = JsonUtil.toUUID(condition.get(JsonUtil.CHANGE_KEY));
+            UUID rightKey = JsonUtil
+                    .toUUID(condition.get(JsonUtil.CHANGE_OTHER_KEY));
+            // If the left key of the condition is null, right key must be the
+            // first i.e. have a null prev otherwise we reject the operation
+            if (leftKey == null
+                    && getListEntry(listName, rightKey).prev != null) {
+                return false;
+            } else if (leftKey != null && !Objects
+                    .equals(getListEntry(listName, leftKey).next, rightKey)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void applyMapTimeout(ObjectNode change) {

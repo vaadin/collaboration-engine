@@ -116,7 +116,8 @@ public class TopicTest {
 
     @Test
     public void applyChange_listContainsAppendedItem() {
-        ObjectNode change = JsonUtil.createInsertChange(false, "foo", null,
+        ObjectNode change = JsonUtil.createListChange(
+                ListOperation.OperationType.INSERT_AFTER, "foo", null,
                 MockJson.FOO, null, Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
         Assert.assertEquals("foo",
@@ -139,7 +140,8 @@ public class TopicTest {
         topic.subscribeToChange((id, event) -> count.getAndIncrement());
 
         try {
-            ObjectNode change = JsonUtil.createInsertChange(false, "foo", null,
+            ObjectNode change = JsonUtil.createListChange(
+                    ListOperation.OperationType.INSERT_AFTER, "foo", null,
                     MockJson.BAZ, null, Collections.emptyMap(), null);
             topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
             Assert.fail("Exception expected");
@@ -151,7 +153,8 @@ public class TopicTest {
                 1, count.get());
 
         // No try-catch needed - failing subscriber should have been removed
-        ObjectNode change = JsonUtil.createInsertChange(false, "foo", null,
+        ObjectNode change = JsonUtil.createListChange(
+                ListOperation.OperationType.INSERT_AFTER, "foo", null,
                 MockJson.QUX, null, Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
 
