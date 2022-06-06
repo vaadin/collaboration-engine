@@ -19,10 +19,10 @@
         </project.reporting.outputEncoding>
         <failOnMissingWebXml>false</failOnMissingWebXml>
         <!-- test dependencies versions -->
-        <spring-boot.version>2.6.6</spring-boot.version>
+        <spring-boot.version>2.7.0</spring-boot.version>
         <vaadin.spring.version>${flow.version}</vaadin.spring.version>
         <flow.cdi.version>14.0-SNAPSHOT</flow.cdi.version>
-        <testbench.version>8.0.0</testbench.version>
+        <testbench.version>8.0.2</testbench.version>
     </properties>
 
     <modules>

@@ -126,10 +126,10 @@
                         might cause lots of unnecessary compilations in the background. -->
                     <scanIntervalSeconds>0</scanIntervalSeconds>
                     <!-- Use war output directory to get the webpack files -->
-                    <webAppConfig>
+                    <webApp>
                         <allowDuplicateFragmentNames>true
                         </allowDuplicateFragmentNames>
-                    </webAppConfig>
+                    </webApp>
                 </configuration>
             </plugin>
 
