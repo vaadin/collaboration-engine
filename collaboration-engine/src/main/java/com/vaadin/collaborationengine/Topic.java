@@ -257,7 +257,8 @@ class Topic {
                             ObjectNode change = JsonUtil.createListChange(
                                     ListOperation.OperationType.SET,
                                     list.getKey(), entry.id.toString(), null,
-                                    null, Collections.emptyMap(), null);
+                                    null, Collections.emptyMap(),
+                                    Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
                             return change;
@@ -310,6 +311,7 @@ class Topic {
                             ObjectNode change = JsonUtil.createListChange(
                                     ListOperation.OperationType.SET, name,
                                     entry.id.toString(), null, null,
+                                    Collections.emptyMap(),
                                     Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
@@ -665,6 +667,20 @@ class Topic {
                 return false;
             }
         }
+
+        for (JsonNode valueCondition : change
+                .withArray(JsonUtil.CHANGE_VALUE_CONDITIONS)) {
+            UUID refKey = JsonUtil
+                    .toUUID(valueCondition.get(JsonUtil.CHANGE_KEY));
+            JsonNode expectedValue = valueCondition
+                    .get(JsonUtil.CHANGE_EXPECTED_VALUE);
+            if (refKey == null || getListEntry(listName, refKey) == null
+                    || !Objects.equals(getListEntry(listName, refKey).value,
+                            expectedValue)) {
+                return false;
+            }
+        }
+
         return true;
     }
 

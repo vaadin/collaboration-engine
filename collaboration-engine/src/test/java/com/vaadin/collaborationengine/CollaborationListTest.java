@@ -948,6 +948,59 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void insertWithIfValueCondition_conditionMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifValue(fooKey, "foo");
+        boolean succeeded = list.apply(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithIfValueCondition_conditionNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifValue(fooKey, "baz");
+        boolean succeeded = list.apply(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void duplicateIfValueCondition_exceptionIsThrown() {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListOperation conditionalOperation = ListOperation.insertLast("bar")
+                .ifValue(fooKey, "foo").ifValue(fooKey, "bar");
+    }
+
+    @Test
+    public void insertWithTwoIfValueConditions_bothMet_operationApplied()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListKey barKey = list.insertLast("bar").getKey();
+        ListOperation conditionalOperation = ListOperation.insertLast("baz")
+                .ifValue(fooKey, "foo").ifValue(barKey, "bar");
+        boolean succeeded = list.apply(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertTrue(succeeded);
+    }
+
+    @Test
+    public void insertWithTwoIfValueConditions_oneNotMet_operationRejected()
+            throws InterruptedException, ExecutionException {
+        ListKey fooKey = list.insertLast("foo").getKey();
+        ListKey barKey = list.insertLast("bar").getKey();
+        ListOperation conditionalOperation = ListOperation.insertLast("baz")
+                .ifValue(fooKey, "foo").ifValue(barKey, "quz");
+        boolean succeeded = list.apply(conditionalOperation)
+                .getCompletableFuture().get();
+        Assert.assertFalse(succeeded);
+    }
+
+    @Test
     public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
         ListOperation operation = ListOperation.insertLast("three")

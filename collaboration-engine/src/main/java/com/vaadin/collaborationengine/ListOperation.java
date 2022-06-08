@@ -14,8 +14,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A list operation providing the list item value, its position, the scope and
- * conditions that should be met for the operation to succeed.
+ * A list operation providing details such as the operation type, related
+ * properties and conditions that should be met for the operation to succeed.
  *
  * @author Vaadin Ltd
  */
@@ -142,6 +142,8 @@ public class ListOperation {
 
     private Boolean empty;
 
+    private final Map<ListKey, Object> valueConditions = new HashMap<>();
+
     private ListOperation(Object value, OperationType type,
             ListKey referenceKey) {
         this.value = value;
@@ -264,6 +266,26 @@ public class ListOperation {
         return this;
     }
 
+    /**
+     * Add a condition that requires the specified <code>key</code> to have the
+     * specified <code>value</code>.
+     *
+     * @param key
+     *            the key, not <code>null</code>
+     * @param value
+     *            the expected value
+     * @return this operation, not <code>null</code>
+     */
+    public ListOperation ifValue(ListKey key, Object value) {
+        Objects.requireNonNull(key);
+        if (valueConditions.containsKey(key)) {
+            throw new IllegalStateException(
+                    "A requirement for the value of this key is already set");
+        }
+        valueConditions.put(key, value);
+        return this;
+    }
+
     Object getValue() {
         return value;
     }
@@ -286,6 +308,10 @@ public class ListOperation {
 
     Boolean getEmpty() {
         return empty;
+    }
+
+    Map<ListKey, Object> getValueConditions() {
+        return Collections.unmodifiableMap(valueConditions);
     }
 
 }

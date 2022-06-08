@@ -51,6 +51,8 @@ class JsonUtil {
 
     static final String CHANGE_CONDITIONS = "conditions";
 
+    static final String CHANGE_VALUE_CONDITIONS = "value-conditions";
+
     static final String CHANGE_EMPTY = "empty";
 
     static final String CHANGE_TYPE_PUT = "m-put";
@@ -204,7 +206,7 @@ class JsonUtil {
     static ObjectNode createListChange(ListOperation.OperationType type,
             String listName, String referenceKey, Object item,
             UUID scopeOwnerId, Map<ListKey, ListKey> conditions,
-            Boolean empty) {
+            Map<ListKey, Object> valueConditions, Boolean empty) {
         ObjectNode change = mapper.createObjectNode();
         if (type == ListOperation.OperationType.INSERT_BEFORE) {
             change.put(CHANGE_TYPE, CHANGE_TYPE_INSERT_BEFORE);
@@ -223,6 +225,13 @@ class JsonUtil {
             condition.put(CHANGE_OTHER_KEY,
                     otherKey != null ? otherKey.getKey().toString() : null);
             change.withArray(CHANGE_CONDITIONS).add(condition);
+        });
+        valueConditions.forEach((key, value) -> {
+            ObjectNode valueCondition = mapper.createObjectNode();
+            valueCondition.put(CHANGE_KEY,
+                    key != null ? key.getKey().toString() : null);
+            valueCondition.set(CHANGE_EXPECTED_VALUE, toJsonNode(value));
+            change.withArray(CHANGE_VALUE_CONDITIONS).add(valueCondition);
         });
         if (empty != null) {
             change.put(CHANGE_EMPTY, empty);

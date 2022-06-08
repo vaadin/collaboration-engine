@@ -305,7 +305,8 @@ public class TopicConnection {
                             : null,
                     operation.getValue(),
                     connectionScope ? topic.getCurrentNodeId() : null,
-                    operation.getConditions(), operation.getEmpty());
+                    operation.getConditions(), operation.getValueConditions(),
+                    operation.getEmpty());
 
             UUID id = UUID.randomUUID();
             return new ListOperationResult<>(new ListKey(id),
@@ -622,7 +623,8 @@ public class TopicConnection {
                         ObjectNode change = JsonUtil.createListChange(
                                 ListOperation.OperationType.SET, listName,
                                 key.toString(), null, null,
-                                Collections.emptyMap(), null);
+                                Collections.emptyMap(), Collections.emptyMap(),
+                                null);
                         change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());
                         distributor.accept(UUID.randomUUID(), change);
                     }));

@@ -118,7 +118,8 @@ public class TopicTest {
     public void applyChange_listContainsAppendedItem() {
         ObjectNode change = JsonUtil.createListChange(
                 ListOperation.OperationType.INSERT_AFTER, "foo", null,
-                MockJson.FOO, null, Collections.emptyMap(), null);
+                MockJson.FOO, null, Collections.emptyMap(),
+                Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
         Assert.assertEquals("foo",
                 topic.getListItems("foo").findFirst().get().value.textValue());
@@ -142,7 +143,8 @@ public class TopicTest {
         try {
             ObjectNode change = JsonUtil.createListChange(
                     ListOperation.OperationType.INSERT_AFTER, "foo", null,
-                    MockJson.BAZ, null, Collections.emptyMap(), null);
+                    MockJson.BAZ, null, Collections.emptyMap(),
+                    Collections.emptyMap(), null);
             topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
             Assert.fail("Exception expected");
         } catch (RuntimeException expected) {
@@ -155,7 +157,8 @@ public class TopicTest {
         // No try-catch needed - failing subscriber should have been removed
         ObjectNode change = JsonUtil.createListChange(
                 ListOperation.OperationType.INSERT_AFTER, "foo", null,
-                MockJson.QUX, null, Collections.emptyMap(), null);
+                MockJson.QUX, null, Collections.emptyMap(),
+                Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
