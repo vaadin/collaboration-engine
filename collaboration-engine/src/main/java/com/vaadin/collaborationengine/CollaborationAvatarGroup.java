@@ -345,4 +345,14 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         this.ownAvatarVisible = ownAvatarVisible;
         refreshItems();
     }
+
+    /**
+     * Creates an instance of the user's own {@link Avatar} in this avatar
+     * group.
+     *
+     * @return an instance of the user's own avatar
+     */
+    public Avatar createOwnAvatar() {
+        return new Avatar(localUser.getName(), localUser.getImage());
+    }
 }

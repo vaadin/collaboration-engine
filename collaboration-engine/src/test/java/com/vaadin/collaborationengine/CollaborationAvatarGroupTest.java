@@ -19,6 +19,7 @@ import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestStreamResource;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.avatar.Avatar;
 import com.vaadin.flow.component.avatar.AvatarGroup;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.server.VaadinService;
@@ -454,6 +455,17 @@ public class CollaborationAvatarGroupTest {
         assertItemsInOrder(client1, "name1", "name5", "name2");
         clientInMultipleTabs2.detach();
         assertItemsInOrder(client1, "name1", "name2");
+    }
+
+    @Test
+    public void createOwnAvatar_userInfoAreCorrect() {
+        UserInfo user = new UserInfo("john", "John", "someUrl");
+        CollaborationAvatarGroup group = new CollaborationAvatarGroup(user,
+                "topic");
+        Avatar avatar = group.createOwnAvatar();
+
+        Assert.assertEquals("John", avatar.getName());
+        Assert.assertEquals("someUrl", avatar.getImage());
     }
 
     private void assertItemsInOrder(AvatarGroupTestClient client,
