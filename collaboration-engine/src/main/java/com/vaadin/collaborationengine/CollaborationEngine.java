@@ -64,7 +64,7 @@ import com.vaadin.pro.licensechecker.LicenseChecker;
  * @author Vaadin Ltd
  * @since 1.0
  */
-@NpmPackage(value = "@vaadin/field-highlighter", version = "23.1.1")
+@NpmPackage(value = "@vaadin/field-highlighter", version = "23.2.0-alpha2")
 @JsModule("@vaadin/field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
