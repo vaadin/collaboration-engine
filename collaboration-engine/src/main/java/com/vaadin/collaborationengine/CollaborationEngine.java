@@ -555,7 +555,7 @@ public class CollaborationEngine {
     }
 
     /**
-     * Gets the color index of a user if different than -1, or let Collaboration
+     * Gets the color index of a user if different to -1, or let Collaboration
      * Engine provide one. If the color index for a user id does not exist yet,
      * it's created on demand based on the user id.
      *
@@ -571,9 +571,12 @@ public class CollaborationEngine {
             return currentColorIndex;
         }
         String userId = userInfo.getId();
-        Integer colorIndex = userColors.computeIfAbsent(userId,
-                id -> userColors.size() % USER_COLOR_COUNT);
-        return colorIndex.intValue();
+        if (configuration.getBackend() instanceof LocalBackend) {
+            return userColors.computeIfAbsent(userId,
+                    id -> userColors.size() % USER_COLOR_COUNT);
+        } else {
+            return userId.hashCode() % USER_COLOR_COUNT;
+        }
     }
 
     /**

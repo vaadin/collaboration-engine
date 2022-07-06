@@ -23,6 +23,7 @@ import org.junit.rules.ExpectedException;
 import com.vaadin.collaborationengine.TestUtil.TestCollaborationEngine;
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.TestBackendFactory;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableFunction;
@@ -37,6 +38,7 @@ public class CollaborationEngineTest {
     private CollaborationEngine collaborationEngine;
     private ConnectionContext context;
     private SerializableFunction<TopicConnection, Registration> connectionCallback;
+    private TestBackendFactory backendFactory;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -50,6 +52,8 @@ public class CollaborationEngineTest {
         connectionCallback = topicConnection -> () -> {
             // no impl
         };
+
+        backendFactory = new TestBackendFactory();
     }
 
     @After
@@ -219,6 +223,28 @@ public class CollaborationEngineTest {
         UserInfo firstUser = new UserInfo("id1234", 99999);
         Assert.assertEquals(99999,
                 collaborationEngine.getUserColorIndex(firstUser));
+    }
+
+    @Test
+    public void testBackend_userColors_sameColorForSameUserId() {
+        CollaborationEngine node1 = createNode();
+        CollaborationEngine node2 = createNode();
+
+        UserInfo firstUser = new UserInfo("id1234");
+        UserInfo secondUser = new UserInfo("id1234");
+        Assert.assertEquals(node1.getUserColorIndex(firstUser),
+                node2.getUserColorIndex(secondUser));
+    }
+
+    @Test
+    public void testBackend_userColors_calculateBaseOnHashCode() {
+        CollaborationEngine node = createNode();
+
+        for (int i = 0; i < 12; i++) {
+            UserInfo user = new UserInfo("user-color-test-id-" + i);
+            Assert.assertEquals(node.getUserColorIndex(user),
+                    user.getId().hashCode() % USER_COLOR_COUNT);
+        }
     }
 
     @Test(expected = NullPointerException.class)
@@ -487,5 +513,13 @@ public class CollaborationEngineTest {
         };
         context.setEager(true);
         return context;
+    }
+
+    private CollaborationEngine createNode() {
+        CollaborationEngineConfiguration conf = new TestUtil.MockConfiguration(
+                e -> {
+                });
+        conf.setBackend(backendFactory.createBackend());
+        return TestUtil.createTestCollaborationEngine(new MockService(), conf);
     }
 }
