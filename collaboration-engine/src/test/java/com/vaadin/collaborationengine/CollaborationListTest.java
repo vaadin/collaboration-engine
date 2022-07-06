@@ -1001,16 +1001,53 @@ public class CollaborationListTest {
     }
 
     @Test
+    public void moveBeforeWithNoScope_connectionDeactivate_entryNotRemoved() {
+        List<ListKey> keys = insertLast(list, "one");
+        ListOperation operation = ListOperation.insertLast("two")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
+
+        list.moveBefore(keys.get(0), key);
+
+        context.deactivate();
+        context.activate();
+
+        Assert.assertEquals("two", list.getItem(key, String.class));
+    }
+
+    @Test
     public void moveBeforeWithConnectionScope_connectionDeactivate_entryRemoved() {
         List<ListKey> keys = insertLast(list, "one", "two");
         ListOperation operation = ListOperation.insertLast("three")
                 .withScope(EntryScope.CONNECTION);
         ListKey key = list.apply(operation).getKey();
-        list.moveBefore(keys.get(0), key);
+
+        ListOperation moveOperation = ListOperation.moveBefore(keys.get(0), key)
+                .withScope(EntryScope.CONNECTION);
+        list.apply(moveOperation);
+
         context.deactivate();
         context.activate();
+
         Assert.assertNull(list.getItem(key, String.class));
         Assert.assertEquals(2, list.getKeys().count());
+    }
+
+    @Test
+    public void moveBeforeWithTopicScope_connectionDeactivate_entryNotRemoved() {
+        List<ListKey> keys = insertLast(list, "one", "two");
+        ListOperation operation = ListOperation.insertLast("three")
+                .withScope(EntryScope.CONNECTION);
+        ListKey key = list.apply(operation).getKey();
+
+        ListOperation moveOperation = ListOperation.moveBefore(keys.get(0), key)
+                .withScope(EntryScope.TOPIC);
+        list.apply(moveOperation);
+
+        context.deactivate();
+        context.activate();
+
+        Assert.assertEquals("three", list.getItem(key, String.class));
     }
 
     @Test
@@ -1019,9 +1056,14 @@ public class CollaborationListTest {
         ListOperation operation = ListOperation.insertLast("three")
                 .withScope(EntryScope.CONNECTION);
         ListKey key = list.apply(operation).getKey();
-        list.moveAfter(keys.get(0), key);
+
+        ListOperation moveOperation = ListOperation.moveAfter(keys.get(0), key)
+                .withScope(EntryScope.CONNECTION);
+        list.apply(moveOperation);
+
         context.deactivate();
         context.activate();
+
         Assert.assertNull(list.getItem(key, String.class));
         Assert.assertEquals(2, list.getKeys().count());
     }

@@ -117,7 +117,7 @@ public class TopicTest {
     @Test
     public void applyChange_listContainsAppendedItem() {
         ObjectNode change = JsonUtil.createListChange(
-                ListOperation.OperationType.INSERT_AFTER, "foo", null,
+                ListOperation.OperationType.INSERT_AFTER, "foo", null, null,
                 MockJson.FOO, null, Collections.emptyMap(),
                 Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
@@ -142,7 +142,7 @@ public class TopicTest {
 
         try {
             ObjectNode change = JsonUtil.createListChange(
-                    ListOperation.OperationType.INSERT_AFTER, "foo", null,
+                    ListOperation.OperationType.INSERT_AFTER, "foo", null, null,
                     MockJson.BAZ, null, Collections.emptyMap(),
                     Collections.emptyMap(), null);
             topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));
@@ -156,7 +156,7 @@ public class TopicTest {
 
         // No try-catch needed - failing subscriber should have been removed
         ObjectNode change = JsonUtil.createListChange(
-                ListOperation.OperationType.INSERT_AFTER, "foo", null,
+                ListOperation.OperationType.INSERT_AFTER, "foo", null, null,
                 MockJson.QUX, null, Collections.emptyMap(),
                 Collections.emptyMap(), null);
         topic.applyChange(UUID.randomUUID(), JsonUtil.toString(change));

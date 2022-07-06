@@ -257,7 +257,7 @@ class Topic {
                             ObjectNode change = JsonUtil.createListChange(
                                     ListOperation.OperationType.SET,
                                     list.getKey(), entry.id.toString(), null,
-                                    null, Collections.emptyMap(),
+                                    null, null, Collections.emptyMap(),
                                     Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
@@ -310,7 +310,7 @@ class Topic {
                         namedListData.get(name).stream().map(entry -> {
                             ObjectNode change = JsonUtil.createListChange(
                                     ListOperation.OperationType.SET, name,
-                                    entry.id.toString(), null, null,
+                                    entry.id.toString(), null, null, null,
                                     Collections.emptyMap(),
                                     Collections.emptyMap(), null);
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
@@ -363,10 +363,10 @@ class Topic {
             details = applyListInsert(trackingId, change, false);
             break;
         case JsonUtil.CHANGE_TYPE_MOVE_BEFORE:
-            details = applyListMoveBefore(trackingId, change);
+            details = applyListMove(trackingId, change, true);
             break;
         case JsonUtil.CHANGE_TYPE_MOVE_AFTER:
-            details = applyListMoveAfter(trackingId, change);
+            details = applyListMove(trackingId, change, false);
             break;
         case JsonUtil.CHANGE_TYPE_LIST_SET:
             details = applyListSet(trackingId, change);
@@ -523,10 +523,13 @@ class Topic {
 
     ChangeDetails applyListInsert(UUID id, ObjectNode change, boolean before) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        UUID key = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_POSITION_KEY));
         JsonNode item = change.get(JsonUtil.CHANGE_VALUE);
         UUID scopeOwnerId = JsonUtil
                 .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+        if (Objects.equals(scopeOwnerId, JsonUtil.TOPIC_SCOPE_ID)) {
+            scopeOwnerId = null;
+        }
         EntryList list = getOrCreateList(listName);
 
         if (!conditionsMet(change)) {
@@ -558,50 +561,41 @@ class Topic {
                 null, insertedEntry.prev, null, insertedEntry.next, null, id);
     }
 
-    ChangeDetails applyListMoveBefore(UUID trackingId, ObjectNode change) {
+    ChangeDetails applyListMove(UUID id, ObjectNode change, boolean before) {
         String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        UUID keyToFind = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
-        UUID keyToMove = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_OTHER_KEY));
+        UUID positionKey = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_POSITION_KEY));
+        UUID changeKey = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
+        UUID scopeOwnerId = JsonUtil
+                .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
         EntryList list = getOrCreateList(listName);
 
-        ListEntrySnapshot entryToFind = list.getEntry(keyToFind);
-        if (entryToFind == null) {
-            return null;
-        }
-        ListEntrySnapshot entryToMove = list.getEntry(keyToMove);
-        if (entryToMove == null) {
+        if (!conditionsMet(change)) {
             return null;
         }
 
-        list.moveBefore(keyToFind, keyToMove, trackingId);
-
-        return new ListChange(listName, ListChangeType.MOVE, keyToMove,
-                entryToMove.value, entryToMove.value, entryToMove.prev,
-                entryToFind.prev, entryToMove.next, keyToFind, null,
-                trackingId);
-    }
-
-    ChangeDetails applyListMoveAfter(UUID trackingId, ObjectNode change) {
-        String listName = change.get(JsonUtil.CHANGE_NAME).asText();
-        UUID keyToFind = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_KEY));
-        UUID keyToMove = JsonUtil.toUUID(change.get(JsonUtil.CHANGE_OTHER_KEY));
-        EntryList list = getOrCreateList(listName);
-
-        ListEntrySnapshot entryToFind = list.getEntry(keyToFind);
-        if (entryToFind == null) {
+        ListEntrySnapshot positionEntry = list.getEntry(positionKey);
+        if (positionEntry == null) {
             return null;
         }
-        ListEntrySnapshot entryToMove = list.getEntry(keyToMove);
-        if (entryToMove == null) {
+        ListEntrySnapshot moveEntry = list.getEntry(changeKey);
+        if (moveEntry == null) {
             return null;
         }
 
-        list.moveAfter(keyToFind, keyToMove, trackingId);
+        ListEntrySnapshot insertedEntry;
+        if (before) {
+            insertedEntry = list.moveBefore(positionKey, changeKey, id,
+                    scopeOwnerId);
+        } else {
+            insertedEntry = list.moveAfter(positionKey, changeKey, id,
+                    scopeOwnerId);
+        }
 
-        return new ListChange(listName, ListChangeType.MOVE, keyToMove,
-                entryToMove.value, entryToMove.value, entryToMove.prev,
-                keyToFind, entryToMove.next, entryToFind.next, null,
-                trackingId);
+        return new ListChange(listName, ListChangeType.MOVE, changeKey,
+                moveEntry.value, moveEntry.value, moveEntry.prev,
+                insertedEntry.prev, moveEntry.next, insertedEntry.next, null,
+                id);
     }
 
     private ChangeDetails applyListSet(UUID trackingId, ObjectNode change) {
@@ -633,6 +627,9 @@ class Topic {
             JsonNode oldValue = entry.value;
             UUID scopeOwnerId = JsonUtil
                     .toUUID(change.get(JsonUtil.CHANGE_SCOPE_OWNER));
+            if (Objects.equals(scopeOwnerId, JsonUtil.TOPIC_SCOPE_ID)) {
+                scopeOwnerId = null;
+            }
             list.setValue(key, newValue, trackingId, scopeOwnerId);
             return new ListChange(listName, ListChangeType.SET, key, oldValue,
                     newValue, entry.prev, entry.prev, entry.next, entry.next,
@@ -656,7 +653,7 @@ class Topic {
                 .withArray(JsonUtil.CHANGE_CONDITIONS)) {
             UUID leftKey = JsonUtil.toUUID(condition.get(JsonUtil.CHANGE_KEY));
             UUID rightKey = JsonUtil
-                    .toUUID(condition.get(JsonUtil.CHANGE_OTHER_KEY));
+                    .toUUID(condition.get(JsonUtil.CHANGE_POSITION_KEY));
             // If the left key of the condition is null, right key must be the
             // first i.e. have a null prev otherwise we reject the operation
             if (leftKey == null

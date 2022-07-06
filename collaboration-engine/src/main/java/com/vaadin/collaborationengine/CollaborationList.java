@@ -264,7 +264,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return a completable future that is resolved when the operation has
      *         completed, not <code>null</code>
      */
-    CompletableFuture<Boolean> moveBefore(ListKey key, ListKey keyToMove);
+    default CompletableFuture<Boolean> moveBefore(ListKey key,
+            ListKey keyToMove) {
+        ListOperation operation = ListOperation.moveBefore(key, keyToMove);
+        return apply(operation).getCompletableFuture();
+    }
 
     /**
      * Moves the second given key just after the first given key location.
@@ -276,7 +280,11 @@ public interface CollaborationList extends HasExpirationTimeout {
      * @return a completable future that is resolved when the operation has
      *         completed, not <code>null</code>
      */
-    CompletableFuture<Boolean> moveAfter(ListKey key, ListKey keyToMove);
+    default CompletableFuture<Boolean> moveAfter(ListKey key,
+            ListKey keyToMove) {
+        ListOperation operation = ListOperation.moveAfter(key, keyToMove);
+        return apply(operation).getCompletableFuture();
+    }
 
     /**
      * Sets a new value for the item identified by the given key.

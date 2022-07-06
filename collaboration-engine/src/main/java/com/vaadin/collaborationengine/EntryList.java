@@ -124,28 +124,44 @@ class EntryList {
         return new ListEntrySnapshot(keyToInsert, item);
     }
 
-    void moveBefore(UUID keyToFind, UUID keyToMove, UUID revisionId) {
+    ListEntrySnapshot moveBefore(UUID keyToFind, UUID keyToMove,
+            UUID revisionId, UUID scopeOwnerId) {
         ListEntry entryToMove = entries.get(keyToMove);
         if (entryToMove != null) {
             entryToMove.revisionId = revisionId;
+            if (Objects.equals(scopeOwnerId, JsonUtil.TOPIC_SCOPE_ID)) {
+                entryToMove.scopeOwnerId = null;
+            } else if (scopeOwnerId != null) {
+                entryToMove.scopeOwnerId = scopeOwnerId;
+            }
         }
 
         unlink(entryToMove);
 
         ListEntry entryToFind = entries.get(keyToFind);
         link(keyToMove, entryToFind.prev, keyToFind);
+
+        return new ListEntrySnapshot(keyToMove, entryToMove);
     }
 
-    void moveAfter(UUID keyToFind, UUID keyToMove, UUID revisionId) {
+    ListEntrySnapshot moveAfter(UUID keyToFind, UUID keyToMove, UUID revisionId,
+            UUID scopeOwnerId) {
         ListEntry entryToMove = entries.get(keyToMove);
         if (entryToMove != null) {
             entryToMove.revisionId = revisionId;
+            if (Objects.equals(scopeOwnerId, JsonUtil.TOPIC_SCOPE_ID)) {
+                entryToMove.scopeOwnerId = null;
+            } else if (scopeOwnerId != null) {
+                entryToMove.scopeOwnerId = scopeOwnerId;
+            }
         }
 
         unlink(entryToMove);
 
         ListEntry entryToFind = entries.get(keyToFind);
         link(keyToMove, keyToFind, entryToFind.next);
+
+        return new ListEntrySnapshot(keyToMove, entryToMove);
     }
 
     Stream<ListEntrySnapshot> stream() {

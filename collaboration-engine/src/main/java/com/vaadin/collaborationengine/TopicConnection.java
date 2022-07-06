@@ -296,55 +296,32 @@ public class TopicConnection {
             ensureActiveConnection();
             Objects.requireNonNull(operation, "Operation cannot be null");
 
-            boolean connectionScope = operation
-                    .getScope() == EntryScope.CONNECTION;
+            UUID scopeOwnerId = null;
+            if (operation.getScope() != null) {
+                if (operation.getScope() == EntryScope.CONNECTION) {
+                    scopeOwnerId = topic.getCurrentNodeId();
+                } else {
+                    scopeOwnerId = JsonUtil.TOPIC_SCOPE_ID;
+                }
+            }
+
             ListKey referenceKey = operation.getReferenceKey();
+            ListKey valueKey = operation.getChangeKey();
             ObjectNode change = JsonUtil.createListChange(operation.getType(),
                     name,
+                    valueKey != null ? valueKey.getKey().toString() : null,
                     referenceKey != null ? referenceKey.getKey().toString()
                             : null,
-                    operation.getValue(),
-                    connectionScope ? topic.getCurrentNodeId() : null,
+                    operation.getValue(), scopeOwnerId,
                     operation.getConditions(), operation.getValueConditions(),
                     operation.getEmpty());
 
             UUID id = UUID.randomUUID();
             return new ListOperationResult<>(new ListKey(id),
-                    dispatchChangeWithBooleanResult(id, operation
-                            .getType() == ListOperation.OperationType.SET
-                                    ? referenceKey.getKey()
-                                    : id,
-                            connectionScope, change));
-        }
-
-        @Override
-        public CompletableFuture<Boolean> moveBefore(ListKey key,
-                ListKey keyToMove) {
-            ensureActiveConnection();
-            Objects.requireNonNull(key);
-            Objects.requireNonNull(keyToMove);
-
-            ObjectNode change = JsonUtil.createMoveChange(true, name,
-                    key.getKey().toString(), keyToMove.getKey().toString());
-            UUID id = UUID.randomUUID();
-
-            return dispatchChangeWithBooleanResult(id, keyToMove.getKey(),
-                    false, change);
-        }
-
-        @Override
-        public CompletableFuture<Boolean> moveAfter(ListKey key,
-                ListKey keyToMove) {
-            ensureActiveConnection();
-            Objects.requireNonNull(key);
-            Objects.requireNonNull(keyToMove);
-
-            ObjectNode change = JsonUtil.createMoveChange(false, name,
-                    key.getKey().toString(), keyToMove.getKey().toString());
-            UUID id = UUID.randomUUID();
-
-            return dispatchChangeWithBooleanResult(id, keyToMove.getKey(),
-                    false, change);
+                    dispatchChangeWithBooleanResult(id,
+                            valueKey != null ? valueKey.getKey() : id,
+                            operation.getScope() == EntryScope.CONNECTION,
+                            change));
         }
 
         private CompletableFuture<Boolean> dispatchChangeWithBooleanResult(
@@ -498,10 +475,6 @@ public class TopicConnection {
 
         Map<UUID, UUID> keys = connectionScopedListItems.get(listName);
         if (keys != null) {
-            if (keys.containsKey(key)
-                    && listChange.getType() == ListChangeType.MOVE) {
-                keys.put(key, listChange.getRevisionId());
-            }
             // If there is a connection scoped entry for the same key with a
             // different id, cleanup the existing entry
             if (!Objects.equals(id, keys.get(key))) {
@@ -622,7 +595,7 @@ public class TopicConnection {
                     (listName, listItems) -> listItems.forEach((key, id) -> {
                         ObjectNode change = JsonUtil.createListChange(
                                 ListOperation.OperationType.SET, listName,
-                                key.toString(), null, null,
+                                key.toString(), null, null, null,
                                 Collections.emptyMap(), Collections.emptyMap(),
                                 null);
                         change.put(JsonUtil.CHANGE_EXPECTED_ID, id.toString());

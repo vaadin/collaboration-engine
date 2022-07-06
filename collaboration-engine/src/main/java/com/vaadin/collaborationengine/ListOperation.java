@@ -21,7 +21,7 @@ import java.util.Objects;
  */
 public class ListOperation {
     public enum OperationType {
-        INSERT_BEFORE, INSERT_AFTER, SET
+        INSERT_BEFORE, INSERT_AFTER, MOVE_BEFORE, MOVE_AFTER, SET
     }
 
     /**
@@ -34,7 +34,7 @@ public class ListOperation {
      */
     public static ListOperation insertFirst(Object value) {
         Objects.requireNonNull(value);
-        return new ListOperation(value, OperationType.INSERT_AFTER, null);
+        return new ListOperation(OperationType.INSERT_AFTER, value, null, null);
     }
 
     /**
@@ -47,7 +47,8 @@ public class ListOperation {
      */
     public static ListOperation insertLast(Object value) {
         Objects.requireNonNull(value);
-        return new ListOperation(value, OperationType.INSERT_BEFORE, null);
+        return new ListOperation(OperationType.INSERT_BEFORE, value, null,
+                null);
     }
 
     /**
@@ -63,7 +64,8 @@ public class ListOperation {
     public static ListOperation insertBefore(ListKey before, Object value) {
         Objects.requireNonNull(before);
         Objects.requireNonNull(value);
-        return new ListOperation(value, OperationType.INSERT_BEFORE, before);
+        return new ListOperation(OperationType.INSERT_BEFORE, value, null,
+                before);
     }
 
     /**
@@ -79,7 +81,8 @@ public class ListOperation {
     public static ListOperation insertAfter(ListKey after, Object value) {
         Objects.requireNonNull(after);
         Objects.requireNonNull(value);
-        return new ListOperation(value, OperationType.INSERT_AFTER, after);
+        return new ListOperation(OperationType.INSERT_AFTER, value, null,
+                after);
     }
 
     /**
@@ -104,6 +107,60 @@ public class ListOperation {
     }
 
     /**
+     * Creates a list operation to move the given entry to just before the
+     * position specified by the given key.
+     *
+     * @param before
+     *            the position key, not <code>null</code>
+     * @param entry
+     *            the entry key to move, not <code>null</code>
+     * @return the list operation, not <code>null</code>
+     */
+    public static ListOperation moveBefore(ListKey before, ListKey entry) {
+        Objects.requireNonNull(before);
+        Objects.requireNonNull(entry);
+        return new ListOperation(OperationType.MOVE_BEFORE, null, entry,
+                before);
+    }
+
+    /**
+     * Creates a list operation to move the given entry to just after the
+     * position specified by the given key.
+     *
+     * @param after
+     *            the position key, not <code>null</code>
+     * @param entry
+     *            the entry key to move, not <code>null</code>
+     * @return the list operation, not <code>null</code>
+     */
+    public static ListOperation moveAfter(ListKey after, ListKey entry) {
+        Objects.requireNonNull(after);
+        Objects.requireNonNull(entry);
+        return new ListOperation(OperationType.MOVE_AFTER, null, entry, after);
+    }
+
+    /**
+     * Creates a list operation to move the given entry between the positions
+     * specified by the given keys. If the given keys are not adjacent, the
+     * operation will fail.
+     *
+     * @param prev
+     *            the position of the previous item, not <code>null</code>
+     * @param next
+     *            the position of the next item, not <code>null</code>
+     * @param entry
+     *            the entry key to move, not <code>null</code>
+     * @return the list operation, not <code>null</code>
+     */
+    public static ListOperation moveBetween(ListKey prev, ListKey next,
+            ListKey entry) {
+        Objects.requireNonNull(prev);
+        Objects.requireNonNull(next);
+        Objects.requireNonNull(entry);
+        return moveAfter(prev, entry).ifNext(prev, next);
+    }
+
+    /**
      * Creates a list operation to set the given value at the position specified
      * by the given key. By default, the value will be set as topic scope.
      *
@@ -115,7 +172,7 @@ public class ListOperation {
      */
     public static ListOperation set(ListKey key, Object value) {
         Objects.requireNonNull(key);
-        return new ListOperation(value, OperationType.SET, key);
+        return new ListOperation(OperationType.SET, value, key, null);
     }
 
     /**
@@ -134,6 +191,8 @@ public class ListOperation {
 
     private final OperationType type;
 
+    private final ListKey changeKey;
+
     private final ListKey referenceKey;
 
     private final Map<ListKey, ListKey> conditions = new HashMap<>();
@@ -144,10 +203,11 @@ public class ListOperation {
 
     private final Map<ListKey, Object> valueConditions = new HashMap<>();
 
-    private ListOperation(Object value, OperationType type,
+    private ListOperation(OperationType type, Object value, ListKey changeKey,
             ListKey referenceKey) {
-        this.value = value;
         this.type = type;
+        this.value = value;
+        this.changeKey = changeKey;
         this.referenceKey = referenceKey;
     }
 
@@ -296,6 +356,10 @@ public class ListOperation {
 
     ListKey getReferenceKey() {
         return referenceKey;
+    }
+
+    ListKey getChangeKey() {
+        return changeKey;
     }
 
     EntryScope getScope() {
