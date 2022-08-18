@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import com.vaadin.collaborationengine.FormManager.FocusedEditor;
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.component.fieldhighlighter.FieldHighlighterInitializer;
 import com.vaadin.flow.dom.Element;
 import com.vaadin.flow.internal.JsonUtils;
 import com.vaadin.flow.server.Command;
@@ -31,7 +32,7 @@ import elemental.json.JsonObject;
  * @author Vaadin Ltd
  * @since 1.0
  */
-class FieldHighlighter {
+class FieldHighlighter extends FieldHighlighterInitializer {
 
     static Registration setupForField(HasValue<?, ?> field, String propertyName,
             CollaborationBinder<?> binder) {
@@ -40,7 +41,6 @@ class FieldHighlighter {
 
         if (field instanceof HasElement) {
             Element element = ((HasElement) field).getElement();
-
             registrations.add(init(element));
 
             registrations.add(
@@ -62,15 +62,6 @@ class FieldHighlighter {
             registrations.add(() -> binder.removeEditor(propertyName));
         }
         return () -> registrations.forEach(Registration::remove);
-    }
-
-    private static Registration init(Element field) {
-        Command initWithJS = () -> field.executeJs(
-                "customElements.get('vaadin-field-highlighter').init(this)");
-        if (field.getNode().isAttached()) {
-            initWithJS.execute();
-        }
-        return field.addAttachListener(e -> initWithJS.execute());
     }
 
     private final Function<UserInfo, Integer> colorIndexProvider;

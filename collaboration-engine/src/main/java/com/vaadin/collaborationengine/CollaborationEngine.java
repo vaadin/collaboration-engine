@@ -37,8 +37,6 @@ import org.slf4j.LoggerFactory;
 import com.vaadin.collaborationengine.Backend.EventLog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.dependency.JsModule;
-import com.vaadin.flow.component.dependency.NpmPackage;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.server.ServiceInitEvent;
@@ -64,8 +62,6 @@ import com.vaadin.pro.licensechecker.LicenseChecker;
  * @author Vaadin Ltd
  * @since 1.0
  */
-@NpmPackage(value = "@vaadin/field-highlighter", version = "23.2.0-beta1")
-@JsModule("@vaadin/field-highlighter/src/vaadin-field-highlighter.js")
 public class CollaborationEngine {
 
     private static class TopicAndEventLog {
