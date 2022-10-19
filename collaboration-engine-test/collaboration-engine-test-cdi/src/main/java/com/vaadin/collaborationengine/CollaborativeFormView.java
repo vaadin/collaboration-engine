@@ -1,6 +1,6 @@
 package com.vaadin.collaborationengine;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import com.vaadin.flow.component.html.Span;
 

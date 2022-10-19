@@ -28,22 +28,22 @@
     </modules>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8
         </project.reporting.outputEncoding>
 
         <!-- Versions to keep in sync with the targeted platform version: -->
         <!-- spring,cdi versions has been moved to test module. -->
-        <flow.version>23.2-SNAPSHOT</flow.version>
-        <vaadin.component.version>23.2-SNAPSHOT</vaadin.component.version>
+        <flow.version>24.0-SNAPSHOT</flow.version>
+        <vaadin.component.version>24.0-SNAPSHOT</vaadin.component.version>
         <vaadin.lumo.version>${vaadin.component.version}</vaadin.lumo.version>
 
         <!-- Keep in sync with flow-server: -->
         <jackson.version>2.13.2.1</jackson.version>
         <junit.version>4.13.2</junit.version>
-        <jetty.version>10.0.9</jetty.version>
+        <jetty.version>11.0.12</jetty.version>
     </properties>
 
     <dependencyManagement>
@@ -63,7 +63,7 @@
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>license-checker</artifactId>
-                <version>1.5.1</version>
+                <version>1.10.1</version>
             </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>

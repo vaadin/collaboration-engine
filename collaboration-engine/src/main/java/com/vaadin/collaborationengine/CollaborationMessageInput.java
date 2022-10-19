@@ -15,6 +15,7 @@ import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.messages.MessageInput;
 import com.vaadin.flow.component.messages.MessageInputI18n;
+import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -89,5 +90,26 @@ public class CollaborationMessageInput extends Composite<MessageInput>
      */
     public void setI18n(MessageInputI18n i18n) {
         getContent().setI18n(i18n);
+    }
+
+    /**
+     * Sets a tooltip text for the component.
+     *
+     * @param text
+     *            The tooltip text
+     *
+     * @return the tooltip handle
+     */
+    public Tooltip setTooltipText(String text) {
+        return getContent().setTooltipText(text);
+    }
+
+    /**
+     * Gets the tooltip handle of the component.
+     *
+     * @return the tooltip handle
+     */
+    public Tooltip getTooltip() {
+        return getContent().getTooltip();
     }
 }

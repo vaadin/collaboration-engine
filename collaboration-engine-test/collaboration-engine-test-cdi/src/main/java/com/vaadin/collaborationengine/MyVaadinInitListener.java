@@ -3,7 +3,7 @@
 
 package com.vaadin.collaborationengine;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

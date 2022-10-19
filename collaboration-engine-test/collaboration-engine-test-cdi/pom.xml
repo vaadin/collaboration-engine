@@ -24,12 +24,6 @@
             <artifactId>vaadin-cdi</artifactId>
             <version>${flow.cdi.version}</version>
         </dependency>
-        <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
-            <version>7.0</version>
-            <scope>provided</scope>
-        </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>
@@ -49,7 +43,7 @@
             <plugin>
                 <groupId>org.apache.tomee.maven</groupId>
                 <artifactId>tomee-maven-plugin</artifactId>
-                <version>7.1.1</version>
+                <version>9.0.0-M8</version>
                 <configuration>
                     <tomeeClassifier>webprofile</tomeeClassifier>
                     <context>ROOT</context>
