@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
@@ -8,6 +9,7 @@ import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 public class ConnectionActivationTestCommon
         extends AbstractCollaborativeFormTestCommon {
     @Test
+    @Ignore("https://github.com/vaadin/collaboration-engine-internal/issues/917")
     public void preserveOnRefresh_fieldValuesPreserved_fieldIsCollaborative() {
         client1.textField.setValue("foo");
         client1.emailField.setValue("bar");

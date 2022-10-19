@@ -1,6 +1,7 @@
 package com.vaadin.collaborationengine;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
@@ -78,6 +79,7 @@ public class FieldHighlightTestCommon
     }
 
     @Test
+    @Ignore("https://github.com/vaadin/collaboration-engine-internal/issues/917")
     public void closeBrowser_tagRemoved() {
         ClientState client2 = new ClientState(addClient());
         client2.focusTextField();
