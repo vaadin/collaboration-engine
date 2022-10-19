@@ -12,12 +12,12 @@
     <parent>
         <groupId>com.vaadin</groupId>
         <artifactId>collaboration-engine-parent</artifactId>
-        <version>5.2-SNAPSHOT</version>
+        <version>6.0-SNAPSHOT</version>
     </parent>
 
     <build>
         <resources>
-            <!-- Include eclipse formatting settings in the jar to make them 
+            <!-- Include eclipse formatting settings in the jar to make them
                 available as a dependency for all submodules -->
             <resource>
                 <directory>${project.basedir}/../eclipse</directory>

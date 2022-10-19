@@ -9,7 +9,7 @@
     <parent>
         <artifactId>collaboration-engine-parent</artifactId>
         <groupId>com.vaadin</groupId>
-        <version>5.2-SNAPSHOT</version>
+        <version>6.0-SNAPSHOT</version>
     </parent>
     <properties>
         <!-- The parsedVersion value is set by build-helper-maven-plugin -->
@@ -143,4 +143,3 @@
         </plugins>
     </build>
 </project>
-
