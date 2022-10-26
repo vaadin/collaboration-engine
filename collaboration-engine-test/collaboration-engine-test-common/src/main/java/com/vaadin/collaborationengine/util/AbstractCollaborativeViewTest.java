@@ -40,6 +40,9 @@ public abstract class AbstractCollaborativeViewTest extends AbstractViewTest {
     }
 
     protected void close(TestBenchTestCase client) {
+        // This assures beacon request is sent before closing browser when in
+        // headless mode
+        client.getDriver().navigate().to("about:blank");
         client.getDriver().close();
         addedClients.remove(client);
     }

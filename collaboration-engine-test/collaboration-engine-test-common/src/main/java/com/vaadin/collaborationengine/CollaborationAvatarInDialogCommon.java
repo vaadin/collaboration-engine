@@ -10,6 +10,7 @@ import com.vaadin.flow.router.Route;
 
 @Route("dialog")
 public class CollaborationAvatarInDialogCommon extends Div {
+
     public CollaborationAvatarInDialogCommon() {
         UserInfo userInfo = new UserInfo("a");
 
@@ -35,10 +36,10 @@ public class CollaborationAvatarInDialogCommon extends Div {
         // Connects to the same topic as the avatar group without marking
         // as present and lists the users in the topic.
         PresenceManager manager = new PresenceManager(this, userInfo, topicId);
-        manager.setNewUserHandler(user -> {
+        manager.setPresenceHandler(ctx -> {
             Div userInTopic = addWithId(usersInTopic,
-                    new Div(new Text("User " + user.getId())),
-                    "user_" + user.getId());
+                    new Div(new Text("User " + ctx.getUser().getId())),
+                    "user_" + ctx.getUser().getId());
             return () -> usersInTopic.remove(userInTopic);
         });
     }

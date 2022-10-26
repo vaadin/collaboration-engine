@@ -40,6 +40,7 @@ public class CollaborativeFormViewCommon extends VerticalLayout {
 
         UserInfo localUser = new UserInfo("userId-" + userIndex);
         localUser.setName("User " + userIndex);
+        localUser.setColorIndex(userIndex);
         avatars = new CollaborationAvatarGroup(localUser, TOPIC_ID);
 
         radioButtonGroup.setItems(Diet.values());

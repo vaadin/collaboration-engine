@@ -1,7 +1,6 @@
 package com.vaadin.collaborationengine;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
@@ -79,7 +78,6 @@ public class FieldHighlightTestCommon
     }
 
     @Test
-    @Ignore("https://github.com/vaadin/collaboration-engine-internal/issues/917")
     public void closeBrowser_tagRemoved() {
         ClientState client2 = new ClientState(addClient());
         client2.focusTextField();
@@ -103,7 +101,7 @@ public class FieldHighlightTestCommon
         assertUserTags(client1.radioButtonGroup, "User 2");
         assertNoUserTags(client2.radioButtonGroup);
 
-        assertRadioButtonHighlight(client1, null, 1, null);
+        assertRadioButtonHighlight(client1, null, 2, null);
         assertRadioButtonHighlight(client2, null, null, null);
 
         // Two clients focus different radio buttons in a group
@@ -114,9 +112,9 @@ public class FieldHighlightTestCommon
         assertUserTags(client2.radioButtonGroup, "User 3");
         assertUserTags(client3.radioButtonGroup, "User 2");
 
-        assertRadioButtonHighlight(client1, null, 1, 2);
-        assertRadioButtonHighlight(client2, null, null, 2);
-        assertRadioButtonHighlight(client3, null, 1, null);
+        assertRadioButtonHighlight(client1, null, 2, 3);
+        assertRadioButtonHighlight(client2, null, null, 3);
+        assertRadioButtonHighlight(client3, null, 2, null);
 
         // Client blurs radio button
         client3.blur();
@@ -125,9 +123,9 @@ public class FieldHighlightTestCommon
         assertNoUserTags(client2.radioButtonGroup);
         assertUserTags(client3.radioButtonGroup, "User 2");
 
-        assertRadioButtonHighlight(client1, null, 1, null);
+        assertRadioButtonHighlight(client1, null, 2, null);
         assertRadioButtonHighlight(client2, null, null, null);
-        assertRadioButtonHighlight(client3, null, 1, null);
+        assertRadioButtonHighlight(client3, null, 2, null);
 
         // Two clients focus the same radio button
         client3.focusRadioButton(1);
@@ -136,9 +134,9 @@ public class FieldHighlightTestCommon
         assertUserTags(client2.radioButtonGroup, "User 3");
         assertUserTags(client3.radioButtonGroup, "User 2");
 
-        assertRadioButtonHighlight(client1, null, 2, null);
-        assertRadioButtonHighlight(client2, null, 2, null);
-        assertRadioButtonHighlight(client3, null, 1, null);
+        assertRadioButtonHighlight(client1, null, 3, null);
+        assertRadioButtonHighlight(client2, null, 3, null);
+        assertRadioButtonHighlight(client3, null, 2, null);
     }
 
     @Test

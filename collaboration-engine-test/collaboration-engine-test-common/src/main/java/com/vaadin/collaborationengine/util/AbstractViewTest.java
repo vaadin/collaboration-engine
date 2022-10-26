@@ -72,8 +72,10 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
 
     protected WebDriver createHeadlessChromeDriver() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--no-sandbox", "--disable-dev-shm-usage",
-                "--headless");
+        options.addArguments("--no-sandbox", "--disable-dev-shm-usage");
+        if (!Boolean.getBoolean("noHeadless")) {
+            options.addArguments("--headless");
+        }
         TestBenchDriverProxy driver = TestBench
                 .createDriver(new ChromeDriver(options));
         return driver;

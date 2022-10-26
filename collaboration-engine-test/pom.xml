@@ -23,6 +23,8 @@
         <vaadin.spring.version>${flow.version}</vaadin.spring.version>
         <flow.cdi.version>15.0-SNAPSHOT</flow.cdi.version>
         <testbench.version>9.0.0.alpha1</testbench.version>
+        <!-- selenium is so much verbose -->
+        <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     </properties>
 
     <modules>
