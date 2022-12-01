@@ -1,10 +1,11 @@
-/*
- * Copyright 2020-2022 Vaadin Ltd.
+/**
+ * Copyright (C) 2000-2022 Vaadin Ltd
  *
- * This program is available under Commercial Vaadin Runtime License 1.0
- * (CVRLv1).
+ * This program is available under Vaadin Commercial License and Service Terms.
  *
- * For the full License, see http://vaadin.com/license/cvrl-1
+ *
+ * See <https://vaadin.com/commercial-license-and-service-terms> for the full
+ * license.
  */
 package com.vaadin.collaborationengine.licensegenerator;
 
