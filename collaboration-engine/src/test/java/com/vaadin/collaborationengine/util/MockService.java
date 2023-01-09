@@ -31,6 +31,9 @@ public class MockService extends VaadinService {
         @SuppressWarnings("unchecked")
         public <T> T getAttribute(Class<T> type,
                 Supplier<T> defaultValueSupplier) {
+            if (Lookup.class.isAssignableFrom(type)) {
+                return type.cast(Lookup.of(this));
+            }
             if (defaultValueSupplier == null) {
                 return (T) context.get(type);
             }
@@ -81,37 +84,7 @@ public class MockService extends VaadinService {
 
                     @Override
                     public VaadinContext getContext() {
-                        return new VaadinContext() {
-                            @Override
-                            public <T> T getAttribute(Class<T> type,
-                                    Supplier<T> defaultValueSupplier) {
-                                if (Lookup.class.isAssignableFrom(type)) {
-                                    return type.cast(Lookup.of(this));
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            public <T> void setAttribute(Class<T> clazz,
-                                    T value) {
-
-                            }
-
-                            @Override
-                            public void removeAttribute(Class<?> clazz) {
-
-                            }
-
-                            @Override
-                            public Enumeration<String> getContextParameterNames() {
-                                return null;
-                            }
-
-                            @Override
-                            public String getContextParameter(String name) {
-                                return null;
-                            }
-                        };
+                        return MockService.super.getContext();
                     }
 
                     @Override
