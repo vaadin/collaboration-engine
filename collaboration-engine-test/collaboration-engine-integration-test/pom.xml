@@ -56,8 +56,7 @@
                     </systemProperties>
                     <!-- Use war output directory to get the webpack files -->
                     <webApp>
-                        <allowDuplicateFragmentNames>true
-                        </allowDuplicateFragmentNames>
+                        <allowDuplicateFragmentNames>true</allowDuplicateFragmentNames>
                     </webApp>
                 </configuration>
             </plugin>
