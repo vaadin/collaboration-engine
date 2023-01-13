@@ -19,10 +19,10 @@
         </project.reporting.outputEncoding>
         <failOnMissingWebXml>false</failOnMissingWebXml>
         <!-- test dependencies versions -->
-        <spring-boot.version>3.0.0-M5</spring-boot.version>
+        <spring-boot.version>3.0.1</spring-boot.version>
         <vaadin.spring.version>${flow.version}</vaadin.spring.version>
         <flow.cdi.version>15.0-SNAPSHOT</flow.cdi.version>
-        <testbench.version>9.0.0.alpha3</testbench.version>
+        <testbench.version>9.0.0.alpha6</testbench.version>
         <!-- selenium is so much verbose -->
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     </properties>
