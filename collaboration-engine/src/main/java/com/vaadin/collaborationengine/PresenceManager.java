@@ -138,26 +138,6 @@ public class PresenceManager extends AbstractCollaborationManager {
     /**
      * Sets a handler which will be invoked when a user becomes present.
      * <p>
-     * The handler accepts a {@link UserInfo} instance as a parameter and should
-     * return a {@link Registration} which will be removed when the user stops
-     * being present.
-     * <p>
-     * Replacing an existing handler will remove all registrations from the
-     * previous one.
-     *
-     * @param handler
-     *            the user presence handler, or {@code null} to remove an
-     *            existing handler
-     * @deprecated Use {@link #setPresenceHandler(PresenceHandler)} instead
-     */
-    @Deprecated
-    public void setNewUserHandler(NewUserHandler handler) {
-        setPresenceHandler(context -> handler.handleNewUser(context.getUser()));
-    }
-
-    /**
-     * Sets a handler which will be invoked when a user becomes present.
-     * <p>
      * The handler accepts a {@link PresenceContext} instance as a parameter and
      * should return a {@link Registration} which will be removed when the user
      * stops being present.

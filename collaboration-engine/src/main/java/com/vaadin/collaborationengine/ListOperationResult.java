@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author Vaadin Ltd
  */
-public class ListOperationResult<T> implements ListInsertResult<T> {
+public class ListOperationResult<T> {
     private final ListKey key;
     private final CompletableFuture<T> completableFuture;
 
@@ -33,7 +33,6 @@ public class ListOperationResult<T> implements ListInsertResult<T> {
      *
      * @return the item key, not <code>null</code>
      */
-    @Override
     public ListKey getKey() {
         return key;
     }
@@ -43,7 +42,6 @@ public class ListOperationResult<T> implements ListInsertResult<T> {
      *
      * @return the result of the operation, not <code>null</code>
      */
-    @Override
     public CompletableFuture<T> getCompletableFuture() {
         return completableFuture;
     }

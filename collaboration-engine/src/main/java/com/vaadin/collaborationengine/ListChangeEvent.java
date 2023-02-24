@@ -10,11 +10,8 @@
 package com.vaadin.collaborationengine;
 
 import java.util.EventObject;
-import java.util.Optional;
-import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * Event that is fired when the value in a collaboration list changes.
@@ -167,49 +164,5 @@ public class ListChangeEvent extends EventObject {
      */
     public ListKey getOldPrev() {
         return ListKey.of(change.getOldPrev());
-    }
-
-    /**
-     * Gets the added item as instance of the given class.
-     *
-     * @param type
-     *            the class of the expected type of the returned instance
-     * @param <T>
-     *            the type of the class given as the <code>type</code> argument
-     * @return the added item, or an empty optional if no item was added
-     *
-     * @deprecated This method is preserved for backwards compatibility from the
-     *             initial version when the only possible list change was to add
-     *             a new item to the end of the list.
-     */
-    @Deprecated
-    public <T> Optional<T> getAddedItem(Class<T> type) {
-        return convertAddedItem(JsonUtil.fromJsonConverter(type));
-    }
-
-    /**
-     * Gets the added item as instance of the given type reference.
-     *
-     * @param type
-     *            the expected type reference of the returned instance
-     * @param <T>
-     *            the type of the reference given as the <code>type</code>
-     *            argument
-     * @return the added item, or an empty optional if no item was added
-     *
-     * @deprecated This method is preserved for backwards compatibility from the
-     *             initial version when the only possible list change was to add
-     *             a new item to the end of the list.
-     */
-    @Deprecated
-    public <T> Optional<T> getAddedItem(TypeReference<T> type) {
-        return convertAddedItem(JsonUtil.fromJsonConverter(type));
-    }
-
-    private <T> Optional<T> convertAddedItem(Function<JsonNode, T> converter) {
-        if (change.getType() != ListChangeType.INSERT) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(change.getValue()).map(converter);
     }
 }

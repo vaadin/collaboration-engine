@@ -152,7 +152,8 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
                     new ComponentConnectionContext(this), localUser, topicId,
                     ce);
             this.presenceManager.markAsPresent(true);
-            this.presenceManager.setNewUserHandler(userInfo -> {
+            this.presenceManager.setPresenceHandler(context -> {
+                UserInfo userInfo = context.getUser();
                 userInfoCache.add(userInfo);
                 refreshItems();
                 return () -> {

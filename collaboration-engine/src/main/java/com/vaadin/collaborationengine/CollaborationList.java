@@ -127,26 +127,6 @@ public interface CollaborationList extends HasExpirationTimeout {
     }
 
     /**
-     * Inserts the given item as the first item of the list, with the given
-     * scope.
-     *
-     * @param item
-     *            the item, not <code>null</code>
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return the result of the operation, not <code>null</code>
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.insertFirst(Object).withScope(EntryScope)}.
-     */
-    @Deprecated(since = "5.1", forRemoval = true)
-    default ListOperationResult<Void> insertFirst(Object item,
-            EntryScope scope) {
-        ListOperation operation = ListOperation.insertFirst(item)
-                .withScope(scope);
-        return apply(operation).mapToVoid();
-    }
-
-    /**
      * Inserts the given item as the last item of the list.
      *
      * @param item
@@ -156,27 +136,6 @@ public interface CollaborationList extends HasExpirationTimeout {
      */
     default ListOperationResult<Void> insertLast(Object item) {
         ListOperation operation = ListOperation.insertLast(item);
-        return apply(operation).mapToVoid();
-    }
-
-    /**
-     * Inserts the given item as the last item of the list, with the given
-     * scope.
-     *
-     * @param item
-     *            the item, not <code>null</code>
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return the result of the operation, not <code>null</code>
-     * @since 4.1
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.insertLast(Object).withScope(EntryScope)}.
-     */
-    @Deprecated(since = "5.1", forRemoval = true)
-    default ListOperationResult<Void> insertLast(Object item,
-            EntryScope scope) {
-        ListOperation operation = ListOperation.insertLast(item)
-                .withScope(scope);
         return apply(operation).mapToVoid();
     }
 
@@ -196,29 +155,6 @@ public interface CollaborationList extends HasExpirationTimeout {
     }
 
     /**
-     * Inserts the given item just before the given key location, with the given
-     * scope.
-     *
-     * @param key
-     *            the position key, not <code>null</code>
-     * @param item
-     *            the item, not <code>null</code>
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return the result of the operation, not <code>null</code>
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.insertBefore(ListKey, Object).withScope
-     * (EntryScope)} .
-     */
-    @Deprecated(since = "5.1", forRemoval = true)
-    default ListOperationResult<Boolean> insertBefore(ListKey key, Object item,
-            EntryScope scope) {
-        ListOperation operation = ListOperation.insertBefore(key, item)
-                .withScope(scope);
-        return apply(operation);
-    }
-
-    /**
      * Inserts the given item just after the given key location.
      *
      * @param key
@@ -229,29 +165,6 @@ public interface CollaborationList extends HasExpirationTimeout {
      */
     default ListOperationResult<Boolean> insertAfter(ListKey key, Object item) {
         ListOperation operation = ListOperation.insertAfter(key, item);
-        return apply(operation);
-    }
-
-    /**
-     * Inserts the given item just after the given key location, with the given
-     * scope.
-     *
-     * @param key
-     *            the position key, not <code>null</code>
-     * @param item
-     *            the item, not <code>null</code>
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return the result of the operation, not <code>null</code>
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.insertAfter(ListKey, Object).withScope
-     * (EntryScope)} .
-     */
-    @Deprecated(since = "5.1", forRemoval = true)
-    default ListOperationResult<Boolean> insertAfter(ListKey key, Object item,
-            EntryScope scope) {
-        ListOperation operation = ListOperation.insertAfter(key, item)
-                .withScope(scope);
         return apply(operation);
     }
 
@@ -303,29 +216,6 @@ public interface CollaborationList extends HasExpirationTimeout {
     }
 
     /**
-     * Sets a new value for the item identified by the given key, with the given
-     * scope.
-     *
-     * @param key
-     *            the item key, not <code>null</code>
-     * @param value
-     *            the new value of the item
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return the result of the operation, not <code>null</code>
-     * @since 4.1
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.set(ListKey, Object).withScope(EntryScope)}.
-     */
-    @Deprecated(since = "5.2", forRemoval = true)
-    default CompletableFuture<Boolean> set(ListKey key, Object value,
-            EntryScope scope) {
-        ListOperation operation = ListOperation.set(key, value)
-                .withScope(scope);
-        return apply(operation).getCompletableFuture();
-    }
-
-    /**
      * Removes the value for the item identified by the given key.
      *
      * @param key
@@ -335,54 +225,6 @@ public interface CollaborationList extends HasExpirationTimeout {
     default CompletableFuture<Boolean> remove(ListKey key) {
         ListOperation operation = ListOperation.delete(key);
         return apply(operation).getCompletableFuture();
-    }
-
-    /**
-     * Appends the given item to the list.
-     * <p>
-     * The given item must be JSON-serializable so it can be sent over the
-     * network when Collaboration Engine is hosted in a standalone server.
-     *
-     * @param item
-     *            the item to append, not <code>null</code>
-     * @return a completable future that is resolved when the item has been
-     *         appended to the list
-     * @throws JsonConversionException
-     *             if the given item isn't serializable as JSON string
-     * @deprecated Use {@link #apply(ListOperation)} with {@code
-     * ListOperation.insertLast(Object)}
-     */
-    @Deprecated(since = "4.0", forRemoval = true)
-    default CompletableFuture<Void> append(Object item) {
-        return append(item, EntryScope.TOPIC);
-    }
-
-    /**
-     * Appends the given item to the list with the given scope.
-     * <p>
-     * The given item must be JSON-serializable so it can be sent over the
-     * network when Collaboration Engine is hosted in a standalone server.
-     * <p>
-     * The <code>scope</code> parameter specifies the scope of the entry, which
-     * is either one of {@link EntryScope#TOPIC} to keep the entry in the list
-     * until explicitly removed, or {@link EntryScope#CONNECTION} to
-     * automatically remove the entry when the connection which put the entry is
-     * deactivated.
-     *
-     * @param item
-     *            the item to append, not <code>null</code>
-     * @param scope
-     *            the scope of the entry, not <code>null</code>
-     * @return a completable future that is resolved when the item has been
-     *         appended to the list
-     * @throws JsonConversionException
-     *             if the given item isn't serializable as JSON string
-     * @deprecated Use {@link #apply(ListOperation)} with
-     *             {@code ListOperation.insertLast(Object).withScope(EntryScope)}
-     */
-    @Deprecated(since = "4.0", forRemoval = true)
-    default CompletableFuture<Void> append(Object item, EntryScope scope) {
-        return insertLast(item, scope).getCompletableFuture();
     }
 
     /**
