@@ -1,6 +1,8 @@
 package com.vaadin.collaborationengine.util;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
+import java.net.URL;
+import java.util.logging.Logger;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,12 +13,20 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 import com.vaadin.flow.theme.AbstractTheme;
+import com.vaadin.testbench.IPAddress;
+import com.vaadin.testbench.Parameters;
 import com.vaadin.testbench.ScreenshotOnFailureRule;
 import com.vaadin.testbench.TestBench;
 import com.vaadin.testbench.TestBenchDriverProxy;
 import com.vaadin.testbench.TestBenchTestCase;
+import com.vaadin.testbench.parallel.SauceLabsIntegration;
+import com.vaadin.testbench.parallel.setup.SetupDriver;
+
+import io.github.bonigarcia.wdm.WebDriverManager;
 
 /**
  * Base class for TestBench IntegrationTests on chrome.
@@ -36,7 +46,15 @@ import com.vaadin.testbench.TestBenchTestCase;
 public abstract class AbstractViewTest extends TestBenchTestCase {
     private static final int SERVER_PORT = 8080;
 
+    private final String deploymentHostname;
+
     private final By rootSelector;
+    private static final Logger logger = Logger
+            .getLogger(AbstractViewTest.class.getName());
+    protected final boolean isSauce;
+    protected final boolean isHub;
+    protected final boolean isLocal;
+    protected final boolean isHeadless;
 
     @Rule
     public ScreenshotOnFailureRule rule = new ScreenshotOnFailureRule(this,
@@ -47,6 +65,14 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
     }
 
     protected AbstractViewTest(By rootSelector) {
+        boolean forceLocal = Parameters.isLocalWebDriverUsed();
+        isHub = !forceLocal && Parameters.getHubHostname() != null;
+        isSauce = !forceLocal && !isHub
+                && SauceLabsIntegration.isConfiguredForSauceLabs();
+        isLocal = !isSauce && !isHub;
+        isHeadless = isLocal && Boolean.getBoolean("headless");
+        deploymentHostname = isHub ? IPAddress.findSiteLocalAddress()
+                : "localhost";
         this.rootSelector = rootSelector;
     }
 
@@ -56,8 +82,8 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
     }
 
     @Before
-    public void setup() {
-        setDriver(createHeadlessChromeDriver());
+    public void setup() throws Exception {
+        setDriver(createDriver());
         getDriver().get(getURL());
     }
 
@@ -70,15 +96,52 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
         driver.navigate().refresh();
     }
 
-    protected WebDriver createHeadlessChromeDriver() {
+    protected WebDriver createDriver() throws Exception {
+        if (isSauce) {
+            return createSauceDriver();
+        }
+        if (isHub) {
+            return createHubDriver();
+        }
+        return createChromeDriver();
+    }
+
+    private WebDriver createChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--no-sandbox", "--disable-dev-shm-usage");
-        if (!Boolean.getBoolean("noHeadless")) {
+        if (isHeadless) {
             options.addArguments("--headless");
         }
+        logger.info("Using Local Chrome with Capabilities: " + options.asMap());
         TestBenchDriverProxy driver = TestBench
                 .createDriver(new ChromeDriver(options));
         return driver;
+    }
+
+    private WebDriver createHubDriver() throws Exception {
+        DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
+        desiredCapabilities.setCapability("browserName", "chrome");
+        SetupDriver driverConfiguration = new SetupDriver();
+        driverConfiguration.setDesiredCapabilities(desiredCapabilities);
+        logger.info("Using Selenium Hub with " + desiredCapabilities);
+        return driverConfiguration.setupRemoteDriver(
+                "http://" + Parameters.getHubHostname() + ":4444/wd/hub");
+    }
+
+    private WebDriver createSauceDriver() throws Exception {
+        DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
+        desiredCapabilities.setCapability("username",
+                SauceLabsIntegration.getSauceUser());
+        desiredCapabilities.setCapability("tunnelIdentifier",
+                SauceLabsIntegration.getSauceTunnelIdentifier());
+        desiredCapabilities.setCapability("browserName", "chrome");
+        desiredCapabilities.setCapability("version", "latest");
+        logger.info("Using Sauce with " + desiredCapabilities);
+        desiredCapabilities.setCapability("accessKey",
+                SauceLabsIntegration.getSauceAccessKey());
+        return new RemoteWebDriver(
+                new URL("https://ondemand.saucelabs.com/wd/hub"),
+                desiredCapabilities);
     }
 
     /**
@@ -118,11 +181,6 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
     }
 
     /**
-     * Property set to true when running on a test hub.
-     */
-    private static final String USE_HUB_PROPERTY = "test.use.hub";
-
-    /**
      * Returns deployment host name concatenated with route.
      *
      * @return URL to route
@@ -132,30 +190,16 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
         return getURL(path);
     }
 
+    /**
+     * Returns deployment host name concatenated with route.
+     *
+     * @param path
+     *            route path
+     * @return URL to route
+     */
     protected String getURL(String path) {
-        return String.format("http://%s:%d/%s", getDeploymentHostname(),
-                SERVER_PORT, path);
-    }
-
-    /**
-     * Returns whether we are using a test hub. This means that the starter is
-     * running tests in Vaadin's CI environment, and uses TestBench to connect
-     * to the testing hub.
-     *
-     * @return whether we are using a test hub
-     */
-    private static boolean isUsingHub() {
-        return Boolean.TRUE.toString()
-                .equals(System.getProperty(USE_HUB_PROPERTY));
-    }
-
-    /**
-     * If running on CI, get the host name from environment variable HOSTNAME
-     *
-     * @return the host name
-     */
-    private static String getDeploymentHostname() {
-        return isUsingHub() ? System.getenv("HOSTNAME") : "localhost";
+        return String.format("http://%s:%d/%s", deploymentHostname, SERVER_PORT,
+                path);
     }
 
     /**

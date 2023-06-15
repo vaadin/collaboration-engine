@@ -9,7 +9,7 @@ public class CollaborationBinderTestCommon
         extends AbstractCollaborativeFormTestCommon {
 
     @Test
-    public void fieldValuesSyncedAmongClients() {
+    public void fieldValuesSyncedAmongClients() throws Exception {
         client1.textField.setValue("foo");
 
         ClientState client2 = new ClientState(addClient());

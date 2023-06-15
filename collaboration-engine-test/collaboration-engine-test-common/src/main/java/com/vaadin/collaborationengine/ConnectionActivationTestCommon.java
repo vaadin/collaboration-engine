@@ -8,7 +8,8 @@ import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 public class ConnectionActivationTestCommon
         extends AbstractCollaborativeFormTestCommon {
     @Test
-    public void preserveOnRefresh_fieldValuesPreserved_fieldIsCollaborative() {
+    public void preserveOnRefresh_fieldValuesPreserved_fieldIsCollaborative()
+            throws Exception {
         client1.textField.setValue("foo");
         client1.emailField.setValue("bar");
 

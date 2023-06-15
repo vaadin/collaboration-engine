@@ -14,7 +14,8 @@ import static org.junit.Assert.assertFalse;
 public class InvalidLicenseIT extends AbstractCollaborativeFormTestCommon {
 
     @Test
-    public void tamperedLicense_openViews_errorMessageRendered_componentsNot() {
+    public void tamperedLicense_openViews_errorMessageRendered_componentsNot()
+            throws Exception {
         assertViewBroken(this);
 
         Client anotherClient = addClient();

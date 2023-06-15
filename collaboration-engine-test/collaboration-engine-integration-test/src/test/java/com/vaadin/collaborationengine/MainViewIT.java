@@ -10,7 +10,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 public class MainViewIT extends AbstractCollaborativeViewTest {
 
     @Test
-    public void clickingButtonUpdateSpan() {
+    public void clickingButtonUpdateSpan() throws Exception {
         ButtonElement button = $(ButtonElement.class).first();
         SpanElement span = $(SpanElement.class).first();
 

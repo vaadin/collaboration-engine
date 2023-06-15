@@ -54,7 +54,7 @@ public class MessageListTestCommon extends AbstractCollaborativeViewTest {
     }
 
     @Test
-    public void submitMessages_messageListUpdated() {
+    public void submitMessages_messageListUpdated() throws Exception {
 
         Assert.assertEquals("Expected the message list to be empty", 0,
                 client1.getMessages().size());

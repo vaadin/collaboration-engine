@@ -12,7 +12,7 @@ import com.vaadin.collaborationengine.util.AbstractCollaborativeFormTestCommon;
 public class AvatarGroupTestCommon extends AbstractCollaborativeFormTestCommon {
 
     @Test
-    public void openAndCloseClients_avatarsUpdated() {
+    public void openAndCloseClients_avatarsUpdated() throws Exception {
         Assert.assertEquals(
                 "Expected only own avatar when only one client connected",
                 newHashSet("User 1"), client1.getAvatarNames());
@@ -41,10 +41,12 @@ public class AvatarGroupTestCommon extends AbstractCollaborativeFormTestCommon {
     }
 
     @Test
-    public void avatarAndFieldHighlightHaveSameColorIndex() {
+    public void avatarAndFieldHighlightHaveSameColorIndex() throws Exception {
         ClientState client2 = new ClientState(addClient());
-
         client1.focusTextField();
+
+        // Remote driver needs a while until tags are there
+        waitUntil(d -> getUserTags(client2.textField).size() > 0, 3);
 
         Integer fieldColorIndex = getUserTags(client2.textField).get(0)
                 .getColorIndex();

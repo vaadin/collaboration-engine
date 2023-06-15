@@ -8,7 +8,8 @@ public class ReattachFieldTestCommon
         extends AbstractCollaborativeFormTestCommon {
 
     @Test
-    public void detachTextFields_attachTextFields_collaborationWorks() {
+    public void detachTextFields_attachTextFields_collaborationWorks()
+            throws Exception {
         ClientState client2 = new ClientState(addClient());
 
         client1.detachTextField();
