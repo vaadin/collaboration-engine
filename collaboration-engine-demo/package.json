@@ -49,12 +49,13 @@
       "rollup-plugin-brotli": "3.1.0",
       "transform-ast": "2.4.4",
       "typescript": "4.9.5",
-      "vite": "4.1.3",
+      "vite": "4.1.5",
       "vite-plugin-checker": "0.5.5",
       "workbox-build": "6.5.4",
       "workbox-core": "6.5.4",
       "workbox-precaching": "6.5.4",
-      "strip-css-comments": "5.0.0"
+      "strip-css-comments": "5.0.0",
+      "@vitejs/plugin-react": "3.1.0"
     },
     "hash": "929aecfd8539dcb42bf4db1ad0443345dd8dc7678060fd92d35d85df956efbb4"
   },
@@ -107,12 +108,13 @@
     "rollup-plugin-brotli": "3.1.0",
     "transform-ast": "2.4.4",
     "typescript": "4.9.5",
-    "vite": "4.1.3",
+    "vite": "4.1.5",
     "vite-plugin-checker": "0.5.5",
     "workbox-build": "6.5.4",
     "workbox-core": "6.5.4",
     "workbox-precaching": "6.5.4",
-    "strip-css-comments": "5.0.0"
+    "strip-css-comments": "5.0.0",
+    "@vitejs/plugin-react": "3.1.0"
   },
   "overrides": {
     "@polymer/polymer": "$@polymer/polymer",
