@@ -129,19 +129,13 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
     }
 
     private WebDriver createSauceDriver() throws Exception {
+        SetupDriver driverConfiguration = new SetupDriver();
         DesiredCapabilities desiredCapabilities = new DesiredCapabilities();
-        desiredCapabilities.setCapability("username",
-                SauceLabsIntegration.getSauceUser());
-        desiredCapabilities.setCapability("tunnelIdentifier",
-                SauceLabsIntegration.getSauceTunnelIdentifier());
         desiredCapabilities.setCapability("browserName", "chrome");
-        desiredCapabilities.setCapability("version", "latest");
-        logger.info("Using Sauce with " + desiredCapabilities);
-        desiredCapabilities.setCapability("accessKey",
-                SauceLabsIntegration.getSauceAccessKey());
-        return new RemoteWebDriver(
-                new URL("https://ondemand.saucelabs.com/wd/hub"),
-                desiredCapabilities);
+        SauceLabsIntegration.setDesiredCapabilities(desiredCapabilities);
+        driverConfiguration.setDesiredCapabilities(desiredCapabilities);
+        return driverConfiguration
+                .setupRemoteDriver(SauceLabsIntegration.getHubUrl());
     }
 
     /**
