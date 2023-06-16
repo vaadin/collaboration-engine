@@ -1,6 +1,5 @@
 package com.vaadin.collaborationengine.util;
 
-import java.net.URL;
 import java.util.logging.Logger;
 
 import org.junit.After;
@@ -14,7 +13,6 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.remote.RemoteWebDriver;
 
 import com.vaadin.flow.theme.AbstractTheme;
 import com.vaadin.testbench.IPAddress;

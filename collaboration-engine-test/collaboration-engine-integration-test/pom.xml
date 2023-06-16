@@ -41,6 +41,35 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
             </plugin>
+      <plugin>
+        <groupId>com.github.ekryd.echo-maven-plugin</groupId>
+        <artifactId>echo-maven-plugin</artifactId>
+        <version>2.0.0</version>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>end</id>
+            <goals>
+              <goal>echo</goal>
+            </goals>
+            <phase>compile</phase>
+            <configuration>
+              <message>${line.separator}
+              ======
+              Parameters for ITs
+                useLocalWebDriver = ${useLocalWebDriver}
+                headless = ${headless}
+                hubHostname = ${com.vaadin.testbench.Parameters.hubHostname}
+                sauce.user = ${sauce.user}
+                sauce.tunelId = ${sauce.tunelId}
+                env.SAUCE_USERNAME = ${env.SAUCE_USERNAME}
+                env.SAUCE_TUNNEL_IDENTIFIER = ${env.SAUCE_TUNNEL_IDENTIFIER}
+              ======${line.separator}
+              </message>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
             <!-- Jetty plugin for easy testing without a server -->
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
