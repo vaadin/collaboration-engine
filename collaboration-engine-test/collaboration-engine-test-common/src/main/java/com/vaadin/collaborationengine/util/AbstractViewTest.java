@@ -5,7 +5,6 @@ import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -23,8 +22,6 @@ import com.vaadin.testbench.TestBenchDriverProxy;
 import com.vaadin.testbench.TestBenchTestCase;
 import com.vaadin.testbench.parallel.SauceLabsIntegration;
 import com.vaadin.testbench.parallel.setup.SetupDriver;
-
-import io.github.bonigarcia.wdm.WebDriverManager;
 
 /**
  * Base class for TestBench IntegrationTests on chrome.
@@ -74,11 +71,6 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
         this.rootSelector = rootSelector;
     }
 
-    @BeforeClass
-    public static void setupClass() {
-        WebDriverManager.chromedriver().setup();
-    }
-
     @Before
     public void setup() throws Exception {
         setDriver(createDriver());
@@ -87,7 +79,9 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
 
     @After
     public void close() {
-        driver.close();
+        if (driver != null) {
+            driver.close();
+        }
     }
 
     protected void refresh() {
@@ -108,7 +102,7 @@ public abstract class AbstractViewTest extends TestBenchTestCase {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--no-sandbox", "--disable-dev-shm-usage");
         if (isHeadless) {
-            options.addArguments("--headless");
+            options.addArguments("--headless=new");
         }
         logger.info("Using Local Chrome with Capabilities: " + options.asMap());
         TestBenchDriverProxy driver = TestBench

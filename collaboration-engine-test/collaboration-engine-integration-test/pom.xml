@@ -79,7 +79,7 @@
                     <!-- If using IntelliJ IDEA with autocompilation, this
                     might cause lots of unnecessary compilations in the
                     background.-->
-                    <scanIntervalSeconds>2</scanIntervalSeconds>
+                    <scan>2</scan>
                     <!-- Tell where the CE data dir is -->
                     <systemProperties>
                             <vaadin.ce.dataDir>${project.basedir}/dataDir</vaadin.ce.dataDir>
@@ -164,6 +164,10 @@
                                 <goals>
                                     <goal>build-frontend</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- TODO: remove it when https://github.com/vaadin/flow/issues/17722 is fixed -->
+                                    <optimizeBundle>false</optimizeBundle>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -185,7 +189,7 @@
                         <artifactId>jetty-maven-plugin</artifactId>
                         <version>${jetty.version}</version>
                         <configuration>
-                            <scanIntervalSeconds>0</scanIntervalSeconds>
+                            <scan>0</scan>
                             <stopPort>8081</stopPort>
                             <stopWait>5</stopWait>
                             <stopKey>${project.artifactId}</stopKey>

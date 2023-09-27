@@ -86,13 +86,6 @@
             <version>${servlet-api.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/io.github.bonigarcia/webdrivermanager -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>5.5.3</version>
-            <scope>compile</scope>
-        </dependency>
 
         <dependency>
             <groupId>com.vaadin</groupId>

@@ -18,7 +18,6 @@ import com.vaadin.flow.server.VaadinContext;
 import com.vaadin.flow.server.VaadinRequest;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.server.frontend.FallbackChunk;
 import com.vaadin.flow.server.startup.ApplicationConfiguration;
 
 public class MockService extends VaadinService {
@@ -85,11 +84,6 @@ public class MockService extends VaadinService {
                     @Override
                     public VaadinContext getContext() {
                         return MockService.super.getContext();
-                    }
-
-                    @Override
-                    public FallbackChunk getFallbackChunk() {
-                        return null;
                     }
 
                     @Override

@@ -173,6 +173,10 @@
                                         <goal>build-frontend</goal>
                                     </goals>
                                     <phase>compile</phase>
+                                    <configuration>
+                                        <!-- TODO: remove it when https://github.com/vaadin/flow/issues/17722 is fixed -->
+                                        <optimizeBundle>false</optimizeBundle>
+                                    </configuration>
                                 </execution>
                             </executions>
                         </plugin>

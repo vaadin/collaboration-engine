@@ -150,6 +150,10 @@
                                 <goals>
                                     <goal>build-frontend</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- TODO: remove it when https://github.com/vaadin/flow/issues/17722 is fixed -->
+                                    <optimizeBundle>false</optimizeBundle>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
