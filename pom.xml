@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>collaboration-engine-parent</artifactId>
-    <version>6.0-SNAPSHOT</version>
+    <version>6.1-SNAPSHOT</version>
     <name>Collaboration Engine Parent</name>
     <packaging>pom</packaging>
 
@@ -40,9 +40,9 @@
         <vaadin.lumo.version>${vaadin.component.version}</vaadin.lumo.version>
 
         <!-- Keep in sync with flow-server: -->
-        <jackson.version>2.14.2</jackson.version>
+        <jackson.version>2.15.2</jackson.version>
         <junit.version>4.13.2</junit.version>
-        <jetty.version>11.0.13</jetty.version>
+        <jetty.version>11.0.15</jetty.version>
     </properties>
 
     <dependencyManagement>
