@@ -698,6 +698,16 @@ public class ComponentConnectionContextTest {
         executor.flushPendingTasks();
     }
 
+    @Test
+    public void serializeContext() {
+        ui.add(component);
+        ComponentConnectionContext context = new ComponentConnectionContext(
+                component);
+
+        ComponentConnectionContext deserializedContext = TestUtils
+                .serialize(context);
+    }
+
     private List<String> createEagerMapEventCollector(
             TestCollaborationEngine ce, String topicId, String mapName) {
         List<String> log = new ArrayList<>();

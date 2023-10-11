@@ -25,6 +25,7 @@ import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupI18n;
 import com.vaadin.flow.component.avatar.AvatarGroup.AvatarGroupItem;
 import com.vaadin.flow.component.avatar.AvatarGroupVariant;
 import com.vaadin.flow.component.shared.HasOverlayClassName;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.server.AbstractStreamResource;
 import com.vaadin.flow.server.StreamResource;
@@ -65,7 +66,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         AbstractStreamResource getImageResource(UserInfo user);
     }
 
-    private final CollaborationEngine ce;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
 
     private final UserInfo localUser;
 
@@ -109,14 +110,14 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
      * @since 1.0
      */
     public CollaborationAvatarGroup(UserInfo localUser, String topicId) {
-        this(localUser, topicId, CollaborationEngine.getInstance());
+        this(localUser, topicId, CollaborationEngine::getInstance);
     }
 
     CollaborationAvatarGroup(UserInfo localUser, String topicId,
-            CollaborationEngine ce) {
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
-        this.ce = ce;
+        this.ceSupplier = ceSupplier;
         this.ownAvatarVisible = true;
 
         setTopic(topicId);
@@ -150,7 +151,7 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
         if (topicId != null) {
             this.presenceManager = new PresenceManager(
                     new ComponentConnectionContext(this), localUser, topicId,
-                    ce);
+                    ceSupplier);
             this.presenceManager.markAsPresent(true);
             this.presenceManager.setPresenceHandler(context -> {
                 UserInfo userInfo = context.getUser();
@@ -260,8 +261,12 @@ public class CollaborationAvatarGroup extends Composite<AvatarGroup>
             item.setImageResource(imageProvider.getImageResource(user));
         }
 
-        item.setColorIndex(ce.getUserColorIndex(user));
+        item.setColorIndex(getCollaborationEngine().getUserColorIndex(user));
         return item;
+    }
+
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
     }
 
     private boolean isNotLocalUser(UserInfo user) {

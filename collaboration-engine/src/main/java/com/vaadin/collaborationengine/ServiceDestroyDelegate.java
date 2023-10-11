@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import com.vaadin.flow.component.UI;
@@ -25,12 +26,12 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  * @since 1.0
  */
-class ServiceDestroyDelegate {
+class ServiceDestroyDelegate implements Serializable {
 
     private final ArrayList<ServiceDestroyListener> listeners = new ArrayList<>();
 
-    private final Registration serviceRegistration;
-    private final Registration sessionRegistration;
+    private final transient Registration serviceRegistration;
+    private final transient Registration sessionRegistration;
 
     private final VaadinSession session;
 

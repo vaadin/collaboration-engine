@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -42,7 +43,7 @@ import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.shared.Registration;
 
-class Topic {
+class Topic implements Serializable {
 
     enum ChangeResult {
         ACCEPTED, REJECTED;
@@ -150,7 +151,7 @@ class Topic {
     }
 
     private final String id;
-    private final CollaborationEngine collaborationEngine;
+    private final transient CollaborationEngine collaborationEngine;
     private final Map<String, Map<String, Entry>> namedMapData = new HashMap<>();
     private final Map<String, EntryList> namedListData = new HashMap<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();

@@ -20,6 +20,7 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.GenericTestField;
 import com.vaadin.collaborationengine.util.TestBean;
 import com.vaadin.collaborationengine.util.TestField;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.data.binder.Binder;
@@ -860,5 +861,13 @@ public class CollaborationBinderTest extends AbstractCollaborationBinderTest {
         client.field.setValue("foo");
 
         Assert.assertNotNull(event.get());
+    }
+
+    @Test
+    public void serializeBinder() {
+        CollaborationBinder<TestBean> binder = client.binder;
+
+        CollaborationBinder<TestBean> deserializedBinder = TestUtils
+                .serialize(binder);
     }
 }

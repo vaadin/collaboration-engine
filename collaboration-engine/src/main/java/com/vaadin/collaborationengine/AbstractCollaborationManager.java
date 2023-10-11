@@ -14,6 +14,7 @@ import java.util.Objects;
 
 import com.vaadin.collaborationengine.TopicConnectionRegistration.ConnectionFailedAction;
 import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -21,7 +22,7 @@ import com.vaadin.flow.shared.Registration;
  *
  * @author Vaadin Ltd
  */
-public abstract class AbstractCollaborationManager {
+public abstract class AbstractCollaborationManager implements Serializable {
 
     /**
      * The callback executed when the manager is activated, i.e. when the
@@ -44,19 +45,19 @@ public abstract class AbstractCollaborationManager {
         Registration onActivation();
     }
 
-    private final CollaborationEngine collaborationEngine;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
 
     private final UserInfo localUser;
 
     private final String topicId;
 
-    private TopicConnectionRegistration topicRegistration;
+    private transient TopicConnectionRegistration topicRegistration;
 
     private ActivationHandler activationHandler;
 
     private Registration deactivationHandler;
 
-    private ConnectionFailedAction connectionFailedAction;
+    private transient ConnectionFailedAction connectionFailedAction;
 
     private boolean active;
 
@@ -69,12 +70,29 @@ public abstract class AbstractCollaborationManager {
      *            the topic id, not {@code null}
      * @param collaborationEngine
      *            the Collaboration Engine instance, not {@code null}
+     * @deprecated This constructor is not compatible with serialization
      */
+    @Deprecated(since = "6.1", forRemoval = true)
     protected AbstractCollaborationManager(UserInfo localUser, String topicId,
             CollaborationEngine collaborationEngine) {
+        this(localUser, topicId, () -> collaborationEngine);
+    }
+
+    /**
+     * Constructs a new manager instance.
+     *
+     * @param localUser
+     *            the local user, not {@code null}
+     * @param topicId
+     *            the topic id, not {@code null}
+     * @param ceSupplier
+     *            the Collaboration Engine instance, not {@code null}
+     */
+    protected AbstractCollaborationManager(UserInfo localUser, String topicId,
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
         this.localUser = Objects.requireNonNull(localUser);
         this.topicId = Objects.requireNonNull(topicId);
-        this.collaborationEngine = Objects.requireNonNull(collaborationEngine);
+        this.ceSupplier = Objects.requireNonNull(ceSupplier);
     }
 
     /**
@@ -92,8 +110,8 @@ public abstract class AbstractCollaborationManager {
         if (topicRegistration != null) {
             topicRegistration.remove();
         }
-        topicRegistration = collaborationEngine.openTopicConnection(context,
-                topicId, localUser, connection -> {
+        topicRegistration = getCollaborationEngine().openTopicConnection(
+                context, topicId, localUser, connection -> {
                     active = true;
                     Registration callbackRegistration = connectionActivationCallback
                             .apply(connection);
@@ -162,7 +180,7 @@ public abstract class AbstractCollaborationManager {
      * @return the {@link CollaborationEngine}, not {@code null}
      */
     protected CollaborationEngine getCollaborationEngine() {
-        return collaborationEngine;
+        return ceSupplier.get();
     }
 
     /**

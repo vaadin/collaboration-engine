@@ -14,7 +14,9 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
 
 public class FormManagerTest {
@@ -23,13 +25,15 @@ public class FormManagerTest {
 
     private UserInfo user = new UserInfo("foo");
 
-    private CollaborationEngine ce;
+    private SerializableSupplier<CollaborationEngine> ceSupplier;
 
     @Before
     public void init() {
         VaadinService service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ceSupplier = () -> ce;
     }
 
     @After
@@ -194,8 +198,9 @@ public class FormManagerTest {
         manager.setExpirationTimeout(Duration.ofMinutes(15));
 
         AtomicLong timeout = new AtomicLong();
-        ce.openTopicConnection(MockConnectionContext.createEager(), TOPIC_ID,
-                user, connection -> {
+        ceSupplier.get().openTopicConnection(
+                MockConnectionContext.createEager(), TOPIC_ID, user,
+                connection -> {
                     timeout.set(
                             connection.getNamedMap(FormManager.COLLECTION_NAME)
                                     .getExpirationTimeout().get().toMinutes());
@@ -204,11 +209,18 @@ public class FormManagerTest {
         Assert.assertEquals(15, timeout.longValue());
     }
 
+    @Test
+    public void serializeFormManager() {
+        FormManager manager = createActiveManager();
+
+        FormManager deserializedManager = TestUtils.serialize(manager);
+    }
+
     private FormManager createActiveManager() {
         return createManager(MockConnectionContext.createEager());
     }
 
     private FormManager createManager(ConnectionContext context) {
-        return new FormManager(context, user, TOPIC_ID, ce);
+        return new FormManager(context, user, TOPIC_ID, ceSupplier);
     }
 }

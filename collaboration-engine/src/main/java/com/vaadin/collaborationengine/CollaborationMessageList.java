@@ -20,6 +20,7 @@ import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.messages.MessageList;
 import com.vaadin.flow.component.messages.MessageListItem;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -59,7 +60,7 @@ public class CollaborationMessageList extends Composite<MessageList>
         void configureMessage(MessageListItem message, UserInfo user);
     }
 
-    private final CollaborationEngine ce;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
 
     private ImageProvider imageProvider;
 
@@ -102,7 +103,7 @@ public class CollaborationMessageList extends Composite<MessageList>
      *            connect the component to any topic
      */
     public CollaborationMessageList(UserInfo localUser, String topicId) {
-        this(localUser, topicId, null, CollaborationEngine.getInstance());
+        this(localUser, topicId, null, CollaborationEngine::getInstance);
     }
 
     /**
@@ -128,14 +129,15 @@ public class CollaborationMessageList extends Composite<MessageList>
      */
     public CollaborationMessageList(UserInfo localUser, String topicId,
             CollaborationMessagePersister persister) {
-        this(localUser, topicId, persister, CollaborationEngine.getInstance());
+        this(localUser, topicId, persister, CollaborationEngine::getInstance);
     }
 
     CollaborationMessageList(UserInfo localUser, String topicId,
-            CollaborationMessagePersister persister, CollaborationEngine ce) {
+            CollaborationMessagePersister persister,
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
-        this.ce = ce;
+        this.ceSupplier = ceSupplier;
         this.persister = persister;
         setTopic(topicId);
     }
@@ -170,7 +172,7 @@ public class CollaborationMessageList extends Composite<MessageList>
         if (topicId != null) {
             messageManager = new MessageManager(
                     new ComponentConnectionContext(this), localUser, topicId,
-                    persister, ce);
+                    persister, ceSupplier);
             messageManager.setMessageHandler(context -> {
                 CollaborationMessage message = context.getMessage();
                 messageCache.add(message);
@@ -220,6 +222,10 @@ public class CollaborationMessageList extends Composite<MessageList>
         }
     }
 
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
+    }
+
     /**
      * Appends a message to this list and all other lists connected to the same
      * topic. The message will be associated with the current local-user and the
@@ -232,7 +238,7 @@ public class CollaborationMessageList extends Composite<MessageList>
         Objects.requireNonNull(text, "Cannot append a null message");
 
         CollaborationMessage message = new CollaborationMessage(localUser, text,
-                ce.getClock().instant());
+                getCollaborationEngine().getClock().instant());
         messageManager.submit(message);
     }
 
@@ -340,8 +346,8 @@ public class CollaborationMessageList extends Composite<MessageList>
         }
         messageListItem
                 .setUserAbbreviation(message.getUser().getAbbreviation());
-        messageListItem
-                .setUserColorIndex(ce.getUserColorIndex(message.getUser()));
+        messageListItem.setUserColorIndex(
+                getCollaborationEngine().getUserColorIndex(message.getUser()));
 
         if (messageConfigurator != null) {
             messageConfigurator.configureMessage(messageListItem,

@@ -9,8 +9,12 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
+
+import static org.junit.Assert.assertEquals;
 
 public class AbstractCollaborationManagerTest {
 
@@ -18,13 +22,15 @@ public class AbstractCollaborationManagerTest {
 
     private VaadinService service;
 
-    private CollaborationEngine ce;
+    private SerializableSupplier<CollaborationEngine> ceSupplier;
 
     @Before
     public void init() {
         service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ceSupplier = () -> ce;
     }
 
     @After
@@ -55,9 +61,7 @@ public class AbstractCollaborationManagerTest {
         Manager manager = createManager();
         MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean activation = new AtomicBoolean();
-        manager.openTopicConnection(context, connection -> {
-            return null;
-        });
+        manager.openTopicConnection(context, connection -> null);
         manager.setActivationHandler(() -> {
             activation.set(true);
             return null;
@@ -75,9 +79,7 @@ public class AbstractCollaborationManagerTest {
         Manager manager = createManager();
         MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean activation = new AtomicBoolean();
-        manager.openTopicConnection(context, connection -> {
-            return null;
-        });
+        manager.openTopicConnection(context, connection -> null);
         context.activate();
         manager.setActivationHandler(() -> {
             activation.set(true);
@@ -92,13 +94,9 @@ public class AbstractCollaborationManagerTest {
         Manager manager = createManager();
         MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
-        manager.openTopicConnection(context, connection -> {
-            return null;
-        });
+        manager.openTopicConnection(context, connection -> null);
         context.activate();
-        manager.setActivationHandler(() -> {
-            return () -> deactivation.set(true);
-        });
+        manager.setActivationHandler(() -> () -> deactivation.set(true));
         context.deactivate();
         Assert.assertTrue("Handler not invoked upon deactivate",
                 deactivation.get());
@@ -109,13 +107,9 @@ public class AbstractCollaborationManagerTest {
         Manager manager = createManager();
         MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
-        manager.openTopicConnection(context, connection -> {
-            return null;
-        });
+        manager.openTopicConnection(context, connection -> null);
         context.activate();
-        manager.setActivationHandler(() -> {
-            return () -> deactivation.set(true);
-        });
+        manager.setActivationHandler(() -> () -> deactivation.set(true));
         manager.close();
         Assert.assertTrue("Handler not invoked upon close", deactivation.get());
     }
@@ -125,28 +119,35 @@ public class AbstractCollaborationManagerTest {
         Manager manager = createManager();
         MockConnectionContext context = new MockConnectionContext();
         AtomicBoolean deactivation = new AtomicBoolean();
-        manager.openTopicConnection(context, connection -> {
-            return null;
-        });
+        manager.openTopicConnection(context, connection -> null);
         context.activate();
-        manager.setActivationHandler(() -> {
-            return () -> deactivation.set(true);
-        });
+        manager.setActivationHandler(() -> () -> deactivation.set(true));
         manager.setActivationHandler(() -> null);
         Assert.assertTrue(
                 "Existing egistration not removed when the handler is replaced",
                 deactivation.get());
     }
 
+    @Test
+    public void serializeManager() {
+        Manager manager = createManager();
+
+        Manager deserializedManager = TestUtils.serialize(manager);
+
+        assertEquals(manager.getLocalUser(),
+                deserializedManager.getLocalUser());
+        assertEquals(manager.getTopicId(), deserializedManager.getTopicId());
+    }
+
     private Manager createManager() {
-        return new Manager(new UserInfo("local"), TOPIC_ID, ce);
+        return new Manager(new UserInfo("local"), TOPIC_ID, ceSupplier);
     }
 
     static class Manager extends AbstractCollaborationManager {
 
         protected Manager(UserInfo localUser, String topicId,
-                CollaborationEngine collaborationEngine) {
-            super(localUser, topicId, collaborationEngine);
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
+            super(localUser, topicId, ceSupplier);
         }
     }
 }

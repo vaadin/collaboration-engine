@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -71,7 +72,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     private static final List<Class<?>> SUPPORTED_COLLECTION_TYPES = Arrays
             .asList(List.class, Set.class);
 
-    static class JsonHandler<T> {
+    static class JsonHandler<T> implements Serializable {
         private final SerializableFunction<T, JsonNode> serializer;
         private final SerializableFunction<JsonNode, T> deserializer;
 
@@ -221,7 +222,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
     }
 
     private final UserInfo localUser;
-    private final CollaborationEngine ce;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
     private final FieldHighlighter fieldHighlighter;
 
     private ComponentConnectionContext connectionContext;
@@ -256,16 +257,21 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
      * @since 1.0
      */
     public CollaborationBinder(Class<BEAN> beanType, UserInfo localUser) {
-        this(beanType, localUser, CollaborationEngine.getInstance());
+        this(beanType, localUser, CollaborationEngine::getInstance);
     }
 
     CollaborationBinder(Class<BEAN> beanType, UserInfo localUser,
-            CollaborationEngine ce) {
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
         super(beanType);
         this.localUser = Objects.requireNonNull(localUser,
                 "User cannot be null");
-        this.ce = ce;
-        this.fieldHighlighter = new FieldHighlighter(ce::getUserColorIndex);
+        this.ceSupplier = ceSupplier;
+        this.fieldHighlighter = new FieldHighlighter(
+                user -> getCollaborationEngine().getUserColorIndex(user));
+    }
+
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
     }
 
     @Override
@@ -640,7 +646,7 @@ public class CollaborationBinder<BEAN> extends Binder<BEAN>
                     field -> connectionContext.addComponent((Component) field));
 
             formManager = new FormManager(connectionContext, localUser, topicId,
-                    ce);
+                    ceSupplier);
             formManager.setActivationHandler(() -> {
                 initializeBindingsWithoutFieldState(initialBeanSupplier);
                 return null;

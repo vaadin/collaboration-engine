@@ -1,5 +1,6 @@
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -178,7 +179,8 @@ public class TestUtil {
         }
     }
 
-    static class TestCollaborationEngine extends CollaborationEngine {
+    static class TestCollaborationEngine extends CollaborationEngine
+            implements Serializable {
 
         private volatile boolean asynchronous;
 

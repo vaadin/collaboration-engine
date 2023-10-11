@@ -48,6 +48,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import com.vaadin.collaborationengine.Backend.EventLog;
 import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.MessageDigestUtil;
 
 /**
@@ -178,7 +179,7 @@ class LicenseHandler {
     static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
     static final ObjectMapper MAPPER = createObjectMapper();
 
-    private final CollaborationEngine ce;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
     private final CollaborationEngineConfiguration configuration;
     private final Backend backend;
     final LicenseStorage licenseStorage;
@@ -189,9 +190,9 @@ class LicenseHandler {
     private final List<UUID> backendNodes = new ArrayList<>();
     private boolean leader;
 
-    LicenseHandler(CollaborationEngine collaborationEngine) {
-        this.ce = collaborationEngine;
-        this.configuration = collaborationEngine.getConfiguration();
+    LicenseHandler(SerializableSupplier<CollaborationEngine> ceSupplier) {
+        this.ceSupplier = ceSupplier;
+        this.configuration = getCollaborationEngine().getConfiguration();
         this.backend = configuration.getBackend();
         if (configuration.isLicenseCheckingEnabled()) {
             LicenseStorage configuredStorage = configuration
@@ -232,13 +233,19 @@ class LicenseHandler {
                     break;
                 }
             });
-            BackendUtil.initializeFromSnapshot(ce, this::initializeFromSnapshot)
+            BackendUtil
+                    .initializeFromSnapshot(getCollaborationEngine(),
+                            this::initializeFromSnapshot)
                     .thenAccept(uuid -> lastSnapshotId = uuid);
         } else {
             licenseEventLog = null;
             licenseStorage = null;
             license = null;
         }
+    }
+
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
     }
 
     boolean isLeader() {
@@ -366,8 +373,8 @@ class LicenseHandler {
         default:
             message = type.createMessage();
         }
-        configuration.getLicenseEventHandler()
-                .handleLicenseEvent(new LicenseEvent(ce, type, message));
+        configuration.getLicenseEventHandler().handleLicenseEvent(
+                new LicenseEvent(getCollaborationEngine(), type, message));
     }
 
     private Reader getLicenseFromProperty(String licenseProperty) {
@@ -497,7 +504,7 @@ class LicenseHandler {
     }
 
     private LocalDate getCurrentDate() {
-        return LocalDate.now(ce.getClock());
+        return LocalDate.now(getCollaborationEngine().getClock());
     }
 
     private RuntimeException createLicenseInvalidException(Throwable cause) {

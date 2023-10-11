@@ -47,7 +47,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_addUsers_usersAdded() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         Assert.assertTrue(licenseHandler.getStatistics().isEmpty());
         licenseHandler.registerUser("steve");
 
@@ -68,7 +68,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_addSameUserTwice_userAddedOnlyOnce() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
         licenseHandler.registerUser("steve");
@@ -83,7 +83,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_monthChanges_userIsReAdded() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
         setCurrentDate(LocalDate.of(2020, 6, 1));
@@ -103,10 +103,11 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void openTopicConnection_userRegistered() {
-        ce.openTopicConnection(MockConnectionContext.createEager(), "foo",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "foo",
                 new UserInfo("steve"), topicConnection -> null);
-        Map<YearMonth, Set<String>> statistics = ce.getLicenseHandler()
-                .getStatistics();
+        Map<YearMonth, Set<String>> statistics = getCollaborationEngine()
+                .getLicenseHandler().getStatistics();
         Assert.assertEquals(1, statistics.keySet().size());
         Assert.assertTrue(statistics.containsKey(getCurrentMonth()));
         Set<String> currentMonth = statistics.get(getCurrentMonth());
@@ -117,7 +118,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void noStatsFile_initStatistics_hasEmptyMap() throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertEquals(Collections.emptyMap(),
@@ -128,7 +129,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void noStatsFile_initStatistics_hasNullGracePeriodStart()
             throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         Assert.assertFalse("Expected the stats file not to exist.",
                 Files.exists(statsFilePath));
         Assert.assertNull("Grace period start should have been unset",
@@ -138,7 +139,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void noStatsFile_registerUser_statsFileCreated() throws IOException {
         Files.deleteIfExists(statsFilePath);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(LocalDate.of(2020, 2, 1));
         licenseHandler.registerUser("steve");
 
@@ -153,7 +154,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToStatsFile(
                 "{\"licenseKey\":\"123\",\"statistics\":{\"2000-01\":[\"bob\"]},\"licenseEvents\":{}}");
         setCurrentDate(LocalDate.of(2000, 1, 1));
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
         Assert.assertEquals(Collections.singleton("bob"),
@@ -166,7 +167,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToStatsFile("{\"licenseKey\":\"" + LICENSE_KEY
                 + "\",\"statistics\":{\"2020-01\":[\"bob\"]},\"licenseEvents\":{}}");
         setCurrentDate(LocalDate.of(2020, 1, 1));
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         licenseHandler.registerUser("steve");
 
         Assert.assertEquals(1, licenseHandler.getStatistics().size());
@@ -187,7 +188,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                         + "\"licenseExpired\":\"2020-01-10\","
                         + "\"gracePeriodStarted\":\"2019-12-15\","
                         + "\"gracePeriodEnded\":\"2020-01-15\"" + "}}");
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(LocalDate.of(2020, 1, 25));
 
         // Do an action to trigger rewrite of the stats file
@@ -206,7 +207,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\"licenseExpiresSoon\":\"2020-01-10\","
                 + "\"gracePeriodStarted\":\"2019-12-15\","
                 + "\"gracePeriodEnded\":\"2020-01-15\"" + "}}");
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(LocalDate.of(2020, 1, 25));
         // Do an action to trigger rewrite of the stats file
         licenseHandler.registerUser("steve");
@@ -228,7 +229,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerMultipleUsersAndMonths_writeToFile_readFromFile() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(LocalDate.of(2020, 2, 1));
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
@@ -241,7 +242,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\",\"statistics\":{\"2020-02\":[\"steve\",\"bob\"],"
                 + "\"2020-03\":[\"steve\"]},\"licenseEvents\":{}}");
 
-        Map<YearMonth, Set<String>> newStats = new LicenseHandler(ce)
+        Map<YearMonth, Set<String>> newStats = new LicenseHandler(ceSupplier)
                 .getStatistics();
 
         // Only current month is loaded to cache
@@ -254,7 +255,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void statsFileHasInvalidData_initLicenseHandler_throws()
             throws IOException {
         writeToStatsFile("I'm invalid");
-        new LicenseHandler(ce);
+        new LicenseHandler(ceSupplier);
     }
 
     @Test
@@ -263,7 +264,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("statistics file is not valid");
 
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         licenseHandler.registerUser("steve");
         licenseHandler.registerUser("bob");
 
@@ -272,7 +273,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 "[\"steve\"]");
         Files.write(statsFilePath, tamperedStats.getBytes());
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -283,7 +285,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("Missing required configuration property");
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -295,7 +298,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -306,7 +310,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("failed to find the license file");
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -318,7 +323,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INVALID_LICENSE);
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -335,7 +341,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INVALID_LICENSE);
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -353,7 +360,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INVALID_LICENSE);
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -363,9 +371,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToLicenseFile("{checksum:\"foo\"}");
 
         try {
-            ce.openTopicConnection(MockConnectionContext.createEager(),
-                    "topic-id", new UserInfo("user-id"),
-                    topicConnection -> null);
+            getCollaborationEngine().openTopicConnection(
+                    MockConnectionContext.createEager(), "topic-id",
+                    new UserInfo("user-id"), topicConnection -> null);
         } catch (IllegalStateException e) {
             // expected
         }
@@ -374,7 +382,8 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expectMessage(INVALID_LICENSE);
 
         // open a second connection
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo("user-id"), topicConnection -> null);
     }
 
@@ -383,7 +392,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         List<String> users = generateIds(GRACE_QUOTA + 5);
         List<String> usersWithConnectionActivated = new ArrayList<>();
 
-        users.forEach(userId -> ce.openTopicConnection(
+        users.forEach(userId -> getCollaborationEngine().openTopicConnection(
                 MockConnectionContext.createEager(), "topic",
                 new UserInfo(userId), topicConnection -> {
                     usersWithConnectionActivated.add(userId);
@@ -397,12 +406,13 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void openTopicConnection_effectiveQuotaExceededButUserHasSeat_connectionActivated() {
         List<String> userIds = generateIds(GRACE_QUOTA + 5);
-        userIds.forEach(userId -> ce.openTopicConnection(
+        userIds.forEach(userId -> getCollaborationEngine().openTopicConnection(
                 MockConnectionContext.createEager(), "topic",
                 new UserInfo(userId), topicConnection -> null));
 
         AtomicBoolean connectionActivated = new AtomicBoolean(false);
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic",
                 new UserInfo(userIds.get(0)), topicConnection -> {
                     Assert.assertFalse(connectionActivated.get());
                     connectionActivated.set(true);
@@ -414,7 +424,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_normalQuotaFullNoGraceNewUserEnters_graceStartedAndAccessGranted() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         registerUsers(licenseHandler, QUOTA);
         Assert.assertNull("Grace period was expected to not have started",
                 licenseHandler.getGracePeriodStarted());
@@ -432,7 +442,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_graceOngoingNewUserEnters_accessGranted() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         registerUsers(licenseHandler, QUOTA + 1);
         Assert.assertNotNull("Grace period was expected to be ongoing",
                 licenseHandler.getGracePeriodStarted());
@@ -447,7 +457,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_normalQuotaFullNoGraceExistingUserEnters_accessGrantedNoGracePeriod() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         List<String> users = registerUsers(licenseHandler, QUOTA);
         Assert.assertNull("Grace period was expected to not have started",
                 licenseHandler.getGracePeriodStarted());
@@ -460,7 +470,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_tenTimesQuotaAvailableInGrace_accessGranted() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         List<String> users = generateIds(GRACE_QUOTA);
         for (String user : users) {
             Assert.assertTrue("User wasn't given access",
@@ -472,7 +482,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_usersExceedingGraceQuota_accessDenied() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         registerUsers(licenseHandler, GRACE_QUOTA);
         boolean wasAccessGranted = licenseHandler.registerUser("steve");
         Assert.assertFalse("User should have been denied access",
@@ -483,7 +493,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_graceQuotaFullNormalQuotaUserReturns_accessGranted() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         List<String> users = registerUsers(licenseHandler, GRACE_QUOTA);
         boolean wasAccessGranted = licenseHandler.registerUser(users.get(1));
         Assert.assertTrue("User should have been given access",
@@ -494,7 +504,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
     @Test
     public void registerUser_graceQuotaFullGraceQuotaUserReturns_accessGranted() {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         List<String> users = registerUsers(licenseHandler, GRACE_QUOTA);
         boolean wasAccessGranted = licenseHandler
                 .registerUser(users.get(QUOTA * 2));
@@ -510,7 +520,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         writeToStatsFile(
                 "{\"licenseKey\":\"123\",\"statistics\":{\"2020-05\":[\"userId-1\",\"userId-2\""
                         + "]},\"licenseEvents\":{}}");
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         Assert.assertNull(licenseHandler.getGracePeriodStarted());
     }
 
@@ -551,9 +561,9 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         MockConnectionContext spyContext = new MockConnectionContext();
         spyContext.setEager(true);
-        ce.requestAccess(spyContext, user, result -> {
+        getCollaborationEngine().requestAccess(spyContext, user, result -> {
         });
-        Assert.assertTrue(spyContext.getDispathActionCount() > 0);
+        Assert.assertTrue(spyContext.getDispatchActionCount() > 0);
     }
 
     @Test
@@ -561,7 +571,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         UserInfo user = new UserInfo("steve");
         MockUI ui = new MockUI();
         UI.setCurrent(ui);
-        ce.requestAccess(user, result -> {
+        getCollaborationEngine().requestAccess(user, result -> {
         });
         Assert.assertFalse(ui.getAccessTasks().isEmpty());
         UI.setCurrent(null);
@@ -570,7 +580,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test(expected = IllegalStateException.class)
     public void requestAccess_throwsIfNoUiAvailable() {
         UserInfo user = new UserInfo("steve");
-        ce.requestAccess(user, result -> {
+        getCollaborationEngine().requestAccess(user, result -> {
         });
     }
 
@@ -581,7 +591,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         MockConnectionContext spyContext = new MockConnectionContext();
         spyContext.setEager(true);
         configuration.setLicenseCheckingEnabled(false);
-        ce.requestAccess(spyContext, user, response -> {
+        getCollaborationEngine().requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
         Assert.assertTrue(result.get());
@@ -594,7 +604,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         AtomicBoolean result = new AtomicBoolean(false);
         MockConnectionContext spyContext = new MockConnectionContext();
         spyContext.setEager(true);
-        ce.requestAccess(spyContext, user, response -> {
+        getCollaborationEngine().requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
         Assert.assertTrue(result.get());
@@ -607,7 +617,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         AtomicBoolean result = new AtomicBoolean(true);
         MockConnectionContext spyContext = new MockConnectionContext();
         spyContext.setEager(true);
-        ce.requestAccess(spyContext, user, response -> {
+        getCollaborationEngine().requestAccess(spyContext, user, response -> {
             result.set(response.hasAccess());
         });
         Assert.assertFalse(result.get());
@@ -623,7 +633,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
         UserInfo user = new UserInfo("steve");
         MockConnectionContext spyContext = MockConnectionContext.createEager();
-        ce.requestAccess(spyContext, user, response -> {
+        getCollaborationEngine().requestAccess(spyContext, user, response -> {
         });
     }
 
@@ -632,7 +642,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
             throws IOException {
         LocalDate dateNow = LocalDate.of(2020, 6, 10);
         writeToLicenseFile(3, dateNow);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(dateNow);
         Assert.assertTrue("User should have been given access",
                 licenseHandler.registerUser("userId-1"));
@@ -642,7 +652,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void registerUser_licenseExpired_accessDenied() throws IOException {
         LocalDate dateNow = LocalDate.of(2020, 6, 11);
         writeToLicenseFile(3, LocalDate.of(2020, 6, 10));
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(dateNow);
         Assert.assertFalse("User should have been denied access",
                 licenseHandler.registerUser("userId-1"));
@@ -654,7 +664,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         LocalDate dateNow = LocalDate.of(2020, 6, 11);
         writeToLicenseFile(3, LocalDate.of(2020, 6, 10));
 
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         setCurrentDate(dateNow.minusDays(1));
         licenseHandler.registerUser("steve");
@@ -676,7 +686,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         LocalDate dateNow = LocalDate.of(2020, 6, 10);
         writeToLicenseFile(3, LocalDate.of(2020, 7, 10));
 
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         setCurrentDate(dateNow.minusDays(1));
         licenseHandler.registerUser("steve");
@@ -695,7 +705,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void licenseEventHandler_gracePeriodStarted_eventFiredOnce()
             throws IOException {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         registerUsers(licenseHandler, 3);
         boolean eventFired = spyEventHandler.getHandledEvents()
                 .containsKey(LicenseEventType.GRACE_PERIOD_STARTED);
@@ -714,7 +724,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         LocalDate dateNow = LocalDate.of(2020, 6, 11);
         writeToLicenseFile(3, LocalDate.of(2020, 8, 10));
 
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         setCurrentDate(dateNow);
         registerUsers(licenseHandler, 4);
@@ -744,7 +754,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\"licenseEvents\":{\"licenseExpired\":\"2020-06-11\"}}");
         LocalDate dateNow = LocalDate.of(2020, 6, 11);
         writeToLicenseFile(3, LocalDate.of(2020, 6, 10));
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         setCurrentDate(dateNow);
         licenseHandler.registerUser("foo");
         boolean eventFired = spyEventHandler.getHandledEvents()
@@ -755,7 +765,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     @Test
     public void licenseEventHandler_gracePeriodStarted_messageHasCorrectDate()
             throws IOException {
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         registerUsers(licenseHandler, 4);
 
         String message = spyEventHandler.getMessages().get(0);
@@ -769,7 +779,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         LocalDate endDate = LocalDate.of(2020, 7, 10);
         writeToLicenseFile(3, endDate);
 
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         setCurrentDate(dateNow);
         licenseHandler.registerUser("steve");
@@ -782,7 +792,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
     public void configureCustomStorage_customStorageIsUsed() {
         CustomLicenseStorage storage = new CustomLicenseStorage();
         configuration.setLicenseStorage(storage);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         licenseHandler.registerUser("foo");
 
         Assert.assertEquals(1, storage.licenses.size());
@@ -803,7 +813,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
 
         LicenseInfoWrapper wrapper = LicenseHandler.MAPPER.readValue(license,
                 LicenseInfoWrapper.class);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
 
         Assert.assertEquals(wrapper.content.key, licenseHandler.license.key);
     }
@@ -818,7 +828,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(INVALID_LICENSE);
 
-        new LicenseHandler(ce);
+        new LicenseHandler(ceSupplier);
     }
 
     @Test
@@ -918,7 +928,7 @@ public class LicenseHandlerTest extends AbstractLicenseTest {
                 + "\"licenseEvents\":{\"gracePeriodStarted\":\"" + graceStart
                 + "\"}}");
         setCurrentDate(dateNow);
-        LicenseHandler licenseHandler = new LicenseHandler(ce);
+        LicenseHandler licenseHandler = new LicenseHandler(ceSupplier);
         return licenseHandler;
     }
 

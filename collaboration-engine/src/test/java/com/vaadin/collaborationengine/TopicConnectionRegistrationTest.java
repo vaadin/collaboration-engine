@@ -11,8 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
-import com.vaadin.collaborationengine.util.SpyActivationHandler;
-import com.vaadin.flow.server.Command;
 
 public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
 
@@ -42,7 +40,7 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
                 e -> connectionFailedCallCount.incrementAndGet());
         Assert.assertEquals(0, connectionFailedCallCount.get());
         Assert.assertEquals(1, executedActions.size());
-        Assert.assertEquals(1, context.getDispathActionCount());
+        Assert.assertEquals(1, context.getDispatchActionCount());
 
         executedActions.get(0).run();
         Assert.assertEquals(1, connectionFailedCallCount.get());
@@ -84,8 +82,8 @@ public class TopicConnectionRegistrationTest extends AbstractLicenseTest {
 
     private TopicConnectionRegistration openTopicConnection(
             ConnectionContext connectionContext) {
-        return ce.openTopicConnection(connectionContext, "topic-id",
-                new UserInfo(UUID.randomUUID().toString()),
+        return getCollaborationEngine().openTopicConnection(connectionContext,
+                "topic-id", new UserInfo(UUID.randomUUID().toString()),
                 topicConnection -> null);
     }
 }

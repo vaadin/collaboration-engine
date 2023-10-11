@@ -10,6 +10,7 @@
 
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -23,7 +24,7 @@ import com.vaadin.flow.server.Command;
  *
  * @author Vaadin Ltd
  */
-public interface ActionDispatcher {
+public interface ActionDispatcher extends Serializable {
 
     /**
      * Dispatches the given action.

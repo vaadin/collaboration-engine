@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -23,7 +24,7 @@ import com.vaadin.collaborationengine.CollaborationAvatarGroup.ImageProvider;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public class UserInfo {
+public class UserInfo implements Serializable {
 
     private String id;
     private String name;

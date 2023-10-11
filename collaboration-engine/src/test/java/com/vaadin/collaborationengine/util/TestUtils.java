@@ -1,5 +1,10 @@
 package com.vaadin.collaborationengine.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -14,6 +19,8 @@ import com.vaadin.collaborationengine.CollaborationEngine;
 import com.vaadin.collaborationengine.CollaborationMap;
 import com.vaadin.collaborationengine.TopicConnection;
 import com.vaadin.collaborationengine.UserInfo;
+
+import static org.junit.Assert.fail;
 
 public class TestUtils {
 
@@ -60,5 +67,20 @@ public class TestUtils {
     @SafeVarargs
     public static <E> Set<E> newHashSet(E... items) {
         return new HashSet<>(Arrays.asList(items));
+    }
+
+    public static <T> T serialize(T object) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            new ObjectOutputStream(out).writeObject(object);
+
+            ByteArrayInputStream in = new ByteArrayInputStream(
+                    out.toByteArray());
+            return (T) new ObjectInputStream(in).readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            fail();
+        }
+        return null;
     }
 }

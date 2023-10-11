@@ -22,7 +22,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  */
 @FunctionalInterface
-public interface HighlightHandler {
+public interface HighlightHandler extends Serializable {
     /**
      * The context of the highlight.
      */

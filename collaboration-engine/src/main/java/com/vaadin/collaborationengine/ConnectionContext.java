@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.concurrent.Executor;
 
 import com.vaadin.flow.component.UI;
@@ -43,7 +44,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public interface ConnectionContext {
+public interface ConnectionContext extends Serializable {
 
     /**
      * Initializes the connection context with a {@link ActivationHandler} and

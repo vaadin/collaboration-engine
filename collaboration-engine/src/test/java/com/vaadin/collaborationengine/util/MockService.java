@@ -22,6 +22,54 @@ import com.vaadin.flow.server.startup.ApplicationConfiguration;
 
 public class MockService extends VaadinService {
 
+    class MockApplicationConfiguration implements ApplicationConfiguration {
+        boolean productionMode;
+
+        public MockApplicationConfiguration(boolean productionMode) {
+            this.productionMode = productionMode;
+        }
+
+        @Override
+        public Enumeration<String> getPropertyNames() {
+            return new Enumeration<String>() {
+                @Override
+                public boolean hasMoreElements() {
+                    return false;
+                }
+
+                @Override
+                public String nextElement() {
+                    return null;
+                }
+            };
+        }
+
+        @Override
+        public VaadinContext getContext() {
+            return MockService.super.getContext();
+        }
+
+        @Override
+        public boolean isDevModeSessionSerializationEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isProductionMode() {
+            return productionMode;
+        }
+
+        @Override
+        public String getStringProperty(String s, String s1) {
+            return s1;
+        }
+
+        @Override
+        public boolean getBooleanProperty(String s, boolean b) {
+            return false;
+        }
+    }
+
     static class MockContext implements VaadinContext {
 
         private final Map<Class<?>, Object> context = new ConcurrentHashMap<>();
@@ -62,50 +110,13 @@ public class MockService extends VaadinService {
     }
 
     private DeploymentConfiguration deploymentConfiguration;
+    private ApplicationConfiguration applicationConfiguration;
 
     public MockService(boolean productionMode) {
+        applicationConfiguration = new MockApplicationConfiguration(
+                productionMode);
         deploymentConfiguration = new DefaultDeploymentConfiguration(
-                new ApplicationConfiguration() {
-                    @Override
-                    public Enumeration<String> getPropertyNames() {
-                        return new Enumeration<String>() {
-                            @Override
-                            public boolean hasMoreElements() {
-                                return false;
-                            }
-
-                            @Override
-                            public String nextElement() {
-                                return null;
-                            }
-                        };
-                    }
-
-                    @Override
-                    public VaadinContext getContext() {
-                        return MockService.super.getContext();
-                    }
-
-                    @Override
-                    public boolean isDevModeSessionSerializationEnabled() {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isProductionMode() {
-                        return productionMode;
-                    }
-
-                    @Override
-                    public String getStringProperty(String s, String s1) {
-                        return null;
-                    }
-
-                    @Override
-                    public boolean getBooleanProperty(String s, boolean b) {
-                        return false;
-                    }
-                }, Object.class, new Properties()) {
+                applicationConfiguration, Object.class, new Properties()) {
         };
     }
 
@@ -175,6 +186,9 @@ public class MockService extends VaadinService {
 
     @Override
     protected VaadinContext constructVaadinContext() {
-        return new MockContext();
+        MockContext context = new MockContext();
+        context.setAttribute(ApplicationConfiguration.class,
+                applicationConfiguration);
+        return context;
     }
 }

@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.Topic.ChangeResult;
+import com.vaadin.collaborationengine.util.TestUtils;
 
 public class TopicTest {
 
@@ -163,5 +164,10 @@ public class TopicTest {
 
         Assert.assertEquals("Non-failing subscriber should still be notified",
                 2, count.get());
+    }
+
+    @Test
+    public void serializeTopic() {
+        Topic deserializedTopic = TestUtils.serialize(topic);
     }
 }

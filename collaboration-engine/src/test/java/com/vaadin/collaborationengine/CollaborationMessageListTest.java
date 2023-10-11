@@ -23,9 +23,11 @@ import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
 import com.vaadin.collaborationengine.util.TestStreamResource;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageList;
 import com.vaadin.flow.component.messages.MessageListItem;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
 
 public class CollaborationMessageListTest {
@@ -36,24 +38,25 @@ public class CollaborationMessageListTest {
         final UI ui;
         final UserInfo user;
         CollaborationMessageList messageList;
-        CollaborationEngine ce;
+        SerializableSupplier<CollaborationEngine> ceSupplier;
         String topicId = null;
 
-        MessageListTestClient(int index, CollaborationEngine ce) {
-            this(index, TOPIC_ID, null, ce);
+        MessageListTestClient(int index,
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
+            this(index, TOPIC_ID, null, ceSupplier);
         }
 
         MessageListTestClient(int index, String topicId,
                 CollaborationMessagePersister persister,
-                CollaborationEngine ce) {
-            this.ce = ce;
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
+            this.ceSupplier = ceSupplier;
             this.ui = new MockUI();
             this.user = new UserInfo("id" + index, "name" + index,
                     "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
             messageList = new CollaborationMessageList(user, topicId, persister,
-                    ce);
+                    ceSupplier);
         }
 
         private List<MessageListItem> getMessages() {
@@ -72,9 +75,13 @@ public class CollaborationMessageListTest {
         public void sendMessage(String content) {
             messageList.appendMessage(content);
         }
+
+        CollaborationEngine getCollaborationEngine() {
+            return ceSupplier.get();
+        }
     }
 
-    private CollaborationEngine ce;
+    private SerializableSupplier<CollaborationEngine> ceSupplier;
 
     private MessageListTestClient client1;
     private MessageListTestClient client2;
@@ -87,9 +94,11 @@ public class CollaborationMessageListTest {
     public void init() {
         VaadinService service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
-        client1 = new MessageListTestClient(1, ce);
-        client2 = new MessageListTestClient(2, ce);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ceSupplier = () -> ce;
+        client1 = new MessageListTestClient(1, ceSupplier);
+        client2 = new MessageListTestClient(2, ceSupplier);
 
         backend = new HashMap<>();
         persister = CollaborationMessagePersister.fromCallbacks(
@@ -104,7 +113,7 @@ public class CollaborationMessageListTest {
                                 t -> new ArrayList<>())
                         .add(event.getMessage()));
 
-        client3 = new MessageListTestClient(3, TOPIC_ID, persister, ce);
+        client3 = new MessageListTestClient(3, TOPIC_ID, persister, ceSupplier);
     }
 
     @After
@@ -119,7 +128,7 @@ public class CollaborationMessageListTest {
         client1.attach();
         client1.setTopic(TOPIC_ID);
         Assert.assertEquals(Collections.emptyList(), client1.getMessages());
-        client1.ce.setClock(
+        client1.getCollaborationEngine().setClock(
                 Clock.fixed(Instant.ofEpochSecond(10), ZoneOffset.UTC));
         client1.sendMessage("new message");
         List<MessageListItem> messages = client1.getMessages();
@@ -301,7 +310,8 @@ public class CollaborationMessageListTest {
     @Test
     public void withPersister_appendMessage_messagesAreWrittenToBackend() {
         Instant time = Instant.now();
-        client3.ce.setClock(Clock.fixed(time, ZoneOffset.UTC));
+        client3.getCollaborationEngine()
+                .setClock(Clock.fixed(time, ZoneOffset.UTC));
         client3.attach();
         client3.messageList.appendMessage("foo");
         CollaborationMessage message = backend.get(TOPIC_ID).get(0);
@@ -359,7 +369,7 @@ public class CollaborationMessageListTest {
                                 .computeIfAbsent(event.getTopicId(),
                                         t -> new ArrayList<>())
                                 .add(event.getMessage())),
-                ce);
+                ceSupplier);
         addMessageToBackend(TOPIC_ID, client.user, "foo", Instant.now());
         client.attach();
         client.messageList.appendMessage("foo");
@@ -371,7 +381,7 @@ public class CollaborationMessageListTest {
                 .fromCallbacks(query -> Stream.of(new CollaborationMessage()),
                         event -> {
                         });
-        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
+        new MessageListTestClient(0, TOPIC_ID, persister, ceSupplier).attach();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -382,7 +392,7 @@ public class CollaborationMessageListTest {
                     return Stream.of(new CollaborationMessage());
                 }, event -> {
                 });
-        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
+        new MessageListTestClient(0, TOPIC_ID, persister, ceSupplier).attach();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -393,7 +403,7 @@ public class CollaborationMessageListTest {
                     return Stream.of(new CollaborationMessage());
                 }, event -> {
                 });
-        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
+        new MessageListTestClient(0, TOPIC_ID, persister, ceSupplier).attach();
     }
 
     @Test
@@ -401,7 +411,7 @@ public class CollaborationMessageListTest {
         CollaborationMessagePersister persister = CollaborationMessagePersister
                 .fromCallbacks(query -> Stream.empty(), event -> {
                 });
-        new MessageListTestClient(0, TOPIC_ID, persister, ce).attach();
+        new MessageListTestClient(0, TOPIC_ID, persister, ceSupplier).attach();
     }
 
     private void addMessageToBackend(String topicId, UserInfo user, String text,
@@ -536,5 +546,13 @@ public class CollaborationMessageListTest {
                 client1.getMessages().get(0).getText());
         Assert.assertEquals("name2: bar",
                 client1.getMessages().get(1).getText());
+    }
+
+    @Test
+    public void serializeMessageList() {
+        CollaborationMessageList messageList = client1.messageList;
+
+        CollaborationMessageList deserializedMessageList = TestUtils
+                .serialize(messageList);
     }
 }

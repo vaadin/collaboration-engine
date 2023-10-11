@@ -14,7 +14,7 @@ import com.vaadin.flow.shared.Registration;
 
 public class MockConnectionContext implements ConnectionContext {
 
-    private ActivationHandler activationHandler;
+    private transient ActivationHandler activationHandler;
 
     boolean closed = false;
 
@@ -24,7 +24,7 @@ public class MockConnectionContext implements ConnectionContext {
 
     private ActionDispatcher actionDispatcher = new MockActionDispatcher();
 
-    private Executor executor;
+    private transient Executor executor;
 
     private boolean executorExplicitlySet;
 
@@ -63,7 +63,7 @@ public class MockConnectionContext implements ConnectionContext {
         };
     }
 
-    public int getDispathActionCount() {
+    public int getDispatchActionCount() {
         return actionDispatchCount.get();
     }
 

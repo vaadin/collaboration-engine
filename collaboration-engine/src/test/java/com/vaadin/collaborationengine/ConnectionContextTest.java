@@ -5,6 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.TestUtils;
 
 public class ConnectionContextTest {
 
@@ -34,7 +35,7 @@ public class ConnectionContextTest {
     public void subscribe_actionDispatchedThroughContext() {
         map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
-                context.getDispathActionCount() > 0);
+                context.getDispatchActionCount() > 0);
     }
 
     @Test
@@ -42,6 +43,11 @@ public class ConnectionContextTest {
         context.resetActionDispatchCount();
         map.put("foo", "bar");
         Assert.assertTrue("Context should be passed through.",
-                context.getDispathActionCount() > 0);
+                context.getDispatchActionCount() > 0);
+    }
+
+    @Test
+    public void serializedContext() {
+        ConnectionContext deserializedContext = TestUtils.serialize(context);
     }
 }

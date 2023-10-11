@@ -9,7 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
-import java.util.function.Consumer;
+import com.vaadin.flow.function.SerializableConsumer;
 
 /**
  * Defines when to execute the connection callback
@@ -23,6 +23,7 @@ import java.util.function.Consumer;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public interface ActivationHandler extends Consumer<ActionDispatcher> {
+public interface ActivationHandler
+        extends SerializableConsumer<ActionDispatcher> {
 
 }

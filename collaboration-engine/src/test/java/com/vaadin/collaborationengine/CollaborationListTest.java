@@ -180,7 +180,7 @@ public class CollaborationListTest {
          * 3 - completing the future
          * 4 - event dispatching
         -*/
-        Assert.assertEquals(4, context.getDispathActionCount());
+        Assert.assertEquals(4, context.getDispatchActionCount());
     }
 
     @Test
@@ -213,12 +213,12 @@ public class CollaborationListTest {
          * 3 - completing the future
          * 4 - event dispatching
         -*/
-        Assert.assertEquals(4, ctx1.getDispathActionCount());
+        Assert.assertEquals(4, ctx1.getDispatchActionCount());
         /*-
          * 1 - activation
          * 2 - event dispatching
         -*/
-        Assert.assertEquals(2, ctx2.getDispathActionCount());
+        Assert.assertEquals(2, ctx2.getDispatchActionCount());
     }
 
     @Test

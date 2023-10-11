@@ -96,7 +96,8 @@ public class StatsFilePerformanceTest extends AbstractLicenseTest {
 
         final AtomicReference<Double> result = new AtomicReference<>(null);
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), "topic-id",
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), "topic-id",
                 new UserInfo(userId), topicConnection -> {
                     final long endTime = System.nanoTime();
                     result.set((endTime - startTime) / 1000000d);

@@ -294,4 +294,10 @@ public class SystemConnectionContextTest {
 
         Assert.assertTrue(concurrentCount.get() > 0);
     }
+
+    @Test
+    public void serializeContext() {
+        SystemConnectionContext deserializedContext = TestUtils
+                .serialize(context);
+    }
 }

@@ -84,7 +84,7 @@ public class SystemConnectionContext implements ConnectionContext {
         }
     }
 
-    private final CollaborationEngine ce;
+    private final transient CollaborationEngine ce;
 
     // Active handlers to deactivate if the service is destroyed
     private final Set<ActivationHandler> activeHandlers = new HashSet<>();

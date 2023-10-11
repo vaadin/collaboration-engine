@@ -14,6 +14,7 @@ import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
 
 public class PresenceManagerTest {
@@ -22,13 +23,15 @@ public class PresenceManagerTest {
 
     private VaadinService service;
 
-    private CollaborationEngine ce;
+    private SerializableSupplier<CollaborationEngine> ceSupplier;
 
     @Before
     public void init() {
         service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ceSupplier = () -> ce;
     }
 
     @After
@@ -192,15 +195,24 @@ public class PresenceManagerTest {
         PresenceManager manager = createActiveManager(user);
         manager.markAsPresent(true);
         AtomicBoolean done = new AtomicBoolean(false);
-        TestUtils.openEagerConnection(ce, TOPIC_ID, topicConnection -> {
-            List<String> ids = topicConnection
-                    .getNamedList(PresenceManager.LIST_NAME)
-                    .getItems(UserInfo.class).stream().map(UserInfo::getId)
-                    .collect(Collectors.toList());
-            Assert.assertTrue(ids.contains("foo"));
-            done.set(true);
-        });
+        TestUtils.openEagerConnection(ceSupplier.get(), TOPIC_ID,
+                topicConnection -> {
+                    List<String> ids = topicConnection
+                            .getNamedList(PresenceManager.LIST_NAME)
+                            .getItems(UserInfo.class).stream()
+                            .map(UserInfo::getId).collect(Collectors.toList());
+                    Assert.assertTrue(ids.contains("foo"));
+                    done.set(true);
+                });
         Assert.assertTrue("Topic connection callback has not run", done.get());
+    }
+
+    @Test
+    public void serializePresenceManager() {
+        UserInfo user = new UserInfo("foo");
+        PresenceManager manager = createActiveManager(user);
+
+        PresenceManager deserializedManager = TestUtils.serialize(manager);
     }
 
     private PresenceManager createActiveManager(UserInfo user) {
@@ -209,6 +221,6 @@ public class PresenceManagerTest {
 
     private PresenceManager createActiveManager(UserInfo user, String topicId) {
         return new PresenceManager(MockConnectionContext.createEager(), user,
-                topicId, ce);
+                topicId, ceSupplier);
     }
 }

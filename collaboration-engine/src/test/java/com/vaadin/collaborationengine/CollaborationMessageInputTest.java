@@ -12,38 +12,43 @@ import org.junit.Test;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.MockUI;
 import com.vaadin.collaborationengine.util.ReflectionUtils;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.ComponentUtil;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.messages.MessageInput;
 import com.vaadin.flow.component.messages.MessageListItem;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
+
+import static org.junit.Assert.assertEquals;
 
 public class CollaborationMessageInputTest {
 
     private static final String TOPIC_ID = "topic";
 
     public static class MessageInputTestClient {
-        CollaborationEngine ce;
+        SerializableSupplier<CollaborationEngine> ceSupplier;
         final UI ui;
         final UserInfo user;
         CollaborationMessageList messageList;
         CollaborationMessageInput messageInput;
         String topicId = null;
 
-        MessageInputTestClient(int index, CollaborationEngine ce) {
-            this(index, TOPIC_ID, ce);
+        MessageInputTestClient(int index,
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
+            this(index, TOPIC_ID, ceSupplier);
         }
 
         MessageInputTestClient(int index, String topicId,
-                CollaborationEngine ce) {
-            this.ce = ce;
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
+            this.ceSupplier = ceSupplier;
             this.ui = new MockUI();
             this.user = new UserInfo("id" + index, "name" + index,
                     "image" + index);
             user.setAbbreviation("abbreviation" + index);
             user.setColorIndex(index);
             messageList = new CollaborationMessageList(this.user, null, null,
-                    ce);
+                    ceSupplier);
             messageInput = new CollaborationMessageInput(messageList);
 
         }
@@ -72,15 +77,15 @@ public class CollaborationMessageInputTest {
         }
     }
 
-    private CollaborationEngine ce;
     private MessageInputTestClient client1;
 
     @Before
     public void init() {
         VaadinService service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
-        client1 = new MessageInputTestClient(1, ce);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        client1 = new MessageInputTestClient(1, () -> ce);
     }
 
     @After
@@ -96,13 +101,13 @@ public class CollaborationMessageInputTest {
         Assert.assertTrue(client1.getMessages().isEmpty());
         client1.submitMessage("new message");
         List<MessageListItem> messages = client1.getMessages();
-        Assert.assertEquals(1, messages.size());
+        assertEquals(1, messages.size());
         MessageListItem message = messages.get(0);
-        Assert.assertEquals("new message", message.getText());
-        Assert.assertEquals("name1", message.getUserName());
-        Assert.assertEquals("image1", message.getUserImage());
-        Assert.assertEquals("abbreviation1", message.getUserAbbreviation());
-        Assert.assertEquals(1, message.getUserColorIndex().intValue());
+        assertEquals("new message", message.getText());
+        assertEquals("name1", message.getUserName());
+        assertEquals("image1", message.getUserImage());
+        assertEquals("abbreviation1", message.getUserAbbreviation());
+        assertEquals(1, message.getUserColorIndex().intValue());
     }
 
     @Test
@@ -145,5 +150,13 @@ public class CollaborationMessageInputTest {
             Assert.fail("Missing wrapper for methods: "
                     + missingMethods.toString());
         }
+    }
+
+    @Test
+    public void serializeMessageInput() {
+        CollaborationMessageInput messageInput = client1.messageInput;
+
+        CollaborationMessageInput deserializedMessageInput = TestUtils
+                .serialize(messageInput);
     }
 }

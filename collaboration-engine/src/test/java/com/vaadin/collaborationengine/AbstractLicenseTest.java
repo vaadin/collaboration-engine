@@ -36,6 +36,7 @@ import com.vaadin.collaborationengine.TestUtil.MockConfiguration;
 import com.vaadin.collaborationengine.licensegenerator.LicenseGenerator;
 import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.MessageDigestUtil;
 import com.vaadin.flow.server.VaadinService;
 
@@ -75,7 +76,7 @@ public abstract class AbstractLicenseTest {
     MockConfiguration configuration;
 
     VaadinService service;
-    CollaborationEngine ce;
+    SerializableSupplier<CollaborationEngine> ceSupplier;
     Path testDataDir = Paths.get(System.getProperty("user.home"), ".vaadin",
             "ce-tests");
 
@@ -108,8 +109,9 @@ public abstract class AbstractLicenseTest {
         configuration.setDataDirPath(testDataDir);
         configuration.setLicenseCheckingEnabled(true);
 
-        ce = CollaborationEngine.configure(service, configuration,
-                new TestUtil.TestCollaborationEngine(), true);
+        CollaborationEngine ce = CollaborationEngine.configure(service,
+                configuration, new TestUtil.TestCollaborationEngine(), true);
+        ceSupplier = () -> ce;
     }
 
     @After
@@ -184,19 +186,24 @@ public abstract class AbstractLicenseTest {
     }
 
     void fillGraceQuota() {
-        generateIds(GRACE_QUOTA).forEach(i -> TestUtils.openEagerConnection(ce,
-                "topic-id-to-fill-grace-quota", t -> {
+        generateIds(GRACE_QUOTA).forEach(i -> TestUtils.openEagerConnection(
+                getCollaborationEngine(), "topic-id-to-fill-grace-quota", t -> {
                     // NO-OP
                 }));
     }
 
     YearMonth getCurrentMonth() {
-        return YearMonth.from(ce.getClock().instant().atZone(ZoneOffset.UTC));
+        return YearMonth.from(getCollaborationEngine().getClock().instant()
+                .atZone(ZoneOffset.UTC));
     }
 
     void setCurrentDate(LocalDate currentDate) {
         Instant instant = currentDate.atStartOfDay(ZoneOffset.UTC).toInstant();
         Clock clock = Clock.fixed(instant, ZoneOffset.UTC);
-        ce.setClock(clock);
+        getCollaborationEngine().setClock(clock);
+    }
+
+    CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
     }
 }

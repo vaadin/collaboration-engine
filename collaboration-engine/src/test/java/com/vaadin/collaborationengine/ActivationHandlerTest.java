@@ -123,4 +123,11 @@ public class ActivationHandlerTest {
                 "Expect the returned Registration of connection callback to be called when deactivated",
                 isCalled.get());
     }
+
+    @Test
+    public void serializeHandler() {
+        ActivationHandler handler = context.getActivationHandler();
+
+        ActivationHandler deserializedHandler = TestUtils.serialize(handler);
+    }
 }

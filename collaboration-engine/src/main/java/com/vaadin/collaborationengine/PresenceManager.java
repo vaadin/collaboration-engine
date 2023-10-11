@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
 
@@ -39,7 +41,7 @@ public class PresenceManager extends AbstractCollaborationManager {
 
     static final Logger LOGGER = LoggerFactory.getLogger(PresenceManager.class);
 
-    private static class UserEntry {
+    private static class UserEntry implements Serializable {
         private int count = 0;
         private Registration registration;
     }
@@ -50,7 +52,7 @@ public class PresenceManager extends AbstractCollaborationManager {
 
     private ListKey ownPresenceKey;
 
-    private CollaborationList list;
+    private transient CollaborationList list;
 
     private PresenceHandler presenceHandler;
 
@@ -75,7 +77,7 @@ public class PresenceManager extends AbstractCollaborationManager {
     public PresenceManager(Component component, UserInfo localUser,
             String topicId) {
         this(new ComponentConnectionContext(component), localUser, topicId,
-                CollaborationEngine.getInstance());
+                CollaborationEngine::getInstance);
     }
 
     /**
@@ -93,10 +95,34 @@ public class PresenceManager extends AbstractCollaborationManager {
      *            the id of the topic to connect to, not {@code null}
      * @param collaborationEngine
      *            the collaboration engine instance to use, not {@code null}
+     * @deprecated This constructor is not compatible with serialization
      */
+    @Deprecated(since = "6.1", forRemoval = true)
     public PresenceManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationEngine collaborationEngine) {
-        super(localUser, topicId, collaborationEngine);
+        this(context, localUser, topicId, () -> collaborationEngine);
+    }
+
+    /**
+     * Creates a new manager for the provided connection context.
+     * <p>
+     * The provided user information is used to set the presence of the local
+     * user with {@link #markAsPresent(boolean)} (the default is {@code false}).
+     * <p>
+     *
+     * @param context
+     *            the context that manages connection status, not {@code null}
+     * @param localUser
+     *            the information of the local user, not {@code null}
+     * @param topicId
+     *            the id of the topic to connect to, not {@code null}
+     * @param ceSupplier
+     *            the collaboration engine instance to use, not {@code null}
+     */
+    public PresenceManager(ConnectionContext context, UserInfo localUser,
+            String topicId,
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
+        super(localUser, topicId, ceSupplier);
         openTopicConnection(context, this::onConnectionActivate);
     }
 

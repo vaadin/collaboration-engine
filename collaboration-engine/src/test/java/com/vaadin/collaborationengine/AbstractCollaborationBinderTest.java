@@ -18,6 +18,7 @@ import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
 
 public class AbstractCollaborationBinderTest {
@@ -30,9 +31,11 @@ public class AbstractCollaborationBinderTest {
         CollaborationBinder<TestBean> binder;
         private final UI ui;
 
-        public BinderTestClient(CollaborationEngine ce) {
+        public BinderTestClient(
+                SerializableSupplier<CollaborationEngine> ceSupplier) {
             this.ui = new MockUI();
-            binder = new CollaborationBinder<>(TestBean.class, user, ce);
+            binder = new CollaborationBinder<>(TestBean.class, user,
+                    ceSupplier);
             binder.setTopic("topic", () -> null);
         }
 
@@ -59,7 +62,6 @@ public class AbstractCollaborationBinderTest {
     }
 
     protected VaadinService service;
-    protected CollaborationEngine ce;
 
     protected BinderTestClient client;
     protected BinderTestClient client2;
@@ -71,12 +73,14 @@ public class AbstractCollaborationBinderTest {
     public void init() {
         service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        SerializableSupplier<CollaborationEngine> ceSupplier = () -> ce;
 
-        client = new BinderTestClient(ce);
+        client = new BinderTestClient(ceSupplier);
         field = client.field;
 
-        client2 = new BinderTestClient(ce);
+        client2 = new BinderTestClient(ceSupplier);
 
         TestUtils.openEagerConnection(ce, "topic", topicConnection -> {
             this.topicConnection = topicConnection;

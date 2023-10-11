@@ -601,7 +601,7 @@ public class CollaborationEngine {
     synchronized void ensureConfigAndLicenseHandlerInitialization() {
         if (licenseHandler == null) {
             // Will throw if config is invalid
-            licenseHandler = new LicenseHandler(this);
+            licenseHandler = new LicenseHandler(() -> this);
         }
     }
 

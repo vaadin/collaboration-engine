@@ -65,15 +65,15 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private volatile UI ui;
 
-    private final ExecutionQueue inbox = new ExecutionQueue();
-    private final ExecutionQueue shutdownCommands = new ExecutionQueue();
+    private final transient ExecutionQueue inbox = new ExecutionQueue();
+    private final transient ExecutionQueue shutdownCommands = new ExecutionQueue();
     private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
     private final AtomicReference<State> state = new AtomicReference<>(
             State.INACTIVE);
-    private Consumer<ActionDispatcher> activationHandler;
-    private Executor backgroundRunner;
-    private Registration beaconListener;
-    private Registration destroyListener;
+    private transient Consumer<ActionDispatcher> activationHandler;
+    private transient Executor backgroundRunner;
+    private transient Registration beaconListener;
+    private transient Registration destroyListener;
 
     private static AtomicBoolean pushWarningShown = new AtomicBoolean(false);
 

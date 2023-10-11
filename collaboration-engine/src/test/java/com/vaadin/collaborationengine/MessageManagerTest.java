@@ -16,7 +16,9 @@ import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
 import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.TestUtils;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.server.VaadinService;
 
 public class MessageManagerTest {
@@ -25,7 +27,7 @@ public class MessageManagerTest {
 
     private VaadinService service;
 
-    private CollaborationEngine ce;
+    private SerializableSupplier<CollaborationEngine> ceSupplier;
 
     private Map<String, List<CollaborationMessage>> backend;
 
@@ -35,7 +37,9 @@ public class MessageManagerTest {
     public void init() {
         service = new MockService();
         VaadinService.setCurrent(service);
-        ce = TestUtil.createTestCollaborationEngine(service);
+        CollaborationEngine ce = TestUtil
+                .createTestCollaborationEngine(service);
+        ceSupplier = () -> ce;
         backend = new HashMap<>();
         persister = CollaborationMessagePersister.fromCallbacks(
                 query -> backend
@@ -58,10 +62,15 @@ public class MessageManagerTest {
         VaadinService.setCurrent(null);
     }
 
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
+    }
+
     @Test
     public void submitMessage_getMessagesContainsMessageWithCorrectValues() {
         Instant fixedTimestamp = Instant.now();
-        ce.setClock(Clock.fixed(fixedTimestamp, ZoneOffset.UTC));
+        getCollaborationEngine()
+                .setClock(Clock.fixed(fixedTimestamp, ZoneOffset.UTC));
 
         MessageManager manager = createActiveManager();
         manager.submit("text");
@@ -108,7 +117,7 @@ public class MessageManagerTest {
         MockConnectionContext connectionContext = MockConnectionContext
                 .createEager();
         MessageManager manager = new MessageManager(connectionContext,
-                new UserInfo("foo"), TOPIC_ID, null, ce);
+                new UserInfo("foo"), TOPIC_ID, null, ceSupplier);
 
         List<CollaborationMessage> list = new ArrayList<>();
         manager.setMessageHandler(context -> {
@@ -131,7 +140,7 @@ public class MessageManagerTest {
         MockConnectionContext connectionContext = MockConnectionContext
                 .createEager();
         MessageManager manager = new MessageManager(connectionContext,
-                new UserInfo("foo"), TOPIC_ID, null, ce);
+                new UserInfo("foo"), TOPIC_ID, null, ceSupplier);
 
         connectionContext.deactivate();
         CompletableFuture<Void> future = manager.submit("text");
@@ -148,7 +157,7 @@ public class MessageManagerTest {
         MockConnectionContext connectionContext = MockConnectionContext
                 .createEager();
         MessageManager manager = new MessageManager(connectionContext,
-                new UserInfo("foo"), TOPIC_ID, persister, ce);
+                new UserInfo("foo"), TOPIC_ID, persister, ceSupplier);
         connectionContext.deactivate();
 
         CompletableFuture<Void> future = manager.submit("text");
@@ -164,10 +173,11 @@ public class MessageManagerTest {
 
         MessageManager manager = new MessageManager(
                 MockConnectionContext.createEager(), userInfo, TOPIC_ID,
-                persister, ce);
+                persister, ceSupplier);
 
-        ce.openTopicConnection(MockConnectionContext.createEager(), TOPIC_ID,
-                userInfo, conn -> {
+        getCollaborationEngine().openTopicConnection(
+                MockConnectionContext.createEager(), TOPIC_ID, userInfo,
+                conn -> {
                     CollaborationList list = conn
                             .getNamedList(MessageManager.LIST_NAME);
                     list.subscribe(change -> {
@@ -175,7 +185,8 @@ public class MessageManagerTest {
                                 .getValue(CollaborationMessage.class);
                         if (message.getText().equals("foo")) {
                             list.insertLast(new CollaborationMessage(userInfo,
-                                    "boom", ce.getClock().instant()));
+                                    "boom", getCollaborationEngine().getClock()
+                                            .instant()));
                         }
                     });
                     return null;
@@ -183,10 +194,17 @@ public class MessageManagerTest {
 
         backend.computeIfAbsent(TOPIC_ID, t -> new ArrayList<>())
                 .add(new CollaborationMessage(userInfo, "foo",
-                        ce.getClock().instant()));
+                        getCollaborationEngine().getClock().instant()));
 
         CompletableFuture<Void> future = manager.submit("text");
         Assert.assertFalse(future.isDone());
+    }
+
+    @Test
+    public void serializeMessageManager() {
+        MessageManager manager = createActiveManager();
+
+        MessageManager deserializedManager = TestUtils.serialize(manager);
     }
 
     private MessageManager createActiveManager() {
@@ -199,6 +217,6 @@ public class MessageManagerTest {
 
     private MessageManager createActiveAdapter(UserInfo user, String topicId) {
         return new MessageManager(MockConnectionContext.createEager(), user,
-                topicId, null, ce);
+                topicId, null, ceSupplier);
     }
 }

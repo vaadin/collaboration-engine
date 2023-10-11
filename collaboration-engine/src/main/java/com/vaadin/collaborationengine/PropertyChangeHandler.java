@@ -10,6 +10,8 @@
 
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
+
 /**
  * Functional interface that defines how to handle value changes for properties
  * in a topic.
@@ -18,7 +20,7 @@ package com.vaadin.collaborationengine;
  * @author Vaadin Ltd
  */
 @FunctionalInterface
-public interface PropertyChangeHandler {
+public interface PropertyChangeHandler extends Serializable {
     /**
      * The property change event.
      */

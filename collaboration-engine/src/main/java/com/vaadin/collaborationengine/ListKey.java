@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ import java.util.UUID;
  *
  * @author Vaadin Ltd
  */
-public class ListKey {
+public class ListKey implements Serializable {
 
     private final UUID key;
 

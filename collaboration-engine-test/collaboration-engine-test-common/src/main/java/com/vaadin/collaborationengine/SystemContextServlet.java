@@ -34,7 +34,7 @@ public class SystemContextServlet extends HttpServlet {
 
             MessageManager messageManager = new MessageManager(
                     ce.getSystemContext(), SystemUserInfo.getInstance(),
-                    SystemContextViewCommon.class.getName(), ce);
+                    SystemContextViewCommon.class.getName(), () -> ce);
 
             // Block until we get a confirmation
             messageManager.submit(message).get();

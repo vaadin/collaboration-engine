@@ -20,13 +20,13 @@ public class CollaborationAvatarGroupLicenseTest extends AbstractLicenseTest {
     public void init() throws IOException {
         super.init();
 
-        client1 = new AvatarGroupTestClient(1, ce);
+        client1 = new AvatarGroupTestClient(1, ceSupplier);
         client1.attach();
-        client2 = new AvatarGroupTestClient(2, ce);
+        client2 = new AvatarGroupTestClient(2, ceSupplier);
         client2.attach();
 
         fillGraceQuota();
-        client3 = new AvatarGroupTestClient(3, ce);
+        client3 = new AvatarGroupTestClient(3, ceSupplier);
         client3.attach();
     }
 

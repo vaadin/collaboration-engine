@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.ReflectionUtils;
+import com.vaadin.collaborationengine.util.TestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -66,5 +67,14 @@ public class UserInfoTest {
         Assert.assertTrue(
                 "System user must override all setters from the base class to be immutable.",
                 subclassSetters.containsAll(baseSetters));
+    }
+
+    @Test
+    public void serializeUserInfo() {
+        UserInfo deserializedUserInfo = TestUtils.serialize(systemUserInfo);
+
+        assertEquals(systemUserInfo.getName(), deserializedUserInfo.getName());
+        assertEquals(systemUserInfo.getColorIndex(),
+                deserializedUserInfo.getColorIndex());
     }
 }

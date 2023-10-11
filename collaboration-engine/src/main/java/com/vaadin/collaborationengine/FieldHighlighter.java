@@ -9,11 +9,11 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.vaadin.collaborationengine.FormManager.FocusedEditor;
@@ -21,8 +21,8 @@ import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.fieldhighlighter.FieldHighlighterInitializer;
 import com.vaadin.flow.dom.Element;
+import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.internal.JsonUtils;
-import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
 
 import elemental.json.Json;
@@ -33,7 +33,8 @@ import elemental.json.JsonObject;
  * @author Vaadin Ltd
  * @since 1.0
  */
-class FieldHighlighter extends FieldHighlighterInitializer {
+class FieldHighlighter extends FieldHighlighterInitializer
+        implements Serializable {
 
     static Registration setupForField(HasValue<?, ?> field, String propertyName,
             CollaborationBinder<?> binder) {
@@ -65,9 +66,10 @@ class FieldHighlighter extends FieldHighlighterInitializer {
         return () -> registrations.forEach(Registration::remove);
     }
 
-    private final Function<UserInfo, Integer> colorIndexProvider;
+    private final SerializableFunction<UserInfo, Integer> colorIndexProvider;
 
-    FieldHighlighter(Function<UserInfo, Integer> colorIndexProvider) {
+    FieldHighlighter(
+            SerializableFunction<UserInfo, Integer> colorIndexProvider) {
         this.colorIndexProvider = colorIndexProvider;
     }
 

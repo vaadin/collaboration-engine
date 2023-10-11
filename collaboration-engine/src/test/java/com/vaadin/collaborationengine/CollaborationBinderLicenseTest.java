@@ -48,7 +48,7 @@ public class CollaborationBinderLicenseTest extends AbstractLicenseTest {
 
     @Test
     public void licenseTermsExceeded_setTopicBeforeAttach_fieldsPopulated() {
-        BinderTestClient client = new BinderTestClient(ce);
+        BinderTestClient client = new BinderTestClient(ceSupplier);
         client.bind();
         client.binder.setTopic("foo", () -> new TestBean("bean-value"));
         client.attach();
@@ -56,7 +56,7 @@ public class CollaborationBinderLicenseTest extends AbstractLicenseTest {
     }
 
     private BinderTestClient addClient() {
-        BinderTestClient client = new BinderTestClient(ce);
+        BinderTestClient client = new BinderTestClient(ceSupplier);
         client.attach();
         client.bind();
         client.binder.setTopic("foo", () -> new TestBean("value-from-bean"));
