@@ -242,8 +242,11 @@ public class CollaborationEngineTest {
 
         for (int i = 0; i < 12; i++) {
             UserInfo user = new UserInfo("user-color-test-id-" + i);
-            Assert.assertEquals(node.getUserColorIndex(user),
-                    user.getId().hashCode() % USER_COLOR_COUNT);
+            int colorIndex = node.getUserColorIndex(user);
+            Assert.assertTrue(colorIndex >= 0);
+            Assert.assertTrue(colorIndex < USER_COLOR_COUNT);
+            Assert.assertEquals(colorIndex,
+                    Math.abs(user.getId().hashCode()) % USER_COLOR_COUNT);
         }
     }
 

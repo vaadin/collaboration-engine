@@ -572,7 +572,7 @@ public class CollaborationEngine {
             return userColors.computeIfAbsent(userId,
                     id -> userColors.size() % USER_COLOR_COUNT);
         } else {
-            return userId.hashCode() % USER_COLOR_COUNT;
+            return Math.abs(userId.hashCode()) % USER_COLOR_COUNT;
         }
     }
 
