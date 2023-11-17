@@ -19,9 +19,9 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
         <!-- test dependencies versions -->
         <servlet-api.version>6.0.0</servlet-api.version>
-        <spring-boot.version>3.1.4</spring-boot.version>
+        <spring-boot.version>3.2.0-RC2</spring-boot.version>
         <flow.cdi.version>15.0-SNAPSHOT</flow.cdi.version>
-        <testbench.version>9.1.0.rc1</testbench.version>
+        <testbench.version>9.2.0.alpha1</testbench.version>
         <!-- selenium is so much verbose -->
         <maven.test.redirectTestOutputToFile>true</maven.test.redirectTestOutputToFile>
     </properties>
@@ -47,6 +47,28 @@
             </modules>
         </profile>
     </profiles>
+
+    <repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <!-- Repository used by many Vaadin add-ons -->
+        <repository>
+            <id>Vaadin Directory</id>
+            <url>https://maven.vaadin.com/vaadin-addons</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>spring milestones</id>
+            <url>https://repo.spring.io/milestone</url>
+        </repository>
+    </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -78,28 +100,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <repositories>
-        <repository>
-            <id>central</id>
-            <url>https://repo1.maven.org/maven2/</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <!-- Repository used by many Vaadin add-ons -->
-        <repository>
-            <id>Vaadin Directory</id>
-            <url>https://maven.vaadin.com/vaadin-addons</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>spring milestones</id>
-            <url>https://repo.spring.io/milestone</url>
-        </repository>
-    </repositories>
 
     <dependencyManagement>
         <dependencies>
