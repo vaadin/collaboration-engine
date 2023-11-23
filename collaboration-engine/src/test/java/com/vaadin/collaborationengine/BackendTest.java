@@ -145,8 +145,9 @@ public class BackendTest {
 
         node1.openTopicConnection(node1.getSystemContext(), "topic",
                 new UserInfo("foo"), conn -> {
-                    conn.getNamedMap("map").put("key", "value",
-                            EntryScope.CONNECTION);
+                    CollaborationMap map = conn.getNamedMap("map");
+                    map.put("key", "value", EntryScope.CONNECTION);
+                    map.put("key2", "value2", EntryScope.TOPIC);
                     return null;
                 });
 
@@ -156,16 +157,21 @@ public class BackendTest {
         leave(node1);
 
         AtomicBoolean staleEntryRemoved = new AtomicBoolean();
+        AtomicBoolean nonStaleEntryRemoved = new AtomicBoolean();
 
         node2.openTopicConnection(node2.getSystemContext(), "topic",
                 new UserInfo("foo"), conn -> {
-                    String value = conn.getNamedMap("map").get("key",
-                            String.class);
+                    CollaborationMap map = conn.getNamedMap("map");
+                    String value = map.get("key", String.class);
                     staleEntryRemoved.set(value == null);
+                    String value2 = map.get("key2", String.class);
+                    nonStaleEntryRemoved.set(value2 == null);
                     return null;
                 });
 
         Assert.assertTrue("Stale entry not removed", staleEntryRemoved.get());
+        Assert.assertFalse("Non-stale entry removed",
+                nonStaleEntryRemoved.get());
     }
 
     @Test

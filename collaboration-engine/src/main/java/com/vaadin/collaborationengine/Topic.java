@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -46,7 +45,7 @@ import com.vaadin.flow.shared.Registration;
 class Topic implements Serializable {
 
     enum ChangeResult {
-        ACCEPTED, REJECTED;
+        ACCEPTED, REJECTED
     }
 
     /**
@@ -249,7 +248,7 @@ class Topic implements Serializable {
                                     entry.getValue().revisionId.toString());
                             return change;
                         }))
-                .collect(Collectors.toList())
+                .toList()
                 .forEach(change -> eventLog.submitEvent(UUID.randomUUID(),
                         JsonUtil.toString(change)));
         namedListData.entrySet().stream()
@@ -265,7 +264,7 @@ class Topic implements Serializable {
                                     entry.revisionId.toString());
                             return change;
                         }))
-                .collect(Collectors.toList())
+                .toList()
                 .forEach(change -> eventLog.submitEvent(UUID.randomUUID(),
                         JsonUtil.toString(change)));
     }
@@ -285,8 +284,7 @@ class Topic implements Serializable {
                     .filter(entry -> now
                             .isAfter(lastDisconnected.plus(entry.getValue()))
                             && namedMapData.containsKey(entry.getKey()))
-                    .map(Map.Entry::getKey).collect(Collectors.toList())
-                    .forEach(name -> {
+                    .map(Map.Entry::getKey).toList().forEach(name -> {
                         namedMapData.get(name).entrySet().stream()
                                 .map(entry -> {
                                     ObjectNode change = JsonUtil
@@ -297,7 +295,7 @@ class Topic implements Serializable {
                                             entry.getValue().revisionId
                                                     .toString());
                                     return change;
-                                }).collect(Collectors.toList())
+                                }).toList()
                                 .forEach(change -> eventLog.submitEvent(
                                         UUID.randomUUID(),
                                         JsonUtil.toString(change)));
@@ -307,8 +305,7 @@ class Topic implements Serializable {
                     .filter(entry -> now
                             .isAfter(lastDisconnected.plus(entry.getValue()))
                             && namedListData.containsKey(entry.getKey()))
-                    .map(Map.Entry::getKey).collect(Collectors.toList())
-                    .forEach(name -> {
+                    .map(Map.Entry::getKey).toList().forEach(name -> {
                         namedListData.get(name).stream().map(entry -> {
                             ObjectNode change = JsonUtil.createListChange(
                                     ListOperation.OperationType.SET, name,
@@ -318,7 +315,7 @@ class Topic implements Serializable {
                             change.put(JsonUtil.CHANGE_EXPECTED_ID,
                                     entry.revisionId.toString());
                             return change;
-                        }).collect(Collectors.toList())
+                        }).toList()
                                 .forEach(change -> eventLog.submitEvent(
                                         UUID.randomUUID(),
                                         JsonUtil.toString(change)));
@@ -459,7 +456,7 @@ class Topic implements Serializable {
     private void becomeLeader() {
         leader = true;
         Set<UUID> backendNodesCopy = new HashSet<>(backendNodes);
-        cleanupStaleEntries(id -> !backendNodesCopy.contains(id));
+        cleanupStaleEntries(id -> id != null && !backendNodesCopy.contains(id));
     }
 
     boolean isLeader() {
