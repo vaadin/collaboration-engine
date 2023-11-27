@@ -80,11 +80,22 @@
             <artifactId>vaadin-button-testbench</artifactId>
             <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
             <version>${servlet-api.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-avatar-flow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-messages-flow</artifactId>
         </dependency>
 
         <dependency>
@@ -115,6 +126,11 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-text-field-flow</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-field-highlighter-flow</artifactId>
         </dependency>
     </dependencies>
 

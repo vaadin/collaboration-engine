@@ -35,18 +35,17 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-avatar-flow</artifactId>
-            <!-- Should be updated to provided scope
-                once avatar is included in V14 -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-messages-flow</artifactId>
-            <!-- Should be updated to provided scope
-                once messages is included in V14 -->
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-field-highlighter-flow</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>

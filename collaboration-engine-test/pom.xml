@@ -19,7 +19,7 @@
         <failOnMissingWebXml>false</failOnMissingWebXml>
         <!-- test dependencies versions -->
         <servlet-api.version>6.0.0</servlet-api.version>
-        <spring-boot.version>3.2.0-RC2</spring-boot.version>
+        <spring-boot.version>3.2.0</spring-boot.version>
         <flow.cdi.version>15.0-SNAPSHOT</flow.cdi.version>
         <testbench.version>9.2.0.alpha1</testbench.version>
         <!-- selenium is so much verbose -->
@@ -64,10 +64,6 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>spring milestones</id>
-            <url>https://repo.spring.io/milestone</url>
-        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -77,10 +73,6 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>spring milestones</id>
-            <url>https://repo.spring.io/milestone</url>
         </pluginRepository>
     </pluginRepositories>
 
