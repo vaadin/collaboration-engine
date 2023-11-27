@@ -1,11 +1,18 @@
 package com.vaadin.collaborationengine;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import com.vaadin.collaborationengine.util.AbstractCollaborativeViewTest;
 import com.vaadin.flow.component.button.testbench.ButtonElement;
 import com.vaadin.flow.component.html.testbench.SpanElement;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import static org.junit.Assert.fail;
 
 public class MainViewIT extends AbstractCollaborativeViewTest {
 
@@ -30,6 +37,20 @@ public class MainViewIT extends AbstractCollaborativeViewTest {
         waitUntil(ExpectedConditions.textToBePresentInElement(span, "3"), 1);
         Assert.assertEquals("3", span.getText());
         Assert.assertEquals("3", span2.getText());
+
+        try {
+            ComponentConnectionContext context = new ComponentConnectionContext();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            new ObjectOutputStream(out).writeObject(context);
+
+            ByteArrayInputStream in = new ByteArrayInputStream(
+                    out.toByteArray());
+            ComponentConnectionContext deserializedCompContext = (ComponentConnectionContext) new ObjectInputStream(
+                    in).readObject();
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail();
+        }
     }
 
     @Override

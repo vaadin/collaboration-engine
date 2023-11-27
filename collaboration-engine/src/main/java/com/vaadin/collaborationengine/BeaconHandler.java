@@ -9,6 +9,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.ObjectStreamException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +45,18 @@ class BeaconHandler extends SynchronizedRequestHandler {
         this.beaconPath = beaconPath;
     }
 
+    /*
+     * An instance of this class is stored in the Vaadin session, causing
+     * session serialization to fail. In order to solve this issue, we replace
+     * it with null during serialization and then replace the session value with
+     * a new instance during deserialization. See
+     * ComponentConnectionContext.attach(UI).
+     */
+    @Serial
+    private Object writeReplace() throws ObjectStreamException {
+        return null;
+    }
+
     static BeaconHandler ensureInstalled(UI ui, String beaconPath) {
         BeaconHandler beaconHandler = ComponentUtil.getData(ui,
                 BeaconHandler.class);
@@ -57,6 +71,7 @@ class BeaconHandler extends SynchronizedRequestHandler {
                 newBeaconHandler.createBeaconUrl());
 
         VaadinSession session = ui.getSession();
+        session.removeRequestHandler(null);
         session.addRequestHandler(newBeaconHandler);
         ComponentUtil.setData(ui, BeaconHandler.class, newBeaconHandler);
 

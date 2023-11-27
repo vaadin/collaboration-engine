@@ -9,6 +9,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -20,6 +23,7 @@ import com.vaadin.collaborationengine.PresenceHandler.PresenceContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -52,13 +56,15 @@ public class PresenceManager extends AbstractCollaborationManager {
 
     private ListKey ownPresenceKey;
 
+    private ConnectionContext context;
+
     private transient CollaborationList list;
 
     private PresenceHandler presenceHandler;
 
     private boolean markAsPresent = false;
 
-    private Registration subscribeRegistration;
+    private transient Registration subscribeRegistration;
 
     /**
      * Creates a new manager for the provided component.
@@ -123,6 +129,19 @@ public class PresenceManager extends AbstractCollaborationManager {
             String topicId,
             SerializableSupplier<CollaborationEngine> ceSupplier) {
         super(localUser, topicId, ceSupplier);
+        this.context = context;
+        openTopicConnection(context, this::onConnectionActivate);
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        CollaborationEngineServiceInitListener
+                .addReinitializer(this::reinitialize);
+    }
+
+    private void reinitialize(VaadinService service) {
         openTopicConnection(context, this::onConnectionActivate);
     }
 

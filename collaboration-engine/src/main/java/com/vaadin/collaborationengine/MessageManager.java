@@ -9,6 +9,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -26,6 +29,7 @@ import com.vaadin.collaborationengine.MessageHandler.MessageContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -54,6 +58,8 @@ public class MessageManager extends AbstractCollaborationManager {
     static final String LIST_NAME = MessageManager.class.getName();
 
     private final CollaborationMessagePersister persister;
+
+    private ConnectionContext context;
 
     private transient CollaborationList list;
 
@@ -150,15 +156,15 @@ public class MessageManager extends AbstractCollaborationManager {
      *            the id of the topic to connect to, not {@code null}
      * @param persister
      *            the persister to read/write messages to an external source
-     * @param ce
+     * @param collaborationEngine
      *            the collaboration engine instance to use, not {@code null}
      * @deprecated This constructor is not compatible with serialization
      */
     @Deprecated(since = "6.1", forRemoval = true)
     public MessageManager(ConnectionContext context, UserInfo localUser,
             String topicId, CollaborationMessagePersister persister,
-            CollaborationEngine ce) {
-        this(context, localUser, topicId, persister, () -> ce);
+            CollaborationEngine collaborationEngine) {
+        this(context, localUser, topicId, persister, () -> collaborationEngine);
     }
 
     /**
@@ -179,7 +185,20 @@ public class MessageManager extends AbstractCollaborationManager {
             String topicId, CollaborationMessagePersister persister,
             SerializableSupplier<CollaborationEngine> ceSupplier) {
         super(localUser, topicId, ceSupplier);
+        this.context = context;
         this.persister = persister;
+        openTopicConnection(context, this::onConnectionActivate);
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        CollaborationEngineServiceInitListener
+                .addReinitializer(this::reinitialize);
+    }
+
+    private void reinitialize(VaadinService service) {
         openTopicConnection(context, this::onConnectionActivate);
     }
 

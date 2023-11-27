@@ -9,8 +9,6 @@
  */
 package com.vaadin.collaborationengine;
 
-import jakarta.servlet.ServletContext;
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +30,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,7 +245,7 @@ public class CollaborationEngine {
         configuration.setVaadinService(vaadinService);
         ce.configuration = configuration;
         ce.vaadinService = vaadinService;
-        ce.systemContext = new SystemConnectionContext(ce);
+        ce.systemContext = new SystemConnectionContext(() -> ce);
 
         configuration.getBackend().setCollaborationEngine(ce);
 
@@ -429,13 +428,14 @@ public class CollaborationEngine {
         BiConsumer<UUID, ObjectNode> distributor = (id,
                 node) -> topicAndConnection.eventLog.submitEvent(id,
                         JsonUtil.toString(node));
-        TopicConnection connection = new TopicConnection(this, context,
+        TopicConnection connection = new TopicConnection(() -> this, context,
                 topicAndConnection.topic, distributor, localUser,
                 isActive -> updateTopicActivation(topicId, isActive),
                 connectionActivationCallback);
 
         TopicConnectionRegistration registration = new TopicConnectionRegistration(
-                connection, context, getExecutorService(),
+                connection, context,
+                command -> getExecutorService().execute(command),
                 registrations::remove);
         registrations.add(registration);
         if (!active.get()) {
@@ -450,7 +450,7 @@ public class CollaborationEngine {
     private TopicConnectionRegistration createFailedTopicConnectionRegistration(
             ConnectionContext context) {
         return new TopicConnectionRegistration(null, context,
-                getExecutorService(), r -> {
+                command -> getExecutorService().execute(command), r -> {
                     // No op
                 });
     }
@@ -458,7 +458,7 @@ public class CollaborationEngine {
     private TopicAndEventLog createTopicAndEventLog(String id) {
         EventLog eventLog = configuration.getBackend().openEventLog(id);
 
-        Topic topic = new Topic(id, this, eventLog);
+        Topic topic = new Topic(id, () -> this, eventLog);
         return new TopicAndEventLog(topic, eventLog);
     }
 
@@ -548,7 +548,7 @@ public class CollaborationEngine {
             AccessResponse response = new AccessResponse(hasAccess);
             actionDispatcher
                     .dispatchAction(() -> requestCallback.accept(response));
-        }), getExecutorService());
+        }), command -> getExecutorService().execute(command));
     }
 
     /**

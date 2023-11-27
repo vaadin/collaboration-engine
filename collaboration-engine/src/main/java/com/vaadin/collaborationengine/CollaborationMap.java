@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +27,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  * @since 1.0
  */
-public interface CollaborationMap extends HasExpirationTimeout {
+public interface CollaborationMap extends HasExpirationTimeout, Serializable {
 
     /**
      * Gets the map value for the given key as an instance of the given class.

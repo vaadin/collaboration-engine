@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ import com.vaadin.flow.shared.Registration;
  * @author Vaadin Ltd
  * @since 3.1
  */
-public interface CollaborationList extends HasExpirationTimeout {
+public interface CollaborationList extends HasExpirationTimeout, Serializable {
 
     /**
      * Gets the list items as instances of the given class.

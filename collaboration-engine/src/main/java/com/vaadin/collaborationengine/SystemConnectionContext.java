@@ -1,9 +1,6 @@
 /**
  * Copyright (C) 2000-2022 Vaadin Ltd
- *
  * This program is available under Vaadin Commercial License and Service Terms.
- *
- *
  * See <https://vaadin.com/commercial-license-and-service-terms> for the full
  * license.
  */
@@ -16,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.CurrentInstance;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.VaadinService;
@@ -53,7 +51,8 @@ public class SystemConnectionContext implements ConnectionContext {
                 Map<Class<?>, CurrentInstance> oldInstances = CurrentInstance
                         .getInstances();
                 try {
-                    VaadinService.setCurrent(ce.getVaadinService());
+                    VaadinService.setCurrent(
+                            getCollaborationEngine().getVaadinService());
                     action.execute();
                 } finally {
                     CurrentInstance.restoreInstances(oldInstances);
@@ -84,7 +83,7 @@ public class SystemConnectionContext implements ConnectionContext {
         }
     }
 
-    private final transient CollaborationEngine ce;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
 
     // Active handlers to deactivate if the service is destroyed
     private final Set<ActivationHandler> activeHandlers = new HashSet<>();
@@ -98,12 +97,13 @@ public class SystemConnectionContext implements ConnectionContext {
      * {@link CollaborationEngine#getSystemContext()} rather than creating new
      * instances.
      *
-     * @param ce
+     * @param ceSupplier
      *            the collaboration engine instance to use, not
      *            <code>null</code>
      */
-    public SystemConnectionContext(CollaborationEngine ce) {
-        this.ce = Objects.requireNonNull(ce);
+    public SystemConnectionContext(
+            SerializableSupplier<CollaborationEngine> ceSupplier) {
+        this.ceSupplier = Objects.requireNonNull(ceSupplier);
     }
 
     /**
@@ -132,7 +132,7 @@ public class SystemConnectionContext implements ConnectionContext {
 
         synchronized (activeHandlers) {
             if (activeHandlers.isEmpty()) {
-                serviceDestroyRegistration = ce.getVaadinService()
+                serviceDestroyRegistration = ceSupplier.get().getVaadinService()
                         .addServiceDestroyListener(e -> {
                             synchronized (activeHandlers) {
                                 activeHandlers.forEach(
@@ -170,6 +170,6 @@ public class SystemConnectionContext implements ConnectionContext {
 
     // For testing
     CollaborationEngine getCollaborationEngine() {
-        return ce;
+        return ceSupplier.get();
     }
 }

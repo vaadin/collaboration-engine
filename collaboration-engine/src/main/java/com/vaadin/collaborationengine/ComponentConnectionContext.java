@@ -9,6 +9,9 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,6 +30,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.internal.DeadlockDetectingCompletableFuture;
 import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.Version;
 import com.vaadin.flow.shared.Registration;
@@ -57,7 +61,7 @@ public class ComponentConnectionContext implements ConnectionContext {
         /**
          * Fully inactive. ui has been cleared.
          */
-        INACTIVE;
+        INACTIVE
     }
 
     private final Map<Component, Registration> componentListeners = new HashMap<>();
@@ -65,8 +69,8 @@ public class ComponentConnectionContext implements ConnectionContext {
 
     private volatile UI ui;
 
-    private final transient ExecutionQueue inbox = new ExecutionQueue();
-    private final transient ExecutionQueue shutdownCommands = new ExecutionQueue();
+    private transient ExecutionQueue inbox = new ExecutionQueue();
+    private transient ExecutionQueue shutdownCommands = new ExecutionQueue();
     private final ActionDispatcher actionDispatcher = new ActionDispatcherImpl();
     private final AtomicReference<State> state = new AtomicReference<>(
             State.INACTIVE);
@@ -97,6 +101,21 @@ public class ComponentConnectionContext implements ConnectionContext {
      */
     public ComponentConnectionContext(Component component) {
         addComponent(component);
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        inbox = new ExecutionQueue();
+        shutdownCommands = new ExecutionQueue();
+        CollaborationEngineServiceInitListener
+                .addReinitializer(this::reinitialize);
+    }
+
+    private void reinitialize(VaadinService service) {
+        attachedComponents.stream().findFirst().flatMap(Component::getUI)
+                .ifPresent(this::attach);
     }
 
     /**
@@ -150,33 +169,34 @@ public class ComponentConnectionContext implements ConnectionContext {
         if (attachedComponents.add(component)) {
             if (attachedComponents.size() == 1) {
                 // First attach
-                this.ui = componentUi;
-
-                checkForPush(ui);
-
-                String beaconPath = CollaborationEngine
-                        .getInstance(ui.getSession().getService())
-                        .getConfiguration().getBeaconPathProperty();
-                BeaconHandler beaconHandler = BeaconHandler
-                        .ensureInstalled(this.ui, beaconPath);
-                beaconListener = beaconHandler
-                        .addListener(this::deactivateConnection);
-
-                ServiceDestroyDelegate destroyDelegate = ServiceDestroyDelegate
-                        .ensureInstalled(this.ui);
-                destroyListener = destroyDelegate
-                        .addListener(event -> deactivateConnection());
-
-                flushPendingActionsIfActive();
-
-                if (activationHandler != null) {
-                    activate();
-                }
-
+                attach(componentUi);
             } else if (componentUi != ui) {
                 throw new IllegalStateException(
                         "All components in this connection context must be associated with the same UI.");
             }
+        }
+    }
+
+    private void attach(UI componentUi) {
+        this.ui = componentUi;
+        checkForPush(ui);
+
+        String beaconPath = CollaborationEngine
+                .getInstance(ui.getSession().getService()).getConfiguration()
+                .getBeaconPathProperty();
+        BeaconHandler beaconHandler = BeaconHandler.ensureInstalled(this.ui,
+                beaconPath);
+        beaconListener = beaconHandler.addListener(this::deactivateConnection);
+
+        ServiceDestroyDelegate destroyDelegate = ServiceDestroyDelegate
+                .ensureInstalled(this.ui);
+        destroyListener = destroyDelegate
+                .addListener(event -> deactivateConnection());
+
+        flushPendingActionsIfActive();
+
+        if (activationHandler != null) {
+            activate();
         }
     }
 

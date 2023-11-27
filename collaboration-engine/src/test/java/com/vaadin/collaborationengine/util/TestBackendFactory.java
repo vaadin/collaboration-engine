@@ -41,7 +41,7 @@ public class TestBackendFactory {
         membershipListeners.forEach(listener -> listener.handleMembershipEvent(
                 new MembershipEvent(MembershipEventType.JOIN, node.getNodeId(),
                         node.getCollaborationEngine())));
-    };
+    }
 
     public void leave(Backend node) {
         nodes.remove(node);

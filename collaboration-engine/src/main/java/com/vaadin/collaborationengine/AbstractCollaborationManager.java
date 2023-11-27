@@ -162,8 +162,8 @@ public abstract class AbstractCollaborationManager implements Serializable {
     public void onConnectionFailed(
             ConnectionFailedAction connectionFailedAction) {
         this.connectionFailedAction = connectionFailedAction;
-        if (connectionFailedAction != null && topicRegistration != null) {
-            topicRegistration.onConnectionFailed(connectionFailedAction);
+        if (this.connectionFailedAction != null && topicRegistration != null) {
+            topicRegistration.onConnectionFailed(this.connectionFailedAction);
         }
     }
 

@@ -1,5 +1,9 @@
 package com.vaadin.collaborationengine;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +14,12 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.Topic.ChangeResult;
+import com.vaadin.collaborationengine.util.MockService;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.server.VaadinService;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class TopicTest {
 
@@ -18,7 +27,7 @@ public class TopicTest {
 
     @Before
     public void init() {
-        topic = new Topic("id", TestUtil.createTestCollaborationEngine(), null);
+        topic = new Topic("id", TestUtil::createTestCollaborationEngine, null);
     }
 
     @Test
@@ -87,7 +96,7 @@ public class TopicTest {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
-                    "Throwing subscriber sould be run before working subscriber",
+                    "Throwing subscriber should be run before working subscriber",
                     0, count.get());
             throw new RuntimeException("Fail on purpose");
         });
@@ -134,7 +143,7 @@ public class TopicTest {
             // Assert doesn't throw a runtime exception, which means that it
             // would not be caught
             Assert.assertEquals(
-                    "Throwing subscriber sould be run before working subscriber",
+                    "Throwing subscriber should be run before working subscriber",
                     0, count.get());
             throw new RuntimeException("Fail on purpose");
         });

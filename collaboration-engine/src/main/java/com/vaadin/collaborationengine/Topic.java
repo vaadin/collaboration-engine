@@ -40,6 +40,7 @@ import com.vaadin.collaborationengine.EntryList.ListEntrySnapshot;
 import com.vaadin.collaborationengine.MembershipEvent.MembershipEventType;
 import com.vaadin.flow.function.SerializableBiConsumer;
 import com.vaadin.flow.function.SerializableConsumer;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.shared.Registration;
 
 class Topic implements Serializable {
@@ -57,7 +58,7 @@ class Topic implements Serializable {
     }
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    static class Entry {
+    static class Entry implements Serializable {
 
         final UUID revisionId;
 
@@ -75,7 +76,7 @@ class Topic implements Serializable {
         }
     }
 
-    static class Snapshot {
+    static class Snapshot implements Serializable {
         private static final TypeReference<Map<String, EntryList>> LISTS_TYPE = new TypeReference<>() {
         };
         private static final TypeReference<Map<String, Map<String, Entry>>> MAPS_TYPE = new TypeReference<>() {
@@ -150,7 +151,7 @@ class Topic implements Serializable {
     }
 
     private final String id;
-    private final transient CollaborationEngine collaborationEngine;
+    private final SerializableSupplier<CollaborationEngine> ceSupplier;
     private final Map<String, Map<String, Entry>> namedMapData = new HashMap<>();
     private final Map<String, EntryList> namedListData = new HashMap<>();
     final Map<String, Duration> mapExpirationTimeouts = new HashMap<>();
@@ -165,10 +166,10 @@ class Topic implements Serializable {
     private boolean leader;
     private int changeCount;
 
-    Topic(String id, CollaborationEngine collaborationEngine,
+    Topic(String id, SerializableSupplier<CollaborationEngine> ceSupplier,
             Backend.EventLog eventLog) {
         this.id = id;
-        this.collaborationEngine = collaborationEngine;
+        this.ceSupplier = ceSupplier;
         this.eventLog = eventLog;
         final Backend backend = getBackend();
         backend.addMembershipListener(event -> {
@@ -178,7 +179,7 @@ class Topic implements Serializable {
         });
         if (eventLog != null) {
             BackendUtil
-                    .initializeFromSnapshot(collaborationEngine,
+                    .initializeFromSnapshot(getCollaborationEngine(),
                             this::initializeFromSnapshot)
                     .thenAccept(uuid -> lastSnapshotId = uuid);
         }
@@ -189,7 +190,7 @@ class Topic implements Serializable {
     }
 
     private Backend getBackend() {
-        return collaborationEngine.getConfiguration().getBackend();
+        return getCollaborationEngine().getConfiguration().getBackend();
     }
 
     private CompletableFuture<UUID> initializeFromSnapshot() {
@@ -224,7 +225,7 @@ class Topic implements Serializable {
     }
 
     synchronized void handleNodeLeave(UUID nodeId) {
-        Backend backend = this.collaborationEngine.getConfiguration()
+        Backend backend = getCollaborationEngine().getConfiguration()
                 .getBackend();
         backendNodes.remove(nodeId);
         if (!backendNodes.isEmpty()
@@ -277,7 +278,7 @@ class Topic implements Serializable {
     }
 
     private void clearExpiredData() {
-        Clock clock = collaborationEngine.getClock();
+        Clock clock = getCollaborationEngine().getClock();
         if (isLeader() && lastDisconnected != null) {
             Instant now = clock.instant();
             mapExpirationTimeouts.entrySet().stream()
@@ -388,15 +389,17 @@ class Topic implements Serializable {
                     .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
             activeNodes.remove(nodeId);
             if (activeNodes.isEmpty()) {
-                lastDisconnected = collaborationEngine.getClock().instant();
+                lastDisconnected = getCollaborationEngine().getClock()
+                        .instant();
             }
             return ChangeResult.ACCEPTED;
         }
         case JsonUtil.CHANGE_NODE_JOIN: {
             UUID nodeId = UUID
                     .fromString(change.get(JsonUtil.CHANGE_NODE_ID).asText());
-            if (backendNodes.isEmpty() && collaborationEngine.getConfiguration()
-                    .getBackend().getNodeId().equals(nodeId)) {
+            if (backendNodes.isEmpty()
+                    && getCollaborationEngine().getConfiguration().getBackend()
+                            .getNodeId().equals(nodeId)) {
                 becomeLeader();
             }
             backendNodes.add(nodeId);
@@ -744,5 +747,9 @@ class Topic implements Serializable {
     // For testing
     boolean hasChangeListeners() {
         return !changeListeners.isEmpty();
+    }
+
+    private CollaborationEngine getCollaborationEngine() {
+        return ceSupplier.get();
     }
 }

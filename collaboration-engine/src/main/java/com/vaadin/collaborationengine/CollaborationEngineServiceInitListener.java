@@ -9,6 +9,10 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinService;
@@ -25,6 +29,12 @@ import com.vaadin.flow.server.VaadinServiceInitListener;
 public class CollaborationEngineServiceInitListener
         implements VaadinServiceInitListener {
 
+    private static final List<Consumer<VaadinService>> reinitializers = new ArrayList<>();
+
+    public static void addReinitializer(Consumer<VaadinService> reinitializer) {
+        reinitializers.add(reinitializer);
+    }
+
     @Override
     public void serviceInit(ServiceInitEvent event) {
         VaadinService service = event.getSource();
@@ -39,5 +49,18 @@ public class CollaborationEngineServiceInitListener
             // calling CollaborationEngine.getInstance() suggesting to
             // provide a bean if using Spring or CDI.
         }
+
+        event.addRequestHandler((session, request, response) -> {
+            VaadinService requestService = request.getService();
+            if (requestService != null && !reinitializers.isEmpty()) {
+                synchronized (reinitializers) {
+                    for (Consumer<VaadinService> reinitializer : reinitializers) {
+                        reinitializer.accept(requestService);
+                    }
+                    reinitializers.clear();
+                }
+            }
+            return false;
+        });
     }
 }

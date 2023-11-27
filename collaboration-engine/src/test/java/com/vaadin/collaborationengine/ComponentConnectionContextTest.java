@@ -620,7 +620,7 @@ public class ComponentConnectionContextTest {
 
         ui.runAccessTasks();
 
-        Assert.assertEquals("Santiy check", Arrays.asList("active"), log);
+        Assert.assertEquals("Sanity check", Arrays.asList("active"), log);
 
         try {
             ui.remove(component);
@@ -653,7 +653,7 @@ public class ComponentConnectionContextTest {
 
         ui.runAccessTasks();
 
-        Assert.assertEquals("Santiy check", Arrays.asList("active"), log);
+        Assert.assertEquals("Sanity check", Arrays.asList("active"), log);
 
         ui.remove(component);
         ui.add(component);

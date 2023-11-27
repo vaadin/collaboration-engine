@@ -10,6 +10,9 @@
 
 package com.vaadin.collaborationengine;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -26,6 +29,7 @@ import com.vaadin.collaborationengine.PropertyChangeHandler.PropertyChangeEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.internal.UsageStatistics;
+import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -90,6 +94,7 @@ public class FormManager extends AbstractCollaborationManager
 
     private transient CollaborationMap map;
     private transient CollaborationList list;
+    private ConnectionContext context;
     private final Map<FocusedEditor, UserEntry> userEntries = new LinkedHashMap<>();
 
     private PropertyChangeHandler propertyChangeHandler;
@@ -140,6 +145,7 @@ public class FormManager extends AbstractCollaborationManager
             String topicId,
             SerializableSupplier<CollaborationEngine> ceSupplier) {
         super(localUser, topicId, ceSupplier);
+        this.context = context;
         openTopicConnection(context, this::onConnectionActivate);
     }
 
@@ -161,6 +167,18 @@ public class FormManager extends AbstractCollaborationManager
             String topicId) {
         this(new ComponentConnectionContext(component), localUser, topicId,
                 CollaborationEngine::getInstance);
+    }
+
+    @Serial
+    private void readObject(ObjectInputStream in)
+            throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        CollaborationEngineServiceInitListener
+                .addReinitializer(this::reinitialize);
+    }
+
+    private void reinitialize(VaadinService service) {
+        openTopicConnection(context, this::onConnectionActivate);
     }
 
     /**

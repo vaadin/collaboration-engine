@@ -9,14 +9,14 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.EventObject;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
+import com.vaadin.flow.function.SerializableConsumer;
 import com.vaadin.flow.function.SerializableFunction;
 import com.vaadin.flow.server.Command;
 import com.vaadin.flow.shared.Registration;
@@ -41,7 +41,7 @@ public class TopicConnectionRegistration implements Registration {
      * @author Vaadin Ltd
      */
     @FunctionalInterface
-    public interface ConnectionFailedAction {
+    public interface ConnectionFailedAction extends Serializable {
         /**
          * Handles a failed topic connection.
          *
@@ -71,13 +71,13 @@ public class TopicConnectionRegistration implements Registration {
 
     private final AtomicReference<TopicConnection> topicConnectionReference;
     private ConnectionContext connectionContext;
-    private Executor executor;
+    private SerializableExecutor executor;
     private CompletableFuture<Void> pendingFuture;
-    private final Consumer<TopicConnectionRegistration> afterDisconnection;
+    private final SerializableConsumer<TopicConnectionRegistration> afterDisconnection;
 
     TopicConnectionRegistration(TopicConnection topicConnection,
-            ConnectionContext connectionContext, Executor executor,
-            Consumer<TopicConnectionRegistration> afterDisconnection) {
+            ConnectionContext connectionContext, SerializableExecutor executor,
+            SerializableConsumer<TopicConnectionRegistration> afterDisconnection) {
         this.topicConnectionReference = new AtomicReference<>(topicConnection);
         this.connectionContext = connectionContext;
         this.executor = executor;

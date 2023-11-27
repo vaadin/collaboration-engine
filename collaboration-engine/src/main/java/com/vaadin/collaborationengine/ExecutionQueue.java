@@ -9,11 +9,12 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import com.vaadin.flow.server.Command;
 
-class ExecutionQueue {
+class ExecutionQueue implements Serializable {
     private final ConcurrentLinkedQueue<Command> inbox = new ConcurrentLinkedQueue<>();
 
     void add(Command command) {

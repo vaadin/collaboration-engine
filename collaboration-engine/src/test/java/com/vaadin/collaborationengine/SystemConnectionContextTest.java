@@ -10,7 +10,6 @@
 package com.vaadin.collaborationengine;
 
 import java.lang.ref.WeakReference;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +30,7 @@ import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.shared.Registration;
 
 public class SystemConnectionContextTest {
-    private static Executor rejectExecutor = runnable -> Assert
+    private static SerializableExecutor rejectExecutor = runnable -> Assert
             .fail("Should not dispatch");
 
     private TestCollaborationEngine ce;
@@ -76,7 +75,7 @@ public class SystemConnectionContextTest {
 
     @Test
     public void init_activatedImmediately() {
-        context.init(spy, ce.getExecutorService());
+        context.init(spy, command -> ce.getExecutorService().execute(command));
 
         spy.assertActive("Init should activate immediately");
     }
@@ -214,7 +213,8 @@ public class SystemConnectionContextTest {
     @Test
     public void unusedContext_clearReference_notReferencedThroughCe()
             throws InterruptedException {
-        SystemConnectionContext context = new SystemConnectionContext(ce);
+        SystemConnectionContext context = new SystemConnectionContext(
+                () -> TestCollaborationEngine.getInstance());
         WeakReference<SystemConnectionContext> reference = new WeakReference<>(
                 context);
 
@@ -231,7 +231,7 @@ public class SystemConnectionContextTest {
         AtomicBoolean executionActive = new AtomicBoolean();
         AtomicReference<String> error = new AtomicReference<>();
 
-        context.init(spy, executorService);
+        context.init(spy, command -> executorService.execute(command));
 
         for (int i = 0; i < 100; i++) {
             final int currentExecution = i;
@@ -271,7 +271,7 @@ public class SystemConnectionContextTest {
 
         for (int i = 0; i < 5; i++) {
             SpyActivationHandler spy = new SpyActivationHandler();
-            context.init(spy, executorService);
+            context.init(spy, command -> executorService.execute(command));
 
             spy.getActionDispatcher().dispatchAction(() -> {
                 if (executionActive.getAndSet(true)) {

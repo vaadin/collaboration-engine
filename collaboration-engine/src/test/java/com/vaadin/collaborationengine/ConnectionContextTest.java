@@ -1,28 +1,46 @@
 package com.vaadin.collaborationengine;
 
-import org.junit.Assert;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import com.vaadin.collaborationengine.util.MockConnectionContext;
+import com.vaadin.collaborationengine.util.MockService;
+import com.vaadin.collaborationengine.util.MockUI;
+import com.vaadin.collaborationengine.util.SpyActivationHandler;
+import com.vaadin.collaborationengine.util.TestComponent;
 import com.vaadin.collaborationengine.util.TestUtils;
+import com.vaadin.flow.server.VaadinService;
 
-public class ConnectionContextTest {
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-    private MockConnectionContext context;
-    private TopicConnection topicConnection;
-    private CollaborationMap map;
+public class ConnectionContextTest implements Serializable {
+
+    private transient CollaborationEngine ce;
+    private transient MockUI ui;
+    private transient MockConnectionContext context;
+    private transient SpyActivationHandler spy;
+    private transient CollaborationMap map;
 
     @Before
     public void init() {
-        CollaborationEngine collaborationEngine = TestUtil
-                .createTestCollaborationEngine();
+        VaadinService service = new MockService();
+        VaadinService.setCurrent(service);
+        ce = TestUtil.createTestCollaborationEngine();
 
+        ui = new MockUI();
         context = MockConnectionContext.createEager();
+        spy = new SpyActivationHandler();
 
-        collaborationEngine.openTopicConnection(context, "foo",
-                SystemUserInfo.getInstance(), tc -> {
-                    topicConnection = tc;
+        ce.openTopicConnection(context, "foo", SystemUserInfo.getInstance(),
+                tc -> {
                     map = tc.getNamedMap("map");
                     map.subscribe(event -> {
                     });
@@ -34,7 +52,7 @@ public class ConnectionContextTest {
     @Test
     public void subscribe_actionDispatchedThroughContext() {
         map.put("foo", "bar");
-        Assert.assertTrue("Context should be passed through.",
+        assertTrue("Context should be passed through.",
                 context.getDispatchActionCount() > 0);
     }
 
@@ -42,7 +60,7 @@ public class ConnectionContextTest {
     public void setTopicValue_actionDispatchedThroughContext() {
         context.resetActionDispatchCount();
         map.put("foo", "bar");
-        Assert.assertTrue("Context should be passed through.",
+        assertTrue("Context should be passed through.",
                 context.getDispatchActionCount() > 0);
     }
 

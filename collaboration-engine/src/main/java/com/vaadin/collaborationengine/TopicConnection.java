@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.vaadin.collaborationengine.Topic.ChangeDetails;
 import com.vaadin.collaborationengine.Topic.ChangeResult;
 import com.vaadin.flow.function.SerializableFunction;
+import com.vaadin.flow.function.SerializableSupplier;
 import com.vaadin.flow.shared.Registration;
 
 /**
@@ -415,9 +416,11 @@ public class TopicConnection {
      */
     private boolean activated;
 
-    TopicConnection(CollaborationEngine ce, ConnectionContext context,
-            Topic topic, BiConsumer<UUID, ObjectNode> distributor,
-            UserInfo localUser, Consumer<Boolean> topicActivationHandler,
+    TopicConnection(
+            SerializableSupplier<CollaborationEngine> collaborationEngineSupplier,
+            ConnectionContext context, Topic topic,
+            BiConsumer<UUID, ObjectNode> distributor, UserInfo localUser,
+            Consumer<Boolean> topicActivationHandler,
             SerializableFunction<TopicConnection, Registration> connectionActivationCallback) {
         this.topic = topic;
         this.distributor = distributor;
@@ -425,7 +428,8 @@ public class TopicConnection {
         this.topicActivationHandler = topicActivationHandler;
         this.connectionActivationCallback = connectionActivationCallback;
         this.closeRegistration = context.init(this::acceptActionDispatcher,
-                ce.getExecutorService());
+                command -> collaborationEngineSupplier.get()
+                        .getExecutorService().execute(command));
     }
 
     private void handleChange(UUID id, ChangeDetails change) {

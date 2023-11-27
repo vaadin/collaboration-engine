@@ -9,6 +9,7 @@
  */
 package com.vaadin.collaborationengine;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 
@@ -44,6 +45,18 @@ class ServiceDestroyDelegate implements Serializable {
 
         sessionRegistration = service
                 .addSessionDestroyListener(event -> removeRegistrations());
+    }
+
+    /*
+     * An instance of this class is stored in the Vaadin session, causing
+     * session serialization to fail. In order to solve this issue, we replace
+     * it with null during serialization and then replace the session value with
+     * a new instance during deserialization. See
+     * ComponentConnectionContext.attach(UI).
+     */
+    @Serial
+    private Object writeReplace() {
+        return null;
     }
 
     private void removeRegistrations() {
