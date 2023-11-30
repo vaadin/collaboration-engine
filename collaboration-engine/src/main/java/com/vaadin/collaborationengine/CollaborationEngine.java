@@ -78,7 +78,7 @@ public class CollaborationEngine {
             .getLogger(CollaborationEngine.class);
 
     static final String COLLABORATION_ENGINE_NAME = "vaadin-collaboration-engine";
-    static final String COLLABORATION_ENGINE_VERSION = "6.1";
+    static final String COLLABORATION_ENGINE_VERSION = "6.2";
 
     static final int USER_COLOR_COUNT = 7;
 
