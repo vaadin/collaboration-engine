@@ -18,8 +18,7 @@ public class MyVaadinInitListener implements VaadinServiceInitListener {
     @Override
     public void serviceInit(ServiceInitEvent serviceEvent) {
         VaadinService service = serviceEvent.getSource();
-        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
-                event -> LOGGER.warn(event.getMessage()));
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration();
         CollaborationEngine.configure(service, configuration);
     }
 }

@@ -80,10 +80,6 @@
                     might cause lots of unnecessary compilations in the
                     background.-->
                     <scan>2</scan>
-                    <!-- Tell where the CE data dir is -->
-                    <systemProperties>
-                            <vaadin.ce.dataDir>${project.basedir}/dataDir</vaadin.ce.dataDir>
-                    </systemProperties>
                     <!-- Use war output directory to get the webpack files -->
                     <webApp>
                         <allowDuplicateFragmentNames>true</allowDuplicateFragmentNames>
@@ -103,29 +99,6 @@
                         <goals>
                             <goal>prepare-frontend</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Clean stats file after ITs -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-clean-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>post-integration-test</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                        <configuration>
-                            <filesets>
-                                <fileset>
-                                    <directory>dataDir</directory>
-                                    <includes>
-                                        <include>ce-statistics.json</include>
-                                    </includes>
-                                </fileset>
-                            </filesets>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

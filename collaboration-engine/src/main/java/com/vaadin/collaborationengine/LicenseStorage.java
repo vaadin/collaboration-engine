@@ -18,7 +18,9 @@ import java.util.Map;
  * The interface to store license usage data.
  *
  * @author Vaadin Ltd
+ * @deprecated license storage is not needed since 6.3
  */
+@Deprecated(since = "6.3", forRemoval = true)
 public interface LicenseStorage {
 
     /**

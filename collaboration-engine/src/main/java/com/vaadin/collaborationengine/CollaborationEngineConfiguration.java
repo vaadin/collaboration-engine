@@ -10,12 +10,9 @@
 
 package com.vaadin.collaborationengine;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
-import com.vaadin.collaborationengine.LicenseEvent.LicenseEventType;
 import com.vaadin.experimental.FeatureFlags;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
@@ -41,12 +38,6 @@ public class CollaborationEngineConfiguration {
      * include the prefix. However, when instructing people on how to set the
      * parameter, we should include the prefix.
      */
-    static final String LICENSE_CONFIG_PROPERTY = "ce.license";
-    static final String LICENSE_PUBLIC_PROPERTY = "vaadin."
-            + LICENSE_CONFIG_PROPERTY;
-    static final String DATA_DIR_CONFIG_PROPERTY = "ce.dataDir";
-    static final String DATA_DIR_PUBLIC_PROPERTY = "vaadin."
-            + DATA_DIR_CONFIG_PROPERTY;
     static final String BEACON_PATH_CONFIG_PROPERTY = "ce.beaconPath";
     static final String DEFAULT_BEACON_PATH = "/";
 
@@ -70,23 +61,29 @@ public class CollaborationEngineConfiguration {
      * Creates a new Collaboration Engine configuration with the provided
      * handler for license events.
      * <p>
-     * The handler will be invoked when license events occur, e.g. when the
-     * license is expired or when the end-user quota has entered the grace
-     * period. The handler can then be used for example to forward these events
-     * via e-mail or to a monitoring application to be alerted about the current
-     * status of the license.
-     * <p>
-     * See {@link LicenseEventType} for a list of license event types.
+     * This constructor is deprecated and the provided handler won't receive any
+     * events.
      *
      * @param licenseEventHandler
      *            the license event handler, not {@code null}
      *
      * @since 3.0
+     * @deprecated the provided handler won't receive any events, please prefer
+     *             using the default constructor with no parameters
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public CollaborationEngineConfiguration(
             LicenseEventHandler licenseEventHandler) {
         this.licenseEventHandler = Objects.requireNonNull(licenseEventHandler,
                 "The license event handler cannot be null");
+    }
+
+    /**
+     * Creates a new Collaboration Engine configuration.
+     */
+    public CollaborationEngineConfiguration() {
+        // This default constructor does nothing, it is explicitly declared
+        // until the deprecated constructor above is removed
     }
 
     /**
@@ -95,7 +92,9 @@ public class CollaborationEngineConfiguration {
      * @return the license event handler
      *
      * @since 3.0
+     * @deprecated the handler is not used since 6.3
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public LicenseEventHandler getLicenseEventHandler() {
         return licenseEventHandler;
     }
@@ -106,7 +105,9 @@ public class CollaborationEngineConfiguration {
      * @return the data-directory
      *
      * @since 3.0
+     * @deprecated the data-directory is not used since 6.3
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public String getDataDir() {
         return configuredDataDir;
     }
@@ -124,7 +125,9 @@ public class CollaborationEngineConfiguration {
      *            path to the data-directory
      *
      * @since 3.0
+     * @deprecated the data-directory is not used since 6.3
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public void setDataDir(String dataDir) {
         configuredDataDir = dataDir;
     }
@@ -202,10 +205,6 @@ public class CollaborationEngineConfiguration {
         }
     }
 
-    boolean isLicenseCheckingEnabled() {
-        return vaadinService.getDeploymentConfiguration().isProductionMode();
-    }
-
     /**
      * Sets the backend implementation to use. A backend can be used to
      * distribute changes between multiple nodes in a cluster. By default, a
@@ -241,7 +240,9 @@ public class CollaborationEngineConfiguration {
      *
      * @return the license-storage implementation, or <code>null</code> if not
      *         configured
+     * @deprecated license storage is not needed since 6.3
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public LicenseStorage getLicenseStorage() {
         return licenseStorage;
     }
@@ -252,7 +253,9 @@ public class CollaborationEngineConfiguration {
      * @param licenseStorage
      *            the license-storage implementation, or <code>null</code> to
      *            unset
+     * @deprecated license storage is not needed since 6.3
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public void setLicenseStorage(LicenseStorage licenseStorage) {
         this.licenseStorage = licenseStorage;
     }
@@ -282,20 +285,6 @@ public class CollaborationEngineConfiguration {
      */
     public void setExecutorService(ExecutorService executorService) {
         this.executorService = executorService;
-    }
-
-    String getLicenseProperty() {
-        return vaadinService.getDeploymentConfiguration()
-                .getStringProperty(LICENSE_CONFIG_PROPERTY, null);
-    }
-
-    Path getDataDirPath() {
-        String dataDirectory = vaadinService.getDeploymentConfiguration()
-                .getStringProperty(DATA_DIR_CONFIG_PROPERTY, null);
-        if (dataDirectory == null) {
-            dataDirectory = configuredDataDir;
-        }
-        return dataDirectory != null ? Paths.get(dataDirectory) : null;
     }
 
     String getBeaconPathProperty() {

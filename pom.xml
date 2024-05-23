@@ -282,7 +282,6 @@
                 <module>collaboration-engine-demo</module>
                 <module>collaboration-engine-buildtools</module>
                 <module>collaboration-engine-test</module>
-                <module>collaboration-engine-license-generator</module>
             </modules>
         </profile>
     </profiles>

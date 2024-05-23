@@ -9,6 +9,8 @@
  */
 package com.vaadin.collaborationengine;
 
+import jakarta.servlet.ServletContext;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -30,7 +32,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.servlet.ServletContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +44,6 @@ import com.vaadin.flow.server.ServiceInitEvent;
 import com.vaadin.flow.server.VaadinService;
 import com.vaadin.flow.server.VaadinServiceInitListener;
 import com.vaadin.flow.shared.Registration;
-import com.vaadin.pro.licensechecker.LicenseChecker;
 
 /**
  * CollaborationEngine is an API for creating collaborative experiences in
@@ -87,8 +87,6 @@ public class CollaborationEngine {
     private Map<String, Integer> activeTopicsCount = new ConcurrentHashMap<>();
     private final Set<TopicConnectionRegistration> registrations = ConcurrentHashMap
             .newKeySet();
-
-    private LicenseHandler licenseHandler;
 
     private CollaborationEngineConfiguration configuration;
 
@@ -172,39 +170,11 @@ public class CollaborationEngine {
     public static CollaborationEngine getInstance(VaadinService vaadinService) {
         Objects.requireNonNull(vaadinService, "VaadinService cannot be null");
 
-        return vaadinService.getContext()
-                .getAttribute(CollaborationEngine.class, () -> {
-                    // CollaborationEngineConfiguration has not been provided
-
-                    if (vaadinService.getDeploymentConfiguration()
-                            .isProductionMode()) {
-                        throw new IllegalStateException(
-                                "Vaadin is running in production mode, and "
-                                        + "Collaboration Engine is missing a required configuration object. "
-                                        + "The configuration should be "
-                                        + "set by calling the static CollaborationEngine.configure() method "
-                                        + "in a VaadinServiceInitListener or, if using Spring/CDI, provide "
-                                        + "a bean of type CollaborationEngineConfiguration. "
-                                        + "More info in Vaadin documentation.");
-                    } else {
-                        LOGGER.warn(
-                                "Collaboration Engine is used in development/trial mode. "
-                                        + "Note that in order to make a production build, "
-                                        + "you need to obtain a license from Vaadin and configure the '"
-                                        + CollaborationEngineConfiguration.DATA_DIR_PUBLIC_PROPERTY
-                                        + "' property. You also need to provide a configuration object "
-                                        + "by using the static CollaborationEngine.configure() method in "
-                                        + "a VaadinServiceInitListener or, if using Spring/CDI, provide "
-                                        + "a bean of type CollaborationEngineConfiguration. "
-                                        + "More info in Vaadin documentation.");
-                        return CollaborationEngine.configure(vaadinService,
-                                new CollaborationEngineConfiguration(e -> {
-                                    throw new IllegalStateException(
-                                            "License event handler was called in dev mode. "
-                                                    + "This should not happen.");
-                                }), new CollaborationEngine(), false);
-                    }
-                });
+        return vaadinService.getContext().getAttribute(
+                CollaborationEngine.class,
+                () -> CollaborationEngine.configure(vaadinService,
+                        new CollaborationEngineConfiguration(),
+                        new CollaborationEngine(), false));
     }
 
     /**
@@ -270,10 +240,6 @@ public class CollaborationEngine {
             // Avoid storing from inside computeIfAbsent
             vaadinService.getContext().setAttribute(CollaborationEngine.class,
                     ce);
-        }
-        if (!vaadinService.getDeploymentConfiguration().isProductionMode()) {
-            LicenseChecker.checkLicense(COLLABORATION_ENGINE_NAME,
-                    COLLABORATION_ENGINE_VERSION);
         }
         return ce;
     }
@@ -401,26 +367,10 @@ public class CollaborationEngine {
 
         assertConfigured();
 
-        ensureConfigAndLicenseHandlerInitialization();
         if (!active.get()) {
             LOGGER.info("Tried to open a connection to a closed collaboration"
                     + " engine instance");
             return createFailedTopicConnectionRegistration(context);
-        }
-
-        if (configuration.isLicenseCheckingEnabled()) {
-            boolean hasSeat = licenseHandler.registerUser(localUser.getId());
-
-            if (!hasSeat) {
-                // User quota exceeded, don't open the connection.
-                LOGGER.warn(
-                        "Access for user '{}' was denied. The license may have "
-                                + "expired or the user quota may have exceeded, check the "
-                                + "license events handled by your LicenseEventHandler for "
-                                + "more details.",
-                        localUser.getId());
-                return createFailedTopicConnectionRegistration(context);
-            }
         }
 
         TopicAndEventLog topicAndConnection = topics.computeIfAbsent(topicId,
@@ -466,17 +416,9 @@ public class CollaborationEngine {
      * Requests access for a user to Collaboration Engine. The provided callback
      * will be invoked with a response that tells whether the access is granted.
      * <p>
-     * This method can be used to check if the user has access to the
-     * Collaboration Engine, e.g. if the license is not expired and there is
-     * quota for that user; depending on the response, it's then possible to
-     * adapt the UI enabling or disabling collaboration features.
-     * <p>
-     * To avoid calling this method multiple times per user, it is suggested to
-     * cache the result during the login process (e.g. in the session).
-     * <p>
-     * In the callback, you can check from the response whether the user has
-     * access or not with the {@link AccessResponse#hasAccess()} method. It
-     * returns {@code true} if access has been granted for the user.
+     * This method is deprecated and the provided callback always receives a
+     * response that resolves to {@code true}. This means it is not more
+     * necessary to use this method since access is now always granted.
      * <p>
      * The current {@link UI} is accessed to run the callback, which means that
      * UI updates in the callback are pushed to the client in real-time. Because
@@ -489,7 +431,10 @@ public class CollaborationEngine {
      *            the callback to accept the response
      *
      * @since 3.0
+     * @deprecated this method is deprecated and now the callback always
+     *             receives a response that resolves to {@code true}
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public void requestAccess(UserInfo user,
             Consumer<AccessResponse> requestCallback) {
         UI ui = UI.getCurrent();
@@ -511,17 +456,9 @@ public class CollaborationEngine {
      * Requests access for a user to Collaboration Engine. The provided callback
      * will be invoked with a response that tells whether the access is granted.
      * <p>
-     * This method can be used to check if the user has access to the
-     * Collaboration Engine, e.g. if the license is not expired and there is
-     * quota for that user; depending on the response, it's then possible to
-     * adapt the UI enabling or disabling collaboration features.
-     * <p>
-     * To avoid calling this method multiple times per user, it is suggested to
-     * cache the result during the login process (e.g. in the session).
-     * <p>
-     * In the callback, you can check from the response whether the user has
-     * access or not with the {@link AccessResponse#hasAccess()} method. It
-     * returns {@code true} if access has been granted for the user.
+     * This method is deprecated and the provided callback always receives a
+     * response that resolves to {@code true}. This means it is not more
+     * necessary to use this method since access is now always granted.
      *
      * @param context
      *            context for the connection
@@ -531,7 +468,10 @@ public class CollaborationEngine {
      *            the callback to accept the response
      *
      * @since 3.0
+     * @deprecated this method is deprecated and now the callback always
+     *             receives a response that resolves to {@code true}
      */
+    @Deprecated(since = "6.3", forRemoval = true)
     public void requestAccess(ConnectionContext context, UserInfo user,
             Consumer<AccessResponse> requestCallback) {
         Objects.requireNonNull(context, "ConnectionContext cannot be null");
@@ -541,11 +481,7 @@ public class CollaborationEngine {
 
         // Will handle remote connection here
         context.init(new SingleUseActivationHandler(actionDispatcher -> {
-            ensureConfigAndLicenseHandlerInitialization();
-            final boolean hasAccess = !configuration.isLicenseCheckingEnabled()
-                    || licenseHandler.registerUser(user.getId());
-
-            AccessResponse response = new AccessResponse(hasAccess);
+            AccessResponse response = new AccessResponse(true);
             actionDispatcher
                     .dispatchAction(() -> requestCallback.accept(response));
         }), command -> getExecutorService().execute(command));
@@ -576,16 +512,6 @@ public class CollaborationEngine {
         }
     }
 
-    /**
-     * Gets the internal license handler. Package protected for testing
-     * purposes.
-     *
-     * @return the license handler
-     */
-    LicenseHandler getLicenseHandler() {
-        return licenseHandler;
-    }
-
     CollaborationEngineConfiguration getConfiguration() {
         return configuration;
     }
@@ -596,13 +522,6 @@ public class CollaborationEngine {
 
     void setClock(Clock clock) {
         this.clock = clock;
-    }
-
-    synchronized void ensureConfigAndLicenseHandlerInitialization() {
-        if (licenseHandler == null) {
-            // Will throw if config is invalid
-            licenseHandler = new LicenseHandler(() -> this);
-        }
     }
 
     // For testing

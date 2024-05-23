@@ -20,8 +20,7 @@ public class Application extends SpringBootServletInitializer {
 
     @Bean
     public CollaborationEngineConfiguration ceConfigurationBean() {
-        return new CollaborationEngineConfiguration(
-                event -> logger.warn(event.getMessage()));
+        return new CollaborationEngineConfiguration();
     }
 
 }

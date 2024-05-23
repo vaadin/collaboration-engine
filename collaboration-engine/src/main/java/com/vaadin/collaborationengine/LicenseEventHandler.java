@@ -15,7 +15,11 @@ package com.vaadin.collaborationengine;
  *
  * @author Vaadin Ltd
  * @since 3.0
+ * @deprecated any implementation of this interface won't receive any events,
+ *             prefer using the default {@link CollaborationEngineConfiguration}
+ *             constructor
  */
+@Deprecated(since = "6.3", forRemoval = true)
 @FunctionalInterface
 public interface LicenseEventHandler {
 
@@ -25,5 +29,5 @@ public interface LicenseEventHandler {
      * @param event
      *            the license event, not {@code null}
      */
-    void handleLicenseEvent(LicenseEvent event);
+    void handleLicenseEvent(Object event);
 }

@@ -552,9 +552,7 @@ public class ComponentConnectionContextTest {
 
     @Test
     public void defaultConfig_activateContext_pushActivated() {
-        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration(
-                licenceEvent -> {
-                });
+        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration();
 
         // Stores itself for CollaborationEngine.getInstance(service)
         CollaborationEngine.configure(ui.getSession().getService(), config);
@@ -569,9 +567,7 @@ public class ComponentConnectionContextTest {
 
     @Test
     public void pushActivationDisabled_activateContext_pushNotActivated() {
-        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration(
-                licenceEvent -> {
-                });
+        CollaborationEngineConfiguration config = new CollaborationEngineConfiguration();
 
         // Stores itself for CollaborationEngine.getInstance(service)
         CollaborationEngine.configure(ui.getSession().getService(), config);

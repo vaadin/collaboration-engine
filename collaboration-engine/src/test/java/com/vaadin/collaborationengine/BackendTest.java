@@ -339,8 +339,7 @@ public class BackendTest {
     }
 
     private CollaborationEngine createNode() {
-        CollaborationEngineConfiguration conf = new MockConfiguration(e -> {
-        });
+        CollaborationEngineConfiguration conf = new MockConfiguration();
         conf.setBackend(backendFactory.createBackend());
         return TestUtil.createTestCollaborationEngine(new MockService(), conf);
     }
@@ -365,6 +364,7 @@ public class BackendTest {
             this.attempts = attempts;
         }
 
+        @Override
         public CompletableFuture<UUID> initialize() {
             if (attemptCount < attempts) {
                 attemptCount++;

@@ -43,7 +43,6 @@
                 <module>collaboration-engine-integration-test</module>
                 <module>collaboration-engine-test-spring</module>
                 <module>collaboration-engine-test-cdi</module>
-                <module>collaboration-engine-test-invalid-license</module>
             </modules>
         </profile>
     </profiles>

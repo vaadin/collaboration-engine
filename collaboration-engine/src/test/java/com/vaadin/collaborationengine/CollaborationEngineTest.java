@@ -285,62 +285,20 @@ public class CollaborationEngineTest {
     }
 
     @Test
-    public void getInstance_productionMode_configurationNotProvided_throwsException() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(
-                "Collaboration Engine is missing a required configuration object");
-        MockService service = new MockService(true);
-        CollaborationEngine.getInstance(service);
-    }
-
-    @Test
     public void configure_configurationAlreadySet_throwsException() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
                 "Collaboration Engine has been already configured");
         MockService service = new MockService();
         CollaborationEngine.configure(service,
-                new CollaborationEngineConfiguration(e -> {
-                }));
+                new CollaborationEngineConfiguration());
         CollaborationEngine.configure(service,
-                new CollaborationEngineConfiguration(e -> {
-                }));
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void configureLicenseEventHandlerNull_throwsException() {
-        CollaborationEngine.configure(new MockService(),
-                new CollaborationEngineConfiguration(null));
-    }
-
-    @Test
-    public void dataDirPropertyIsSetCorrectly() {
-        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
-                event -> {
-                });
-        configuration.setVaadinService(service);
-        configuration.setDataDir("foo");
-        String dataDir = configuration.getDataDirPath().toString();
-        Assert.assertEquals("foo", dataDir);
-    }
-
-    @Test
-    public void dataDirPropertyTakesPrecedenceOverConfiguration() {
-        System.setProperty("vaadin.ce.dataDir", "foo");
-        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
-                event -> {
-                });
-        configuration.setVaadinService(service);
-        configuration.setDataDir("bar");
-        String dataDir = configuration.getDataDirPath().toString();
-        Assert.assertEquals("foo", dataDir);
+                new CollaborationEngineConfiguration());
     }
 
     @Test
     public void beaconPathPropertyIsSetCorrectly() {
-        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
-                event -> {
-                });
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration();
         configuration.setVaadinService(service);
         configuration.setBeaconPath("foo");
         String beaconPath = configuration.getBeaconPathProperty();
@@ -350,9 +308,7 @@ public class CollaborationEngineTest {
     @Test
     public void beaconPathPropertyTakesPrecedenceOverConfiguration() {
         System.setProperty("vaadin.ce.beaconPath", "foo");
-        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration(
-                event -> {
-                });
+        CollaborationEngineConfiguration configuration = new CollaborationEngineConfiguration();
         configuration.setVaadinService(service);
         configuration.setBeaconPath("bar");
         String beaconPath = configuration.getBeaconPathProperty();
@@ -519,9 +475,7 @@ public class CollaborationEngineTest {
     }
 
     private CollaborationEngine createNode() {
-        CollaborationEngineConfiguration conf = new TestUtil.MockConfiguration(
-                e -> {
-                });
+        CollaborationEngineConfiguration conf = new TestUtil.MockConfiguration();
         conf.setBackend(backendFactory.createBackend());
         return TestUtil.createTestCollaborationEngine(new MockService(), conf);
     }

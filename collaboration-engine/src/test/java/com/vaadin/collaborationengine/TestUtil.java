@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.AbstractExecutorService;
@@ -44,41 +43,15 @@ public class TestUtil {
     public static class MockConfiguration
             extends CollaborationEngineConfiguration {
 
-        private boolean licenseCheckingEnabled;
-        private Path dataDirPath;
         private String beaconPath;
 
         private boolean backendFeatureCheckingEnabled;
-        private boolean licenseCheckingEnabledMocked;
-        private boolean dataDirPathMocked;
         private boolean beaconPathMocked;
-
-        public MockConfiguration(LicenseEventHandler licenseEventHandler) {
-            super(licenseEventHandler);
-        }
 
         @Override
         void requireBackendFeatureEnabled() {
             if (backendFeatureCheckingEnabled) {
                 super.requireBackendFeatureEnabled();
-            }
-        }
-
-        @Override
-        boolean isLicenseCheckingEnabled() {
-            if (licenseCheckingEnabledMocked) {
-                return licenseCheckingEnabled;
-            } else {
-                return super.isLicenseCheckingEnabled();
-            }
-        }
-
-        @Override
-        Path getDataDirPath() {
-            if (dataDirPathMocked) {
-                return dataDirPath;
-            } else {
-                return super.getDataDirPath();
             }
         }
 
@@ -94,16 +67,6 @@ public class TestUtil {
         public void setBackendFeatureCheckingEnabled(
                 boolean backendFeatureCheckingEnabled) {
             this.backendFeatureCheckingEnabled = backendFeatureCheckingEnabled;
-        }
-
-        public void setLicenseCheckingEnabled(boolean licenseCheckingEnabled) {
-            this.licenseCheckingEnabled = licenseCheckingEnabled;
-            this.licenseCheckingEnabledMocked = true;
-        }
-
-        public void setDataDirPath(Path dataDirPath) {
-            this.dataDirPath = dataDirPath;
-            this.dataDirPathMocked = true;
         }
 
         public void setBeaconPathProperty(String beaconPath) {
@@ -126,10 +89,8 @@ public class TestUtil {
     static TestCollaborationEngine createTestCollaborationEngine(
             VaadinService service, ExecutorService executor) {
         TestCollaborationEngine ce = new TestCollaborationEngine();
-        MockConfiguration configuration = new MockConfiguration(e -> {
-        });
+        MockConfiguration configuration = new MockConfiguration();
         configuration.setExecutorService(executor);
-        configuration.setLicenseCheckingEnabled(false);
         configureTestCollaborationEngine(service, ce, configuration);
         return ce;
     }
@@ -144,9 +105,7 @@ public class TestUtil {
 
     static void configureTestCollaborationEngine(VaadinService service,
             CollaborationEngine ce) {
-        MockConfiguration configuration = new MockConfiguration(e -> {
-        });
-        configuration.setLicenseCheckingEnabled(false);
+        MockConfiguration configuration = new MockConfiguration();
         configureTestCollaborationEngine(service, ce, configuration);
     }
 
