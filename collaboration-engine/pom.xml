@@ -9,7 +9,7 @@
     <parent>
         <artifactId>collaboration-engine-parent</artifactId>
         <groupId>com.vaadin</groupId>
-        <version>6.2-SNAPSHOT</version>
+        <version>6.3-SNAPSHOT</version>
     </parent>
     <properties>
         <!-- The parsedVersion value is set by build-helper-maven-plugin -->
@@ -64,13 +64,6 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>collaboration-engine-license-generator</artifactId>
-            <version>${project.version}</version>
-            <!-- Only for generating licenses in unit tests -->
             <scope>test</scope>
         </dependency>
         <dependency>
