@@ -93,6 +93,15 @@ public class CollaborationEngineTest {
                 CollaborationEngine.getInstance(service));
     }
 
+    @Test
+    public void getInstance_usesConfigurationBean() {
+        VaadinService otherService = new MockService();
+        CollaborationEngineConfiguration conf = otherService.getInstantiator()
+                .getOrCreate(CollaborationEngineConfiguration.class);
+        CollaborationEngine ce = CollaborationEngine.getInstance(otherService);
+        Assert.assertSame(conf, ce.getConfiguration());
+    }
+
     @Test(expected = NullPointerException.class)
     public void openTopicConnectionWithNullComponent_throws() {
         collaborationEngine.openTopicConnection((Component) null, "foo",

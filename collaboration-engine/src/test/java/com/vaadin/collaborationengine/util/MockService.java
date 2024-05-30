@@ -4,11 +4,14 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import com.vaadin.flow.di.DefaultInstantiator;
+import com.vaadin.flow.di.Instantiator;
 import com.vaadin.flow.di.Lookup;
 import com.vaadin.flow.function.DeploymentConfiguration;
 import com.vaadin.flow.server.DefaultDeploymentConfiguration;
@@ -109,8 +112,24 @@ public class MockService extends VaadinService {
         }
     }
 
+    static class MockInstantiator extends DefaultInstantiator {
+
+        final Map<Class<?>, Object> instances = new HashMap<>();
+
+        public MockInstantiator(VaadinService service) {
+            super(service);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public <T> T getOrCreate(Class<T> type) {
+            return (T) instances.computeIfAbsent(type, super::getOrCreate);
+        }
+    }
+
     private DeploymentConfiguration deploymentConfiguration;
     private ApplicationConfiguration applicationConfiguration;
+    private Instantiator instantiator;
 
     public MockService(boolean productionMode) {
         applicationConfiguration = new MockApplicationConfiguration(
@@ -118,10 +137,16 @@ public class MockService extends VaadinService {
         deploymentConfiguration = new DefaultDeploymentConfiguration(
                 applicationConfiguration, Object.class, new Properties()) {
         };
+        instantiator = new MockInstantiator(this);
     }
 
     public MockService() {
         this(false);
+    }
+
+    @Override
+    public Instantiator getInstantiator() {
+        return instantiator;
     }
 
     @Override
