@@ -12,10 +12,13 @@ package com.vaadin.collaborationengine;
 import java.util.Objects;
 
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.Focusable;
+import com.vaadin.flow.component.HasEnabled;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.HasStyle;
 import com.vaadin.flow.component.messages.MessageInput;
 import com.vaadin.flow.component.messages.MessageInputI18n;
+import com.vaadin.flow.component.shared.HasTooltip;
 import com.vaadin.flow.component.shared.Tooltip;
 import com.vaadin.flow.internal.UsageStatistics;
 import com.vaadin.flow.shared.Registration;
@@ -33,7 +36,8 @@ import com.vaadin.flow.shared.Registration;
  * @since 3.1
  */
 public class CollaborationMessageInput extends Composite<MessageInput>
-        implements HasSize, HasStyle {
+        implements Focusable<CollaborationMessageInput>, HasSize, HasStyle,
+        HasEnabled, HasTooltip {
 
     static {
         UsageStatistics.markAsUsed(
