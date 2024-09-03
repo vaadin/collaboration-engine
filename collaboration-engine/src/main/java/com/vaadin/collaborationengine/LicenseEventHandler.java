@@ -29,5 +29,5 @@ public interface LicenseEventHandler {
      * @param event
      *            the license event, not {@code null}
      */
-    void handleLicenseEvent(Object event);
+    void handleLicenseEvent(LicenseEvent event);
 }
