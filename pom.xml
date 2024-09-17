@@ -16,8 +16,9 @@
     <url>https://vaadin.com/collaboration</url>
     <licenses>
         <license>
-            <name>Vaadin Commercial License and Service Terms</name>
-            <url>https://vaadin.com/commercial-license-and-service-terms</url>
+            <name>Apache License Version 2.0</name>
+            <distribution>repo</distribution>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
 
@@ -43,6 +44,10 @@
         <jackson.version>2.17.1</jackson.version>
         <junit.version>4.13.2</junit.version>
         <jetty.version>11.0.20</jetty.version>
+
+        <!-- plugin versions -->
+        <spotless.plugin.version>2.43.0</spotless.plugin.version>
+        <spotless.licence-header>${maven.multiModuleProjectDirectory}/scripts/apache2-license-header.txt</spotless.licence-header>
     </properties>
 
     <dependencyManagement>
@@ -252,20 +257,25 @@
             </plugin>
 
             <plugin>
-                <groupId>net.revelc.code.formatter</groupId>
-                <artifactId>formatter-maven-plugin</artifactId>
-                <version>2.11.0</version>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.plugin.version}</version>
                 <configuration>
-                    <configFile>eclipse/VaadinJavaConventions.xml</configFile>
-                    <encoding>UTF-8</encoding>
+                    <java>
+                        <eclipse>
+                            <file>https://raw.githubusercontent.com/vaadin/flow/main/eclipse/VaadinJavaConventions.xml</file>
+                        </eclipse>
+                        <endWithNewline/>
+                        <removeUnusedImports />
+                        <importOrder>
+                            <wildcardsLast>true</wildcardsLast>
+                            <order>java|javax,org,com</order>
+                        </importOrder>
+                        <licenseHeader>
+                            <file>${spotless.licence-header}</file>
+                        </licenseHeader>
+                    </java>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>${project.groupId}</groupId>
-                        <artifactId>collaboration-engine-buildtools</artifactId>
-                        <version>${project.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
         </plugins>
     </build>
@@ -280,7 +290,6 @@
             </activation>
             <modules>
                 <module>collaboration-engine-demo</module>
-                <module>collaboration-engine-buildtools</module>
                 <module>collaboration-engine-test</module>
             </modules>
         </profile>

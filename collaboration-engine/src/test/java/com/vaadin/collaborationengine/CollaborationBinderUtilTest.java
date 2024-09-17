@@ -1,21 +1,19 @@
+/*
+ * Copyright 2000-2024 Vaadin Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package com.vaadin.collaborationengine;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.function.BiConsumer;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.vaadin.collaborationengine.util.TestEnum;
 
 import static com.vaadin.collaborationengine.MockJson.LIST_BIG_DECIMAL_TYPE_REF;
 import static com.vaadin.collaborationengine.MockJson.LIST_BOOLEAN_TYPE_REF;
@@ -36,6 +34,23 @@ import static com.vaadin.collaborationengine.MockJson.SET_LOCAL_TIME_TYPE_REF;
 import static com.vaadin.collaborationengine.MockJson.SET_STRING_TYPE_REF;
 import static com.vaadin.collaborationengine.MockJson.SET_TEST_ENUM_TYPE_REF;
 import static com.vaadin.collaborationengine.util.TestUtils.assertNullNode;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.function.BiConsumer;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.vaadin.collaborationengine.util.TestEnum;
 
 public class CollaborationBinderUtilTest
         extends AbstractCollaborationBinderTest {
