@@ -1,1 +1,1 @@
-# collaboration-engine-internal
+# collaboration-engine
